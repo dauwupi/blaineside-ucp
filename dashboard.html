@@ -100,7 +100,32 @@
   .foot-line .st .d{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
 
   /* ================= MAIN ================= */
-  .main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--content-bg)}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--content-bg);position:relative}
+  /* Very subtle Blaine County photo backdrop. The image sits at low opacity
+     behind a heavy charcoal scrim so it reads as faint atmosphere, never a
+     photo — content stays fully legible. Swap the url() to change the scene. */
+  .main::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-image:url("img/bg-desert.jpg");
+    background-size:cover;background-position:center 30%;background-repeat:no-repeat;
+    opacity:.035;
+    -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.4) 45%, transparent 80%);
+    mask-image:linear-gradient(180deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.4) 45%, transparent 80%);}
+  /* warm tint + vignette over the photo to blend it into the palette */
+  .main::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(85% 55% at 82% -8%, rgba(212,146,58,.08), transparent 58%),
+      radial-gradient(130% 100% at 50% 125%, rgba(0,0,0,.45), transparent 55%);}
+  .topbar, .content{position:relative;z-index:1}
+  /* Subtle branded backdrop — warm amber glow top, faint desert-contour texture,
+     and a soft vignette. Sits behind everything, low opacity so content stays crisp. */
+  .main::before{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
+    background:
+      radial-gradient(1100px 520px at 78% -8%, rgba(212,146,58,.10), transparent 60%),
+      radial-gradient(900px 600px at 12% 108%, rgba(226,182,92,.05), transparent 55%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000' viewBox='0 0 1000 1000'%3E%3Cg fill='none' stroke='%23e2b65c' stroke-opacity='0.05' stroke-width='1.1'%3E%3Cpath d='M-40 260 C 180 200 320 320 520 280 S 860 180 1080 250'/%3E%3Cpath d='M-40 340 C 180 280 320 400 520 360 S 860 260 1080 330'/%3E%3Cpath d='M-40 470 C 200 420 340 520 540 480 S 880 400 1080 460'/%3E%3Cpath d='M-40 560 C 200 510 340 610 540 570 S 880 490 1080 550'/%3E%3Cpath d='M-40 700 C 220 650 360 740 560 705 S 900 630 1080 690'/%3E%3Cpath d='M-40 790 C 220 745 360 835 560 800 S 900 725 1080 785'/%3E%3C/g%3E%3C/svg%3E") no-repeat center top / 1100px auto;
+  }
+  @media (max-width:760px){ .main::before{left:0} }
+  .topbar, .content{position:relative;z-index:1}
 
   /* ---- HEADER SHELL (persistent across every page) ---- */
   .topbar{height:var(--header-h);flex:none;display:flex;align-items:center;gap:16px;
@@ -580,7 +605,7 @@
             Settings
           </div>
           <div class="menu-sep"></div>
-          <div class="menu-item danger">
+          <div class="menu-item danger" id="logoutBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>
             Log out
           </div>
@@ -693,10 +718,10 @@
               <span class="live"><span class="d"></span>Live</span>
             </div>
             <div class="status-list">
-              <div class="status-row up"><span class="led"></span><span class="nm">Game server</span><span class="val">Operational</span><span class="sub">142 online</span></div>
-              <div class="status-row up"><span class="led"></span><span class="nm">Forums</span><span class="val">Operational</span><span class="sub">99.9% up</span></div>
-              <div class="status-row up"><span class="led"></span><span class="nm">UCP</span><span class="val">Operational</span><span class="sub">4ms</span></div>
-              <div class="status-row deg"><span class="led"></span><span class="nm">Discord</span><span class="val">Degraded</span><span class="sub">voice lag</span></div>
+              <div class="status-row deg" id="svc-game"><span class="led"></span><span class="nm">Game server</span><span class="val">Not launched</span><span class="sub">coming soon</span></div>
+              <div class="status-row" id="svc-forums"><span class="led"></span><span class="nm">Forums</span><span class="val">Checking…</span><span class="sub"></span></div>
+              <div class="status-row" id="svc-ucp"><span class="led"></span><span class="nm">UCP</span><span class="val">Checking…</span><span class="sub"></span></div>
+              <div class="status-row" id="svc-discord"><span class="led"></span><span class="nm">Discord</span><span class="val">Checking…</span><span class="sub"></span></div>
             </div>
           </div>
         </div>
@@ -751,6 +776,72 @@
   const RANK_NAMES = ['Member','Support Staff','Development Team','Trainee Admin',
     'Admin Lvl 1','Admin Lvl 2','Senior Admin','Lead Admin','Management','Founder'];
 
+  /* logout */
+  (function(){
+    const lb=document.getElementById('logoutBtn');
+    if(lb) lb.addEventListener('click',()=>{
+      lb.style.pointerEvents='none';
+      fetch('api/logout.php',{method:'POST',credentials:'include'})
+        .then(r=>r.json()).then(d=>{ window.location = (d && d.redirect) || 'login.html'; })
+        .catch(()=>{ window.location = 'login.html'; });
+    });
+  })();
+
+  /* =====================================================================
+     LIVE SERVICE STATUS
+     A browser can't read another site's response (CORS), but it CAN tell
+     whether the site's favicon loads. If it loads → up; if it errors or
+     times out → down. Good enough for an at-a-glance status board.
+     Game server has no endpoint yet, so it stays a "coming soon" placeholder.
+     ===================================================================== */
+  function setStatus(id, state, val, sub){
+    const row=document.getElementById(id); if(!row) return;
+    row.classList.remove('up','deg','down');
+    row.classList.add(state);
+    row.querySelector('.val').textContent=val;
+    row.querySelector('.sub').textContent=sub||'';
+  }
+
+  function probe(url, timeout=6000){
+    return new Promise(resolve=>{
+      const img=new Image();
+      let done=false;
+      const t0=performance.now();
+      const finish=(up)=>{ if(done) return; done=true; clearTimeout(timer);
+        resolve({up, ms: Math.round(performance.now()-t0)}); };
+      const timer=setTimeout(()=>finish(false), timeout);
+      img.onload=()=>finish(true);
+      img.onerror=()=>finish(true); // an error response still proves the host answered
+      // cache-bust so we re-check each time
+      img.src = url + (url.includes('?')?'&':'?') + '_=' + Date.now();
+    });
+  }
+
+  function checkServices(){
+    // Forums
+    setStatus('svc-forums','deg','Checking…','');
+    probe('https://forum.blaineside.com/favicon.ico').then(r=>{
+      r.up ? setStatus('svc-forums','up','Operational', r.ms+'ms')
+           : setStatus('svc-forums','down','Unreachable','no response');
+    });
+    // UCP (this very site — will essentially always be up if you can see this)
+    setStatus('svc-ucp','deg','Checking…','');
+    probe('https://ucp.blaineside.com/favicon.ico').then(r=>{
+      r.up ? setStatus('svc-ucp','up','Operational', r.ms+'ms')
+           : setStatus('svc-ucp','down','Unreachable','no response');
+    });
+    // Discord — use the live widget/invite reachability
+    setStatus('svc-discord','deg','Checking…','');
+    probe('https://discord.com/assets/favicon.ico').then(r=>{
+      r.up ? setStatus('svc-discord','up','Operational','')
+           : setStatus('svc-discord','down','Unreachable','');
+    });
+    // Game server — placeholder until it launches
+    setStatus('svc-game','deg','Not launched','coming soon');
+  }
+  checkServices();
+  setInterval(checkServices, 60000); // re-check every minute
+
   /* Ask the server who's signed in. If nobody, bounce to the login page.
      Falls back to the demo values if the API isn't deployed yet. */
   (function loadSession(){
@@ -759,7 +850,7 @@
         if(d && d.ok && d.authenticated){
           UCP_NAME = d.name || UCP_NAME;
           UCP_RANK = (typeof d.rank==='number') ? d.rank : 0;
-          UCP_ROLE = d.role || '';   // server already maps rank→name ('' for Members)
+          UCP_ROLE = d.role || 'Member';   // server maps rank→name (Member for rank 0)
           applyIdentity();
         } else if(d && d.authenticated===false){
           window.location = 'login.html';
@@ -768,18 +859,17 @@
   })();
 
   function applyIdentity(){
-    // first name for the friendly greeting, full UCP name everywhere else
     const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
     set('welcomeName', UCP_NAME);
     set('acctName', UCP_NAME);
     set('menuName', UCP_NAME);
-    // role: hide the line entirely for players (no rank)
-    const showRole = !!UCP_ROLE;
+    // rank name always shows now (Member included)
+    const roleName = UCP_ROLE || 'Member';
     ['acctRole','menuRole'].forEach(id=>{
       const el=document.getElementById(id);
       if(!el) return;
-      el.textContent = UCP_ROLE || '';
-      el.style.display = showRole ? '' : 'none';
+      el.textContent = roleName;
+      el.style.display = '';
     });
   }
 

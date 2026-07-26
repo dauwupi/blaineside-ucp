@@ -18,10 +18,9 @@ const RANKS = [
     9 => 'Founder',
 ];
 
-/** Rank number → display name. Members (0) return '' so no tag shows. */
+/** Rank number → display name. Always returns a name (Members included). */
 function rank_name(int $rank): string {
-    if ($rank <= 0) return '';           // Members show no staff tag
-    return RANKS[$rank] ?? '';
+    return RANKS[$rank] ?? 'Member';
 }
 
 /** Is this rank staff (anything above Member)? */
