@@ -1,0 +1,13 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local server / dependency artifacts (not used, but just in case)
+node_modules/
+__pycache__/
