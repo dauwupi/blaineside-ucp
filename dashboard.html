@@ -101,30 +101,24 @@
 
   /* ================= MAIN ================= */
   .main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--content-bg);position:relative}
-  /* Very subtle Blaine County photo backdrop. The image sits at low opacity
-     behind a heavy charcoal scrim so it reads as faint atmosphere, never a
-     photo — content stays fully legible. Swap the url() to change the scene. */
-  .main::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  /* Photo backdrop: bg-yellowjack sits at low opacity as faint atmosphere.
+     Swap the url() to change the scene. */
+  .main::before{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
     background-image:url("img/bg-yellowjack.jpg");
     background-size:cover;background-position:center 35%;background-repeat:no-repeat;
     opacity:.16;
     -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,.95) 0%, rgba(0,0,0,.5) 55%, transparent 92%);
     mask-image:linear-gradient(180deg, rgba(0,0,0,.95) 0%, rgba(0,0,0,.5) 55%, transparent 92%);}
-  /* warm tint + vignette over the photo to blend it into the palette */
-  .main::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  @media (max-width:760px){ .main::before{left:0} }
+  /* Warm amber glow, faint desert-contour SVG texture, and vignette — layered over the photo. */
+  .main::after{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
     background:
       radial-gradient(85% 55% at 82% -8%, rgba(212,146,58,.08), transparent 58%),
-      radial-gradient(130% 100% at 50% 125%, rgba(0,0,0,.45), transparent 55%);}
-  .topbar, .content{position:relative;z-index:1}
-  /* Subtle branded backdrop — warm amber glow top, faint desert-contour texture,
-     and a soft vignette. Sits behind everything, low opacity so content stays crisp. */
-  .main::before{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
-    background:
+      radial-gradient(130% 100% at 50% 125%, rgba(0,0,0,.45), transparent 55%),
       radial-gradient(1100px 520px at 78% -8%, rgba(212,146,58,.10), transparent 60%),
       radial-gradient(900px 600px at 12% 108%, rgba(226,182,92,.05), transparent 55%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000' viewBox='0 0 1000 1000'%3E%3Cg fill='none' stroke='%23e2b65c' stroke-opacity='0.05' stroke-width='1.1'%3E%3Cpath d='M-40 260 C 180 200 320 320 520 280 S 860 180 1080 250'/%3E%3Cpath d='M-40 340 C 180 280 320 400 520 360 S 860 260 1080 330'/%3E%3Cpath d='M-40 470 C 200 420 340 520 540 480 S 880 400 1080 460'/%3E%3Cpath d='M-40 560 C 200 510 340 610 540 570 S 880 490 1080 550'/%3E%3Cpath d='M-40 700 C 220 650 360 740 560 705 S 900 630 1080 690'/%3E%3Cpath d='M-40 790 C 220 745 360 835 560 800 S 900 725 1080 785'/%3E%3C/g%3E%3C/svg%3E") no-repeat center top / 1100px auto;
-  }
-  @media (max-width:760px){ .main::before{left:0} }
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000' viewBox='0 0 1000 1000'%3E%3Cg fill='none' stroke='%23e2b65c' stroke-opacity='0.05' stroke-width='1.1'%3E%3Cpath d='M-40 260 C 180 200 320 320 520 280 S 860 180 1080 250'/%3E%3Cpath d='M-40 340 C 180 280 320 400 520 360 S 860 260 1080 330'/%3E%3Cpath d='M-40 470 C 200 420 340 520 540 480 S 880 400 1080 460'/%3E%3Cpath d='M-40 560 C 200 510 340 610 540 570 S 880 490 1080 550'/%3E%3Cpath d='M-40 700 C 220 650 360 740 560 705 S 900 630 1080 690'/%3E%3Cpath d='M-40 790 C 220 745 360 835 560 800 S 900 725 1080 785'/%3E%3C/g%3E%3C/svg%3E") no-repeat center top / 1100px auto;}
+  @media (max-width:760px){ .main::after{left:0} }
   .topbar, .content{position:relative;z-index:1}
 
   /* ---- HEADER SHELL (persistent across every page) ---- */
