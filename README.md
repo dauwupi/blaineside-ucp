@@ -3,33 +3,46 @@
 Front-end for the BlaineSide User Control Panel (design/prototype phase).
 Self-contained HTML files — no build step, no dependencies.
 
+## Flow
+
+`index.html` → `login.html` (front door) → `dashboard.html` → `bulletin.html`
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Entry point — redirects to the dashboard |
-| `dashboard.html` | Main UCP dashboard (stats, bulletin carousel, notifications) |
-| `bulletin.html` | County Bulletin management page (create/edit/delete, dashboard slots) |
+| `index.html` | Entry point — redirects to the login page |
+| `login.html` | Sign in / Create UCP / verify email / reset password |
+| `dashboard.html` | Main UCP dashboard |
+| `bulletin.html` | County Bulletin management page |
+
+## Demo credentials (front-end only)
+
+- Username: `Name101`
+- Password: `BlaineCounty26`
+
+Signing in with these redirects to `dashboard.html`. These are placeholders for
+the design demo — real authentication is handled by the backend.
+
+## IMPORTANT: accounts need a backend
+
+`login.html` validates input, checks password strength, detects caps lock, and
+handles lockout — but it CANNOT actually create or verify accounts on its own.
+Creating a UCP account requires a server to store users, hash passwords, send
+verification emails, and issue sessions. The submit functions in `login.html`
+are mocked with clear comments marking where the backend developer hooks in:
+
+- `submitLogin()` — replace the demo check with a real auth request; on success
+  it redirects to `dashboard.html`
+- `submitRegister()` — POST the new account to the server; the verify screen is
+  already built
+- `submitReset()` — trigger a real password-reset email
+- Availability checks (`onUserInput`, `onEmailInput`) — replace the mocked
+  TAKEN_NAMES / USED_EMAILS lists with real lookups
 
 ## Local preview
 
-These are plain HTML files. Open any of them directly in a browser, or serve
-the folder:
-
 ```bash
-# Python 3
 python3 -m http.server 8000
-# then visit http://localhost:8000
+# visit http://localhost:8000
 ```
-
-## Notes for the back-end developer
-
-Data is currently mocked in-file via JavaScript arrays. Integration points are
-commented in each file:
-
-- `dashboard.html` — `SIDEBAR`, `BULLETIN`, `NOTIFS`, and `finishLoading()`
-- `bulletin.html` — `BULLETINS` array, plus `UCP_NAME`, `MAX_SHOWN` (5), `PER_PAGE` (6)
-
-Bulletins marked `shown: true` feed the dashboard carousel (max 5). The author
-field is locked to the session UCP name. Links are validated on save
-(`javascript:`, `data:`, `ftp:` schemes are rejected).
