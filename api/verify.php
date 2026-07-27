@@ -111,11 +111,22 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_HTTPHEADER     => ['Accept: application/json'],
     ]);
-    $body = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $body  = curl_exec($ch);
+    $code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
     curl_close($ch);
 
-    if ($body === false) return null;
+    // Debug log — remove once forum_member_id is populating reliably
+    file_put_contents(
+        __DIR__ . '/ips_debug.log',
+        date('Y-m-d H:i:s') . " POST /api/core/members\n"
+            . "  curl_error: $curl_error\n"
+            . "  http_code:  $code\n"
+            . "  body:       " . substr($body ?: '', 0, 400) . "\n\n",
+        FILE_APPEND
+    );
+
+    if ($body === false || $curl_error) return null;
 
     $data = json_decode($body, true);
 
