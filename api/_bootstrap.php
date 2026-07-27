@@ -28,15 +28,65 @@ session_set_cookie_params([
 session_name('BSUCP');
 session_start();
 
-// Slide the remember-me cookie forward so it stays alive with each visit.
-if (!empty($_SESSION['remember'])) {
-    setcookie(session_name(), session_id(), [
-        'expires'  => time() + 30 * 24 * 3600,
-        'path'     => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-        'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
-    ]);
+// ---- Remember-me: restore session from DB token ----
+// PHP session files get garbage-collected after session.gc_maxlifetime (default ~24 min).
+// If the session expired but the user has a valid remember-me token in their cookie,
+// we look it up in the DB and transparently restore their session.
+if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) {
+    $rm_cookie = $_COOKIE['bsucp_rm'];
+    $rm_pdo    = db();
+    $rm_stmt   = $rm_pdo->prepare(
+        'SELECT id, username, admin_rank
+           FROM ucp_accounts
+          WHERE remember_token = ?
+            AND remember_expires > ?
+            AND status = \'active\'
+          LIMIT 1'
+    );
+    $rm_stmt->execute([$rm_cookie, time()]);
+    $rm_acc = $rm_stmt->fetch();
+
+    if ($rm_acc) {
+        // Valid token — restore the session.
+        session_regenerate_id(true);
+        $_SESSION['uid']      = (int)$rm_acc['id'];
+        $_SESSION['name']     = $rm_acc['username'];
+        $_SESSION['rank']     = (int)$rm_acc['admin_rank'];
+        $_SESSION['remember'] = true;
+
+        // Rotate the token so each use issues a fresh one (prevents replay if ever leaked).
+        $new_token   = bin2hex(random_bytes(32));
+        $new_expires = time() + 30 * 24 * 3600;
+        $rm_pdo->prepare(
+            'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
+        )->execute([$new_token, $new_expires, (int)$rm_acc['id']]);
+
+        $secure = (($_SERVER['HTTPS'] ?? '') === 'on');
+        setcookie('bsucp_rm', $new_token, [
+            'expires'  => $new_expires,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure'   => $secure,
+        ]);
+        // Also slide the session cookie forward so it survives the browser session.
+        setcookie(session_name(), session_id(), [
+            'expires'  => $new_expires,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure'   => $secure,
+        ]);
+    } else {
+        // Token not found / expired — clear the stale cookie.
+        setcookie('bsucp_rm', '', [
+            'expires'  => time() - 3600,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+        ]);
+    }
 }
 
 // ---- CORS / headers ----

@@ -18,26 +18,52 @@ if (file_exists($configPath)) {
     $CONFIG = require $configPath;
 }
 
+$secure = (($_SERVER['HTTPS'] ?? '') === 'on');
+
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',
     'httponly' => true,
     'samesite' => 'Lax',
-    'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+    'secure'   => $secure,
 ]);
 session_name('BSUCP');
 session_start();
+
+// ── Clear remember-me token from the database ─────────────────────────────────
+// Must happen before session_destroy() since we may need the uid.
+if (!empty($_COOKIE['bsucp_rm']) && isset($CONFIG)) {
+    $c   = $CONFIG['db'];
+    $dsn = "mysql:host={$c['host']};dbname={$c['name']};charset={$c['charset']}";
+    try {
+        $pdo = new PDO($dsn, $c['user'], $c['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $pdo->prepare(
+            'UPDATE ucp_accounts SET remember_token = NULL, remember_expires = NULL
+              WHERE remember_token = ?'
+        )->execute([$_COOKIE['bsucp_rm']]);
+    } catch (Throwable $e) { /* DB down — still proceed with cookie/session cleanup */ }
+}
+
+// ── Destroy the session ───────────────────────────────────────────────────────
 session_unset();
 session_destroy();
 
-// Clear the session cookie
-$cookieParams = session_get_cookie_params();
+// Clear the session cookie.
 setcookie(session_name(), '', [
     'expires'  => time() - 3600,
-    'path'     => $cookieParams['path'],
-    'httponly' => $cookieParams['httponly'],
+    'path'     => '/',
+    'httponly' => true,
     'samesite' => 'Lax',
-    'secure'   => $cookieParams['secure'],
+    'secure'   => $secure,
+]);
+
+// Clear the remember-me cookie.
+setcookie('bsucp_rm', '', [
+    'expires'  => time() - 3600,
+    'path'     => '/',
+    'httponly' => true,
+    'samesite' => 'Lax',
+    'secure'   => $secure,
 ]);
 
 // ── ?next redirect (for browser-initiated logout, e.g. Switch button) ────────

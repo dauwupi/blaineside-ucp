@@ -48,14 +48,34 @@ $_SESSION['name']     = $acc['username'];
 $_SESSION['rank']     = $rank;
 $_SESSION['remember'] = $remember;
 
-// If "remember me" was checked, extend the session cookie to 30 days.
+$secure = (($_SERVER['HTTPS'] ?? '') === 'on');
+
 if ($remember) {
-    setcookie(session_name(), session_id(), [
-        'expires'  => time() + 30 * 24 * 3600,
+    // Generate a cryptographically random 64-char token and store it in the DB.
+    // The browser gets a bsucp_rm cookie; _bootstrap.php checks it on every request
+    // so the session is transparently restored even after PHP GC clears the session file.
+    $rm_token   = bin2hex(random_bytes(32));
+    $rm_expires = time() + 30 * 24 * 3600;
+
+    $pdo->prepare(
+        'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
+    )->execute([$rm_token, $rm_expires, (int)$acc['id']]);
+
+    setcookie('bsucp_rm', $rm_token, [
+        'expires'  => $rm_expires,
         'path'     => '/',
         'httponly' => true,
         'samesite' => 'Lax',
-        'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+        'secure'   => $secure,
+    ]);
+
+    // Also extend the session cookie to match so the browser keeps it across restarts.
+    setcookie(session_name(), session_id(), [
+        'expires'  => $rm_expires,
+        'path'     => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure'   => $secure,
     ]);
 }
 
