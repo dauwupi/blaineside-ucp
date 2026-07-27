@@ -100,7 +100,9 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
 
     // IPS accepts the API key as a query parameter (?key=) or via Basic auth.
     // Using query param here as it's more reliable across PHP/cURL versions.
-    $endpoint = $base . '/core/members?key=' . urlencode($key);
+    // Base URL ends with '?' (e.g. https://forum.../api/index.php?)
+    // IPS route format: index.php?/core/members&key=<key>
+    $endpoint = $base . '/core/members&key=' . urlencode($key);
     $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -155,7 +157,7 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
  */
 function ips_find_member_by_email(string $base, string $key, string $email): ?int
 {
-    $url = $base . '/core/members?' . http_build_query(['key' => $key, 'email' => $email]);
+    $url = $base . '/core/members&' . http_build_query(['key' => $key, 'email' => $email]);
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
