@@ -48,38 +48,49 @@ $_SESSION['name']     = $acc['username'];
 $_SESSION['rank']     = $rank;
 $_SESSION['remember'] = $remember;
 
-$secure = (($_SERVER['HTTPS'] ?? '') === 'on');
-
+// If "remember me" was checked, extend the session cookie to 30 days.
 if ($remember) {
-    // Generate a cryptographically random 64-char token and store it in the DB.
-    // The browser gets a bsucp_rm cookie; _bootstrap.php checks it on every request
-    // so the session is transparently restored even after PHP GC clears the session file.
-    $rm_token   = bin2hex(random_bytes(32));
-    $rm_expires = time() + 30 * 24 * 3600;
-
-    $pdo->prepare(
-        'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
-    )->execute([$rm_token, $rm_expires, (int)$acc['id']]);
-
-    setcookie('bsucp_rm', $rm_token, [
-        'expires'  => $rm_expires,
-        'path'     => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-        'secure'   => $secure,
-    ]);
-
-    // Also extend the session cookie to match so the browser keeps it across restarts.
     setcookie(session_name(), session_id(), [
-        'expires'  => $rm_expires,
+        'expires'  => time() + 30 * 24 * 3600,
         'path'     => '/',
         'httponly' => true,
         'samesite' => 'Lax',
-        'secure'   => $secure,
+        'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
     ]);
 }
 
 $pdo->prepare('UPDATE ucp_accounts SET last_login = NOW() WHERE id = ?')->execute([$acc['id']]);
+
+// ── Lazy forum_member_id population ──────────────────────────────────────────
+// If the user has logged into the forum via OAuth at least once, IPS will have
+// created their forum account. Look it up by email and store it now.
+$fmRow = $pdo->prepare('SELECT forum_member_id, email FROM ucp_accounts WHERE id = ? LIMIT 1');
+$fmRow->execute([$acc['id']]);
+$fmData = $fmRow->fetch();
+
+if ($fmData && $fmData['forum_member_id'] === null) {
+    $ips_url = rtrim($CONFIG['ips']['url'] ?? '', '/');
+    $ips_key = $CONFIG['ips']['key'] ?? '';
+    if ($ips_url !== '' && $ips_key !== '') {
+        $lookup = $ips_url . '/core/members&' . http_build_query(['key' => $ips_key, 'email' => $fmData['email']]);
+        $ch = curl_init($lookup);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 5,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+        ]);
+        $body = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($code === 200 && $body) {
+            $data = json_decode($body, true);
+            if (isset($data['results'][0]['id'])) {
+                $pdo->prepare('UPDATE ucp_accounts SET forum_member_id = ? WHERE id = ?')
+                    ->execute([$data['results'][0]['id'], $acc['id']]);
+            }
+        }
+    }
+}
 
 ok([
     'id'   => (int)$acc['id'],       // Account ID
