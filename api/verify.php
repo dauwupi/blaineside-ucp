@@ -98,7 +98,7 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
     // via UCP SSO (OAuth), so the IPS password is never used directly.
     $tmp_password = bin2hex(random_bytes(16)) . 'Aa1!';
 
-    $ch = curl_init($base . '/api/core/members');
+    $ch = curl_init($base . '/core/members');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
@@ -150,7 +150,7 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
  */
 function ips_find_member_by_email(string $base, string $key, string $email): ?int
 {
-    $url = $base . '/api/core/members?' . http_build_query(['email' => $email]);
+    $url = $base . '/core/members?' . http_build_query(['email' => $email]);
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
