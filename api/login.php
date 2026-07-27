@@ -61,6 +61,10 @@ if ($remember) {
 
 $pdo->prepare('UPDATE ucp_accounts SET last_login = NOW() WHERE id = ?')->execute([$acc['id']]);
 
+// ── DEBUG: unconditional log to confirm this version of login.php is running ─
+file_put_contents(__DIR__ . '/login_ips_debug.log',
+    date('Y-m-d H:i:s') . ' LOGIN uid=' . $acc['id'] . ' v2' . "\n", FILE_APPEND);
+
 // ── Lazy forum_member_id population ──────────────────────────────────────────
 // If the user has logged into the forum via OAuth at least once, IPS will have
 // created their forum account. Look it up by email and store it now.
@@ -71,7 +75,7 @@ $fmData = $fmRow->fetch();
 if ($fmData && $fmData['forum_member_id'] === null) {
     $ips_url = rtrim($CONFIG['ips']['url'] ?? '', '/');
     $ips_key = $CONFIG['ips']['key'] ?? '';
-    $logFile = dirname(__DIR__) . '/login_ips_debug.log';
+    $logFile = __DIR__ . '/login_ips_debug.log';
     $log = function(string $msg) use ($logFile): void {
         file_put_contents($logFile, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND);
     };
