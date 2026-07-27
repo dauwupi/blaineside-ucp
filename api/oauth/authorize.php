@@ -13,6 +13,16 @@
 
 declare(strict_types=1);
 
+// ── Debug log ────────────────────────────────────────────────────────────────
+$_authLogFile = __DIR__ . '/authorize_debug.log';
+function adbg(string $msg): void {
+    global $_authLogFile;
+    file_put_contents($_authLogFile, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND);
+}
+adbg('=== ' . ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ===');
+adbg('GET: '  . json_encode($_GET));
+adbg('POST: ' . json_encode($_POST));
+
 // ── Minimal bootstrap (no JSON header — this page outputs HTML) ───────────────
 $configPath = dirname(__DIR__) . '/config.php';
 if (!file_exists($configPath)) { http_response_code(500); die('Server not configured.'); }
@@ -140,7 +150,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $code = oauth_issue_code($clientId, $userId, $redirectUri, $scope, $state, $codeChallenge, $codeChallengeMethod);
         $sep  = str_contains($redirectUri, '?') ? '&' : '?';
-        header('Location: ' . $redirectUri . $sep . 'code=' . urlencode($code) . '&state=' . urlencode($state));
+        $callbackUrl = $redirectUri . $sep . 'code=' . urlencode($code) . '&state=' . urlencode($state);
+        adbg('Issuing code for user_id=' . $userId . ' state_len=' . strlen($state));
+        adbg('Redirecting to: ' . $callbackUrl);
+        header('Location: ' . $callbackUrl);
         exit;
     }
 }
