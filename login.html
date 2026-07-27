@@ -538,10 +538,24 @@
         btnDone(btn,'Signed in ✓');
         showBanner('ok','Welcome back. Taking you to your UCP…');
         document.getElementById('login-banner').className='banner ok';
-        const nextParam = new URLSearchParams(window.location.search).get('next');
-        const dest = (nextParam === 'oauth_resume')
-          ? '/api/oauth/authorize.php?resume=1'
-          : (d.redirect || 'dashboard.html');
+        const params   = new URLSearchParams(window.location.search);
+        const nextParam = params.get('next');
+        const FORUM = 'https://forum.blaineside.com';
+        const isForum = u => typeof u === 'string' && u.startsWith(FORUM);
+        let dest;
+        if (nextParam === 'oauth_resume') {
+          // OAuth flow — resume authorise page which then redirects to forum
+          dest = '/api/oauth/authorize.php?resume=1';
+        } else if (isForum(params.get('return'))) {
+          // Explicit ?return= param pointing at the forum
+          dest = params.get('return');
+        } else if (isForum(document.referrer)) {
+          // User navigated here from the forum — send them back
+          dest = document.referrer;
+        } else {
+          // Direct UCP login — go to the dashboard
+          dest = d.redirect || 'dashboard.html';
+        }
         setTimeout(()=>{ window.location = dest; }, 600);
         return;
       }
