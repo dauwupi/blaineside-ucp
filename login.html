@@ -746,8 +746,23 @@
   (function(){const y=document.getElementById('yr');if(y)y.textContent=new Date().getUTCFullYear();})();
 
   /* ===== INIT ===== */
-  // If a returning user is still locked out, tell them up front.
   (function(){
+    // If already authenticated (active session or restored via remember-me cookie),
+    // skip the login page entirely and go straight to the dashboard.
+    const params = new URLSearchParams(window.location.search);
+    const skipCheck = params.get('next') === 'oauth_resume'; // OAuth flow must stay here
+    if (!skipCheck) {
+      fetch('api/session.php', { credentials: 'include' })
+        .then(r => r.json())
+        .then(d => {
+          if (d.authenticated) {
+            window.location = 'dashboard.html';
+          }
+        })
+        .catch(() => {}); // silently ignore — just show login form
+    }
+
+    // If a returning user is still locked out, tell them up front.
     const s=lockState();
     if(s.until && Date.now()<s.until){
       showBanner('err','Your login is temporarily locked. Try again in <b>'+minsLeft(s.until)+' min</b>, or reset your password.');
