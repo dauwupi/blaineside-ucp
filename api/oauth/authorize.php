@@ -295,7 +295,7 @@ h1{font-family:'Bitter',serif;font-weight:800;font-size:25px;
           <div class="n"><?= htmlspecialchars($userName) ?></div>
           <div class="sub">Signed in to your UCP</div>
         </div>
-        <a class="switch" href="<?= htmlspecialchars($CONFIG['site']['base_url']) ?>/api/logout.php?next=<?= urlencode($_SERVER['REQUEST_URI']) ?>">Switch</a>
+        <a class="switch" href="<?= htmlspecialchars($CONFIG['site']['base_url']) ?>/api/logout.php?next=<?= urlencode('https://forum.blaineside.com/index.php?/login/') ?>">Switch</a>
       </div>
 
       <div class="facts">
