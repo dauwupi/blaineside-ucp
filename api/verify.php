@@ -98,7 +98,8 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
     // via UCP SSO (OAuth), so the IPS password is never used directly.
     $tmp_password = bin2hex(random_bytes(16)) . 'Aa1!';
 
-    $ch = curl_init($base . '/core/members');
+    $endpoint = $base . '/core/members';
+    $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
@@ -110,6 +111,9 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
         CURLOPT_USERPWD        => $key . ':',   // IPS Basic-auth: key as username, empty password
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+        CURLOPT_FOLLOWLOCATION => true,          // follow 301/302
+        CURLOPT_POSTREDIR      => 3,             // keep POST method on redirect
+        CURLOPT_MAXREDIRS      => 3,
     ]);
     $body  = curl_exec($ch);
     $code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -119,7 +123,7 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
     // Debug log — remove once forum_member_id is populating reliably
     file_put_contents(
         __DIR__ . '/ips_debug.log',
-        date('Y-m-d H:i:s') . " POST /api/core/members\n"
+        date('Y-m-d H:i:s') . " POST $endpoint\n"
             . "  curl_error: $curl_error\n"
             . "  http_code:  $code\n"
             . "  body:       " . substr($body ?: '', 0, 400) . "\n\n",
