@@ -98,7 +98,9 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
     // via UCP SSO (OAuth), so the IPS password is never used directly.
     $tmp_password = bin2hex(random_bytes(16)) . 'Aa1!';
 
-    $endpoint = $base . '/core/members';
+    // IPS accepts the API key as a query parameter (?key=) or via Basic auth.
+    // Using query param here as it's more reliable across PHP/cURL versions.
+    $endpoint = $base . '/core/members?key=' . urlencode($key);
     $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -108,11 +110,10 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
             'email'    => $email,
             'password' => $tmp_password,
         ]),
-        CURLOPT_USERPWD        => $key . ':',   // IPS Basic-auth: key as username, empty password
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_HTTPHEADER     => ['Accept: application/json'],
-        CURLOPT_FOLLOWLOCATION => true,          // follow 301/302
-        CURLOPT_POSTREDIR      => 3,             // keep POST method on redirect
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_POSTREDIR      => 3,
         CURLOPT_MAXREDIRS      => 3,
     ]);
     $body  = curl_exec($ch);
@@ -154,12 +155,11 @@ function ips_create_or_find_member(string $base, string $key, string $name, stri
  */
 function ips_find_member_by_email(string $base, string $key, string $email): ?int
 {
-    $url = $base . '/core/members?' . http_build_query(['email' => $email]);
+    $url = $base . '/core/members?' . http_build_query(['key' => $key, 'email' => $email]);
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_USERPWD        => $key . ':',
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_HTTPHEADER     => ['Accept: application/json'],
     ]);
