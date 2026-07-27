@@ -175,7 +175,7 @@ if ($isPkce) {
     }
 
     try {
-        $row = oauth_consume_code($code, $clientId, $redirectUri);
+        $row = oauth_consume_code($code, $clientId, $redirectUri, $codeVerifier);
         dbg('oauth_consume_code result: '.($row === false ? 'false' : json_encode($row)));
     } catch (Throwable $e) {
         dbg('FAIL: oauth_consume_code exception — '.$e->getMessage());
