@@ -26,8 +26,9 @@ if (!$acc || $acc['status'] !== 'active') {
 $rank = (int)$acc['admin_rank'];
 ok([
     'authenticated' => true,
-    'id'   => (int)$acc['id'],
-    'name' => $acc['username'],
-    'rank' => $rank,                 // 0–9
-    'role' => rank_name($rank),      // display name ('' for Members)
+    'id'     => (int)$acc['id'],
+    'name'   => $acc['username'],
+    'rank'   => $rank,
+    'role'   => rank_name($rank),
+    'remember' => !empty($_SESSION['remember']),
 ]);

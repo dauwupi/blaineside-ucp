@@ -535,6 +535,8 @@
     }).then(r=>r.json().then(d=>({status:r.status,d}))).then(({status,d})=>{
       if(d.ok){
         saveLock({fails:0,until:0});
+        // Save the username so it can be pre-filled next time
+        try { localStorage.setItem('bs-last-user', user); } catch(e){}
         btnDone(btn,'Signed in ✓');
         showBanner('ok','Welcome back. Taking you to your UCP…');
         document.getElementById('login-banner').className='banner ok';
@@ -747,19 +749,25 @@
 
   /* ===== INIT ===== */
   (function(){
-    // If already authenticated (active session or restored via remember-me cookie),
-    // skip the login page entirely and go straight to the dashboard.
+    // Pre-fill username from last successful login
+    try {
+      const saved = localStorage.getItem('bs-last-user');
+      if (saved) document.getElementById('l-user').value = saved;
+    } catch(e){}
+
+    // Only auto-redirect to dashboard if the user explicitly chose "Remember me".
+    // A plain session (no remember me) should require re-login when they come back.
     const params = new URLSearchParams(window.location.search);
-    const skipCheck = params.get('next') === 'oauth_resume'; // OAuth flow must stay here
+    const skipCheck = params.get('next') === 'oauth_resume';
     if (!skipCheck) {
       fetch('api/session.php', { credentials: 'include' })
         .then(r => r.json())
         .then(d => {
-          if (d.authenticated) {
+          if (d.authenticated && d.remember) {
             window.location = 'dashboard.html';
           }
         })
-        .catch(() => {}); // silently ignore — just show login form
+        .catch(() => {});
     }
 
     // If a returning user is still locked out, tell them up front.
@@ -767,7 +775,6 @@
     if(s.until && Date.now()<s.until){
       showBanner('err','Your login is temporarily locked. Try again in <b>'+minsLeft(s.until)+' min</b>, or reset your password.');
     }
-    // start on login, autofocus its first field
     showView('login');
   })();
 </script>
