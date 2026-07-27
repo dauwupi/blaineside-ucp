@@ -531,7 +531,7 @@
     fetch('api/login.php',{
       method:'POST', credentials:'include',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username:user, password:pass})
+      body:JSON.stringify({username:user, password:pass, remember:document.getElementById('l-remember').checked})
     }).then(r=>r.json().then(d=>({status:r.status,d}))).then(({status,d})=>{
       if(d.ok){
         saveLock({fails:0,until:0});

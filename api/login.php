@@ -40,11 +40,24 @@ if ($acc['status'] === 'suspended') {
 }
 
 // Success — establish the session.
-$rank = (int)$acc['admin_rank'];
+$rank     = (int)$acc['admin_rank'];
+$remember = !empty($in['remember']);
 session_regenerate_id(true);
-$_SESSION['uid']  = (int)$acc['id'];
-$_SESSION['name'] = $acc['username'];
-$_SESSION['rank'] = $rank;
+$_SESSION['uid']      = (int)$acc['id'];
+$_SESSION['name']     = $acc['username'];
+$_SESSION['rank']     = $rank;
+$_SESSION['remember'] = $remember;
+
+// If "remember me" was checked, extend the session cookie to 30 days.
+if ($remember) {
+    setcookie(session_name(), session_id(), [
+        'expires'  => time() + 30 * 24 * 3600,
+        'path'     => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+    ]);
+}
 
 $pdo->prepare('UPDATE ucp_accounts SET last_login = NOW() WHERE id = ?')->execute([$acc['id']]);
 

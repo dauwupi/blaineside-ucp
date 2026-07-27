@@ -28,6 +28,17 @@ session_set_cookie_params([
 session_name('BSUCP');
 session_start();
 
+// Slide the remember-me cookie forward so it stays alive with each visit.
+if (!empty($_SESSION['remember'])) {
+    setcookie(session_name(), session_id(), [
+        'expires'  => time() + 30 * 24 * 3600,
+        'path'     => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+    ]);
+}
+
 // ---- CORS / headers ----
 // Same-origin in production, but this keeps fetch() happy and locks it down.
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
