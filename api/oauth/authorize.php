@@ -13,6 +13,15 @@
 
 declare(strict_types=1);
 
+// ── Debug log ────────────────────────────────────────────────────────────────
+$_authLogFile = __DIR__ . '/authorize_debug.log';
+function adbg(string $msg): void {
+    global $_authLogFile;
+    file_put_contents($_authLogFile, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND);
+}
+adbg('=== ' . ($_SERVER['REQUEST_METHOD'] ?? '?') . ' ===');
+adbg('GET: '  . json_encode($_GET));
+adbg('POST: ' . json_encode($_POST));
 
 // ── Minimal bootstrap (no JSON header — this page outputs HTML) ───────────────
 $configPath = dirname(__DIR__) . '/config.php';
@@ -26,6 +35,13 @@ session_set_cookie_params([
 ]);
 session_name('BSUCP');
 session_start();
+
+// Local fail() so _client.php helpers can throw a catchable exception
+if (!function_exists('fail')) {
+    function fail(string $msg, int $code = 400): never {
+        throw new RuntimeException($msg, $code);
+    }
+}
 
 require __DIR__ . '/_client.php';   // oauth helpers (needs db() — defined below)
 
@@ -88,8 +104,8 @@ if (!$redirectUri)            html_error('Missing redirect_uri.');
 // Load & verify the client
 try {
     $client = oauth_client($clientId);
-} catch (Throwable) {
-    html_error('Unknown client_id.');
+} catch (Throwable $e) {
+    html_error('Unknown client_id [' . htmlspecialchars($clientId) . ']: ' . htmlspecialchars($e->getMessage()));
 }
 
 // Verify redirect_uri matches registration
@@ -142,6 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $code = oauth_issue_code($clientId, $userId, $redirectUri, $scope, $state, $codeChallenge, $codeChallengeMethod);
         $sep  = str_contains($redirectUri, '?') ? '&' : '?';
         $callbackUrl = $redirectUri . $sep . 'code=' . urlencode($code) . '&state=' . urlencode($state);
+        adbg('Issuing code for user_id=' . $userId . ' state_len=' . strlen($state));
+        adbg('Redirecting to: ' . $callbackUrl);
         header('Location: ' . $callbackUrl);
         exit;
     }
