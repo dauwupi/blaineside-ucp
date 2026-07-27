@@ -71,24 +71,41 @@ $fmData = $fmRow->fetch();
 if ($fmData && $fmData['forum_member_id'] === null) {
     $ips_url = rtrim($CONFIG['ips']['url'] ?? '', '/');
     $ips_key = $CONFIG['ips']['key'] ?? '';
+    $logFile = __DIR__ . '/login_ips_debug.log';
+    $log = function(string $msg) use ($logFile): void {
+        file_put_contents($logFile, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND);
+    };
     if ($ips_url !== '' && $ips_key !== '') {
         $lookup = $ips_url . '/core/members&' . http_build_query(['key' => $ips_key, 'email' => $fmData['email']]);
+        $log('Lookup URL: ' . $lookup);
         $ch = curl_init($lookup);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 5,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTPHEADER     => ['Accept: application/json'],
         ]);
         $body = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err  = curl_error($ch);
         curl_close($ch);
+        $log('HTTP code: ' . $code . ' | cURL error: ' . ($err ?: 'none'));
+        $log('Body (first 500): ' . substr((string)$body, 0, 500));
         if ($code === 200 && $body) {
             $data = json_decode($body, true);
+            $log('Decoded results count: ' . count($data['results'] ?? []));
             if (isset($data['results'][0]['id'])) {
                 $pdo->prepare('UPDATE ucp_accounts SET forum_member_id = ? WHERE id = ?')
                     ->execute([$data['results'][0]['id'], $acc['id']]);
+                $log('SUCCESS: forum_member_id=' . $data['results'][0]['id'] . ' for user_id=' . $acc['id']);
+            } else {
+                $log('No results[0][id] found in response');
             }
+        } else {
+            $log('FAIL: non-200 or empty body');
         }
+    } else {
+        $log('SKIP: ips_url or ips_key missing from config');
     }
 }
 
