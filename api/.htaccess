@@ -1,3 +1,7 @@
+# Pass Authorization header through to PHP (stripped by Apache on some hosts).
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # Block direct web access to config and internal include files.
 <FilesMatch "^(config\.php|config\.example\.php|_.*\.php)$">
   Require all denied
