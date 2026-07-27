@@ -71,10 +71,11 @@ $fmData = $fmRow->fetch();
 if ($fmData && $fmData['forum_member_id'] === null) {
     $ips_url = rtrim($CONFIG['ips']['url'] ?? '', '/');
     $ips_key = $CONFIG['ips']['key'] ?? '';
-    $logFile = __DIR__ . '/login_ips_debug.log';
+    $logFile = dirname(__DIR__) . '/login_ips_debug.log';
     $log = function(string $msg) use ($logFile): void {
         file_put_contents($logFile, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND);
     };
+    $log('=== LOGIN CHECK uid=' . $acc['id'] . ' forum_member_id=' . var_export($fmData['forum_member_id'], true) . ' ===');
     if ($ips_url !== '' && $ips_key !== '') {
         $lookup = $ips_url . '/core/members&' . http_build_query(['key' => $ips_key, 'email' => $fmData['email']]);
         $log('Lookup URL: ' . $lookup);
