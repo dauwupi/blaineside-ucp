@@ -57,13 +57,29 @@ function html_error(string $msg): never {
     exit;
 }
 
-// ── Read & validate incoming OAuth params ─────────────────────────────────────
-$responseType = $_GET['response_type'] ?? $_POST['response_type'] ?? '';
-$clientId     = $_GET['client_id']     ?? $_POST['client_id']     ?? '';
-$redirectUri  = $_GET['redirect_uri']  ?? $_POST['redirect_uri']  ?? '';
-$scope        = $_GET['scope']         ?? $_POST['scope']         ?? 'openid';
-$state        = $_GET['state']         ?? $_POST['state']         ?? '';
+// ── Read incoming OAuth params ────────────────────────────────────────────────
+$responseType        = $_GET['response_type']         ?? $_POST['response_type']         ?? '';
+$clientId            = $_GET['client_id']             ?? $_POST['client_id']             ?? '';
+$redirectUri         = $_GET['redirect_uri']           ?? $_POST['redirect_uri']           ?? '';
+$scope               = $_GET['scope']                  ?? $_POST['scope']                  ?? 'openid';
+$state               = $_GET['state']                  ?? $_POST['state']                  ?? '';
+$codeChallenge       = $_GET['code_challenge']         ?? $_POST['code_challenge']         ?? '';
+$codeChallengeMethod = $_GET['code_challenge_method']  ?? $_POST['code_challenge_method']  ?? '';
 
+// ── Resume pending OAuth request after login redirect (restore params first) ──
+if (isset($_GET['resume']) && !empty($_SESSION['oauth_pending'])) {
+    $p = $_SESSION['oauth_pending'];
+    unset($_SESSION['oauth_pending']);
+    $clientId            = $p['clientId'];
+    $redirectUri         = $p['redirectUri'];
+    $scope               = $p['scope'];
+    $state               = $p['state'];
+    $responseType        = $p['responseType']        ?? 'code';
+    $codeChallenge       = $p['codeChallenge']       ?? '';
+    $codeChallengeMethod = $p['codeChallengeMethod'] ?? '';
+}
+
+// ── Validate params ───────────────────────────────────────────────────────────
 if ($responseType !== 'code') html_error('Unsupported response_type. Expected: code');
 if (!$clientId)               html_error('Missing client_id.');
 if (!$redirectUri)            html_error('Missing redirect_uri.');
@@ -83,22 +99,10 @@ if (!oauth_check_redirect($client['redirect_uri'], $redirectUri)) {
 // ── Auth check — if not logged in, send to UCP login ─────────────────────────
 if (empty($_SESSION['uid'])) {
     // Store OAuth params in session so we can resume after login
-    $_SESSION['oauth_pending'] = compact('clientId','redirectUri','scope','state','responseType');
+    $_SESSION['oauth_pending'] = compact('clientId','redirectUri','scope','state','responseType','codeChallenge','codeChallengeMethod');
     $loginUrl = $CONFIG['site']['base_url'] . '/login.html?next=oauth_resume';
     header('Location: ' . $loginUrl);
     exit;
-}
-
-// Resume pending OAuth request after login redirect?
-if (!empty($_SESSION['oauth_pending']) && isset($_GET['resume'])) {
-    $p = $_SESSION['oauth_pending'];
-    unset($_SESSION['oauth_pending']);
-    $clientId    = $p['clientId'];
-    $redirectUri = $p['redirectUri'];
-    $scope       = $p['scope'];
-    $state       = $p['state'];
-    // Re-validate client after resume
-    $client = oauth_client($clientId);
 }
 
 // ── Load user ─────────────────────────────────────────────────────────────────
@@ -134,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             html_error('Invalid form token. Please try again.');
         }
 
-        $code = oauth_issue_code($clientId, $userId, $redirectUri, $scope, $state);
+        $code = oauth_issue_code($clientId, $userId, $redirectUri, $scope, $state, $codeChallenge, $codeChallengeMethod);
         $sep  = str_contains($redirectUri, '?') ? '&' : '?';
         header('Location: ' . $redirectUri . $sep . 'code=' . urlencode($code) . '&state=' . urlencode($state));
         exit;
