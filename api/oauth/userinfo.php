@@ -1,45 +1,120 @@
 <?php
 /**
+ * BlaineSide UCP — OpenID Connect UserInfo endpoint
  * GET /api/oauth/userinfo.php
  *
- * OpenID Connect UserInfo endpoint — called by IPS with Bearer token.
- * Returns the UCP account info IPS uses to create/match the forum member.
- *
- * IPS ACP: set User Profile URL to https://ucp.blaineside.com/api/oauth/userinfo.php
- * IPS ACP: Username field  → name (or preferred_username)
- *          Email field      → email
- *          Unique ID field  → sub
+ * Called by IPS with Bearer token after successful token exchange.
+ * Standalone — does NOT include _bootstrap.php.
  */
 
 declare(strict_types=1);
-require dirname(__DIR__) . '/_bootstrap.php';
-require __DIR__ . '/_client.php';
 
-// Extract Bearer token from Authorization header
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+// ── Debug log ────────────────────────────────────────────────────────────────
+$logFile = __DIR__ . '/userinfo_debug.log';
+function dbg(string $msg): void {
+    global $logFile;
+    file_put_contents($logFile, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND);
+}
+dbg('=== NEW REQUEST ===');
+dbg('Method: ' . ($_SERVER['REQUEST_METHOD'] ?? 'unknown'));
+dbg('HTTP_AUTHORIZATION: ' . ($_SERVER['HTTP_AUTHORIZATION'] ?? 'NOT SET'));
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+// ── Load config ──────────────────────────────────────────────────────────────
+$configPath = __DIR__ . '/../config.php';
+if (!file_exists($configPath)) {
+    dbg('ERROR: config.php missing');
+    http_response_code(500);
+    echo json_encode(['error' => 'server_error']);
+    exit;
+}
+$CONFIG = require $configPath;
+
+// ── PDO helper ───────────────────────────────────────────────────────────────
+function db(): PDO {
+    static $pdo = null;
+    if ($pdo) return $pdo;
+    global $CONFIG;
+    $c = $CONFIG['db'];
+    $pdo = new PDO(
+        "mysql:host={$c['host']};dbname={$c['name']};charset={$c['charset']}",
+        $c['user'], $c['pass'],
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+    );
+    return $pdo;
+}
+
+require_once __DIR__ . '/_client.php';
+
+// ── Extract Bearer token ─────────────────────────────────────────────────────
 $auth  = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 $token = '';
-if (str_starts_with($auth, 'Bearer ')) {
+if (stripos($auth, 'Bearer ') === 0) {
     $token = trim(substr($auth, 7));
 }
-if (!$token) fail('Missing Bearer token.', 401);
+dbg('Token extracted: "' . substr($token, 0, 10) . '..." (len=' . strlen($token) . ')');
 
-// Validate token
-$row = oauth_validate_token($token);
-if (!$row) fail('Token invalid or expired.', 401);
+if ($token === '') {
+    dbg('FAIL: no Bearer token');
+    http_response_code(401);
+    header('WWW-Authenticate: Bearer realm="ucp.blaineside.com"');
+    echo json_encode(['error' => 'invalid_token', 'error_description' => 'Missing Bearer token']);
+    exit;
+}
 
-// Load user
-$stmt = db()->prepare(
-    'SELECT id, username, email FROM ucp_accounts WHERE id = ? AND status = "active" LIMIT 1'
-);
-$stmt->execute([$row['user_id']]);
-$user = $stmt->fetch();
-if (!$user) fail('User not found or inactive.', 401);
+// ── Validate token ───────────────────────────────────────────────────────────
+try {
+    $row = oauth_validate_token($token);
+    dbg('Token validation result: ' . ($row === false ? 'false (invalid/expired)' : json_encode($row)));
+} catch (Throwable $e) {
+    dbg('FAIL: oauth_validate_token exception — ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'server_error']);
+    exit;
+}
 
-// OpenID Connect standard claims
-json_out([
-    'sub'                => (string)$user['id'],    // stable unique identifier
-    'name'               => $user['username'],       // IPS display name
+if ($row === false) {
+    dbg('FAIL: token invalid or expired');
+    http_response_code(401);
+    header('WWW-Authenticate: Bearer realm="ucp.blaineside.com", error="invalid_token"');
+    echo json_encode(['error' => 'invalid_token', 'error_description' => 'Token invalid or expired']);
+    exit;
+}
+
+// ── Load user ────────────────────────────────────────────────────────────────
+try {
+    $stmt = db()->prepare(
+        'SELECT id, username, email FROM ucp_accounts WHERE id = ? AND status = "active" LIMIT 1'
+    );
+    $stmt->execute([$row['user_id']]);
+    $user = $stmt->fetch();
+    dbg('User lookup result: ' . ($user ? json_encode($user) : 'NOT FOUND'));
+} catch (Throwable $e) {
+    dbg('FAIL: user lookup exception — ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'server_error']);
+    exit;
+}
+
+if (!$user) {
+    dbg('FAIL: user not found or inactive');
+    http_response_code(401);
+    echo json_encode(['error' => 'invalid_token', 'error_description' => 'User not found or inactive']);
+    exit;
+}
+
+// ── Return OpenID Connect claims ─────────────────────────────────────────────
+$claims = [
+    'sub'                => (string) $user['id'],
+    'name'               => $user['username'],
     'preferred_username' => $user['username'],
     'email'              => $user['email'],
-    'email_verified'     => true,                   // UCP verified on registration
-]);
+    'email_verified'     => true,
+];
+dbg('SUCCESS: ' . json_encode($claims));
+echo json_encode($claims);
