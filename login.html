@@ -538,7 +538,11 @@
         btnDone(btn,'Signed in ✓');
         showBanner('ok','Welcome back. Taking you to your UCP…');
         document.getElementById('login-banner').className='banner ok';
-        setTimeout(()=>{ window.location = d.redirect || 'dashboard.html'; }, 600);
+        const nextParam = new URLSearchParams(window.location.search).get('next');
+        const dest = (nextParam === 'oauth_resume')
+          ? '/api/oauth/authorize.php?resume=1'
+          : (d.redirect || 'dashboard.html');
+        setTimeout(()=>{ window.location = dest; }, 600);
         return;
       }
       // Unverified / suspended come back as 403 — show the message, don't lock.
