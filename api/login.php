@@ -48,14 +48,31 @@ $_SESSION['name']     = $acc['username'];
 $_SESSION['rank']     = $rank;
 $_SESSION['remember'] = $remember;
 
-// If "remember me" was checked, extend the session cookie to 30 days.
+// If "remember me" was checked, issue a persistent token stored in the DB.
+// The bootstrap picks this up on future requests even after the PHP session expires.
 if ($remember) {
-    setcookie(session_name(), session_id(), [
-        'expires'  => time() + 30 * 24 * 3600,
+    $rm_token   = bin2hex(random_bytes(32));
+    $rm_expires = time() + 30 * 24 * 3600;
+    $pdo->prepare(
+        'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
+    )->execute([$rm_token, $rm_expires, (int)$acc['id']]);
+
+    $secure = (($_SERVER['HTTPS'] ?? '') === 'on');
+    // Persistent remember-me cookie (read by _bootstrap.php to restore the session).
+    setcookie('bsucp_rm', $rm_token, [
+        'expires'  => $rm_expires,
         'path'     => '/',
         'httponly' => true,
         'samesite' => 'Lax',
-        'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+        'secure'   => $secure,
+    ]);
+    // Also extend the session cookie so it survives beyond the browser session.
+    setcookie(session_name(), session_id(), [
+        'expires'  => $rm_expires,
+        'path'     => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure'   => $secure,
     ]);
 }
 
