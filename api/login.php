@@ -61,10 +61,6 @@ if ($remember) {
 
 $pdo->prepare('UPDATE ucp_accounts SET last_login = NOW() WHERE id = ?')->execute([$acc['id']]);
 
-// ── DEBUG: unconditional log to confirm this version of login.php is running ─
-file_put_contents(__DIR__ . '/login_ips_debug.log',
-    date('Y-m-d H:i:s') . ' LOGIN uid=' . $acc['id'] . ' v2' . "\n", FILE_APPEND);
-
 // ── Lazy forum_member_id population ──────────────────────────────────────────
 // If the user has logged into the forum via OAuth at least once, IPS will have
 // created their forum account. Look it up by email and store it now.
@@ -75,14 +71,8 @@ $fmData = $fmRow->fetch();
 if ($fmData && $fmData['forum_member_id'] === null) {
     $ips_url = rtrim($CONFIG['ips']['url'] ?? '', '/');
     $ips_key = $CONFIG['ips']['key'] ?? '';
-    $logFile = __DIR__ . '/login_ips_debug.log';
-    $log = function(string $msg) use ($logFile): void {
-        file_put_contents($logFile, date('Y-m-d H:i:s') . ' ' . $msg . "\n", FILE_APPEND);
-    };
-    $log('=== LOGIN CHECK uid=' . $acc['id'] . ' forum_member_id=' . var_export($fmData['forum_member_id'], true) . ' ===');
     if ($ips_url !== '' && $ips_key !== '') {
         $lookup = $ips_url . '/core/members&' . http_build_query(['key' => $ips_key, 'email' => $fmData['email']]);
-        $log('Lookup URL: ' . $lookup);
         $ch = curl_init($lookup);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -92,25 +82,14 @@ if ($fmData && $fmData['forum_member_id'] === null) {
         ]);
         $body = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err  = curl_error($ch);
         curl_close($ch);
-        $log('HTTP code: ' . $code . ' | cURL error: ' . ($err ?: 'none'));
-        $log('Body (first 500): ' . substr((string)$body, 0, 500));
         if ($code === 200 && $body) {
             $data = json_decode($body, true);
-            $log('Decoded results count: ' . count($data['results'] ?? []));
             if (isset($data['results'][0]['id'])) {
                 $pdo->prepare('UPDATE ucp_accounts SET forum_member_id = ? WHERE id = ?')
                     ->execute([$data['results'][0]['id'], $acc['id']]);
-                $log('SUCCESS: forum_member_id=' . $data['results'][0]['id'] . ' for user_id=' . $acc['id']);
-            } else {
-                $log('No results[0][id] found in response');
             }
-        } else {
-            $log('FAIL: non-200 or empty body');
         }
-    } else {
-        $log('SKIP: ips_url or ips_key missing from config');
     }
 }
 
