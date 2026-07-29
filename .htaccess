@@ -10,8 +10,39 @@
 # working and is redirected to the clean form.
 # =====================================================================
 
+# MultiViews would resolve /login to login.html by content negotiation
+# before the rules below run, which makes the HTTPS redirect target the
+# .html name and costs an extra hop. The explicit rules handle this.
+<IfModule mod_negotiation.c>
+  Options -MultiViews
+</IfModule>
+
 RewriteEngine On
 RewriteBase /
+
+# ---------------------------------------------------------------------
+# 0. Force HTTPS.
+#
+#    This runs before everything else, including the API. People type
+#    passwords into these pages, so they must never travel in the clear.
+#
+#    It also removes a whole class of session bug: cookies are marked
+#    Secure when the connection is HTTPS, and a browser on plain HTTP
+#    silently discards those — no session, no remember-me, straight back
+#    to the login screen. With every request on HTTPS, that can't happen.
+#
+#    OVH terminates TLS at its edge, so the visitor's real scheme arrives
+#    in X-Forwarded-Proto; %{HTTPS} describes the edge's own connection
+#    and can't be trusted here. After the redirect the header reads
+#    "https", so this never loops.
+#
+#    If HTTPS is ever unavailable on the domain, comment these four lines
+#    out or the site will redirect endlessly.
+# ---------------------------------------------------------------------
+RewriteCond %{HTTP:X-Forwarded-Proto} =http [NC,OR]
+RewriteCond %{HTTP:X-Forwarded-Proto} ^$
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
 # ---------------------------------------------------------------------
 # Leave the API completely alone. It has its own .htaccess.
