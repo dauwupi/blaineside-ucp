@@ -8,6 +8,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
+require_csrf();
 throttle('login', 10);
 
 $in       = read_input();
@@ -26,9 +27,30 @@ $stmt = $pdo->prepare(
 $stmt->execute([strtolower($username)]);
 $acc = $stmt->fetch();
 
+// ---- Server-side lockout (enforced here, not in the browser) ----
+$ip        = client_ip();
+$accountId = $acc ? (int)$acc['id'] : null;
+
+$lockLeft = lock_seconds_left($pdo, $accountId, $ip);
+if ($lockLeft > 0) {
+    json_out([
+        'ok'           => false,
+        'error'        => 'Too many attempts. Try again shortly.',
+        'locked'       => true,
+        'locked_for'   => $lockLeft,
+    ], 429);
+}
+
 // Uniform "invalid" message so we don't reveal which accounts exist.
 if (!$acc || !password_verify($password, $acc['password_hash'])) {
-    fail('Incorrect username or password.', 401);
+    $lockedFor = record_failure($pdo, $accountId, $ip);
+    json_out([
+        'ok'         => false,
+        'error'      => 'Incorrect UCP name or password.',
+        'locked'     => $lockedFor > 0,
+        'locked_for' => $lockedFor,
+        'left'       => $lockedFor > 0 ? 0 : attempts_left($pdo, $accountId, $ip),
+    ], $lockedFor > 0 ? 429 : 401);
 }
 
 // Must have verified their email.
@@ -40,6 +62,7 @@ if ($acc['status'] === 'suspended') {
 }
 
 // Success — establish the session.
+clear_failures($pdo, $accountId, $ip);
 $rank     = (int)$acc['admin_rank'];
 $remember = !empty($in['remember']);
 session_regenerate_id(true);
@@ -76,7 +99,46 @@ if ($remember) {
     ]);
 }
 
-$pdo->prepare('UPDATE ucp_accounts SET last_login = NOW() WHERE id = ?')->execute([$acc['id']]);
+// ---- "Last sign-in …" notice -------------------------------------------
+// Capture the PREVIOUS sign-in before we overwrite it, and remember this
+// device so the login page can say "from this device" next time.
+$prev = $pdo->prepare('SELECT last_login, last_device FROM ucp_accounts WHERE id = ? LIMIT 1');
+$prev->execute([(int)$acc['id']]);
+$prevRow    = $prev->fetch();
+$prevLogin  = $prevRow['last_login'] ?? null;
+$prevDevice = $prevRow['last_device'] ?? null;
+
+// A per-device token, kept in a long-lived cookie and hashed in the DB.
+$deviceRaw = $_COOKIE['bsucp_dev'] ?? '';
+if (!preg_match('/^[a-f0-9]{32}$/', $deviceRaw)) {
+    $deviceRaw = bin2hex(random_bytes(16));
+}
+$deviceHash = hash('sha256', $deviceRaw);
+$sameDevice = ($prevDevice !== null && hash_equals((string)$prevDevice, $deviceHash));
+
+$secureCookie = (($_SERVER['HTTPS'] ?? '') === 'on');
+setcookie('bsucp_dev', $deviceRaw, [
+    'expires'  => time() + 90 * 24 * 3600,
+    'path'     => '/',
+    'httponly' => true,
+    'samesite' => 'Lax',
+    'secure'   => $secureCookie,
+]);
+// Readable by the login page (not httponly) purely to render the notice.
+// Contains only a timestamp + a flag — no account identifiers.
+setcookie('bsucp_last', json_encode([
+    'ts'   => time(),
+    'same' => true,
+]), [
+    'expires'  => time() + 90 * 24 * 3600,
+    'path'     => '/',
+    'httponly' => false,
+    'samesite' => 'Lax',
+    'secure'   => $secureCookie,
+]);
+
+$pdo->prepare('UPDATE ucp_accounts SET last_login = NOW(), last_device = ? WHERE id = ?')
+    ->execute([$deviceHash, (int)$acc['id']]);
 
 // ── Lazy forum_member_id population ──────────────────────────────────────────
 // If the user has logged into the forum via OAuth at least once, IPS will have
@@ -116,4 +178,6 @@ ok([
     'rank' => $rank,                 // 0–9
     'role' => rank_name($rank),      // display name ('' for Members)
     'redirect' => 'dashboard.html',
+    'last_login'  => $prevLogin,
+    'same_device' => $sameDevice,
 ]);

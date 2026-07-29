@@ -161,3 +161,114 @@ function throttle(string $key, int $maxPerMin = 8): void {
     }
 }
 $__PDO = null;
+
+// ============================================================
+// CSRF — issued by api/csrf.php, sent back as X-CSRF-Token.
+// ============================================================
+
+/** Returns this session's CSRF token, creating one on first use. */
+function csrf_token(): string {
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf'];
+}
+
+/**
+ * Rejects the request unless it carries this session's CSRF token.
+ * Accepts the token in the X-CSRF-Token header or a `csrf` body field.
+ */
+function require_csrf(): void {
+    $sent = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if ($sent === '') {
+        $in   = read_input();
+        $sent = (string)($in['csrf'] ?? '');
+    }
+    $have = $_SESSION['csrf'] ?? '';
+    if ($have === '' || $sent === '' || !hash_equals($have, $sent)) {
+        fail('Your session expired. Refresh the page and try again.', 419);
+    }
+}
+
+// ============================================================
+// Login lockout — enforced server-side, keyed by account + IP.
+// The page only displays whatever locked_until the server reports;
+// refreshing the browser can no longer clear it.
+// ============================================================
+
+/** Escalating lock durations, in seconds: 30s -> 5min -> 15min (then holds). */
+const BS_LOCK_STEPS = [30, 300, 900];
+const BS_MAX_FAILS  = 3;
+
+function client_ip(): string {
+    return (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+}
+
+/**
+ * Returns the number of seconds remaining on an active lock, or 0 if not locked.
+ * $accountId may be null for attempts against a name that doesn't exist —
+ * those are tracked per-IP so name-guessing is throttled too.
+ */
+function lock_seconds_left(PDO $pdo, ?int $accountId, string $ip): int {
+    $stmt = $pdo->prepare(
+        'SELECT locked_until FROM ucp_login_attempts
+          WHERE account_id <=> ? AND ip = ? LIMIT 1'
+    );
+    $stmt->execute([$accountId, $ip]);
+    $row = $stmt->fetch();
+    if (!$row) return 0;
+    $left = (int)$row['locked_until'] - time();
+    return $left > 0 ? $left : 0;
+}
+
+/** Records a failed attempt and locks the pair once BS_MAX_FAILS is reached. */
+function record_failure(PDO $pdo, ?int $accountId, string $ip): int {
+    $stmt = $pdo->prepare(
+        'SELECT id, fails, lock_level FROM ucp_login_attempts
+          WHERE account_id <=> ? AND ip = ? LIMIT 1'
+    );
+    $stmt->execute([$accountId, $ip]);
+    $row = $stmt->fetch();
+
+    $fails = ($row ? (int)$row['fails'] : 0) + 1;
+    $level = $row ? (int)$row['lock_level'] : 0;
+    $until = 0;
+
+    if ($fails >= BS_MAX_FAILS) {
+        $until = time() + BS_LOCK_STEPS[min($level, count(BS_LOCK_STEPS) - 1)];
+        $level++;
+        $fails = 0; // reset the counter; the lock itself is the penalty
+    }
+
+    if ($row) {
+        $pdo->prepare(
+            'UPDATE ucp_login_attempts
+                SET fails = ?, lock_level = ?, locked_until = ?, updated_at = NOW()
+              WHERE id = ?'
+        )->execute([$fails, $level, $until, (int)$row['id']]);
+    } else {
+        $pdo->prepare(
+            'INSERT INTO ucp_login_attempts (account_id, ip, fails, lock_level, locked_until, updated_at)
+             VALUES (?, ?, ?, ?, ?, NOW())'
+        )->execute([$accountId, $ip, $fails, $level, $until]);
+    }
+
+    return $until > 0 ? $until - time() : 0;
+}
+
+/** Clears the failure record after a successful sign-in. */
+function clear_failures(PDO $pdo, ?int $accountId, string $ip): void {
+    $pdo->prepare('DELETE FROM ucp_login_attempts WHERE account_id <=> ? AND ip = ?')
+        ->execute([$accountId, $ip]);
+}
+
+/** How many attempts are left before the next lock kicks in. */
+function attempts_left(PDO $pdo, ?int $accountId, string $ip): int {
+    $stmt = $pdo->prepare(
+        'SELECT fails FROM ucp_login_attempts WHERE account_id <=> ? AND ip = ? LIMIT 1'
+    );
+    $stmt->execute([$accountId, $ip]);
+    $row = $stmt->fetch();
+    $left = BS_MAX_FAILS - ($row ? (int)$row['fails'] : 0);
+    return $left > 0 ? $left : 0;
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!-- BlaineSide — VERIFY EMAIL (ucp.blaineside.com). Shown after Create UCP. Example data. -->
+<html lang="en"><head><meta charset="utf-8">
+<title>Verify your email — BlaineSide UCP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="assets/fa/fontawesome.css">
+<link rel="stylesheet" href="assets/css/ucp.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--amber:#d4923a;--gold:#e2b65c;--parch:#f1efe9;--surface-2:#221f1c;--border:#3a342c;--line:#2b2620;--text-dim:#a89e90;--text-faint:#787064;--green:#57b26a}
+.stage{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,#0e0d0b,#131009 60%,#0b0a08)}
+.scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;background-color:#0b0a08;background-position:center;background-size:cover;background-repeat:no-repeat}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none;background:
+  radial-gradient(98% 80% at 50% 42%,rgba(10,9,8,.42),rgba(10,9,8,.9)),
+  linear-gradient(180deg,rgba(10,9,8,.78) 0%,rgba(10,9,8,.24) 25%,rgba(10,9,8,.3) 56%,rgba(10,9,8,.92) 100%)}
+.top{position:relative;z-index:2;display:flex;align-items:center;padding:24px 40px}
+.back{margin-left:auto;display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-dim);padding:9px 15px 9px 12px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.015);transition:.18s cubic-bezier(.2,.8,.2,1)}
+.back .fa{font-size:11px;color:var(--text-faint);transition:.18s}
+.back .site{color:var(--parch);font-weight:700}
+.back:hover{border-color:rgba(212,146,58,.55);background:rgba(212,146,58,.07);color:var(--parch)}
+.back:hover .fa{color:var(--gold);transform:translateX(-3px)}
+.center{position:relative;z-index:2;flex:1;display:grid;place-items:center;padding:20px 24px 40px}
+.panel{width:100%;max-width:468px;background:linear-gradient(180deg,rgba(31,28,25,.92),rgba(20,18,16,.94));border:1px solid rgba(255,255,255,.05);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.6);backdrop-filter:blur(16px);padding:40px 38px;text-align:center;animation:pop .6s cubic-bezier(.2,.85,.25,1) both}
+.badge{width:64px;height:64px;border-radius:17px;display:grid;place-items:center;font-size:25px;color:var(--gold);background:rgba(212,146,58,.1);border:1px solid rgba(212,146,58,.22);margin:0 auto 22px;position:relative}
+.badge::after{content:"";position:absolute;inset:-6px;border-radius:20px;border:1px solid rgba(212,146,58,.18);animation:halo 2.4s ease-out infinite}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--amber)}
+.panel h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:9px}
+.panel .sub{font-size:14px;color:var(--text-dim);line-height:1.65;margin-top:12px}
+.panel .sub b{color:var(--parch);font-weight:700}
+.mailrow{display:inline-flex;align-items:center;gap:9px;margin-top:18px;padding:10px 16px;border:1px solid var(--border);border-radius:10px;background:rgba(14,13,11,.6);font-size:13.5px;font-weight:600}
+.mailrow .fa{color:var(--amber)}
+.tip{margin-top:22px;padding-top:20px;border-top:1px solid var(--line);font-size:12px;color:var(--text-faint);line-height:1.65;max-width:340px;margin-left:auto;margin-right:auto}
+.tip .tip-h{color:var(--text-dim);font-weight:700}
+.tip-mail{color:var(--gold);font-weight:600;white-space:nowrap}
+.btn{display:block;width:100%;margin-top:24px;padding:15px;border:none;border-radius:11px;background:linear-gradient(180deg,var(--gold),var(--amber));color:#17140f;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 12px 26px rgba(212,146,58,.22);transition:.15s;text-align:center}
+.btn:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--parch);box-shadow:none;margin-top:11px}
+.btn.ghost:hover{border-color:rgba(212,146,58,.5);filter:none}
+.resend{font-size:13px;color:var(--text-faint);margin-top:22px}
+.resend a{color:var(--gold);font-weight:700;cursor:pointer}
+.resend a.off{color:var(--text-faint);cursor:default;font-weight:600}
+.foot{position:relative;z-index:2;display:flex;align-items:center;gap:20px;padding:16px 40px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-faint);background:rgba(11,10,8,.5);backdrop-filter:blur(6px)}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes halo{0%{transform:scale(.9);opacity:.6}70%,100%{transform:scale(1.35);opacity:0}}
+@media (prefers-reduced-motion:reduce){.panel{animation:none}.badge::after{animation:none}}
+@media (max-width:560px){.top{padding:20px 20px}.foot{flex-direction:column;gap:12px;text-align:center;padding:18px 24px}.foot .links{margin:0}.panel{padding:34px 24px}.brand .tag{display:none}.back .bl{display:none}.back{padding:8px 13px}.navbtn .nb{display:none}.navbtn{padding:9px 12px}}
+</style><script src="assets/js/ucp.js"></script>
+</head>
+<body>
+<div class="stage">
+  <div class="scene"></div>
+<div class="tod"></div>
+<div class="scrim"></div>
+
+  <div class="top">
+    <a class="brand" href="/login"><span class="mark">BLAINE<em>SIDE</em></span><span class="tag">UCP</span></a>
+    <nav class="navbtns">
+      <a class="navbtn" href="https://blaineside.com"><i class="fa fa-home"></i> <span class="nb">Landing page</span></a>
+      <a class="navbtn" href="https://forum.blaineside.com"><i class="fa fa-comments-o"></i> <span class="nb">Forums</span></a>
+    </nav>
+  </div>
+
+  <div class="center">
+    <div class="panel">
+      <div class="badge"><i class="fa fa-envelope-o"></i></div>
+      <div class="eyebrow">One last step</div>
+      <h2>Confirm your email</h2>
+      <p class="sub">Your UCP is created. We sent a confirmation link to activate it — open the email and click the link, then you can log in.</p>
+      <div class="mailrow"><i class="fa fa-paper-plane"></i> marcus.reyes@example.com</div>
+      <p class="tip"><span class="tip-h">Can't find it?</span> Give it a minute, then check your spam or promotions folder — it's sent from <span class="tip-mail">noreply@blaineside.com</span>.</p>
+      <a class="btn" href="/login">Back to sign in</a>
+      <a class="btn ghost" href="/create">Entered the wrong address? Change it</a>
+      <div class="resend">Didn't get it? <a id="resend" class="off" data-t="30">Resend link in <span id="cd">30</span>s</a></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>© 2026 BlaineSide · Not affiliated with Rockstar Games or Take-Two Interactive.</span>
+    <div class="links"><a href="#">Rules</a><a href="#">Privacy</a><a href="#">Contact</a></div>
+  </div>
+</div>
+<script>
+(function(){
+  var link=document.getElementById('resend'), cd=document.getElementById('cd'), t=30, timer=null;
+  var mailrow=document.querySelector('.mailrow');
+
+  /* The address comes from the create page (sessionStorage), so the panel shows
+     the real recipient rather than the mockup's placeholder. */
+  var pending='';
+  try{ pending=sessionStorage.getItem('bs-pending-email')||''; }catch(e){}
+  if(mailrow){
+    if(pending){ mailrow.innerHTML='<i class="fa fa-paper-plane"></i> '+UCP.esc(pending); }
+    else { mailrow.remove(); }
+  }
+  /* register.php reports when SMTP failed so the user knows to hit Resend. */
+  try{
+    if(sessionStorage.getItem('bs-mail-failed')==='1'){
+      var tip=document.querySelector('.tip');
+      if(tip){ tip.innerHTML='<span class="tip-h">We couldn\'t send that email.</span> Your UCP was created — use <b>Resend link</b> below to try again.'; }
+      sessionStorage.removeItem('bs-mail-failed');
+    }
+  }catch(e){}
+
+  function countdown(seconds){
+    t=seconds;
+    clearInterval(timer);
+    timer=setInterval(function(){
+      t--;
+      if(t<=0){ clearInterval(timer); link.classList.remove('off'); link.textContent='Resend link'; }
+      else { var el=document.getElementById('cd'); if(el) el.textContent=t; }
+    },1000);
+  }
+  countdown(30);
+
+  link.addEventListener('click',function(){
+    if(link.classList.contains('off')) return;
+    link.classList.add('off');
+    link.innerHTML='Sent — resend in <span id="cd">30</span>s';
+    countdown(30);
+    /* Real resend. The endpoint always answers the same way, so a wrong or
+       unknown address reveals nothing here either. */
+    UCP.post('resend.php',{ email: pending });
+  });
+})();
+</script>
+</body></html>

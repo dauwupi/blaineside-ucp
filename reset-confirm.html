@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<!-- BlaineSide — SET NEW PASSWORD (opened from the reset email link). Example data. -->
+<html lang="en"><head><meta charset="utf-8">
+<title>Choose a new password — BlaineSide UCP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="assets/fa/fontawesome.css">
+<link rel="stylesheet" href="assets/css/ucp.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--amber:#d4923a;--gold:#e2b65c;--parch:#f1efe9;--surface-2:#221f1c;--border:#3a342c;--line:#2b2620;--text-dim:#a89e90;--text-faint:#787064;--green:#57b26a;--red:#c9524a}
+.stage{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,#0e0d0b,#131009 60%,#0b0a08)}
+.scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;background-color:#0b0a08;background-position:center;background-size:cover;background-repeat:no-repeat}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none;background:
+  radial-gradient(98% 80% at 50% 42%,rgba(10,9,8,.42),rgba(10,9,8,.9)),
+  linear-gradient(180deg,rgba(10,9,8,.78) 0%,rgba(10,9,8,.24) 25%,rgba(10,9,8,.3) 56%,rgba(10,9,8,.92) 100%)}
+.top{position:relative;z-index:2;display:flex;align-items:center;padding:24px 40px}
+.center{position:relative;z-index:2;flex:1;display:grid;place-items:center;padding:20px 24px 40px}
+.panel{width:100%;max-width:452px;background:linear-gradient(180deg,rgba(31,28,25,.92),rgba(20,18,16,.94));border:1px solid rgba(255,255,255,.05);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.6);backdrop-filter:blur(16px);padding:38px 34px;animation:pop .6s cubic-bezier(.2,.85,.25,1) both}
+.badge{width:60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:22px;color:var(--gold);background:rgba(212,146,58,.1);border:1px solid rgba(212,146,58,.22);margin-bottom:20px}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--amber)}
+.panel h2{font-size:23px;font-weight:800;letter-spacing:-.02em;margin-top:9px}
+.panel .sub{font-size:13.5px;color:var(--text-dim);line-height:1.6;margin-top:9px}
+.panel .sub b{color:var(--parch);font-weight:700}
+.field{margin-top:18px}
+.field label{display:flex;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:8px}
+.field label .req{color:var(--amber);margin-left:3px}
+.inp{position:relative}
+.inp input{width:100%;background:rgba(14,13,11,.75);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--parch);font-family:inherit;font-size:14px;outline:none;transition:.15s}
+.inp input::placeholder{color:var(--text-faint)}
+.inp input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.15);background:rgba(14,13,11,.9)}
+.inp:has(.show) input{padding-right:60px}
+.inp .show{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:600;color:var(--text-faint);cursor:pointer;background:linear-gradient(90deg,transparent,rgba(14,13,11,.95) 26%);padding-left:14px}
+.inp .show:hover{color:var(--gold)}
+.inp.valid input{border-color:rgba(87,178,106,.65);box-shadow:0 0 0 3px rgba(87,178,106,.13);background:rgba(14,13,11,.9)}
+.inp.invalid input{border-color:rgba(201,82,74,.78);box-shadow:0 0 0 3px rgba(201,82,74,.15);background:rgba(20,12,11,.85)}
+.meter{display:flex;gap:5px;margin-top:11px}
+.meter i{height:4px;flex:1;border-radius:3px;background:rgba(255,255,255,.08);transition:background .25s}
+.meter.s1 i:nth-child(1){background:var(--red)}
+.meter.s2 i:nth-child(-n+2){background:var(--amber)}
+.meter.s3 i:nth-child(-n+3){background:var(--gold)}
+.meter.s4 i{background:var(--green)}
+.mlabel{font-size:11px;font-weight:600;margin-top:8px;color:var(--text-faint);min-height:14px}
+.reqs-title{font-size:11.5px;color:var(--text-dim);margin-top:13px;font-weight:500}
+.reqs-title b{color:var(--gold);font-weight:700}
+.reqs{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-faint);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 9px;transition:.2s}
+.chip .fa{font-size:9px;color:var(--text-faint);transition:.2s}
+.chip.met{color:var(--green);border-color:rgba(87,178,106,.35);background:rgba(87,178,106,.07)}
+.chip.met .fa{color:var(--green)}
+.msg{display:none;align-items:center;gap:7px;font-size:11.5px;line-height:1.45;margin-top:8px;font-weight:500}
+.msg.show{display:flex}
+.msg.err{color:#dd7168}
+.msg.ok{color:var(--green)}
+.msg .fa{font-size:10.5px}
+.btn{display:block;text-align:center;text-decoration:none;width:100%;margin-top:22px;padding:15px;border:none;border-radius:11px;background:linear-gradient(180deg,var(--gold),var(--amber));color:#17140f;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 12px 26px rgba(212,146,58,.22);transition:.15s}
+.btn:hover{filter:brightness(1.05)}
+.btn[aria-disabled="true"]{opacity:.5;box-shadow:none;filter:none;pointer-events:none}
+.alt{text-align:center;font-size:13px;color:var(--text-dim);margin-top:16px}
+.alt a{color:var(--gold);font-weight:700}
+.done{display:none;text-align:center}
+.done.on{display:block}
+.set-form.off{display:none}
+.badge.done-badge{margin:0 auto 22px;color:var(--green);background:rgba(87,178,106,.1);border-color:rgba(87,178,106,.24)}
+.foot{position:relative;z-index:2;display:flex;align-items:center;gap:20px;padding:16px 40px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-faint);background:rgba(11,10,8,.5);backdrop-filter:blur(6px)}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel{animation:none}}
+@media (max-width:560px){.top{padding:20px 20px}.foot{flex-direction:column;gap:12px;text-align:center;padding:18px 24px}.foot .links{margin:0}.panel{padding:32px 24px}.brand .tag{display:none}.navbtn .nb{display:none}.navbtn{padding:9px 12px}}
+</style><script src="assets/js/ucp.js"></script>
+</head>
+<body>
+<div class="stage">
+  <div class="scene"></div>
+<div class="tod"></div>
+<div class="scrim"></div>
+
+  <div class="top">
+    <a class="brand" href="/login"><span class="mark">BLAINE<em>SIDE</em></span><span class="tag">UCP</span></a>
+    <nav class="navbtns">
+      <a class="navbtn" href="https://blaineside.com"><i class="fa fa-home"></i> <span class="nb">Landing page</span></a>
+      <a class="navbtn" href="https://forum.blaineside.com"><i class="fa fa-comments-o"></i> <span class="nb">Forums</span></a>
+    </nav>
+  </div>
+
+  <div class="center">
+    <div class="panel">
+      <!-- set state -->
+      <div class="set-form" id="setForm">
+        <div class="badge"><i class="fa fa-key"></i></div>
+        <div class="eyebrow">Account recovery</div>
+        <h2>Set a new password</h2>
+        <p class="sub">Choose a new password for <b>marcus.reyes@example.com</b>. Make it something you don't use elsewhere.</p>
+
+        <div class="field">
+          <label>New password <span class="req">*</span></label>
+          <div class="inp" id="inpPw"><input type="password" id="pw" placeholder="Create a new password"><span class="show" data-show="pw">Show</span></div>
+          <div class="meter" id="meter"><i></i><i></i><i></i><i></i></div>
+          <div class="mlabel" id="mlabel"></div>
+          <div class="reqs-title">Your password must meet <b>all three</b> to be accepted:</div>
+          <div class="reqs">
+            <span class="chip" id="c-len"><i class="fa fa-circle-o"></i> 8+ characters</span>
+            <span class="chip" id="c-upp"><i class="fa fa-circle-o"></i> Uppercase</span>
+            <span class="chip" id="c-num"><i class="fa fa-circle-o"></i> Number</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Confirm new password <span class="req">*</span></label>
+          <div class="inp" id="inpPw2"><input type="password" id="pw2" placeholder="Re-enter your new password"><span class="show" data-show="pw2">Show</span></div>
+          <div class="msg" id="msg-pw2"></div>
+        </div>
+
+        <button class="btn" id="submit" aria-disabled="true">Update password</button>
+        <div class="alt">Remembered it? <a href="/login">Back to sign in</a></div>
+      </div>
+
+      <!-- done state -->
+      <div class="done" id="done">
+        <div class="badge done-badge"><i class="fa fa-check"></i></div>
+        <div class="eyebrow">All set</div>
+        <h2>Password updated</h2>
+        <p class="sub">Your password has been changed. You can now sign in to your UCP with your new password.</p>
+        <a class="btn" href="/login">Sign in to your UCP</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>© 2026 BlaineSide · Not affiliated with Rockstar Games or Take-Two Interactive.</span>
+    <div class="links"><a href="#">Rules</a><a href="#">Privacy</a><a href="#">Contact</a></div>
+  </div>
+</div>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var pw=$('pw'),pw2=$('pw2'),inpPw=$('inpPw'),inpPw2=$('inpPw2'),msgPw2=$('msg-pw2'),
+      cLen=$('c-len'),cUpp=$('c-upp'),cNum=$('c-num'),meter=$('meter'),mlabel=$('mlabel'),submit=$('submit'),
+      setForm=$('setForm'),done=$('done');
+  var LABELS=['','Weak','Fair','Good','Strong'], touched={}, busy=false;
+
+  /* The token arrives in the URL from the emailed link. Without one there is
+     nothing to reset, so say so rather than showing a form that can't work. */
+  var token=new URLSearchParams(window.location.search).get('token')||'';
+  var sub=document.querySelector('.set-form .sub');
+  if(!/^[a-f0-9]{64}$/.test(token)){
+    if(sub){
+      sub.innerHTML='This reset link is missing or malformed. Reset links are valid for 30 minutes — <a href="/reset">request a new one</a>.';
+    }
+    if(submit){ submit.setAttribute('aria-disabled','true'); }
+    [pw,pw2].forEach(function(el){ el.disabled=true; });
+    return;
+  }
+  /* The mockup shows an example address; we don't know the real one here (and
+     shouldn't — the token identifies the account server-side). */
+  if(sub){ sub.innerHTML="Choose a new password for your UCP. Make it something you don't use elsewhere."; }
+
+  function chip(el,on){el.classList.toggle('met',on);el.querySelector('.fa').className='fa '+(on?'fa-check-circle':'fa-circle-o');}
+  function setState(box,m,state,text){
+    box.classList.remove('valid','invalid'); if(state)box.classList.add(state==='ok'?'valid':'invalid');
+    if(!m)return;
+    if(!state){m.className='msg';m.textContent='';return;}
+    m.className='msg show '+(state==='ok'?'ok':'err');
+    m.innerHTML='<i class="fa '+(state==='ok'?'fa-check-circle':'fa-exclamation-circle')+'"></i> '+text;
+  }
+  function evaluate(force){
+    var v=pw.value, len=v.length>=8, upp=/[A-Z]/.test(v), num=/[0-9]/.test(v);
+    chip(cLen,len);chip(cUpp,upp);chip(cNum,num);
+    var score=0; if(len)score++; if(upp)score++; if(num)score++; if(v.length>=12||/[^A-Za-z0-9]/.test(v))score++; if(!v)score=0;
+    meter.className='meter'+(score?' s'+score:''); mlabel.textContent=v?((score?LABELS[score]:'Very weak')+' password'):'';
+    mlabel.style.color=score>=4?'var(--green)':score>=3?'var(--gold)':score>=1?'var(--amber)':'var(--text-faint)';
+    var pwOk=len&&upp&&num;
+    inpPw.classList.remove('valid','invalid');
+    if(v){ if(pwOk)inpPw.classList.add('valid'); else if(touched.pw||force)inpPw.classList.add('invalid'); }
+    var matchOk=false;
+    if(!pw2.value){setState(inpPw2,msgPw2,null);}
+    else if(pw2.value===v){setState(inpPw2,msgPw2,'ok','Passwords match.');matchOk=true;}
+    else setState(inpPw2,msgPw2,(touched.pw2||force)?'err':null,"Passwords don't match.");
+    submit.setAttribute('aria-disabled',(pwOk&&matchOk&&!busy)?'false':'true');
+    return pwOk&&matchOk;
+  }
+  [pw,pw2].forEach(function(el){el.addEventListener('input',function(){evaluate(false);});el.addEventListener('blur',function(){touched.pw=1;touched.pw2=1;evaluate(false);});});
+  document.addEventListener('click',function(e){
+    var s=e.target.closest('[data-show]');
+    if(s){var i=$(s.getAttribute('data-show'));var t=i.type==='password';i.type=t?'text':'password';s.textContent=t?'Hide':'Show';}
+  });
+
+  submit.addEventListener('click',function(e){
+    e.preventDefault();
+    if(busy) return;
+    touched.pw=1;touched.pw2=1;
+    if(!evaluate(true)) return;
+
+    busy=true; submit.setAttribute('aria-disabled','true');
+    var original=submit.innerHTML;
+    submit.innerHTML='Updating…';
+
+    /* The server re-checks the token and the password rules; the checks above
+       are only there to save the user a round trip. */
+    UCP.post('reset-confirm.php',{token:token, password:pw.value}).then(function(res){
+      var d=res.data||{};
+      if(d.ok){ setForm.classList.add('off'); done.classList.add('on'); return; }
+      busy=false; submit.innerHTML=original; submit.setAttribute('aria-disabled','false');
+      var err=d.error||'Could not update your password.';
+      /* An invalid or expired token isn't a password problem — point them back
+         to requesting a fresh link. */
+      if(/link/i.test(err)){
+        if(sub){ sub.innerHTML=UCP.esc(err)+' <a href="/reset">Request a new link</a>.'; }
+        [pw,pw2].forEach(function(el){ el.disabled=true; });
+        submit.setAttribute('aria-disabled','true');
+        return;
+      }
+      setState(inpPw2,msgPw2,'err',UCP.esc(err));
+    }).catch(function(){
+      busy=false; submit.innerHTML=original; submit.setAttribute('aria-disabled','false');
+      setState(inpPw2,msgPw2,'err','Could not reach the server. Please try again.');
+    });
+  });
+
+  evaluate(false);
+})();
+</script>
+</body></html>

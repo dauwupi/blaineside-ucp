@@ -1,0 +1,21 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;color:var(--parch);-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+.tod{position:absolute;inset:0;z-index:0;pointer-events:none;transition:background 1s ease}
+.stage.tod-night .tod{background:rgba(20,28,56,.54)}
+.stage.tod-dawn .tod{background:rgba(78,44,66,.42)}
+.stage.tod-day .tod{background:rgba(64,46,26,.20)}
+.stage.tod-dusk .tod{background:rgba(150,72,22,.42)}
+.brand{display:flex;align-items:baseline;gap:11px}
+.brand .mark{font-size:19px;font-weight:900;letter-spacing:.02em}
+.brand .mark em{font-style:normal;color:var(--gold)}
+.brand .tag{font-size:9.5px;font-weight:700;letter-spacing:.2em;color:var(--text-faint);border:1px solid var(--border);border-radius:5px;padding:3px 7px;position:relative;top:-2px}
+.navbtns{margin-left:auto;display:flex;gap:10px}
+.navbtn{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--text-dim);padding:9px 16px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.015);transition:.18s cubic-bezier(.2,.8,.2,1)}
+.navbtn .fa{font-size:12px;color:var(--text-faint);transition:.18s}
+.navbtn:hover{border-color:rgba(212,146,58,.55);background:rgba(212,146,58,.07);color:var(--parch)}
+.navbtn:hover .fa{color:var(--gold)}
+.foot .links{margin-left:auto;display:flex;align-items:center;gap:22px}
+.foot .links a:hover{color:var(--gold)}
+/* background extracted from the mockups' inline base64 */
+.scene{background-image:url('../img/bg-sandy.jpg')!important}

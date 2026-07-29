@@ -1,782 +1,422 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BlaineSide — UCP</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='23' fill='%23121110'/%3E%3Cpath d='M28 55 A22 22 0 0 1 72 55 Z' fill='%23e2b65c'/%3E%3Crect x='23' y='61' width='54' height='5' rx='2.5' fill='%23d4923a'/%3E%3Crect x='31' y='71' width='38' height='5' rx='2.5' fill='%238a7f70'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Bitter:wght@600;700;800;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<!--
+  BlaineSide — UCP LOGIN / LANDING (ucp.blaineside.com). FiveM serious-RP.
+  Editorial split: brand + headline + integrated live server status (left) ·
+  Sign in / Create UCP card (right). Cinematic amber/dark, box-free composition.
+  Swap the CSS scene for a real cover photo on .stage if desired. Example data.
+-->
+<html lang="en"><head><meta charset="utf-8">
+<title>Sign in — BlaineSide UCP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="assets/fa/fontawesome.css">
+<link rel="stylesheet" href="assets/css/ucp.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --amber:#d4923a;
-    --gold:#e2b65c;
-    --charcoal:#121110;
-    --charcoal-2:#1a1815;
-    --charcoal-3:#221f1b;
-    --parchment:#f1efe9;
-    --stone:#8a7f70;
-    --text-dim:#655e51;
-    --text-faint:#968e7e;
-    --border:#2b2723;
-    --danger:#c1553f;
-    --ok:#7fa05a;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    font-family:'Inter',system-ui,sans-serif;
-    background:var(--charcoal);
-    color:var(--parchment);
-    -webkit-font-smoothing:antialiased;
-    min-height:100vh;min-height:100dvh;
-    display:flex;flex-direction:column;
-  }
-  a{color:var(--gold);text-decoration:none}
-
-  /* ---------- FIXED VIDEO BACKGROUND ---------- */
-  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--charcoal)}
-  .bg video,.bg .vidph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-  .bg .vidph{display:grid;place-items:center;color:var(--text-dim);font-size:13px;font-weight:600;
-    letter-spacing:.14em;text-transform:uppercase;
-    background:repeating-linear-gradient(45deg,#1b1a17 0 22px,#232019 22px 44px)}
-  /* scrim keeps the card readable over any footage, light or dark */
-  .bg::after{content:"";position:absolute;inset:0;
-    background:
-      radial-gradient(120% 120% at 50% 0%, rgba(12,11,10,.35), transparent 60%),
-      linear-gradient(180deg, rgba(12,11,10,.78) 0%, rgba(12,11,10,.55) 45%, rgba(12,11,10,.86) 100%)}
-
-  /* ---------- HEADER (back link only) ---------- */
-  header{position:relative;z-index:3;flex:none;display:flex;align-items:center;justify-content:flex-end;
-    padding:22px 30px}
-  .back-link{align-self:center;margin:20px auto 0;font-size:13px;font-weight:600;color:var(--text-faint);
-    display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:100px;
-    border:1px solid rgba(241,239,233,.12);background:rgba(20,19,17,.5);
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:.18s}
-  .back-link:hover{color:var(--parchment);border-color:rgba(241,239,233,.26);background:rgba(34,31,27,.6)}
-  .back-link:hover svg{transform:translateX(-2px)}
-  .back-link svg{width:15px;height:15px;transition:transform .18s}
-
-  /* ---------- BRAND (centered wordmark, above the card) ---------- */
-  .brand{display:flex;align-items:center;justify-content:center;margin-bottom:28px}
-  .brand .name{font-family:'Oswald',sans-serif;font-weight:600;font-size:38px;
-    letter-spacing:.08em;text-transform:uppercase;line-height:1;color:var(--parchment);
-    text-shadow:0 2px 16px rgba(0,0,0,.55)}
-  .brand .name b{color:var(--gold);font-weight:700}
-
-  /* ---------- CENTERED STAGE ---------- */
-  .stage{position:relative;z-index:2;flex:1;display:flex;align-items:center;justify-content:center;
-    padding:20px 20px 44px;overflow-y:auto}
-  /* when content is taller than the stage, align to top so nothing is cut off */
-  @media (max-height:820px){
-    .stage{align-items:flex-start}
-  }
-  .stage-inner{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:stretch;margin:auto}
-
-  .card{
-    width:100%;
-    background:rgba(20,19,17,.86);
-    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-    border:1px solid rgba(241,239,233,.14);
-    border-radius:22px;
-    padding:36px 38px 32px;
-    box-shadow:0 30px 70px -20px rgba(0,0,0,.75);
-  }
-
-  .tabs{
-    display:flex;gap:4px;padding:4px;margin-bottom:28px;
-    background:rgba(12,11,10,.6);border:1px solid var(--border);border-radius:12px;
-  }
-  .tab{
-    flex:1;padding:11px;border:none;background:transparent;cursor:pointer;
-    font-family:inherit;font-size:14px;font-weight:600;color:var(--text-faint);
-    border-radius:8px;transition:.18s;
-  }
-  .tab.active{background:var(--charcoal-3);color:var(--parchment);box-shadow:0 1px 0 rgba(0,0,0,.4)}
-
-  .head{margin-bottom:24px;position:relative;padding-left:16px}
-  .head::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:3px;
-    background:linear-gradient(180deg,var(--gold),var(--amber))}
-  .head .kicker{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--amber);margin-bottom:9px}
-  .head h2{font-family:'Bitter',serif;font-size:27px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px}
-  .head p{font-size:14px;color:var(--text-faint);line-height:1.55}
-
-  form{display:none;flex-direction:column;gap:17px}
-  form.active{display:flex}
-
-  .field{display:flex;flex-direction:column;gap:7px}
-  .field label{font-size:12.5px;font-weight:600;color:var(--stone);display:flex;justify-content:space-between;align-items:center}
-  .field label .req{color:var(--amber)}
-  .input-wrap{position:relative}
-  input{width:100%;padding:13px 14px;font-family:inherit;font-size:14.5px;
-    background:rgba(12,11,10,.7);border:1px solid var(--border);border-radius:10px;
-    color:var(--parchment);transition:border-color .16s, box-shadow .16s}
-  input::placeholder{color:var(--text-dim)}
-  input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.15)}
-  input.valid{border-color:var(--ok)}
-  input.invalid{border-color:var(--danger)}
-  input.checking{border-color:var(--amber)}
-  .with-prefix input{padding-left:34px}
-  .prefix{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:14.5px;pointer-events:none}
-  .toggle-pw{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;
-    color:var(--text-faint);font-size:12px;font-weight:600;font-family:inherit;padding:4px}
-  .spinner{position:absolute;right:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;
-    border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .7s linear infinite;display:none}
-  @keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
-
-  .hint{font-size:12px;line-height:1.45;color:var(--text-dim)}
-  .hint b{color:var(--text-faint);font-weight:700}
-  .hint.warn{color:var(--amber)}
-  .msg{font-size:12px;font-weight:500;min-height:15px}
-  .msg.err{color:var(--danger)}
-  .msg.good{color:var(--ok)}
-  .msg.checking{color:var(--amber)}
-
-  .notice{display:flex;gap:11px;padding:12px 13px;background:rgba(212,146,58,.08);
-    border:1px solid rgba(212,146,58,.25);border-radius:10px;font-size:12.5px;line-height:1.5;color:#e6c98f}
-  .notice svg{flex-shrink:0;margin-top:1px}
-  .notice b{color:var(--gold);font-weight:700}
-
-  .strength{display:flex;flex-direction:column;gap:8px;margin-top:2px}
-  .bars{display:flex;gap:5px}
-  .bars i{flex:1;height:4px;border-radius:2px;background:var(--charcoal-3);transition:.25s}
-  .strength-label{font-size:11.5px;font-weight:600;color:var(--text-dim)}
-  .reqs{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:2px}
-  .reqs li{list-style:none;font-size:11.5px;color:var(--text-dim);display:flex;align-items:center;gap:5px}
-  .reqs li.met{color:var(--ok)}
-  .reqs li .tick{width:13px;height:13px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font-size:8px}
-
-  .check{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--text-faint);line-height:1.5;cursor:pointer}
-  .check input{width:auto;margin-top:2px;accent-color:var(--amber)}
-
-  .btn{width:100%;padding:14px;margin-top:4px;background:linear-gradient(145deg,var(--gold),var(--amber));
-    border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;color:#1a1206;
-    transition:transform .12s, box-shadow .16s, opacity .16s;box-shadow:0 6px 18px rgba(212,146,58,.28)}
-  .btn:hover{transform:translateY(-1px);box-shadow:0 9px 22px rgba(212,146,58,.36)}
-  .btn:active{transform:translateY(0)}
-  .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
-
-  .forgot{text-align:right;font-size:12.5px;font-weight:500;margin-top:-6px}
-  .forgot a{color:var(--gold)}
-  .switch{text-align:center;font-size:13.5px;color:var(--text-faint);margin-top:20px}
-  .switch button{background:none;border:none;color:var(--gold);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
-  .switch a{color:var(--gold);font-weight:600}
-
-  /* server status pill (above wordmark) */
-  .server-pill{align-self:center;display:inline-flex;align-items:center;gap:9px;margin-bottom:16px;
-    padding:7px 15px 7px 12px;border-radius:100px;font-size:12.5px;font-weight:600;
-    color:#d8d0c2;background:rgba(20,19,17,.55);border:1px solid rgba(241,239,233,.12);
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-  .server-pill .sdot{width:8px;height:8px;border-radius:50%;background:var(--stone);flex:none}
-  .server-pill.online .sdot{background:#57a05a;box-shadow:0 0 8px #57a05a;animation:pulse 2.4s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
-  .server-pill .scount{color:var(--parchment);font-variant-numeric:tabular-nums}
-  .server-pill .ssep{width:1px;height:13px;background:rgba(241,239,233,.18)}
-
-  /* form-level banners (error / success / info) */
-  .banner{display:flex;gap:11px;align-items:center;padding:12px 14px;border-radius:11px;
-    font-size:13px;line-height:1.5;margin-bottom:4px;border:1px solid transparent}
-  .banner svg{width:17px;height:17px;flex:none}
-  .banner.err{background:rgba(193,85,63,.12);border-color:rgba(193,85,63,.4);color:#eab3a6}
-  .banner.err b{color:#f0c4b8}
-  .banner.ok{background:rgba(127,160,90,.13);border-color:rgba(127,160,90,.4);color:#c3d6a8}
-  .banner.ok b{color:#d6e6bf}
-  .banner.info{background:rgba(212,146,58,.1);border-color:rgba(212,146,58,.32);color:#e6c98f}
-  .banner.info b{color:var(--gold)}
-
-  /* caps lock warning */
-  .caps{display:none;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--amber);margin-top:2px}
-  .caps.on{display:flex}
-  .caps svg{width:13px;height:13px}
-
-  /* remember-me + forgot row */
-  .login-row{display:flex;align-items:center;justify-content:space-between;margin-top:-4px}
-  .remember{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-faint);cursor:pointer;user-select:none}
-  .remember input{width:auto;accent-color:var(--amber);cursor:pointer}
-  .login-row .forgot{margin:0}
-
-  /* need help link under the card group */
-  .help-line{align-self:center;margin-top:14px;font-size:12.5px;color:var(--text-dim);text-align:center}
-  .help-line a{color:var(--text-faint);font-weight:600;text-decoration:underline;text-underline-offset:2px}
-  .help-line a:hover{color:var(--parchment)}
-
-  /* legal footer */
-  .legal{position:relative;z-index:3;flex:none;border-top:1px solid rgba(241,239,233,.08);
-    background:rgba(12,11,10,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-  .legal-inner{max-width:1100px;margin:0 auto;padding:14px 26px;display:flex;align-items:center;
-    justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-dim)}
-  .legal .copy{flex:1 1 auto;min-width:200px}
-  .legal-links{display:flex;gap:18px;flex:none}
-  .legal-links a{color:var(--text-faint);font-weight:600;transition:color .15s}
-  .legal-links a:hover{color:var(--parchment)}
-  .legal .utc{flex:none;font-variant-numeric:tabular-nums;font-weight:600;color:var(--stone);
-    padding:5px 11px;border-radius:100px;border:1px solid rgba(241,239,233,.1);background:rgba(20,19,17,.5)}
-  @media (max-width:640px){
-    .legal-inner{flex-direction:column;text-align:center;gap:10px;padding:14px 18px}
-    .legal .copy{min-width:0}
-  }
-
-  /* button spinner + loading state */
-  .btn{position:relative}
-  .btn.loading{color:transparent!important;pointer-events:none}
-  .btn.loading::after{content:"";position:absolute;top:50%;left:50%;width:18px;height:18px;margin:-9px 0 0 -9px;
-    border:2.5px solid rgba(26,18,6,.35);border-top-color:#1a1206;border-radius:50%;animation:spin .65s linear infinite}
-  .btn.done{color:#1a1206}
-
-  /* verify / reset auxiliary views */
-  .aux-icon{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;margin-bottom:18px;
-    background:rgba(212,146,58,.14);border:1px solid rgba(212,146,58,.3)}
-  .aux-icon svg{width:27px;height:27px;color:var(--gold)}
-  .resend{font-size:12.5px;color:var(--text-dim);margin-top:16px;text-align:center}
-  .resend button{background:none;border:none;color:var(--gold);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
-  .resend button:disabled{color:var(--text-dim);cursor:not-allowed;text-decoration:none}
-
-  @media (max-width:560px){
-    .stage{padding:12px 14px 34px}
-    .card{padding:28px 22px}
-  }
-  @media (prefers-reduced-motion:reduce){
-    *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
-  }
-</style>
+:root{
+--amber:#d4923a;--gold:#e2b65c;--parch:#f1efe9;
+--surface:#1a1816;--surface-2:#221f1c;--surface-3:#2a2621;
+--border:#3a342c;--line:#2b2620;--text-dim:#a89e90;--text-faint:#787064;
+--green:#57b26a;--red:#c9524a;
+}
+.stage{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;
+  background:
+   radial-gradient(65% 55% at 20% 8%, rgba(212,146,58,.15), transparent 60%),
+   radial-gradient(80% 70% at 92% 104%, rgba(96,124,84,.09), transparent 60%),
+   linear-gradient(180deg,#0e0d0b,#131009 60%,#0b0a08)}
+.stage::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(122deg,rgba(255,255,255,.012) 0 1px,transparent 1px 34px);pointer-events:none}
+.glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;pointer-events:none;animation:drift 24s ease-in-out infinite alternate}
+.glow.a{width:520px;height:520px;left:-140px;top:-160px;background:rgba(212,146,58,.20)}
+.glow.b{width:440px;height:440px;right:-140px;bottom:-160px;background:rgba(120,90,50,.18);animation-delay:-9s}
+/* Sandy Shores photographic background — darkened + faded to blend */
+.scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;background-color:#0b0a08;background-position:center;background-size:cover;background-repeat:no-repeat}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none;background:
+  linear-gradient(90deg,rgba(10,9,8,.95) 0%,rgba(10,9,8,.66) 34%,rgba(10,9,8,.3) 55%,rgba(10,9,8,.62) 100%),
+  linear-gradient(180deg,rgba(10,9,8,.8) 0%,rgba(10,9,8,.1) 24%,rgba(10,9,8,.16) 56%,rgba(10,9,8,.92) 100%)}
+/* top */
+.top{position:relative;z-index:2;display:flex;align-items:center;padding:24px 40px}
+.back{margin-left:auto;display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-dim);
+  padding:9px 15px 9px 12px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.015);transition:.18s cubic-bezier(.2,.8,.2,1)}
+.back .fa{font-size:11px;color:var(--text-faint);transition:.18s}
+.back .site{color:var(--parch);font-weight:700}
+.back:hover{border-color:rgba(212,146,58,.55);background:rgba(212,146,58,.07);color:var(--parch)}
+.back:hover .fa{color:var(--gold);transform:translateX(-3px)}
+/* center */
+.center{position:relative;z-index:2;flex:1;display:grid;grid-template-columns:1.08fr .92fr;gap:64px;align-items:center;padding:8px 60px 46px;max-width:1240px;margin:0 auto;width:100%}
+/* left intro */
+.intro .kicker{display:inline-flex;align-items:center;gap:9px;font-size:11px;font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:var(--amber);margin-bottom:18px}
+.intro .kicker .k-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px rgba(212,146,58,.8)}
+.intro h1{font-size:48px;font-weight:900;letter-spacing:-.035em;line-height:1.03}
+.intro h1 em{font-style:normal;color:var(--gold)}
+.intro p{font-size:15px;color:var(--text-dim);line-height:1.65;max-width:470px;margin-top:18px}
+.feat{list-style:none;margin-top:24px;display:flex;flex-direction:column;gap:13px;max-width:475px}
+.feat li{display:flex;gap:13px;font-size:13.5px;color:var(--text-dim);line-height:1.5}
+.feat li .fa{color:var(--amber);font-size:14px;margin-top:2px;flex:none;width:19px;text-align:center}
+.feat li b{color:var(--parch);font-weight:700}
+.trust{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:22px;font-size:12.5px;color:var(--text-dim);font-weight:500}
+.trust span{display:inline-flex;align-items:center;gap:8px;position:relative}
+.trust span+span::before{content:"";position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:1px;height:13px;background:var(--line)}
+.trust .fa{color:var(--amber);font-size:12px}
+/* live server — skyline occupancy meter */
+.live{margin-top:30px;max-width:452px}
+.live-top{display:flex;align-items:center;gap:9px}
+.live-top .pulse{position:relative;width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;box-shadow:0 0 10px rgba(87,178,106,.8)}
+.live-top .pulse::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px solid var(--green);opacity:.5;animation:ping 2s cubic-bezier(0,0,.2,1) infinite}
+.live-top .live-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim)}
+.live-count{display:flex;align-items:baseline;gap:14px;margin-top:14px}
+.live-count .num{font-size:44px;font-weight:900;letter-spacing:-.045em;line-height:1;color:var(--parch);font-variant-numeric:tabular-nums}
+.live-count .num .cap{font-style:normal;font-size:44px;font-weight:800;color:var(--text-faint);letter-spacing:-.045em;margin-left:4px}
+.live-count .live-meta b{font-size:13px;font-weight:700;color:var(--text-dim)}
+/* fancy capacity bar */
+.cbar-row{display:flex;align-items:center;gap:15px;margin-top:17px}
+.cbar-pct{flex:none;font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cbar{position:relative;flex:1;height:10px;border-radius:6px;background:rgba(255,255,255,.055);box-shadow:inset 0 1px 2px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.03)}
+.cbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,#a9661c,var(--amber) 52%,var(--gold));box-shadow:0 0 16px rgba(212,146,58,.55),0 1px 0 rgba(255,255,255,.15) inset;overflow:hidden;animation:grow 1.1s cubic-bezier(.2,.85,.25,1) both}
+.cbar.load-low .fill{background:linear-gradient(90deg,#3f8f4e,var(--green));box-shadow:0 0 16px rgba(87,178,106,.5),0 1px 0 rgba(255,255,255,.15) inset}
+.cbar.load-mid .fill{background:linear-gradient(90deg,#a9661c,var(--amber) 52%,var(--gold));box-shadow:0 0 16px rgba(212,146,58,.55),0 1px 0 rgba(255,255,255,.15) inset}
+.cbar.load-high .fill{background:linear-gradient(90deg,#a23129,#d9564c);box-shadow:0 0 16px rgba(201,82,74,.5),0 1px 0 rgba(255,255,255,.12) inset}
+.cbar .fill::before{content:"";position:absolute;top:0;left:0;right:0;height:45%;background:linear-gradient(180deg,rgba(255,255,255,.32),transparent);border-radius:6px 6px 0 0}
+.cbar .sheen{position:absolute;top:0;bottom:0;left:0;width:46px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);filter:blur(1px);animation:sweep 3.4s ease-in-out infinite}
+@keyframes sweep{0%{transform:translateX(-60px)}55%,100%{transform:translateX(360px)}}
+@keyframes grow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1)}}
+.live-count .live-meta{display:flex;flex-direction:column;gap:4px}
+.live-count .live-meta b{font-size:13px;font-weight:700;color:var(--gold)}
+.live-count .live-meta small{font-size:11.5px;color:var(--text-faint);font-weight:500}
+.live-count .live-meta small em{font-style:normal;color:var(--text-dim);font-weight:600}
+.occ{display:flex;align-items:flex-end;gap:3px;height:38px;margin-top:20px}
+.occ i{flex:1;border-radius:2px 2px 1px 1px;background:rgba(255,255,255,.06);transform-origin:bottom;animation:rise .7s cubic-bezier(.2,.85,.25,1) both;animation-delay:var(--d,0s)}
+.occ i.f{background:linear-gradient(180deg,var(--gold),var(--amber));box-shadow:0 3px 10px rgba(212,146,58,.22)}
+/* right auth */
+.authwrap{justify-self:center;width:100%;max-width:410px}
+.auth{background:linear-gradient(180deg,rgba(31,28,25,.9),rgba(20,18,16,.93));border:1px solid rgba(255,255,255,.05);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.6);backdrop-filter:blur(16px);overflow:hidden}
+.tabs{display:flex;padding:0;border-bottom:1px solid var(--line)}
+.tab{flex:1;text-align:center;padding:17px 2px;font-size:14px;font-weight:600;color:var(--text-dim);border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-1px;transition:.15s}
+.tab+.tab{border-left:1px solid var(--line)}
+.tab.on{color:var(--gold);border-bottom-color:var(--amber)}
+.tab:hover:not(.on){color:var(--parch);background:rgba(255,255,255,.02)}
+.form{padding:26px}
+.pane{display:none}
+.pane.on{display:block}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--amber)}
+.form h2{font-size:22px;font-weight:800;letter-spacing:-.015em;margin-top:9px}
+.form .lede{font-size:13px;color:var(--text-dim);margin-top:7px;line-height:1.5}
+.signnote{display:flex;align-items:center;gap:8px;margin-top:12px;padding:8px 11px;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid var(--line);font-size:11.5px;color:var(--text-faint);font-weight:500}
+.signnote .fa{font-size:11px;color:var(--text-dim)}
+.field{margin-top:18px}
+.field label{display:flex;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:8px}
+.field label .req{color:var(--amber);margin-left:3px}
+.field label .link{margin-left:auto;font-weight:600;color:var(--amber);cursor:pointer}
+.inp{position:relative}
+.inp input{width:100%;background:rgba(14,13,11,.75);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--parch);font-family:inherit;font-size:14px;outline:none;transition:.15s}
+.inp input::placeholder{color:var(--text-faint)}
+.inp input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.15);background:rgba(14,13,11,.9)}
+.inp:has(.show) input{padding-right:60px}
+.inp .show{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:600;color:var(--text-faint);cursor:pointer;background:linear-gradient(90deg,transparent,rgba(14,13,11,.95) 26%);padding-left:14px}
+.inp .show:hover{color:var(--gold)}
+/* validation + lock states */
+.inp.invalid input{border-color:rgba(201,82,74,.78);box-shadow:0 0 0 3px rgba(201,82,74,.15);background:rgba(20,12,11,.85)}
+.msg{display:none;align-items:center;gap:7px;font-size:11.5px;line-height:1.45;margin-top:8px;font-weight:500}
+.msg.show{display:flex}
+.msg.err{color:#dd7168}
+.msg.ok{color:var(--green)}
+.msg .fa{font-size:10.5px}
+.submit[aria-disabled="true"]{opacity:.5;box-shadow:none;filter:none}
+/* Loading your UCP overlay */
+.loadscreen{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:radial-gradient(80% 80% at 50% 38%,rgba(16,13,10,.94),rgba(8,7,6,.99));backdrop-filter:blur(8px)}
+.loadscreen.show{display:grid;animation:fadein .35s ease}
+.ls-inner{text-align:center;width:min(88vw,370px)}
+.ls-brand .mark{font-size:23px;font-weight:900;letter-spacing:.02em;color:var(--parch)}
+.ls-brand .mark em{font-style:normal;color:var(--gold)}
+.ls-title{margin-top:20px;font-size:15px;font-weight:700;color:var(--parch)}
+.ls-bar{margin-top:18px;height:6px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+.ls-bar span{display:block;height:100%;width:0;border-radius:5px;background:linear-gradient(90deg,var(--amber),var(--gold));box-shadow:0 0 14px rgba(212,146,58,.6);transition:width .35s cubic-bezier(.3,.8,.4,1)}
+.ls-sub{margin-top:14px;font-size:12px;color:var(--text-faint);min-height:16px}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.lockbar{display:none;align-items:center;gap:9px;margin-top:16px;padding:11px 13px;border-radius:10px;background:rgba(201,82,74,.09);border:1px solid rgba(201,82,74,.28);font-size:12px;color:#e79187;font-weight:600}
+.lockbar.show{display:flex}
+.lockbar .fa{color:#dd7168}
+.rowline{display:flex;align-items:center;margin-top:16px;font-size:12.5px;color:var(--text-dim)}
+.chk{display:inline-flex;align-items:center;gap:9px;cursor:pointer}
+.box{width:17px;height:17px;border-radius:5px;border:1px solid var(--border);background:rgba(14,13,11,.75);display:grid;place-items:center;color:transparent;font-size:9px}
+.chk.on .box{background:var(--amber);border-color:var(--amber);color:#17140f}
+.submit{width:100%;margin-top:22px;padding:15px;border:none;border-radius:11px;background:linear-gradient(180deg,var(--gold),var(--amber));color:#17140f;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 12px 26px rgba(212,146,58,.22);transition:.15s}
+.submit:hover{filter:brightness(1.05)}
+.alt{text-align:center;font-size:13px;color:var(--text-dim);margin-top:18px}
+.alt a{color:var(--gold);font-weight:700;cursor:pointer}
+.helpline{text-align:center;font-size:12.5px;color:var(--text-faint);margin-top:18px}
+.helpline a{color:var(--gold);font-weight:600}
+/* footer */
+.foot{position:relative;z-index:2;display:flex;align-items:center;gap:20px;padding:16px 40px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-faint);background:rgba(11,10,8,.5);backdrop-filter:blur(6px)}
+.foot .clock{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;color:var(--text-dim);line-height:1}
+.foot .clock .fa{font-size:11px}
+@keyframes ping{0%{transform:scale(.7);opacity:.7}80%,100%{transform:scale(2);opacity:0}}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(40px,32px)}}
+@keyframes rise{from{transform:scaleY(.06);opacity:0}to{transform:scaleY(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.glow{animation:none}.live-top .pulse::after{animation:none}.occ i{animation:none}.cbar .fill{animation:none}.cbar .sheen{animation:none}}
+@media (max-width:960px){
+  .center{grid-template-columns:1fr;gap:34px;padding:16px 26px 30px}
+  .intro{text-align:center}
+  .intro h1{font-size:38px}.intro p{margin-left:auto;margin-right:auto}
+  .trust{justify-content:center}.live{margin-left:auto;margin-right:auto}.live-count{justify-content:center}
+  .feat{text-align:left;margin-left:auto;margin-right:auto;max-width:360px}
+  .live-count .num,.live-count .num .cap{font-size:36px}
+  .authwrap{max-width:430px}
+  .top{padding:20px 20px}
+  .foot{flex-direction:column;gap:12px;text-align:center;padding:18px 24px}.foot .links{margin:0}
+}
+@media (max-width:460px){.brand .tag{display:none}.back .bl{display:none}.back{padding:8px 13px}.navbtn .nb{display:none}.navbtn{padding:9px 12px}}
+</style><script src="assets/js/ucp.js"></script>
 </head>
 <body>
+<div class="stage">
+  <div class="scene"></div>
+<div class="tod"></div>
+<div class="scrim"></div>
 
-  <!-- FIXED VIDEO BACKGROUND -->
-  <div class="bg">
-    <video autoplay muted loop playsinline>
-      <source src="bg-video-720.mp4" type="video/mp4">
-    </video>
+  <div class="top">
+    <a class="brand"><span class="mark">BLAINE<em>SIDE</em></span><span class="tag">UCP</span></a>
+    <nav class="navbtns">
+      <a class="navbtn" href="https://blaineside.com"><i class="fa fa-home"></i> <span class="nb">Landing page</span></a>
+      <a class="navbtn" href="https://forum.blaineside.com"><i class="fa fa-comments-o"></i> <span class="nb">Forums</span></a>
+    </nav>
   </div>
 
-  <!-- CENTERED CARD -->
-  <main class="stage">
-    <div class="stage-inner">
-      <div class="server-pill" id="serverPill">
-        <span class="sdot"></span>
-        <span id="serverText">Checking server…</span>
+  <div class="center">
+    <!-- LEFT -->
+    <div class="intro">
+      <h1>Your story in <em>Blaine County</em> starts here.</h1>
+      <p>One account for everything — your characters, money, vehicles and properties, your whitelist application, and the community forums. Sign in to pick up right where you left off, or create a UCP to start your story in the county.</p>
+      <ul class="feat">
+        <li><i class="fa fa-id-card-o"></i><span><b>Your characters &amp; assets</b> — money, vehicles, properties and stats for every character, in one dashboard.</span></li>
+        <li><i class="fa fa-shield"></i><span><b>Whitelisted &amp; vetted</b> — a serious community built around quality roleplay, not chaos.</span></li>
+        <li><i class="fa fa-comments-o"></i><span><b>One login, everywhere</b> — the game server, your applications and the forums, all tied to your UCP.</span></li>
+      </ul>
+      <div class="live" id="live" data-count="1412" data-max="2048">
+        <div class="live-top">
+          <span class="pulse"></span>
+          <span class="live-label">Server status</span>
+        </div>
+        <div class="live-count">
+          <span class="num"><span id="lvCount">1,412</span><i class="cap" id="lvMax">/2048</i></span>
+          <span class="live-meta"><b>players connected</b></span>
+        </div>
+        <div class="cbar-row">
+          <div class="cbar" id="lvBar"><span class="fill" id="lvFill" style="width:69%"><i class="sheen"></i></span></div>
+          <span class="cbar-pct" id="lvPct">69% capacity</span>
+        </div>
       </div>
-      <a class="brand" href="https://forum.blaineside.com">
-        <span class="name">Blaine<b>Side</b></span>
-      </a>
-      <div class="card">
-      <div class="tabs" role="tablist" aria-label="Sign in or create account">
-        <button class="tab active" id="tab-login" onclick="showForm('login')">Sign in</button>
-        <button class="tab" id="tab-register" onclick="showForm('register')">Create UCP</button>
-      </div>
+    </div>
 
-      <!-- LOGIN -->
-      <div id="head-login">
-        <div class="head">
-          <div class="kicker">Welcome back</div>
+    <!-- RIGHT -->
+    <div class="authwrap">
+      <div class="auth">
+        <div class="tabs">
+          <div class="tab on">Sign in</div>
+          <a class="tab" href="/create">Create UCP</a>
+        </div>
+
+        <div class="form pane on" id="signin">
+          <div class="eyebrow">Welcome back</div>
           <h2>Sign in to your UCP</h2>
-          <p>Enter your UCP account name to reach the game and forums.</p>
+          <div class="lede">Enter your account details to reach the game and forums.</div>
+          <div class="signnote"><i class="fa fa-clock-o"></i> Last sign-in 2 days ago · from this device</div>
+          <div class="field">
+            <label>UCP account name <span class="req">*</span></label>
+            <div class="inp" id="inpUser"><input type="text" id="user" placeholder="Your UCP name" autocomplete="off"></div>
+            <div class="msg" id="msg-user"></div>
+          </div>
+          <div class="field">
+            <label>Password <span class="req">*</span> <a class="link" href="/reset">Forgot password?</a></label>
+            <div class="inp" id="inpPw"><input type="password" id="pw" placeholder="Your password"><span class="show" data-show="pw">Show</span></div>
+            <div class="msg" id="msg-pw"></div>
+          </div>
+          <div class="rowline"><span class="chk on" data-chk><span class="box"><i class="fa fa-check"></i></span> Remember me</span></div>
+          <div class="lockbar" id="lockbar"><i class="fa fa-lock"></i> <span id="lockmsg"></span></div>
+          <button class="submit" id="signinBtn">Sign in <i class="fa fa-arrow-right" style="font-size:12px"></i></button>
+          <div class="alt">New to Blaine County? <a href="/create">Create a UCP</a></div>
         </div>
       </div>
-      <form id="login" class="active" onsubmit="return false">
-        <div class="banner err" id="login-banner" style="display:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-          <div id="login-banner-text"></div>
-        </div>
-        <div class="field">
-          <label>UCP account name <span class="req">*</span></label>
-          <div class="input-wrap">
-            <input type="text" id="l-user" aria-label="UCP account name" placeholder="e.g. Name101" autocomplete="username">
-          </div>
-        </div>
-        <div class="field">
-          <label>Password <span class="req">*</span></label>
-          <div class="input-wrap">
-            <input type="password" id="l-pass" aria-label="Password" placeholder="Your password" autocomplete="current-password" onkeyup="capsCheck(event,'l-caps')" onkeydown="capsCheck(event,'l-caps')">
-            <button type="button" class="toggle-pw" aria-label="Show or hide password" onclick="togglePw('l-pass',this)">Show</button>
-          </div>
-          <div class="caps" id="l-caps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 8h-5v6H9v-6H4z"/></svg>Caps Lock is on</div>
-        </div>
-        <div class="login-row">
-          <label class="remember"><input type="checkbox" id="l-remember" aria-label="Remember me"> Remember me</label>
-          <div class="forgot"><a href="#" onclick="showView('reset');return false">Forgot password?</a></div>
-        </div>
-        <button class="btn" id="l-submit" onclick="submitLogin(this)">Sign in</button>
-        <div class="switch">New to Blaine County? <button onclick="showForm('register')">Create a UCP</button></div>
-      </form>
-
-      <!-- REGISTER -->
-      <div id="head-register" style="display:none">
-        <div class="head">
-          <div class="kicker">Get started</div>
-          <h2>Create your UCP</h2>
-          <p>One account for the game and the forums. Takes about a minute.</p>
-        </div>
-      </div>
-      <form id="register" onsubmit="return false">
-        <div class="field">
-          <label>UCP name <span class="req">*</span></label>
-          <div class="input-wrap">
-            <input type="text" id="r-user" aria-label="UCP name" placeholder="Choose a name" autocomplete="username" oninput="onUserInput()" maxlength="20">
-            <div class="spinner" id="r-user-spin"></div>
-          </div>
-          <div class="notice">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-            <div>This is also your <b>forum display name</b>. It's shown publicly and can't be changed later, so choose carefully.</div>
-          </div>
-          <div class="msg" id="r-user-msg"></div>
-        </div>
-
-        <div class="field">
-          <label>Email <span class="req">*</span></label>
-          <div class="input-wrap">
-            <input type="email" id="r-email" aria-label="Email" placeholder="you@example.com" autocomplete="email" oninput="onEmailInput()">
-            <div class="spinner" id="r-email-spin"></div>
-          </div>
-          <div class="msg" id="r-email-msg"></div>
-        </div>
-
-        <div class="field">
-          <label>Discord username <span class="req">*</span></label>
-          <div class="input-wrap with-prefix">
-            <span class="prefix">@</span>
-            <input type="text" id="r-discord" aria-label="Discord username" placeholder="username" oninput="checkDiscord()">
-          </div>
-          <div class="hint" id="r-discord-hint">Used for verification and support. Enter your new-style Discord handle.</div>
-        </div>
-
-        <div class="field">
-          <label>Password <span class="req">*</span></label>
-          <div class="input-wrap">
-            <input type="password" id="r-pass" aria-label="Password" placeholder="Create a password" autocomplete="new-password" oninput="checkStrength()" onkeyup="capsCheck(event,'r-caps')" onkeydown="capsCheck(event,'r-caps')">
-            <button type="button" class="toggle-pw" aria-label="Show or hide password" onclick="togglePw('r-pass',this)">Show</button>
-          </div>
-          <div class="caps" id="r-caps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 8h-5v6H9v-6H4z"/></svg>Caps Lock is on</div>
-          <div class="strength">
-            <div class="bars"><i></i><i></i><i></i></div>
-            <div class="strength-label" id="r-strength-label">Password strength</div>
-            <ul class="reqs">
-              <li id="req-len"><span class="tick"></span>8+ characters</li>
-              <li id="req-upper"><span class="tick"></span>Uppercase</li>
-              <li id="req-num"><span class="tick"></span>Number</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Confirm password <span class="req">*</span></label>
-          <div class="input-wrap">
-            <input type="password" id="r-pass2" aria-label="Confirm password" placeholder="Re-enter password" autocomplete="new-password" oninput="checkMatch()">
-          </div>
-          <div class="msg" id="r-match-msg"></div>
-        </div>
-
-        <label class="check">
-          <input type="checkbox" id="r-terms" onchange="validateRegister()">
-          <span>I agree to the <a href="https://forums.blaineside.com/rules" target="_blank" rel="noopener">community rules</a> and <a href="https://forums.blaineside.com/privacy" target="_blank" rel="noopener">privacy policy</a>, and confirm I'm 16 or older.</span>
-        </label>
-
-        <button class="btn" id="r-submit" disabled onclick="submitRegister(this)">Create UCP</button>
-        <div class="switch">Already have a UCP? <button onclick="showForm('login')">Sign in</button></div>
-      </form>
-
-      <!-- VERIFY EMAIL (shown after successful registration) -->
-      <div id="head-verify" style="display:none">
-        <div class="head">
-          <div class="kicker">Almost there</div>
-          <h2>Verify your email</h2>
-          <p>We sent a verification link to your inbox. Confirm it to activate your UCP.</p>
-        </div>
-      </div>
-      <div id="verify" style="display:none;flex-direction:column;gap:16px">
-        <div class="banner ok" id="verify-banner">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          <div>Account created. We emailed <b id="verify-email">your address</b> — click the link inside to finish setting up your UCP.</div>
-        </div>
-        <p class="hint">The link expires in 24 hours. If it doesn't arrive within a few minutes, check your <b>spam or junk folder</b>.</p>
-        <div class="resend">Didn't get it? <button id="resend-btn" onclick="resendVerify(this)">Resend email</button></div>
-        <div class="switch"><button onclick="showForm('login')">Back to sign in</button></div>
-      </div>
-
-      <!-- RESET PASSWORD -->
-      <div id="head-reset" style="display:none">
-        <div class="head">
-          <div class="kicker">Account recovery</div>
-          <h2>Reset your password</h2>
-          <p>Enter the email on your UCP and we'll send a reset link.</p>
-        </div>
-      </div>
-      <form id="reset" style="display:none;flex-direction:column;gap:16px" onsubmit="return false">
-        <div class="banner ok" id="reset-ok" style="display:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          <div>If an account uses that email, a reset link is on its way. Check your inbox — and your <b>spam or junk folder</b> if it doesn't show up within a few minutes.</div>
-        </div>
-        <div class="field">
-          <label>Email <span class="req">*</span></label>
-          <div class="input-wrap">
-            <input type="email" id="reset-email" aria-label="Email" placeholder="you@example.com" autocomplete="email">
-          </div>
-          <div class="msg" id="reset-msg"></div>
-        </div>
-        <button class="btn" id="reset-submit" onclick="submitReset(this)">Send reset link</button>
-        <div class="switch"><button onclick="showForm('login')">Back to sign in</button></div>
-      </form>
+      <div class="helpline">Need help getting in? <a href="https://discord.gg/8GUuTBcEsD" target="_blank" rel="noopener">Ask in our Discord</a></div>
     </div>
-      <a class="back-link" href="https://forum.blaineside.com">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-        Back to site
-      </a>
-      <div class="help-line">Need help getting in? <a href="https://discord.gg/8GUuTBcEsD" target="_blank" rel="noopener">Ask in our Discord</a></div>
-    </div>
-  </main>
+  </div>
 
-  <!-- LEGAL FOOTER -->
-  <footer class="legal">
-    <div class="legal-inner">
-      <span class="copy">© <span id="yr">2026</span> BlaineSide. Not affiliated with Rockstar Games or Take-Two Interactive.</span>
-      <nav class="legal-links">
-        <a href="https://forums.blaineside.com/rules" target="_blank" rel="noopener">Rules</a>
-        <a href="https://forums.blaineside.com/privacy" target="_blank" rel="noopener">Privacy</a>
-        <a href="https://forums.blaineside.com/terms" target="_blank" rel="noopener">Terms</a>
-        <a href="mailto:support@blaineside.com">Contact</a>
-      </nav>
-      <span class="utc" id="utcClock" title="All server times are in UTC">UTC 00:00</span>
+  <div class="foot">
+    <span>© 2026 BlaineSide · Not affiliated with Rockstar Games or Take-Two Interactive.</span>
+    <div class="links"><a>Rules</a><a>Privacy</a><a>Terms</a><a>Contact</a><span class="clock"><i class="fa fa-clock-o"></i> UTC 09:13</span></div>
+  </div>
+
+  <div class="loadscreen" id="loadscreen">
+    <div class="ls-inner">
+      <div class="ls-brand"><span class="mark">BLAINE<em>SIDE</em></span></div>
+      <div class="ls-title">Loading your UCP</div>
+      <div class="ls-bar"><span id="lsFill"></span></div>
+      <div class="ls-sub" id="lsSub">Connecting to Blaine County…</div>
     </div>
-  </footer>
+  </div>
+</div>
 
 <script>
-  // DEMO ONLY — the backend replaces these with real lookups.
-  // Reserved names that should never be claimable (system/staff handles):
-  const TAKEN_NAMES = ['admin','administrator','owner','blaineside','staff','moderator','support'];
-  const USED_EMAILS = ['test@blaineside.com','taken@example.com'];
-  // Disposable / throwaway email domains to reject. Extend this list, or better,
-  // validate server-side against a maintained list (e.g. the "disposable-email-domains" package).
-  const DISPOSABLE_DOMAINS = new Set([
-    'mailinator.com','guerrillamail.com','guerrillamail.info','sharklasers.com',
-    'temp-mail.org','tempmail.com','tempmailo.com','10minutemail.com','10minutemail.net',
-    'yopmail.com','throwawaymail.com','trashmail.com','getnada.com','maildrop.cc',
-    'dispostable.com','fakeinbox.com','mohmal.com','emailondeck.com','moakt.com',
-    'mytemp.email','tempr.email','discard.email','spamgourmet.com','tmail.io',
-    'burnermail.io','mailnesia.com','anonaddy.com','einrot.com','tempmail.plus'
-  ]);
-  let userState=false, emailState=false, userTimer, emailTimer;
+/* ---------------------------------------------------------------------------
+   Capacity meter: fill + colour by load (green <60%, amber 60-85%, red >85%).
+   Values come from data-count / data-max on #live — have the server write the
+   real numbers there when the game server exists. Nothing else needs changing.
+--------------------------------------------------------------------------- */
+(function(){
+  var live=document.getElementById('live'); if(!live) return;
+  var count=+live.getAttribute('data-count'), max=+live.getAttribute('data-max');
+  var pct=Math.max(0,Math.min(100,Math.round(count/max*100)));
+  document.getElementById('lvCount').textContent=count.toLocaleString('en-US');
+  document.getElementById('lvMax').textContent='/'+max;
+  document.getElementById('lvPct').textContent=pct+'% capacity';
+  document.getElementById('lvFill').style.width=pct+'%';
+  var bar=document.getElementById('lvBar');
+  bar.classList.remove('load-low','load-mid','load-high');
+  bar.classList.add(pct<60?'load-low':pct<85?'load-mid':'load-high');
+})();
 
-  const VIEWS=['login','register','reset','verify'];
-  const tabsEl=()=>document.querySelector('.tabs');
+/* Show/hide password + remember-me toggle */
+document.addEventListener('click',function(e){
+  var s=e.target.closest('[data-show]'); if(s){var i=document.getElementById(s.getAttribute('data-show'));var v=i.type==='password';i.type=v?'text':'password';s.textContent=v?'Hide':'Show';return;}
+  var c=e.target.closest('[data-chk]'); if(c){c.classList.toggle('on');}
+});
 
-  function hideAll(){
-    document.querySelectorAll('#login,#register,#reset').forEach(f=>{f.classList.remove('active');f.style.display='none';});
-    document.getElementById('verify').style.display='none';
-    ['login','register','reset','verify'].forEach(v=>{const h=document.getElementById('head-'+v);if(h)h.style.display='none';});
+/* ---------------------------------------------------------------------------
+   Sign in — real authentication against api/login.php.
+   The server owns every decision here: whether the credentials are valid,
+   whether this account+IP is locked, and for how long. The page only renders
+   what it is told, so refreshing no longer clears a lockout.
+--------------------------------------------------------------------------- */
+(function(){
+  var user=document.getElementById('user'), pw=document.getElementById('pw'),
+      inpUser=document.getElementById('inpUser'), inpPw=document.getElementById('inpPw'),
+      msgUser=document.getElementById('msg-user'), msgPw=document.getElementById('msg-pw'),
+      btn=document.getElementById('signinBtn'), lockbar=document.getElementById('lockbar'),
+      lockmsg=document.getElementById('lockmsg'), remember=document.querySelector('[data-chk]');
+  var locked=false, timer=null, busy=false;
+
+  function setMsg(m,box,state,text){
+    box.classList.remove('invalid'); if(state==='err')box.classList.add('invalid');
+    if(!state){m.className='msg';m.textContent='';return;}
+    m.className='msg show '+(state==='ok'?'ok':'err');
+    m.innerHTML='<i class="fa '+(state==='ok'?'fa-check-circle':'fa-exclamation-circle')+'"></i> '+text;
   }
-  function showForm(name){ showView(name); }
-  function showView(name){
-    hideAll();
-    const head=document.getElementById('head-'+name);
-    if(head) head.style.display='block';
-    const el=document.getElementById(name);
-    if(name==='verify'){ el.style.display='flex'; }
-    else { el.style.display='flex'; el.classList.add('active'); }
-    // tabs only make sense on login/register
-    const onTab = (name==='login'||name==='register');
-    tabsEl().style.display = onTab ? 'flex' : 'none';
-    document.getElementById('tab-login').classList.toggle('active', name==='login');
-    document.getElementById('tab-register').classList.toggle('active', name==='register');
-    // clear login banner when leaving
-    if(name!=='login') hideBanner();
-    // autofocus first field
-    setTimeout(()=>{const f=el.querySelector('input:not([type=checkbox])');if(f)f.focus();},60);
-  }
-  function togglePw(id,btn){const el=document.getElementById(id);const s=el.type==='password';el.type=s?'text':'password';btn.textContent=s?'Hide':'Show';}
-  function setState(el,ok){el.classList.remove('valid','invalid','checking');if(el.value.trim()!=='')el.classList.add(ok?'valid':'invalid');}
+  function clearMsgs(){setMsg(msgUser,inpUser,null);setMsg(msgPw,inpPw,null);}
 
-  /* ===== CAPS LOCK ===== */
-  function capsCheck(e,id){
-    const on = e.getModifierState && e.getModifierState('CapsLock');
-    document.getElementById(id).classList.toggle('on', !!on);
-  }
-
-  /* ===== BUTTON LOADING STATE ===== */
-  function btnLoad(btn){btn.classList.add('loading');btn.disabled=true;}
-  function btnDone(btn,label){btn.classList.remove('loading');btn.classList.add('done');btn.textContent=label;}
-  function btnReset(btn,label){btn.classList.remove('loading','done');btn.disabled=false;btn.textContent=label;}
-
-  /* ===== LOGIN with LOCKOUT (3 tries -> 30 min) ===== */
-  const MAX_TRIES=3, LOCK_MS=30*60*1000;
-  // demo credential — replace with real auth. Any other password fails.
-  const DEMO_USER='Name101', DEMO_PASS='BlaineCounty26';
-  // demo list of existing account names (lowercase) — replace with a real server lookup.
-  // A name NOT in here is reported as "doesn't exist" and does NOT count toward the lockout.
-  // DEMO ONLY — accounts the mock sign-in recognises. Backend replaces this.
-  const KNOWN_ACCOUNTS=['name101'];
-
-  function lockState(){try{return JSON.parse(localStorage.getItem('bs-lock')||'{"fails":0,"until":0}')}catch(e){return{fails:0,until:0}}}
-  function saveLock(s){try{localStorage.setItem('bs-lock',JSON.stringify(s))}catch(e){}}
-  function showBanner(type,html){
-    const b=document.getElementById('login-banner');
-    b.className='banner '+type;b.style.display='flex';
-    document.getElementById('login-banner-text').innerHTML=html;
-  }
-  function hideBanner(){const b=document.getElementById('login-banner');if(b)b.style.display='none';}
-  function minsLeft(until){return Math.max(1,Math.ceil((until-Date.now())/60000));}
-
-  function submitLogin(btn){
-    const s=lockState();
-    if(s.until && Date.now()<s.until){
-      showBanner('err','Too many attempts. Try again in <b>'+minsLeft(s.until)+' min</b>, or reset your password.');
-      return;
+  /* Runs the lock countdown using the server's remaining seconds. */
+  function lockFor(seconds){
+    locked=true;
+    var left=seconds;
+    btn.setAttribute('aria-disabled','true'); user.disabled=true; pw.disabled=true;
+    setMsg(msgPw,inpPw,null); lockbar.classList.add('show');
+    clearInterval(timer);
+    function tick(){
+      if(left<=0){
+        clearInterval(timer); locked=false;
+        btn.setAttribute('aria-disabled','false'); user.disabled=false; pw.disabled=false;
+        lockbar.classList.remove('show'); pw.value=''; pw.focus(); return;
+      }
+      lockmsg.textContent='Too many attempts. Locked — try again in '+UCP.fmtSecs(left)+'.';
+      left--;
     }
-    const user=document.getElementById('l-user').value.trim();
-    const pass=document.getElementById('l-pass').value;
-    if(!user||!pass){showBanner('err','Enter your UCP account name and password.');return;}
-    hideBanner();btnLoad(btn);
+    tick(); timer=setInterval(tick,1000);
+  }
 
-    fetch('api/login.php',{
-      method:'POST', credentials:'include',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username:user, password:pass, remember:document.getElementById('l-remember').checked})
-    }).then(r=>r.json().then(d=>({status:r.status,d}))).then(({status,d})=>{
+  /* Where to send the user after a successful sign-in.
+     Preserves the existing forum/OAuth hand-off exactly. */
+  function destination(fallback){
+    var params=new URLSearchParams(window.location.search);
+    var FORUM='https://forum.blaineside.com';
+    var isForum=function(u){return typeof u==='string' && u.indexOf(FORUM)===0;};
+    if(params.get('next')==='oauth_resume') return '/api/oauth/authorize.php?resume=1';
+    if(isForum(params.get('return')))       return params.get('return');
+    if(isForum(document.referrer))          return document.referrer;
+    return fallback || '/dashboard';
+  }
+
+  function loadUCP(dest){
+    var ls=document.getElementById('loadscreen'), f=document.getElementById('lsFill'), sub=document.getElementById('lsSub');
+    ls.classList.add('show');
+    var msgs=['Connecting to Blaine County…','Loading your characters…','Syncing money & vehicles…','Almost there…'];
+    var p=0;
+    var iv=setInterval(function(){
+      p+=Math.random()*20+9; if(p>100)p=100;
+      f.style.width=p+'%';
+      sub.textContent=msgs[Math.min(msgs.length-1,Math.floor(p/26))];
+      if(p>=100){clearInterval(iv); sub.textContent='Ready — welcome back.'; setTimeout(function(){window.location=dest;},350);}
+    },430);
+  }
+
+  function attempt(){
+    if(locked||busy) return;
+    clearMsgs();
+    var u=user.value.trim();
+    if(!u){setMsg(msgUser,inpUser,'err','Enter your UCP account name.');user.focus();return;}
+    if(!pw.value){setMsg(msgPw,inpPw,'err','Enter your password.');pw.focus();return;}
+
+    busy=true; btn.setAttribute('aria-disabled','true');
+    UCP.post('login.php',{
+      username:u, password:pw.value,
+      remember: !!(remember && remember.classList.contains('on'))
+    }).then(function(res){
+      var d=res.data||{};
+      busy=false;
       if(d.ok){
-        saveLock({fails:0,until:0});
-        // Save the username so it can be pre-filled next time
-        try { localStorage.setItem('bs-last-user', user); } catch(e){}
-        btnDone(btn,'Signed in ✓');
-        showBanner('ok','Welcome back. Taking you to your UCP…');
-        document.getElementById('login-banner').className='banner ok';
-        const params   = new URLSearchParams(window.location.search);
-        const nextParam = params.get('next');
-        const FORUM = 'https://forum.blaineside.com';
-        const isForum = u => typeof u === 'string' && u.startsWith(FORUM);
-        let dest;
-        if (nextParam === 'oauth_resume') {
-          // OAuth flow — resume authorise page which then redirects to forum
-          dest = '/api/oauth/authorize.php?resume=1';
-        } else if (isForum(params.get('return'))) {
-          // Explicit ?return= param pointing at the forum
-          dest = params.get('return');
-        } else if (isForum(document.referrer)) {
-          // User navigated here from the forum — send them back
-          dest = document.referrer;
-        } else {
-          // Direct UCP login — go to the dashboard
-          dest = d.redirect || 'dashboard.html';
-        }
-        setTimeout(()=>{ window.location = dest; }, 600);
+        try{ localStorage.setItem('bs-last-user',u); }catch(e){}
+        setMsg(msgUser,inpUser,'ok','UCP found.');
+        setMsg(msgPw,inpPw,'ok','Signing you in…');
+        loadUCP(destination(d.redirect));
         return;
       }
-      // Unverified / suspended come back as 403 — show the message, don't lock.
-      if(status===403){ btnReset(btn,'Sign in'); showBanner('err', escapeHtml(d.error||'Access denied.')); return; }
-      // Wrong credentials (401) count toward the local lockout.
-      const st=lockState();st.fails=(st.fails||0)+1;
-      if(st.fails>=MAX_TRIES){st.until=Date.now()+LOCK_MS;st.fails=0;saveLock(st);
-        btnReset(btn,'Sign in');
-        showBanner('err','Too many failed attempts. Your login is locked for <b>30 minutes</b>. You can reset your password to regain access sooner.');
-      } else {
-        saveLock(st);
-        btnReset(btn,'Sign in');
-        const left=MAX_TRIES-st.fails;
-        showBanner('err', escapeHtml(d.error||'Incorrect username or password.')+' <b>'+left+' attempt'+(left===1?'':'s')+'</b> left before a temporary lockout.');
+      btn.setAttribute('aria-disabled','false');
+      // Server says this account+IP is locked — mirror its countdown.
+      if(d.locked && d.locked_for){ lockFor(d.locked_for); return; }
+      // Unverified / suspended (403) — surface the reason, no attempt counting.
+      if(res.status===403){ setMsg(msgPw,inpPw,'err',UCP.esc(d.error||'Access denied.')); return; }
+      // Wrong credentials. One generic message for both cases so we never
+      // reveal whether a UCP name exists.
+      var msg=UCP.esc(d.error||'Incorrect UCP name or password.');
+      if(typeof d.left==='number' && d.left>0){
+        msg+=' '+d.left+' attempt'+(d.left===1?'':'s')+' left before a temporary lock.';
       }
-    }).catch(()=>{
-      btnReset(btn,'Sign in');
-      showBanner('err','Could not reach the server. Please try again.');
+      setMsg(msgPw,inpPw,'err',msg);
+      pw.focus(); pw.select();
+    }).catch(function(){
+      busy=false; btn.setAttribute('aria-disabled','false');
+      setMsg(msgPw,inpPw,'err','Could not reach the server. Please try again.');
     });
   }
-  function escapeHtml(str){return str.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-  /* ===== REGISTER -> VERIFY ===== */
-  function submitRegister(btn){
-    if(btn.disabled) return;
-    btnLoad(btn);
-    const payload={
-      username:document.getElementById('r-user').value.trim(),
-      email:document.getElementById('r-email').value.trim(),
-      discord:document.getElementById('r-discord').value.trim(),
-      password:document.getElementById('r-pass').value
-    };
-    fetch('api/register.php',{
-      method:'POST', credentials:'include',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
-    }).then(r=>r.json()).then(d=>{
-      btnReset(btn,'Create UCP');
-      if(d.ok){
-        document.getElementById('verify-email').textContent=d.email||payload.email||'your address';
-        window._pendingEmail=d.email||payload.email;
-        showView('verify');
-      } else {
-        // surface the server-side reason on the register form
-        alert(d.error||'Could not create the account.');
-      }
-    }).catch(()=>{
-      btnReset(btn,'Create UCP');
-      alert('Could not reach the server. Please try again.');
-    });
-  }
-  let resendTimer=null;
-  function resendVerify(b){
-    b.disabled=true;let n=30;
-    fetch('api/resend.php',{
-      method:'POST', credentials:'include',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:window._pendingEmail||''})
-    }).catch(()=>{});
-    b.textContent='Sent ✓';
-    clearInterval(resendTimer);
-    const tick=()=>{b.textContent='Resend in '+n+'s';n--;if(n<0){clearInterval(resendTimer);b.disabled=false;b.textContent='Resend email';}};
-    setTimeout(()=>{tick();resendTimer=setInterval(tick,1000);},600);
-  }
+  btn.addEventListener('click',function(e){e.preventDefault();attempt();});
+  [user,pw].forEach(function(el){el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();attempt();}});});
+  [user,pw].forEach(function(el){el.addEventListener('input',function(){if(!locked)clearMsgs();});});
 
-  /* ===== RESET ===== */
-  function submitReset(btn){
-    const el=document.getElementById('reset-email'),msg=document.getElementById('reset-msg');
-    const v=el.value.trim();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){setState(el,false);msg.textContent='Enter a valid email address.';msg.className='msg err';return;}
-    msg.textContent='';setState(el,true);btnLoad(btn);
-    setTimeout(()=>{
-      btnDone(btn,'Link sent ✓');
-      document.getElementById('reset-ok').style.display='flex';
-    },850);
-  }
+  /* Pre-fill the last username used on this device. */
+  try{ var last=localStorage.getItem('bs-last-user'); if(last && !user.value){ user.value=last; } }catch(e){}
 
-  function onUserInput(){
-    const el=document.getElementById('r-user'),msg=document.getElementById('r-user-msg'),spin=document.getElementById('r-user-spin');
-    const v=el.value.trim();userState=false;clearTimeout(userTimer);
-    if(v===''){el.classList.remove('valid','invalid','checking');spin.style.display='none';msg.textContent='';msg.className='msg';validateRegister();return;}
-    if(!/^[a-zA-Z0-9_]{3,20}$/.test(v)){el.classList.remove('checking');spin.style.display='none';setState(el,false);msg.textContent='3–20 characters. Letters, numbers and underscores only.';msg.className='msg err';validateRegister();return;}
-    el.classList.add('checking');spin.style.display='block';msg.textContent='Checking availability…';msg.className='msg checking';
-    userTimer=setTimeout(()=>{
-      fetch('api/check.php?username='+encodeURIComponent(v),{credentials:'include'})
-        .then(r=>r.json()).then(d=>{
-          spin.style.display='none';
-          const available=d.ok && d.available;
-          if(!available){
-            setState(el,false);
-            msg.textContent = d.reason==='reserved' ? 'That name is reserved.' : 'That name is already taken. Try another.';
-            msg.className='msg err';userState=false;
-          } else {
-            setState(el,true);msg.textContent='"'+v+'" is available.';msg.className='msg good';userState=true;
-          }
-          validateRegister();
-        }).catch(()=>{spin.style.display='none';msg.textContent='';userState=false;validateRegister();});
-    },500);
-    validateRegister();
-  }
-  function onEmailInput(){
-    const el=document.getElementById('r-email'),msg=document.getElementById('r-email-msg'),spin=document.getElementById('r-email-spin');
-    const v=el.value.trim();emailState=false;clearTimeout(emailTimer);
-    if(v===''){el.classList.remove('valid','invalid','checking');spin.style.display='none';msg.textContent='';msg.className='msg';validateRegister();return;}
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){el.classList.remove('checking');spin.style.display='none';setState(el,false);msg.textContent='Enter a valid email address.';msg.className='msg err';validateRegister();return;}
-    // Reject disposable / throwaway domains outright — no availability check needed.
-    const domain=v.toLowerCase().split('@')[1];
-    if(DISPOSABLE_DOMAINS.has(domain)){el.classList.remove('checking');spin.style.display='none';setState(el,false);
-      msg.textContent='That email provider isn\u2019t accepted \u2014 it\u2019s on our disposable-email blocklist. Please use a permanent address.';msg.className='msg err';emailState=false;validateRegister();return;}
-    el.classList.add('checking');spin.style.display='block';msg.textContent='Checking email…';msg.className='msg checking';
-    emailTimer=setTimeout(()=>{
-      fetch('api/check.php?email='+encodeURIComponent(v),{credentials:'include'})
-        .then(r=>r.json()).then(d=>{
-          spin.style.display='none';
-          const available=d.ok && d.available;
-          if(!available){setState(el,false);msg.textContent='An account already uses this email.';msg.className='msg err';emailState=false;}
-          else{setState(el,true);msg.textContent='Email available.';msg.className='msg good';emailState=true;}
-          validateRegister();
-        }).catch(()=>{spin.style.display='none';msg.textContent='';emailState=false;validateRegister();});
-    },500);
-    validateRegister();
-  }
-  function checkDiscord(){
-    const el=document.getElementById('r-discord'),hint=document.getElementById('r-discord-hint');const v=el.value.trim();
-    const ok=/^[a-z0-9._]{2,32}$/.test(v);setState(el,ok);
-    if(v===''){hint.textContent='Used for verification and support. Enter your new-style Discord handle.';hint.className='hint';}
-    else if(!ok){hint.textContent='Lowercase letters, numbers, dots and underscores only.';hint.className='hint warn';}
-    else{hint.textContent='Looks good.';hint.className='hint';}validateRegister();
-  }
-  function checkStrength(){
-    const v=document.getElementById('r-pass').value;
-    const reqs={len:v.length>=8,upper:/[A-Z]/.test(v),num:/[0-9]/.test(v)};
-    document.getElementById('req-len').classList.toggle('met',reqs.len);
-    document.getElementById('req-upper').classList.toggle('met',reqs.upper);
-    document.getElementById('req-num').classList.toggle('met',reqs.num);
-    document.querySelectorAll('.reqs li.met .tick').forEach(t=>t.textContent='✓');
-    document.querySelectorAll('.reqs li:not(.met) .tick').forEach(t=>t.textContent='');
-    let score=Object.values(reqs).filter(Boolean).length;
-    const bars=document.querySelectorAll('.bars i');
-    const colors=['','#c1553f','#e2b65c','#7fa05a'];
-    const labels=['Password strength','Weak','Good','Strong'];
-    bars.forEach((b,i)=>b.style.background=(i<score && v)? colors[score]:'var(--charcoal-3)');
-    const lab=document.getElementById('r-strength-label');
-    lab.textContent=v? labels[score]:'Password strength';
-    lab.style.color=v? colors[score]:'var(--text-dim)';
-    checkMatch();validateRegister();
-  }
-  function checkMatch(){
-    const p1=document.getElementById('r-pass').value,p2=document.getElementById('r-pass2').value;
-    const el=document.getElementById('r-pass2'),msg=document.getElementById('r-match-msg');
-    if(p2===''){el.classList.remove('valid','invalid');msg.textContent='';return;}
-    const ok=p1===p2;setState(el,ok);msg.textContent=ok?'Passwords match.':'Passwords don\'t match.';msg.className='msg '+(ok?'good':'err');
-  }
-  function validateRegister(){
-    const discord=/^[a-z0-9._]{2,32}$/.test(document.getElementById('r-discord').value.trim());
-    const p=document.getElementById('r-pass').value;
-    const pass=p.length>=8 && /[A-Z]/.test(p) && /[0-9]/.test(p);
-    const match=p===document.getElementById('r-pass2').value && p!=='';
-    const terms=document.getElementById('r-terms').checked;
-    document.getElementById('r-submit').disabled=!(userState&&emailState&&discord&&pass&&match&&terms);
-  }
-  /* ===== SERVER STATUS PILL =====
-     No server yet. When you have one, set API_URL to your FiveM players.json
-     (usually http://YOUR_IP:30120/players.json) and MAX_SLOTS to your slot count. */
-  const API_URL=""; const MAX_SLOTS=64;
-  async function refreshServer(){
-    const pill=document.getElementById('serverPill'),txt=document.getElementById('serverText');
-    if(!API_URL){pill.classList.remove('online');txt.textContent='Server offline';return;}
-    try{
-      const r=await fetch(API_URL,{cache:'no-store'});const data=await r.json();
-      const n=Array.isArray(data)?data.length:(data.clients??0);
-      pill.classList.add('online');
-      txt.innerHTML='Server online <span class="ssep"></span> <span class="scount">'+n+' / '+MAX_SLOTS+'</span>';
-    }catch(e){pill.classList.remove('online');txt.textContent='Server offline';}
-  }
-  refreshServer();setInterval(refreshServer,60000);
-
-  /* ===== UTC CLOCK (server runs on UTC) ===== */
-  function tickUTC(){
-    const d=new Date();
-    const hh=String(d.getUTCHours()).padStart(2,'0');
-    const mm=String(d.getUTCMinutes()).padStart(2,'0');
-    const el=document.getElementById('utcClock');
-    if(el) el.textContent='UTC '+hh+':'+mm;
-  }
-  tickUTC();setInterval(tickUTC,15000);
-  (function(){const y=document.getElementById('yr');if(y)y.textContent=new Date().getUTCFullYear();})();
-
-  /* ===== INIT ===== */
+  /* -------------------------------------------------------------------------
+     "Last sign-in …" notice. Only shown when this device actually has a real
+     previous sign-in recorded (cookie set by api/login.php). No cookie — first
+     visit, cleared, or private window — and the element is removed entirely
+     rather than showing a guess.
+  ------------------------------------------------------------------------- */
   (function(){
-    // Pre-fill username from last successful login
-    try {
-      const saved = localStorage.getItem('bs-last-user');
-      if (saved) document.getElementById('l-user').value = saved;
-    } catch(e){}
-
-    // Only auto-redirect to dashboard if the user explicitly chose "Remember me".
-    // A plain session (no remember me) should require re-login when they come back.
-    const params = new URLSearchParams(window.location.search);
-    const skipCheck = params.get('next') === 'oauth_resume';
-    if (!skipCheck) {
-      fetch('api/session.php', { credentials: 'include' })
-        .then(r => r.json())
-        .then(d => {
-          if (d.authenticated && d.remember) {
-            window.location = 'dashboard.html';
-          }
-        })
-        .catch(() => {});
-    }
-
-    // If a returning user is still locked out, tell them up front.
-    const s=lockState();
-    if(s.until && Date.now()<s.until){
-      showBanner('err','Your login is temporarily locked. Try again in <b>'+minsLeft(s.until)+' min</b>, or reset your password.');
-    }
-    showView('login');
+    var note=document.querySelector('.signnote');
+    if(!note) return;
+    var raw=UCP.readCookie('bsucp_last');
+    var data=null;
+    if(raw){ try{ data=JSON.parse(raw); }catch(e){ data=null; } }
+    if(!data || !data.ts){ note.remove(); return; }
+    note.innerHTML='<i class="fa fa-clock-o"></i> Last sign-in '+UCP.relTime(data.ts)+
+                   (data.same ? ' · from this device' : ' · new device');
   })();
+
+  /* Messages carried back from the email verification link. */
+  (function(){
+    var v=new URLSearchParams(window.location.search).get('verify');
+    if(!v) return;
+    if(v==='already') setMsg(msgUser,inpUser,'ok','Your email is already verified — sign in below.');
+    if(v==='used')    setMsg(msgUser,inpUser,'err','That verification link has already been used. Try signing in.');
+    if(v==='invalid') setMsg(msgUser,inpUser,'err','That verification link was not valid. Request a new one.');
+  })();
+})();
 </script>
-</body>
-</html>
+</body></html>

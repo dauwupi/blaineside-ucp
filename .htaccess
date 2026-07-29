@@ -1,0 +1,62 @@
+# =====================================================================
+# BlaineSide UCP — clean URLs
+#
+# Every page is reachable without its .html extension:
+#   /login  /create  /verify  /reset  /reset-confirm  /welcome
+#   /dashboard  /dashboard/bulletin
+#
+# The .html files stay exactly where they are on disk — nothing is
+# renamed — so any old link that still points at /login.html keeps
+# working and is redirected to the clean form.
+# =====================================================================
+
+RewriteEngine On
+
+# ---------------------------------------------------------------------
+# Leave the API completely alone. It has its own .htaccess.
+# ---------------------------------------------------------------------
+RewriteRule ^api/ - [L]
+
+# ---------------------------------------------------------------------
+# 1. Old links -> canonical clean URL (301, so search engines and
+#    browsers update). Only fires on a real browser request, never on
+#    our own internal rewrite below.
+# ---------------------------------------------------------------------
+RewriteCond %{ENV:REDIRECT_STATUS} ^$
+RewriteRule ^(.+)\.html$ /$1 [R=301,L]
+
+# The old root dashboard page moved into the folder.
+RewriteRule ^dashboard\.html$ /dashboard [R=301,L]
+
+# ---------------------------------------------------------------------
+# 2. Clean URL -> the real file.
+#    /dashboard      -> dashboard/index.html   (directory)
+#    /login          -> login.html             (file)
+# ---------------------------------------------------------------------
+# DirectorySlash would otherwise bounce /dashboard -> /dashboard/ first.
+DirectorySlash Off
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME}/index.html -f
+RewriteRule ^(.+?)/?$ $1/index.html [L]
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^(.+?)/?$ $1.html [L]
+
+# ---------------------------------------------------------------------
+# 3. "/" serves the sign-in page directly rather than bouncing through
+#    index.html's meta refresh.
+# ---------------------------------------------------------------------
+DirectoryIndex index.html
+
+# ---------------------------------------------------------------------
+# Housekeeping
+# ---------------------------------------------------------------------
+Options -Indexes
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+ErrorDocument 404 /login

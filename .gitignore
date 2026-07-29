@@ -10,3 +10,7 @@ Thumbs.db
 *.log
 node_modules/
 __pycache__/
+
+# Media that doesn't belong in git
+*.mp4
+*.mov

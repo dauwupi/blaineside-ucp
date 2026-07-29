@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!-- BlaineSide — PASSWORD RESET request (ucp.blaineside.com). Example data. -->
+<html lang="en"><head><meta charset="utf-8">
+<title>Reset your password — BlaineSide UCP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="assets/fa/fontawesome.css">
+<link rel="stylesheet" href="assets/css/ucp.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--amber:#d4923a;--gold:#e2b65c;--parch:#f1efe9;--surface-2:#221f1c;--border:#3a342c;--line:#2b2620;--text-dim:#a89e90;--text-faint:#787064;--green:#57b26a}
+.stage{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,#0e0d0b,#131009 60%,#0b0a08)}
+.scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;background-color:#0b0a08;background-position:center;background-size:cover;background-repeat:no-repeat}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none;background:
+  radial-gradient(98% 80% at 50% 42%,rgba(10,9,8,.42),rgba(10,9,8,.9)),
+  linear-gradient(180deg,rgba(10,9,8,.78) 0%,rgba(10,9,8,.24) 25%,rgba(10,9,8,.3) 56%,rgba(10,9,8,.92) 100%)}
+.top{position:relative;z-index:2;display:flex;align-items:center;padding:24px 40px}
+.back{margin-left:auto;display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-dim);padding:9px 15px 9px 12px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.015);transition:.18s cubic-bezier(.2,.8,.2,1)}
+.back .fa{font-size:11px;color:var(--text-faint);transition:.18s}
+.back .site{color:var(--parch);font-weight:700}
+.back:hover{border-color:rgba(212,146,58,.55);background:rgba(212,146,58,.07);color:var(--parch)}
+.back:hover .fa{color:var(--gold);transform:translateX(-3px)}
+.center{position:relative;z-index:2;flex:1;display:grid;place-items:center;padding:20px 24px 40px}
+.panel{width:100%;max-width:452px;background:linear-gradient(180deg,rgba(31,28,25,.92),rgba(20,18,16,.94));border:1px solid rgba(255,255,255,.05);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.6);backdrop-filter:blur(16px);padding:38px 34px;animation:pop .6s cubic-bezier(.2,.85,.25,1) both}
+.badge{width:60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:22px;color:var(--gold);background:rgba(212,146,58,.1);border:1px solid rgba(212,146,58,.22);margin-bottom:20px}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--amber)}
+.panel h2{font-size:23px;font-weight:800;letter-spacing:-.02em;margin-top:9px}
+.panel .sub{font-size:13.5px;color:var(--text-dim);line-height:1.6;margin-top:9px}
+.panel .sub b{color:var(--parch);font-weight:700}
+.field{margin-top:20px}
+.field label{display:flex;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:8px}
+.field label .req{color:var(--amber);margin-left:3px}
+.inp input{width:100%;background:rgba(14,13,11,.75);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--parch);font-family:inherit;font-size:14px;outline:none;transition:.15s}
+.inp input::placeholder{color:var(--text-faint)}
+.inp input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.15);background:rgba(14,13,11,.9)}
+.btn{display:block;width:100%;margin-top:20px;padding:15px;border:none;border-radius:11px;background:linear-gradient(180deg,var(--gold),var(--amber));color:#17140f;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 12px 26px rgba(212,146,58,.22);transition:.15s;text-align:center}
+.btn:hover{filter:brightness(1.05)}
+.alt{text-align:center;font-size:13px;color:var(--text-dim);margin-top:18px}
+.alt a{color:var(--gold);font-weight:700}
+/* sent state */
+.sent{display:none;text-align:center}
+.sent.on{display:block}
+.req-form.off{display:none}
+.badge.sent-badge{margin:0 auto 22px;color:var(--green);background:rgba(87,178,106,.1);border-color:rgba(87,178,106,.24)}
+.mailrow{display:inline-flex;align-items:center;gap:9px;margin-top:16px;padding:10px 16px;border:1px solid var(--border);border-radius:10px;background:rgba(14,13,11,.6);font-size:13.5px;font-weight:600}
+.mailrow .fa{color:var(--amber)}
+.resend{font-size:12.5px;color:var(--text-faint);margin-top:20px}
+.resend a{color:var(--gold);font-weight:700;cursor:pointer}
+.foot{position:relative;z-index:2;display:flex;align-items:center;gap:20px;padding:16px 40px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-faint);background:rgba(11,10,8,.5);backdrop-filter:blur(6px)}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel{animation:none}}
+@media (max-width:560px){.top{padding:20px 20px}.foot{flex-direction:column;gap:12px;text-align:center;padding:18px 24px}.foot .links{margin:0}.panel{padding:32px 24px}.brand .tag{display:none}.back .bl{display:none}.back{padding:8px 13px}.navbtn .nb{display:none}.navbtn{padding:9px 12px}}
+</style><script src="assets/js/ucp.js"></script>
+</head>
+<body>
+<div class="stage">
+  <div class="scene"></div>
+<div class="tod"></div>
+<div class="scrim"></div>
+
+  <div class="top">
+    <a class="brand" href="/login"><span class="mark">BLAINE<em>SIDE</em></span><span class="tag">UCP</span></a>
+    <nav class="navbtns">
+      <a class="navbtn" href="https://blaineside.com"><i class="fa fa-home"></i> <span class="nb">Landing page</span></a>
+      <a class="navbtn" href="https://forum.blaineside.com"><i class="fa fa-comments-o"></i> <span class="nb">Forums</span></a>
+    </nav>
+  </div>
+
+  <div class="center">
+    <div class="panel">
+      <!-- request state -->
+      <div class="req-form" id="reqForm">
+        <div class="badge"><i class="fa fa-lock"></i></div>
+        <div class="eyebrow">Account recovery</div>
+        <h2>Reset your password</h2>
+        <p class="sub">Enter the email on your UCP and we'll send a link to set a new password. The link is valid for 30 minutes.</p>
+        <div class="field">
+          <label>Email <span class="req">*</span></label>
+          <div class="inp"><input type="email" id="email" placeholder="you@example.com"></div>
+        </div>
+        <button class="btn" id="send">Send reset link</button>
+        <div class="alt">Remembered it? <a href="/login">Back to sign in</a></div>
+      </div>
+      <!-- sent state -->
+      <div class="sent" id="sent">
+        <div class="badge sent-badge"><i class="fa fa-check"></i></div>
+        <div class="eyebrow">Check your email</div>
+        <h2>Reset link on its way</h2>
+        <p class="sub">If that address belongs to a UCP, a reset link is on its way. Open it to choose a new password.</p>
+        <div class="mailrow"><i class="fa fa-paper-plane"></i> <span id="sentTo">you@example.com</span></div>
+        <a class="btn" href="/login">Back to sign in</a>
+        <div class="resend">Didn't receive it? <a id="again">Send again</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>© 2026 BlaineSide · Not affiliated with Rockstar Games or Take-Two Interactive.</span>
+    <div class="links"><a href="#">Rules</a><a href="#">Privacy</a><a href="#">Contact</a></div>
+  </div>
+</div>
+<script>
+(function(){
+  var send=document.getElementById('send'), email=document.getElementById('email'),
+      reqForm=document.getElementById('reqForm'), sent=document.getElementById('sent'),
+      sentTo=document.getElementById('sentTo'), again=document.getElementById('again');
+  var busy=false, lastEmail='';
+
+  function go(){
+    if(busy) return;
+    var v=email.value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){
+      email.focus();
+      var box=email.closest('.inp'); if(box){ box.classList.add('invalid'); setTimeout(function(){box.classList.remove('invalid');},1600); }
+      return;
+    }
+    busy=true; lastEmail=v;
+    var original=send.textContent;
+    send.textContent='Sending…';
+    UCP.post('reset.php',{email:v}).then(function(){
+      /* The response is deliberately identical whether or not the address
+         exists, so we always show the same neutral confirmation. */
+      busy=false; send.textContent=original;
+      sentTo.textContent=v;
+      reqForm.classList.add('off'); sent.classList.add('on');
+    }).catch(function(){
+      busy=false; send.textContent=original;
+      sentTo.textContent=v;
+      reqForm.classList.add('off'); sent.classList.add('on');
+    });
+  }
+
+  send.addEventListener('click',go);
+  email.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+
+  if(again){
+    again.addEventListener('click',function(){
+      if(again.dataset.busy) return;
+      again.dataset.busy='1';
+      again.textContent='Sent again ✓';
+      UCP.post('reset.php',{email:lastEmail});
+      setTimeout(function(){ again.dataset.busy=''; again.textContent='Send it again'; }, 30000);
+    });
+  }
+})();
+</script>
+</body></html>

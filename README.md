@@ -1,70 +1,59 @@
 # BlaineSide UCP
 
-Front-end for the BlaineSide User Control Panel (design/prototype phase).
-Self-contained HTML files — no build step, no dependencies.
+User Control Panel for BlaineSide — sign-in, registration, email verification,
+password reset, and the member dashboard. Static pages on Apache with a small
+PHP/MySQL API. No build step.
 
 ## Flow
 
-`index.html` → `login.html` (front door) → `dashboard.html` → `bulletin.html`
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `index.html` | Entry point — redirects to the login page |
-| `login.html` | Sign in / Create UCP / verify email / reset password |
-| `dashboard.html` | Main UCP dashboard |
-| `bulletin.html` | County Bulletin management page |
-
-## Demo credentials (front-end only)
-
-- Username: `Name101`
-- Password: `BlaineCounty26`
-
-Signing in with these redirects to `dashboard.html`. These are placeholders for
-the design demo — real authentication is handled by the backend.
-
-## IMPORTANT: accounts need a backend
-
-`login.html` validates input, checks password strength, detects caps lock, and
-handles lockout — but it CANNOT actually create or verify accounts on its own.
-Creating a UCP account requires a server to store users, hash passwords, send
-verification emails, and issue sessions. The submit functions in `login.html`
-are mocked with clear comments marking where the backend developer hooks in:
-
-- `submitLogin()` — replace the demo check with a real auth request; on success
-  it redirects to `dashboard.html`
-- `submitRegister()` — POST the new account to the server; the verify screen is
-  already built
-- `submitReset()` — trigger a real password-reset email
-- Availability checks (`onUserInput`, `onEmailInput`) — replace the mocked
-  TAKEN_NAMES / USED_EMAILS lists with real lookups
-
-## Local preview
-
-```bash
-python3 -m http.server 8000
-# visit http://localhost:8000
+```
+/ ─▶ /login ─▶ /dashboard
+        │
+        ├─ /create ─▶ /verify ─▶ (email link) ─▶ /welcome
+        └─ /reset  ─▶ (email link) ─▶ /reset-confirm
 ```
 
+Sign-in also serves the forum: `forum.blaineside.com` sends players here via
+OAuth, and `login.html` hands them back afterwards.
 
-## Live links wired
+## Layout
 
-- Login "Back to site" and the wordmark → https://forum.blaineside.com
-- Discord invite (login "Ask in our Discord" + dashboard "Join the Discord") → https://discord.gg/8GUuTBcEsD
-- Login background video → `bg-video-720.mp4` (autoplay, muted, looped)
+| Path | What it holds |
+|------|---------------|
+| `.htaccess` | Clean-URL rules. Serves every page without `.html` and 301s the old `.html` paths to the new ones. |
+| `*.html` (root) | The auth pages, served at `/login`, `/create`, `/verify`, `/reset`, `/reset-confirm`, `/welcome`. **The files must keep these names** — the rewrite rules, the forum's OAuth hand-off and links in already-sent emails all depend on them. |
+| `dashboard/index.html` | Main UCP dashboard — served at `/dashboard` |
+| `dashboard/*.html` | Sub-pages — `bulletin.html` is served at `/dashboard/bulletin` |
+| `assets/css/` | `ucp.css` — shared tokens, backdrop, header/footer |
+| `assets/js/` | `ucp.js` — API access, CSRF, time-of-day backdrop, clock |
+| `assets/img/` | `bg-sandy.jpg` — the Sandy Shores backdrop |
+| `assets/fa/` | FontAwesome 4.7 stylesheet + webfont |
+| `api/` | PHP endpoints (see below) |
+| `api/oauth/` | OAuth provider for the forum — **paths registered inside IPS** |
+| `api/lib/` | PHPMailer |
+| `docs/` | Setup guide, integration notes, SQL migration |
 
-## Still needs the backend
+## API
 
-- Dashboard Discord **stats** now pull live from Discord's public invite +
-  widget API (`loadDiscordStats()` in dashboard.html). To get the live
-  "online now" count, enable the widget: Discord → Server Settings → Widget →
-  Enable Server Widget, then set `DISCORD_GUILD_ID` in dashboard.html. The
-  invite-based member/online counts work without it. Hardcoded numbers remain
-  as a fallback if Discord can't be reached.
-- The signed-in **UCP name** drives the greeting ("Welcome back, …") and the
-  top-right account block via `UCP_NAME` / `UCP_ROLE` in dashboard.html. The
-  demo passes it from login via `?u=`; the backend should set it from the
-  real session instead. Players (no staff rank) → set `UCP_ROLE=''`.
-- Account creation, login, email verification, password reset, and
-  username/email availability are all mocked (see notes above).
+| Endpoint | Purpose |
+|----------|---------|
+| `csrf.php` | Issues the session's CSRF token |
+| `login.php` | Authenticates; enforces the lockout; sets remember-me |
+| `logout.php` | Ends the session |
+| `register.php` | Creates a pending account, emails the verification link |
+| `verify.php` | Consumes the email token, activates, redirects to `welcome.html` |
+| `resend.php` | Re-sends the verification email |
+| `reset.php` | Emails a password-reset link (30-minute, single-use token) |
+| `reset-confirm.php` | Sets the new password, invalidates all sessions |
+| `check.php` | Live username/email availability for the register form |
+| `session.php` | Returns the signed-in user (dashboard calls this on load) |
+
+All state-changing endpoints require the CSRF token, sent as `X-CSRF-Token`.
+Passwords are bcrypt via `password_hash()`; every query is a prepared statement.
+
+## Setup
+
+`api/config.php` holds the database and SMTP credentials. It is git-ignored and
+uploaded by FTP only — never committed. Copy `api/config.example.php` to start.
+
+See `docs/SETUP.md` for first-time setup and `docs/migration.sql` for the schema.

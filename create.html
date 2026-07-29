@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<!--
+  BlaineSide — CREATE UCP / REGISTRATION (ucp.blaineside.com). FiveM serious-RP.
+  Separate page from login. Editorial split: guided "what happens next" steps (left)
+  · informative registration card with live password strength (right). Example data.
+-->
+<html lang="en"><head><meta charset="utf-8">
+<title>Create your UCP — BlaineSide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="assets/fa/fontawesome.css">
+<link rel="stylesheet" href="assets/css/ucp.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+--amber:#d4923a;--gold:#e2b65c;--parch:#f1efe9;
+--surface:#1a1816;--surface-2:#221f1c;--surface-3:#2a2621;
+--border:#3a342c;--line:#2b2620;--text-dim:#a89e90;--text-faint:#787064;
+--green:#57b26a;--red:#c9524a;
+}
+.stage{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;
+  background:
+   radial-gradient(65% 55% at 20% 8%, rgba(212,146,58,.15), transparent 60%),
+   radial-gradient(80% 70% at 92% 104%, rgba(96,124,84,.09), transparent 60%),
+   linear-gradient(180deg,#0e0d0b,#131009 60%,#0b0a08)}
+.stage::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(122deg,rgba(255,255,255,.012) 0 1px,transparent 1px 34px);pointer-events:none}
+.glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;pointer-events:none;animation:drift 24s ease-in-out infinite alternate}
+.glow.a{width:520px;height:520px;left:-140px;top:-160px;background:rgba(212,146,58,.20)}
+.glow.b{width:440px;height:440px;right:-140px;bottom:-160px;background:rgba(120,90,50,.18);animation-delay:-9s}
+/* Sandy Shores photographic background — darkened + faded to blend */
+.scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;background-color:#0b0a08;background-position:center;background-size:cover;background-repeat:no-repeat}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none;background:
+  linear-gradient(90deg,rgba(10,9,8,.95) 0%,rgba(10,9,8,.66) 34%,rgba(10,9,8,.3) 55%,rgba(10,9,8,.62) 100%),
+  linear-gradient(180deg,rgba(10,9,8,.8) 0%,rgba(10,9,8,.1) 24%,rgba(10,9,8,.16) 56%,rgba(10,9,8,.92) 100%)}
+/* top */
+.top{position:relative;z-index:2;display:flex;align-items:center;padding:24px 40px}
+.back{margin-left:auto;display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-dim);
+  padding:9px 15px 9px 12px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.015);transition:.18s cubic-bezier(.2,.8,.2,1)}
+.back .fa{font-size:11px;color:var(--text-faint);transition:.18s}
+.back .site{color:var(--parch);font-weight:700}
+.back:hover{border-color:rgba(212,146,58,.55);background:rgba(212,146,58,.07);color:var(--parch)}
+.back:hover .fa{color:var(--gold);transform:translateX(-3px)}
+/* center */
+.center{position:relative;z-index:2;flex:1;display:grid;grid-template-columns:.92fr 1.08fr;gap:64px;align-items:center;padding:8px 60px 40px;max-width:1240px;margin:0 auto;width:100%}
+/* left guide */
+.intro h1{font-size:44px;font-weight:900;letter-spacing:-.035em;line-height:1.04}
+.intro h1 em{font-style:normal;color:var(--gold)}
+.intro p{font-size:15px;color:var(--text-dim);line-height:1.65;max-width:420px;margin-top:16px}
+.steps{margin-top:30px;position:relative;max-width:410px}
+.steps::before{content:"";position:absolute;left:16px;top:14px;bottom:14px;width:1px;background:linear-gradient(180deg,var(--amber),rgba(212,146,58,.08))}
+.step{display:flex;gap:16px;padding:11px 0}
+.step .n{position:relative;z-index:1;flex:none;width:33px;height:33px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--gold);background:var(--surface-2);border:1px solid var(--border)}
+.step:first-child .n{color:#17140f;background:linear-gradient(180deg,var(--gold),var(--amber));border-color:transparent}
+.step .st-b{font-size:14.5px;font-weight:700;color:var(--parch)}
+.step .st-t{font-size:12.5px;color:var(--text-faint);line-height:1.5;margin-top:3px}
+.assure{display:inline-flex;align-items:center;gap:9px;margin-top:26px;font-size:12.5px;color:var(--text-dim);font-weight:500}
+.assure .fa{color:var(--amber)}
+/* right auth */
+.authwrap{justify-self:center;width:100%;max-width:440px}
+.auth{background:linear-gradient(180deg,rgba(31,28,25,.9),rgba(20,18,16,.93));border:1px solid rgba(255,255,255,.05);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.6);backdrop-filter:blur(16px);overflow:hidden}
+.tabs{display:flex;padding:0;border-bottom:1px solid var(--line)}
+.tab{flex:1;text-align:center;padding:17px 2px;font-size:14px;font-weight:600;color:var(--text-dim);border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-1px;transition:.15s}
+.tab+.tab{border-left:1px solid var(--line)}
+.tab.on{color:var(--gold);border-bottom-color:var(--amber)}
+.tab:hover:not(.on){color:var(--parch);background:rgba(255,255,255,.02)}
+.form{padding:24px 26px 26px}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--amber)}
+.form h2{font-size:22px;font-weight:800;letter-spacing:-.015em;margin-top:9px}
+.form .lede{font-size:13px;color:var(--text-dim);margin-top:7px;line-height:1.5}
+.field{margin-top:16px}
+.field label{display:flex;align-items:center;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:8px}
+.field label .req{color:var(--amber);margin-left:3px}
+.field label .ok{margin-left:auto;font-size:11px;font-weight:700;color:var(--green);opacity:0;transition:.18s;display:inline-flex;align-items:center;gap:5px}
+.field label .ok.on{opacity:1}
+.inp{position:relative}
+.inp .pre{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-faint);pointer-events:none}
+.inp input{width:100%;background:rgba(14,13,11,.75);border:1px solid var(--border);border-radius:10px;padding:13px 14px;color:var(--parch);font-family:inherit;font-size:14px;outline:none;transition:.15s}
+.inp.at input{padding-left:32px}
+.inp input::placeholder{color:var(--text-faint)}
+.inp input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.15);background:rgba(14,13,11,.9)}
+.inp:has(.show) input{padding-right:60px}
+.inp .show{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:600;color:var(--text-faint);cursor:pointer;background:linear-gradient(90deg,transparent,rgba(14,13,11,.95) 26%);padding-left:14px}
+.inp .show:hover{color:var(--gold)}
+.hint{font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:7px}
+.hint a{color:var(--gold);font-weight:600}
+/* info callout */
+.callout{display:flex;gap:10px;margin-top:9px;padding:11px 13px;border-radius:10px;background:rgba(212,146,58,.06);border:1px solid rgba(212,146,58,.16)}
+.callout .fa{color:var(--amber);font-size:12.5px;margin-top:1px;flex:none}
+.callout p{font-size:11.5px;color:var(--text-dim);line-height:1.55;margin:0}
+.callout b{color:var(--gold);font-weight:700}
+/* password strength */
+.meter{display:flex;gap:5px;margin-top:11px}
+.meter i{height:4px;flex:1;border-radius:3px;background:rgba(255,255,255,.08);transition:background .25s}
+.meter.s1 i:nth-child(1){background:var(--red)}
+.meter.s2 i:nth-child(-n+2){background:var(--amber)}
+.meter.s3 i:nth-child(-n+3){background:var(--gold)}
+.meter.s4 i{background:var(--green)}
+.mlabel{font-size:11px;font-weight:600;margin-top:8px;color:var(--text-faint);min-height:14px}
+.reqs{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-faint);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 9px;transition:.2s}
+.chip .fa{font-size:9px;color:var(--text-faint);transition:.2s}
+.chip.met{color:var(--green);border-color:rgba(87,178,106,.35);background:rgba(87,178,106,.07)}
+.chip.met .fa{color:var(--green)}
+.agree{display:flex;gap:11px;align-items:flex-start;margin-top:20px;cursor:pointer}
+.box{width:18px;height:18px;border-radius:6px;border:1px solid var(--border);background:rgba(14,13,11,.75);display:grid;place-items:center;color:transparent;font-size:9px;flex:none;margin-top:1px;transition:.15s}
+.agree.on .box{background:var(--amber);border-color:var(--amber);color:#17140f}
+.agree p{font-size:12px;color:var(--text-dim);line-height:1.55}
+.agree a{color:var(--gold);font-weight:600}
+.submit{display:block;text-align:center;text-decoration:none;width:100%;margin-top:20px;padding:15px;border:none;border-radius:11px;background:linear-gradient(180deg,var(--gold),var(--amber));color:#17140f;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 12px 26px rgba(212,146,58,.22);transition:.15s}
+.submit:hover{filter:brightness(1.05)}
+.submit[aria-disabled="true"]{opacity:.5;box-shadow:none;filter:none}
+.reqs-title{font-size:11.5px;color:var(--text-dim);margin-top:13px;font-weight:500}
+.reqs-title b{color:var(--gold);font-weight:700}
+/* live field validation states */
+.inp.valid input{border-color:rgba(87,178,106,.65);box-shadow:0 0 0 3px rgba(87,178,106,.13);background:rgba(14,13,11,.9)}
+.inp.invalid input{border-color:rgba(201,82,74,.78);box-shadow:0 0 0 3px rgba(201,82,74,.15);background:rgba(20,12,11,.85)}
+.msg{display:none;align-items:center;gap:7px;font-size:11.5px;line-height:1.45;margin-top:8px;font-weight:500}
+.msg.show{display:flex}
+.msg.err{color:#dd7168}
+.msg.ok{color:var(--green)}
+.msg .fa{font-size:10.5px}
+.alt{text-align:center;font-size:13px;color:var(--text-dim);margin-top:16px}
+.alt a{color:var(--gold);font-weight:700}
+/* footer */
+.foot{position:relative;z-index:2;display:flex;align-items:center;gap:20px;padding:16px 40px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-faint);background:rgba(11,10,8,.5);backdrop-filter:blur(6px)}
+.foot .clock{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;color:var(--text-dim);line-height:1}
+.foot .clock .fa{font-size:11px}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(40px,32px)}}
+@media (prefers-reduced-motion:reduce){.glow{animation:none}}
+@media (max-width:980px){
+  .center{grid-template-columns:1fr;gap:32px;padding:16px 26px 30px}
+  .intro{text-align:center}
+  .intro h1{font-size:34px}.intro p{margin-left:auto;margin-right:auto}
+  .steps{margin-left:auto;margin-right:auto;text-align:left}.assure{margin-left:auto;margin-right:auto}
+  .authwrap{max-width:460px}
+  .top{padding:20px 20px}
+  .foot{flex-direction:column;gap:12px;text-align:center;padding:18px 24px}.foot .links{margin:0}
+}
+@media (max-width:460px){.brand .tag{display:none}.back .bl{display:none}.back{padding:8px 13px}.navbtn .nb{display:none}.navbtn{padding:9px 12px}}
+</style><script src="assets/js/ucp.js"></script>
+</head>
+<body>
+<div class="stage">
+  <div class="scene"></div>
+<div class="tod"></div>
+<div class="scrim"></div>
+
+  <div class="top">
+    <a class="brand" href="/login"><span class="mark">BLAINE<em>SIDE</em></span><span class="tag">UCP</span></a>
+    <nav class="navbtns">
+      <a class="navbtn" href="https://blaineside.com"><i class="fa fa-home"></i> <span class="nb">Landing page</span></a>
+      <a class="navbtn" href="https://forum.blaineside.com"><i class="fa fa-comments-o"></i> <span class="nb">Forums</span></a>
+    </nav>
+  </div>
+
+  <div class="center">
+    <!-- LEFT — guided steps -->
+    <div class="intro">
+      <h1>You're a few fields from <em>Blaine County</em>.</h1>
+      <p>Creating a UCP gives you one account for the game server, your characters, and the forums. Here's how the rest goes.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="n">1</div>
+          <div><div class="st-b">Create your UCP</div><div class="st-t">Fill in the details on the right — about a minute.</div></div>
+        </div>
+        <div class="step">
+          <div class="n">2</div>
+          <div><div class="st-b">Confirm your email</div><div class="st-t">We send a link to the address you enter. Click it to activate your UCP.</div></div>
+        </div>
+        <div class="step">
+          <div class="n">3</div>
+          <div><div class="st-b">Log in &amp; play</div><div class="st-t">Sign in, make your first character, and spawn into Los Santos.</div></div>
+        </div>
+      </div>
+      <div class="assure"><i class="fa fa-lock"></i> We never share your email. One login covers the server and the forums.</div>
+    </div>
+
+    <!-- RIGHT — registration -->
+    <div class="authwrap">
+      <div class="auth">
+        <div class="tabs">
+          <a class="tab" href="/login">Sign in</a>
+          <div class="tab on">Create UCP</div>
+        </div>
+
+        <div class="form">
+          <div class="eyebrow">Join the county</div>
+          <h2>Create your UCP</h2>
+          <div class="lede">One account for the server and forums. Everything below is required.</div>
+
+          <div class="field">
+            <label>UCP name <span class="req">*</span></label>
+            <div class="inp" id="inpName"><input type="text" id="name" placeholder="e.g. Marcus_Reyes" autocomplete="off"></div>
+            <div class="msg" id="msg-name"></div>
+            <div class="callout"><i class="fa fa-info-circle"></i><p>This is also your <b>forum display name</b>. It's shown publicly and <b>can't be changed later</b>, so choose carefully.</p></div>
+          </div>
+
+          <div class="field">
+            <label>Email <span class="req">*</span></label>
+            <div class="inp" id="inpEmail"><input type="email" id="email" placeholder="you@example.com" autocomplete="off"></div>
+            <div class="msg" id="msg-email"></div>
+          </div>
+
+          <div class="field">
+            <label>Discord username <span class="req">*</span></label>
+            <div class="inp at" id="inpDiscord"><span class="pre">@</span><input type="text" id="discord" placeholder="yourhandle" autocomplete="off"></div>
+            <div class="msg" id="msg-discord"></div>
+            <div class="hint">Used for support and to link your account on <a href="https://discord.gg/8GUuTBcEsD" target="_blank" rel="noopener">our Discord</a>. Enter your new-style handle (all lowercase, no <code>#0000</code>).</div>
+          </div>
+
+          <div class="field">
+            <label>Password <span class="req">*</span></label>
+            <div class="inp" id="inpPw"><input type="password" id="pw" placeholder="Create a password"><span class="show" data-show="pw">Show</span></div>
+            <div class="meter" id="meter"><i></i><i></i><i></i><i></i></div>
+            <div class="mlabel" id="mlabel"></div>
+            <div class="reqs-title">Your password must meet <b>all three</b> to be accepted:</div>
+            <div class="reqs">
+              <span class="chip" id="c-len"><i class="fa fa-circle-o"></i> 8+ characters</span>
+              <span class="chip" id="c-upp"><i class="fa fa-circle-o"></i> Uppercase</span>
+              <span class="chip" id="c-num"><i class="fa fa-circle-o"></i> Number</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Confirm password <span class="req">*</span></label>
+            <div class="inp" id="inpPw2"><input type="password" id="pw2" placeholder="Re-enter your password"><span class="show" data-show="pw2">Show</span></div>
+            <div class="msg" id="msg-pw2"></div>
+          </div>
+
+          <label class="agree" id="agree">
+            <span class="box"><i class="fa fa-check"></i></span>
+            <p>I agree to the <a href="#">community rules</a> and <a href="#">privacy policy</a>, and confirm I'm <b>16 or older</b>.</p>
+          </label>
+
+          <a class="submit" id="submit" href="/verify" aria-disabled="true">Create UCP <i class="fa fa-arrow-right" style="font-size:12px"></i></a>
+          <div class="alt">Already have an account? <a href="/login">Sign in</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>© 2026 BlaineSide · Not affiliated with Rockstar Games or Take-Two Interactive.</span>
+    <div class="links"><a href="#">Rules</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a><span class="clock"><i class="fa fa-clock-o"></i> UTC 09:13</span></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var name=$('name'),email=$('email'),discord=$('discord'),pw=$('pw'),pw2=$('pw2'),agree=$('agree'),submit=$('submit');
+  var wrap={name:$('inpName'),email:$('inpEmail'),discord:$('inpDiscord'),pw:$('inpPw'),pw2:$('inpPw2')};
+  var msg={name:$('msg-name'),email:$('msg-email'),discord:$('msg-discord'),pw2:$('msg-pw2')};
+  var cLen=$('c-len'),cUpp=$('c-upp'),cNum=$('c-num'),meter=$('meter'),mlabel=$('mlabel');
+  var LABELS=['','Weak','Fair','Good','Strong'];
+  var touched={}, busy=false;
+
+  /* Availability is decided by the server (api/check.php). These caches hold
+     the last answer per value so typing doesn't re-query the same string.
+     null = unknown/pending, true = free, false = taken. */
+  var avail={name:{}, email:{}};
+  var pending={name:null, email:null};
+
+  function chip(el,on){el.classList.toggle('met',on);el.querySelector('.fa').className='fa '+(on?'fa-check-circle':'fa-circle-o');}
+  function setState(key,state,text){
+    var w=wrap[key]; if(w){w.classList.remove('valid','invalid'); if(state)w.classList.add(state==='ok'?'valid':'invalid');}
+    var m=msg[key]; if(m){
+      if(!state){m.className='msg';m.textContent='';return;}
+      var ic=state==='ok'?'fa-check-circle':'fa-exclamation-circle';
+      m.className='msg show '+(state==='ok'?'ok':'err');
+      m.innerHTML='<i class="fa '+ic+'"></i> '+text;
+    }
+  }
+
+  /* Debounced availability lookup. Mirrors register.php's own rules so the
+     hint matches what the server will decide on submit. */
+  function checkAvail(kind, value){
+    clearTimeout(pending[kind]);
+    pending[kind]=setTimeout(function(){
+      UCP.get('check.php?'+kind+'='+encodeURIComponent(value)).then(function(d){
+        if(d && d.ok){
+          avail[kind][value.toLowerCase()] = !!d.available;
+          if(!d.available && d.reason==='reserved') avail[kind][value.toLowerCase()]='reserved';
+        }
+        evaluate(false);
+      });
+    }, 350);
+  }
+
+  function vName(){var v=name.value.trim();
+    if(!v)return{};
+    if(v.length<3)return{ok:false,msg:'At least 3 characters.'};
+    if(v.length>20)return{ok:false,msg:'20 characters maximum.'};
+    if(!/^[A-Za-z0-9_]+$/.test(v))return{ok:false,msg:'Letters, numbers and underscores only.'};
+    var a=avail.name[v.toLowerCase()];
+    if(a===undefined){checkAvail('name',v);return{ok:false,msg:'Checking availability…',pendingCheck:true};}
+    if(a==='reserved')return{ok:false,msg:'That name is reserved.'};
+    if(a===false)return{ok:false,msg:'That name is already taken.'};
+    return{ok:true,msg:'That name is available.'};}
+
+  function vEmail(){var v=email.value.trim();
+    if(!v)return{};
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))return{ok:false,msg:'Enter a valid email address.'};
+    var a=avail.email[v.toLowerCase()];
+    if(a===undefined){checkAvail('email',v);return{ok:false,msg:'Checking availability…',pendingCheck:true};}
+    if(a===false)return{ok:false,msg:'An account with this email already exists.'};
+    return{ok:true,msg:'Email looks good.'};}
+
+  function vDiscord(){var v=discord.value.trim();
+    if(!v)return{};
+    if(/#\d{4}$/.test(v))return{ok:false,msg:'Use your new handle, not the old name#0000 format.'};
+    if(!/^[a-z0-9._]{2,32}$/.test(v))return{ok:false,msg:'Lowercase letters, numbers, . and _ only.'};
+    return{ok:true,msg:'Handle looks good.'};}
+
+  function pwParts(){var v=pw.value;return{len:v.length>=8,upp:/[A-Z]/.test(v),num:/[0-9]/.test(v),empty:!v.length};}
+  function vMatch(){if(!pw2.value.length)return{}; if(pw2.value!==pw.value)return{ok:false,msg:"Passwords don't match."}; return{ok:true,msg:'Passwords match.'};}
+
+  function paint(key,res,force){
+    if(res.ok===undefined){
+      if(force){setState(key,'err','This field is required.');return false;}
+      setState(key,null);return false;
+    }
+    if(res.ok){setState(key,'ok',res.msg);return true;}
+    // A pending availability lookup is neutral, not an error.
+    if(res.pendingCheck){setState(key,null);return false;}
+    setState(key,(touched[key]||force)?'err':null,res.msg);
+    return false;
+  }
+
+  function evaluate(force){
+    var p=pwParts();
+    chip(cLen,p.len);chip(cUpp,p.upp);chip(cNum,p.num);
+    var v=pw.value,score=0; if(p.len)score++; if(p.upp)score++; if(p.num)score++; if(v.length>=12||/[^A-Za-z0-9]/.test(v))score++; if(!v)score=0;
+    meter.className='meter'+(score?' s'+score:''); mlabel.textContent=v?((score?LABELS[score]:'Very weak')+' password'):'';
+    mlabel.style.color=score>=4?'var(--green)':score>=3?'var(--gold)':score>=1?'var(--amber)':'var(--text-faint)';
+    var pwOk=p.len&&p.upp&&p.num;
+    wrap.pw.classList.remove('valid','invalid');
+    if(!p.empty){ if(pwOk)wrap.pw.classList.add('valid'); else if(touched.pw||force)wrap.pw.classList.add('invalid'); }
+
+    var rName=paint('name',vName(),force);
+    var rEmail=paint('email',vEmail(),force);
+    var rDiscord=paint('discord',vDiscord(),force);
+    var rMatch=paint('pw2',vMatch(),force);
+    var rAgree=agree.classList.contains('on');
+    var ready=rName&&rEmail&&rDiscord&&pwOk&&rMatch&&rAgree&&!busy;
+    submit.setAttribute('aria-disabled',ready?'false':'true');
+    return ready;
+  }
+
+  ['name','email','discord'].forEach(function(k){
+    $(k).addEventListener('input',function(){evaluate(false);});
+    $(k).addEventListener('blur',function(){touched[k]=true;evaluate(false);});
+  });
+  [pw,pw2].forEach(function(input){
+    input.addEventListener('input',function(){evaluate(false);});
+    input.addEventListener('blur',function(){touched.pw=true;touched.pw2=true;evaluate(false);});
+  });
+  document.addEventListener('click',function(e){
+    var s=e.target.closest('[data-show]');
+    if(s){var i=$(s.getAttribute('data-show'));var t=i.type==='password';i.type=t?'text':'password';s.textContent=t?'Hide':'Show';return;}
+    if(e.target.closest('#agree')){e.preventDefault();agree.classList.toggle('on');evaluate(false);return;}
+  });
+
+  /* Submit — creates the account for real. We only move to verify.html once
+     the server confirms the account was created. */
+  submit.addEventListener('click',function(e){
+    e.preventDefault();
+    if(busy) return;
+    touched={name:1,email:1,discord:1,pw:1,pw2:1};
+    if(!evaluate(true)){
+      var bad=document.querySelector('.inp.invalid input'); if(bad)bad.focus();
+      return;
+    }
+    busy=true; submit.setAttribute('aria-disabled','true');
+    var original=submit.innerHTML;
+    submit.innerHTML='Creating your UCP…';
+
+    UCP.post('register.php',{
+      username:name.value.trim(),
+      email:email.value.trim(),
+      discord:discord.value.trim(),
+      password:pw.value
+    }).then(function(res){
+      var d=res.data||{};
+      if(d.ok){
+        // verify.html reads this to show the address and drive "Resend link".
+        try{ sessionStorage.setItem('bs-pending-email', d.email||email.value.trim()); }catch(err){}
+        if(d.email_sent===false){
+          try{ sessionStorage.setItem('bs-mail-failed','1'); }catch(err){}
+        }
+        window.location='/verify';
+        return;
+      }
+      busy=false; submit.innerHTML=original; submit.setAttribute('aria-disabled','false');
+      // Server rejected it — surface the reason against the right field.
+      var err=d.error||'Could not create the account.';
+      var key=/name|username/i.test(err)?'name':/email/i.test(err)?'email':/discord/i.test(err)?'discord':'pw2';
+      // A rejection also invalidates any cached "available" answer.
+      if(key==='name') delete avail.name[name.value.trim().toLowerCase()];
+      if(key==='email') delete avail.email[email.value.trim().toLowerCase()];
+      setState(key,'err',UCP.esc(err));
+      var bad=document.querySelector('.inp.invalid input'); if(bad)bad.focus();
+    }).catch(function(){
+      busy=false; submit.innerHTML=original; submit.setAttribute('aria-disabled','false');
+      setState('pw2','err','Could not reach the server. Please try again.');
+    });
+  });
+
+  evaluate(false);
+})();
+</script>
+</body></html>

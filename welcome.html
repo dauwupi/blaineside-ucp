@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!-- BlaineSide — EMAIL VERIFIED / WELCOME (landing target of the confirmation link). Example data. -->
+<html lang="en"><head><meta charset="utf-8">
+<title>You're in — BlaineSide UCP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="assets/fa/fontawesome.css">
+<link rel="stylesheet" href="assets/css/ucp.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--amber:#d4923a;--gold:#e2b65c;--parch:#f1efe9;--surface-2:#221f1c;--border:#3a342c;--line:#2b2620;--text-dim:#a89e90;--text-faint:#787064;--green:#57b26a}
+.stage{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,#0e0d0b,#131009 60%,#0b0a08)}
+.scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;background-color:#0b0a08;background-position:center;background-size:cover;background-repeat:no-repeat}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none;background:
+  radial-gradient(98% 80% at 50% 42%,rgba(10,9,8,.42),rgba(10,9,8,.9)),
+  linear-gradient(180deg,rgba(10,9,8,.78) 0%,rgba(10,9,8,.24) 25%,rgba(10,9,8,.3) 56%,rgba(10,9,8,.92) 100%)}
+.top{position:relative;z-index:2;display:flex;align-items:center;padding:24px 40px}
+.center{position:relative;z-index:2;flex:1;display:grid;place-items:center;padding:20px 24px 40px}
+.panel{width:100%;max-width:468px;background:linear-gradient(180deg,rgba(31,28,25,.92),rgba(20,18,16,.94));border:1px solid rgba(255,255,255,.05);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.6);backdrop-filter:blur(16px);padding:42px 38px;text-align:center;animation:pop .6s cubic-bezier(.2,.85,.25,1) both}
+.badge{width:66px;height:66px;border-radius:18px;display:grid;place-items:center;font-size:27px;color:var(--green);background:rgba(87,178,106,.1);border:1px solid rgba(87,178,106,.26);margin:0 auto 22px;position:relative}
+.badge::after{content:"";position:absolute;inset:-6px;border-radius:22px;border:1px solid rgba(87,178,106,.22);animation:halo 2.6s ease-out infinite}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--green)}
+.panel h2{font-size:25px;font-weight:800;letter-spacing:-.02em;margin-top:9px}
+.panel h2 em{font-style:normal;color:var(--gold)}
+.panel .sub{font-size:14px;color:var(--text-dim);line-height:1.65;margin-top:12px}
+.next{display:flex;flex-direction:column;gap:10px;margin-top:22px;text-align:left}
+.next .row{display:flex;gap:11px;align-items:center;font-size:12.5px;color:var(--text-dim)}
+.next .row .fa{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:rgba(212,146,58,.12);color:var(--amber);font-size:12px}
+.next .row b{color:var(--parch);font-weight:700}
+.btn{display:block;text-align:center;text-decoration:none;width:100%;margin-top:24px;padding:15px;border:none;border-radius:11px;background:linear-gradient(180deg,var(--gold),var(--amber));color:#17140f;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 12px 26px rgba(212,146,58,.22);transition:.15s}
+.btn:hover{filter:brightness(1.05)}
+.helpline{font-size:12.5px;color:var(--text-faint);margin-top:18px}
+.helpline a{color:var(--gold);font-weight:600}
+.foot{position:relative;z-index:2;display:flex;align-items:center;gap:20px;padding:16px 40px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-faint);background:rgba(11,10,8,.5);backdrop-filter:blur(6px)}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes halo{0%{transform:scale(.9);opacity:.6}70%,100%{transform:scale(1.32);opacity:0}}
+@media (prefers-reduced-motion:reduce){.panel{animation:none}.badge::after{animation:none}}
+@media (max-width:560px){.top{padding:20px 20px}.foot{flex-direction:column;gap:12px;text-align:center;padding:18px 24px}.foot .links{margin:0}.panel{padding:34px 24px}.brand .tag{display:none}.navbtn .nb{display:none}.navbtn{padding:9px 12px}}
+</style><script src="assets/js/ucp.js"></script>
+</head>
+<body>
+<div class="stage">
+  <div class="scene"></div>
+<div class="tod"></div>
+<div class="scrim"></div>
+
+  <div class="top">
+    <a class="brand" href="/login"><span class="mark">BLAINE<em>SIDE</em></span><span class="tag">UCP</span></a>
+    <nav class="navbtns">
+      <a class="navbtn" href="https://blaineside.com"><i class="fa fa-home"></i> <span class="nb">Landing page</span></a>
+      <a class="navbtn" href="https://forum.blaineside.com"><i class="fa fa-comments-o"></i> <span class="nb">Forums</span></a>
+    </nav>
+  </div>
+
+  <div class="center">
+    <div class="panel">
+      <div class="badge"><i class="fa fa-check"></i></div>
+      <div class="eyebrow">Email verified</div>
+      <h2>You're in — Welcome to <em>BlaineSide</em></h2>
+      <p class="sub">Your email is confirmed and your UCP is active. Sign in to make your first character and read into Blaine County.</p>
+      <div class="next">
+        <div class="row"><i class="fa fa-sign-in"></i> <span>Sign in to your <b>UCP</b> with the account you just created.</span></div>
+        <div class="row"><i class="fa fa-user-plus"></i> <span>Create your first <b>character</b> and set up your story.</span></div>
+        <div class="row"><i class="fa fa-book"></i> <span>Read the <b>rules</b>, then spawn into Los Santos.</span></div>
+      </div>
+      <a class="btn" href="/login">Sign in to your UCP <i class="fa fa-arrow-right" style="font-size:12px"></i></a>
+      <div class="helpline">Questions before you start? <a href="https://discord.gg/8GUuTBcEsD" target="_blank" rel="noopener">Ask in our Discord</a></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>© 2026 BlaineSide · Not affiliated with Rockstar Games or Take-Two Interactive.</span>
+    <div class="links"><a href="#">Rules</a><a href="#">Privacy</a><a href="#">Contact</a></div>
+  </div>
+</div>
+</body></html>

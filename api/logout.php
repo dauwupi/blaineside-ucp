@@ -5,7 +5,7 @@
  *
  * Destroys the UCP session and either:
  *   - Redirects to ?next= (if a valid http/https URL is supplied), or
- *   - Returns JSON {"ok":true,"redirect":"login.html"} for AJAX callers
+ *   - Returns JSON {"ok":true,"redirect":"/login"} for AJAX callers
  */
 
 declare(strict_types=1);
@@ -29,6 +29,27 @@ session_set_cookie_params([
 ]);
 session_name('BSUCP');
 session_start();
+
+// ── CSRF ─────────────────────────────────────────────────────────────────────
+// Only POST is guarded. A forged logout is a nuisance rather than a breach, but
+// the token closes it off entirely. The GET ?next= path below is a top-level
+// browser navigation (used by Switch-account style links), where a token can't
+// be attached — it stays as it was.
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $sent = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if ($sent === '') {
+        $raw  = file_get_contents('php://input');
+        $body = $raw ? (json_decode($raw, true) ?: []) : $_POST;
+        $sent = (string)($body['csrf'] ?? '');
+    }
+    $have = $_SESSION['csrf'] ?? '';
+    if ($have === '' || $sent === '' || !hash_equals($have, $sent)) {
+        http_response_code(419);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'Your session expired. Refresh the page and try again.']);
+        exit;
+    }
+}
 
 // ── Clear remember-me token from the database ─────────────────────────────────
 // Must happen before session_destroy() since we may need the uid.
@@ -80,4 +101,4 @@ if ($next !== '') {
 // ── AJAX / default: JSON response ────────────────────────────────────────────
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
-echo json_encode(['ok' => true, 'redirect' => 'login.html']);
+echo json_encode(['ok' => true, 'redirect' => '/login']);

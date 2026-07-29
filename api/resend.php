@@ -9,6 +9,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
+require_csrf();
 throttle('resend', 4);
 
 $in    = read_input();
