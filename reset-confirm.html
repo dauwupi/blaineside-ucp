@@ -183,6 +183,13 @@
     if(s){var i=$(s.getAttribute('data-show'));var t=i.type==='password';i.type=t?'text':'password';s.textContent=t?'Hide':'Show';}
   });
 
+  /* Enter submits, matching the other auth pages. */
+  Array.prototype.forEach.call(document.querySelectorAll('.inp input'),function(el){
+    el.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){ e.preventDefault(); submit.click(); }
+    });
+  });
+
   submit.addEventListener('click',function(e){
     e.preventDefault();
     if(busy) return;

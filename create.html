@@ -276,11 +276,21 @@
   function checkAvail(kind, value){
     clearTimeout(pending[kind]);
     pending[kind]=setTimeout(function(){
-      UCP.get('check.php?'+kind+'='+encodeURIComponent(value)).then(function(d){
+      // check.php takes ?username= / ?email=; our kinds are name / email.
+      var param = (kind === 'name') ? 'username' : kind;
+      UCP.get('check.php?'+param+'='+encodeURIComponent(value)).then(function(d){
         if(d && d.ok){
           avail[kind][value.toLowerCase()] = !!d.available;
           if(!d.available && d.reason==='reserved') avail[kind][value.toLowerCase()]='reserved';
+        } else {
+          // Never leave the field stuck "checking" — that silently disables
+          // the submit button with no visible reason. Assume available and
+          // let register.php be the authority.
+          avail[kind][value.toLowerCase()] = true;
         }
+        evaluate(false);
+      }).catch(function(){
+        avail[kind][value.toLowerCase()] = true;
         evaluate(false);
       });
     }, 350);
@@ -362,6 +372,15 @@
 
   /* Submit — creates the account for real. We only move to verify.html once
      the server confirms the account was created. */
+  /* Enter submits, matching login.html and reset.html. Without this the
+     only way to create an account is a mouse click. */
+  [name,email,discord,pw,pw2].forEach(function(el){
+    if(!el) return;
+    el.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){ e.preventDefault(); submit.click(); }
+    });
+  });
+
   submit.addEventListener('click',function(e){
     e.preventDefault();
     if(busy) return;

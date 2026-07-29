@@ -535,6 +535,7 @@
     .stat:nth-child(1){border-top:none}
   }
 </style>
+<script src="/assets/js/ucp.js"></script>
 </head>
 <body>
 
@@ -781,6 +782,13 @@
        8 Management · 9 Founder
      Members (0) show no rank tag. The server sends both `rank` (number)
      and `role` (name); a future admin panel uses the number to gate features. */
+  /* Escape anything that comes from the server or another user before it
+     reaches innerHTML. Bulletin titles/bodies and notification text are
+     author-supplied, so an unescaped tag here is stored XSS. */
+  const esc = s => (window.UCP && UCP.esc) ? UCP.esc(s)
+    : String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
   const RANK_NAMES = ['Member','Support Staff','Development Team','Trainee Admin',
     'Admin Lvl 1','Admin Lvl 2','Senior Admin','Lead Admin','Management','Founder'];
 
@@ -955,15 +963,15 @@
   function renderSidebar(items){
     const nav = document.getElementById('nav');
     nav.innerHTML = items.map(it=>{
-      if(it.heading) return `<div class="nav-heading">${it.heading}</div>`;
+      if(it.heading) return `<div class="nav-heading">${esc(it.heading)}</div>`;
 
       if(it.children){
         const subs = it.children.map(c=> c.empty
-          ? `<a class="slot-empty">${c.label}</a>`
-          : `<a href="${c.href||'#'}">${c.label}</a>`).join('');
+          ? `<a class="slot-empty">${esc(c.label)}</a>`
+          : `<a href="${esc(c.href||'#')}">${esc(c.label)}</a>`).join('');
         return `<div class="nav-group" data-collapsible>
             <div class="nav-item">
-              ${svg(it.icon,'i')}<span class="lbl">${it.label}</span>${svg('chev','chev')}
+              ${svg(it.icon,'i')}<span class="lbl">${esc(it.label)}</span>${svg('chev','chev')}
             </div>
             <div class="sub">${subs}</div>
           </div>`;
@@ -971,7 +979,7 @@
 
       return `<div class="nav-group">
           <div class="nav-item ${it.active?'active':''}">
-            ${svg(it.icon,'i')}<span class="lbl">${it.label}</span>
+            ${svg(it.icon,'i')}<span class="lbl">${esc(it.label)}</span>
           </div>
         </div>`;
     }).join('');
@@ -1031,10 +1039,10 @@
       <div class="slide s${p.theme||1} ${i===0?'on':''}${p.link?' has-link':''}"${linkAttr}>
         <div class="bg"></div>
         <div class="cap">
-          <span class="tag ${TAGCLASS[p.type]||''}">${TAGLABEL[p.type]||'Notice'}</span>
-          <h4>${p.title}</h4>
-          <p>${p.body}</p>
-          <div class="meta">${p.when} · ${p.by}${linkChip}</div>
+          <span class="tag ${TAGCLASS[p.type]||''}">${esc(TAGLABEL[p.type]||'Notice')}</span>
+          <h4>${esc(p.title)}</h4>
+          <p>${esc(p.body)}</p>
+          <div class="meta">${esc(p.when)} · ${esc(p.by)}${linkChip}</div>
         </div>
       </div>`;}).join('');
     dotsWrap.innerHTML = posts.map((_,i)=>`<span class="d ${i===0?'on':''}"></span>`).join('');
@@ -1111,9 +1119,9 @@
       <div class="np-row ${n.read?'read':'unread'}" data-id="${n.id}">
         <span class="ni-ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${NOTIF_ICON}</svg></span>
         <span class="ni-body">
-          <span class="ni-t">${n.text}</span>
-          ${n.sub?`<span class="ni-sub">${n.sub}</span>`:''}
-          <span class="ni-time">${n.when}</span>
+          <span class="ni-t">${esc(n.text)}</span>
+          ${n.sub?`<span class="ni-sub">${esc(n.sub)}</span>`:''}
+          <span class="ni-time">${esc(n.when)}</span>
         </span>
         <button class="ni-tick" data-tick="${n.id}" title="${n.read?'Read':'Mark as read'}" ${n.read?'disabled':''}>${tickSVG}</button>
       </div>`;
@@ -1148,7 +1156,7 @@
     list.innerHTML = NOTIFS.slice(0,5).map(n=>`
       <div class="notif-item ${n.read?'read':'unread'}" data-id="${n.id}">
         <span class="ni-ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${NOTIF_ICON}</svg></span>
-        <span class="ni-body"><span class="ni-t">${n.text}</span><span class="ni-time">${n.when}</span></span>
+        <span class="ni-body"><span class="ni-t">${esc(n.text)}</span><span class="ni-time">${esc(n.when)}</span></span>
         <button class="ni-tick" data-tick="${n.id}" title="${n.read?'Read':'Mark as read'}" ${n.read?'disabled':''}>${tickSVG}</button>
       </div>`).join('');
 

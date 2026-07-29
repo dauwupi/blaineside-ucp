@@ -480,12 +480,12 @@
   function svgI(n,c){return `<svg class="${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor">${ICONS[n]||''}</svg>`;}
   function renderSidebar(items){
     document.getElementById('nav').innerHTML=items.map(it=>{
-      if(it.heading) return `<div class="nav-heading">${it.heading}</div>`;
+      if(it.heading) return `<div class="nav-heading">${escapeHtml(it.heading)}</div>`;
       if(it.children){
-        const subs=it.children.map(c=>c.empty?`<a class="slot-empty">${c.label}</a>`:`<a href="${c.href||'#'}">${c.label}</a>`).join('');
-        return `<div class="nav-group" data-collapsible><div class="nav-item">${svgI(it.icon,'i')}<span class="lbl">${it.label}</span>${svgI('chev','chev')}</div><div class="sub">${subs}</div></div>`;
+        const subs=it.children.map(c=>c.empty?`<a class="slot-empty">${escapeHtml(c.label)}</a>`:`<a href="${escapeHtml(c.href||'#')}">${escapeHtml(c.label)}</a>`).join('');
+        return `<div class="nav-group" data-collapsible><div class="nav-item">${svgI(it.icon,'i')}<span class="lbl">${escapeHtml(it.label)}</span>${svgI('chev','chev')}</div><div class="sub">${subs}</div></div>`;
       }
-      return `<div class="nav-group"><div class="nav-item">${svgI(it.icon,'i')}<span class="lbl">${it.label}</span></div></div>`;
+      return `<div class="nav-group"><div class="nav-item">${svgI(it.icon,'i')}<span class="lbl">${escapeHtml(it.label)}</span></div></div>`;
     }).join('');
     document.querySelectorAll('.nav-group[data-collapsible] > .nav-item').forEach(item=>item.addEventListener('click',()=>item.parentElement.classList.toggle('open')));
   }
@@ -843,6 +843,18 @@
   tickClock();setInterval(tickClock,1000);
 
   renderList();
+
+/* Staff-only page: don't render the bulletin management UI to anonymous
+   visitors. Mirrors the guard in dashboard/index.html. The server must
+   enforce this too once these actions are wired to real endpoints. */
+(function(){
+  fetch('/api/session.php',{credentials:'include'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d && d.authenticated===false) window.location.replace('/login');
+    })
+    .catch(function(){});
+})();
 </script>
 </body>
 </html>

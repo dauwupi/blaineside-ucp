@@ -116,12 +116,30 @@ setcookie('bsucp_rm', '', [
 // ── ?next redirect (for browser-initiated logout, e.g. Switch button) ────────
 $next = $_GET['next'] ?? $_POST['next'] ?? '';
 if ($next !== '') {
-    // Only allow http/https destinations to prevent open-redirect abuse
-    $parsed = parse_url($next);
-    if (isset($parsed['scheme']) && in_array(strtolower($parsed['scheme']), ['http', 'https'], true)) {
-        header('Location: ' . $next);
+    // Same-site destinations only. Checking the SCHEME is not the same as
+    // checking the HOST: "https://evil.example/" passed a scheme test
+    // happily, turning this endpoint into a one-click open redirect from a
+    // trusted domain — ideal for phishing. Accept a site-relative path, or
+    // an absolute URL whose host matches our own configured base_url.
+    $allowed = null;
+
+    if ($next[0] === '/' && ($next[1] ?? '') !== '/' && ($next[1] ?? '') !== '\\') {
+        $allowed = $next;                       // e.g. "/login", "/dashboard"
+    } elseif (isset($CONFIG['site']['base_url'])) {
+        $ourHost  = parse_url($CONFIG['site']['base_url'], PHP_URL_HOST);
+        $theirs   = parse_url($next, PHP_URL_HOST);
+        $scheme   = strtolower((string)parse_url($next, PHP_URL_SCHEME));
+        if ($ourHost && $theirs && strcasecmp($ourHost, $theirs) === 0
+            && in_array($scheme, ['http', 'https'], true)) {
+            $allowed = $next;
+        }
+    }
+
+    if ($allowed !== null) {
+        header('Location: ' . $allowed);
         exit;
     }
+    // Anything else: fall through to the JSON response rather than obeying it.
 }
 
 // ── AJAX / default: JSON response ────────────────────────────────────────────

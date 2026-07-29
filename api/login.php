@@ -42,7 +42,16 @@ if ($lockLeft > 0) {
 }
 
 // Uniform "invalid" message so we don't reveal which accounts exist.
-if (!$acc || !password_verify($password, $acc['password_hash'])) {
+//
+// The comparison always runs a real bcrypt verify, even when the account
+// doesn't exist. Short-circuiting on !$acc returned in well under a
+// millisecond while a real account took the full bcrypt cost — a timing
+// difference big enough to enumerate valid UCP names over the network.
+// DUMMY_HASH is a valid bcrypt hash of a value nobody can supply.
+$dummyHash = '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
+$okPassword = password_verify($password, $acc['password_hash'] ?? $dummyHash);
+
+if (!$acc || !$okPassword) {
     $lockedFor = record_failure($pdo, $accountId, $ip);
     json_out([
         'ok'         => false,

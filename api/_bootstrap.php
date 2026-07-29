@@ -16,6 +16,25 @@ if (!file_exists($configPath)) {
 }
 $CONFIG = require $configPath;
 
+// Declared before anything can call db() — the remember-me restore below is
+// the first caller, and reading an undefined global emits a PHP warning that
+// prepends text to the JSON body and breaks every client parse.
+$__PDO = null;
+
+// Never show PHP errors to the browser: an uncaught PDOException would
+// otherwise print the failing SQL, table names and absolute server paths
+// straight into the response.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+set_exception_handler(function (Throwable $e) {
+    error_log('UCP unhandled: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode(['ok' => false, 'error' => 'Something went wrong. Please try again.']);
+});
+
 /**
  * Was THIS request made over HTTPS by the browser?
  *
@@ -135,6 +154,8 @@ if ($origin && $origin === ($CONFIG['allowed_origin'] ?? '')) {
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
+// Session state and CSRF tokens must never be cached or shared.
+header('Cache-Control: no-store, private');
 
 // Handle preflight quickly.
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
@@ -196,7 +217,6 @@ function throttle(string $key, int $maxPerMin = 8): void {
         fail('Too many attempts. Please wait a minute and try again.', 429);
     }
 }
-$__PDO = null;
 
 // ============================================================
 // CSRF — issued by api/csrf.php, sent back as X-CSRF-Token.

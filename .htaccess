@@ -113,6 +113,21 @@ DirectoryIndex index.html
   Options -Indexes
 </IfModule>
 
+# Repo files that get deployed alongside the site but should not be
+# downloadable. migration.sql in particular hands out the full schema.
+<FilesMatch "\.(sql|md|log|ini|sh|bak|old|dist|example)$">
+  Require all denied
+</FilesMatch>
+
+# Nothing under docs/ is meant to be served.
+RedirectMatch 404 ^/docs(/|$)
+
+# Never serve the API's own includes or credentials, even if api/.htaccess
+# goes missing during a deploy.
+<FilesMatch "^(config\.php|config\.example\.php|_.*\.php)$">
+  Require all denied
+</FilesMatch>
+
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
