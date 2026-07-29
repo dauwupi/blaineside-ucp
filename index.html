@@ -4,15 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BlaineSide UCP</title>
-<meta http-equiv="refresh" content="0; url=/login">
 <link rel="canonical" href="/login">
+<!--
+  The front door. Typing "ucp.blaineside.com" lands here, so this page
+  decides where you belong rather than always dumping you on the sign-in
+  form: signed in (session or remember-me) goes straight to the
+  dashboard, everyone else goes to /login.
+
+  Without JS the noscript refresh still gets people to the sign-in page.
+-->
+<noscript><meta http-equiv="refresh" content="0; url=/login"></noscript>
 <style>
   html,body{height:100%;margin:0;background:#121110;color:#f1efe9;
     font-family:'Inter',system-ui,sans-serif;display:grid;place-items:center}
   a{color:#e2b65c}
+  .msg{opacity:0;transition:opacity .2s ease}
+  .msg.show{opacity:1}
 </style>
 </head>
 <body>
-  <p>Redirecting to the <a href="/login">BlaineSide UCP sign-in</a>…</p>
+  <p class="msg" id="msg">Taking you to your <a href="/login">BlaineSide UCP</a>…</p>
+<script>
+(function(){
+  var go = function(dest){ window.location.replace(dest); };
+
+  // Only show the interim line if the check is slow, so the usual case is
+  // a clean hand-off with nothing flashing on screen.
+  var t = setTimeout(function(){
+    var m = document.getElementById('msg'); if (m) m.classList.add('show');
+  }, 300);
+
+  // If the API is unreachable, fall back to the sign-in page rather than
+  // leaving someone stranded here.
+  var bail = setTimeout(function(){ go('/login'); }, 4000);
+
+  fetch('/api/session.php', { credentials: 'include' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      clearTimeout(t); clearTimeout(bail);
+      go(d && d.ok && d.authenticated ? '/dashboard' : '/login');
+    })
+    .catch(function(){ clearTimeout(t); clearTimeout(bail); go('/login'); });
+})();
+</script>
 </body>
 </html>

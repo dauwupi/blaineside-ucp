@@ -283,6 +283,22 @@
   bar.classList.add(pct<60?'load-low':pct<85?'load-mid':'load-high');
 })();
 
+/* ---------------------------------------------------------------------------
+   Already signed in? Don't show a sign-in form to someone who is already
+   authenticated — send them to their UCP. This covers landing on /login
+   directly, from a bookmark, or from the back button after signing in.
+   ?switch=1 opts out, so signing in as someone else is still possible.
+--------------------------------------------------------------------------- */
+(function(){
+  if (new URLSearchParams(window.location.search).has('switch')) return;
+  fetch('/api/session.php', { credentials: 'include' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.ok && d.authenticated) window.location.replace('/dashboard');
+    })
+    .catch(function(){ /* API down — leave the form usable */ });
+})();
+
 /* Show/hide password + remember-me toggle */
 document.addEventListener('click',function(e){
   var s=e.target.closest('[data-show]'); if(s){var i=document.getElementById(s.getAttribute('data-show'));var v=i.type==='password';i.type=v?'text':'password';s.textContent=v?'Hide':'Show';return;}
