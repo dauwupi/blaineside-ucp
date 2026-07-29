@@ -32,7 +32,7 @@ session_start();
 // PHP session files get garbage-collected after session.gc_maxlifetime (default ~24 min).
 // If the session expired but the user has a valid remember-me token in their cookie,
 // we look it up in the DB and transparently restore their session.
-if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) {
+if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
     $rm_cookie = $_COOKIE['bsucp_rm'];
     $rm_pdo    = db();
     $rm_stmt   = $rm_pdo->prepare(
@@ -87,6 +87,10 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) {
             'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
         ]);
     }
+} catch (Throwable $e) {
+    // A missing remember_token column or DB hiccup must never break page
+    // loads for someone who is simply not signed in.
+    error_log('UCP remember-me restore failed: ' . $e->getMessage());
 }
 
 // ---- CORS / headers ----

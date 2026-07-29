@@ -84,42 +84,53 @@
   }
 
   /* ---- Sign in <-> Create UCP cross-fade --------------------------------
-     Intercepts the tab link, moves the active underline, fades the card
-     body out, then navigates. Falls straight through to a normal click
-     for modified clicks (new tab) or when the user prefers less motion. */
+     Moves the active underline to the clicked tab, fades the whole centre
+     column out, then navigates. The next page fades its own column in, so
+     the two halves join into one transition. */
   function initTabFade() {
-    var card = document.querySelector('.auth');
-    if (!card) return;
+    var stage = document.querySelector('.stage');
+    var tabs  = document.querySelector('.tabs');
+    if (!stage || !tabs) return;
     var reduce = w.matchMedia && w.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var col = stage.querySelector('.center');
 
-    card.addEventListener('click', function (e) {
+    /* Hand control of opacity back to CSS transitions once the entry
+       animation has finished, so the exit fade can actually ease. */
+    function releaseAnim() { if (col) col.classList.add('bs-anim-done'); }
+    if (col) col.addEventListener('animationend', releaseAnim);
+    setTimeout(releaseAnim, 600);
+
+    tabs.addEventListener('click', function (e) {
       var link = e.target.closest ? e.target.closest('a.tab') : null;
       if (!link || reduce) return;
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
 
       e.preventDefault();
-      var current = card.querySelector('.tab.on');
+      var current = tabs.querySelector('.tab.on');
       if (current) current.classList.remove('on');
       link.classList.add('on');
-      card.classList.add('is-leaving');
+      // Make sure the entry animation is gone before the exit starts,
+      // then force a reflow so the browser sees a real value change.
+      releaseAnim();
+      if (col) void col.offsetWidth;
+      stage.classList.add('is-leaving');
 
-      var go = function () { w.location = link.getAttribute('href'); };
       var done = false;
-      var form = card.querySelector('.form');
-      if (form) {
-        form.addEventListener('transitionend', function h() {
-          if (done) return; done = true;
-          form.removeEventListener('transitionend', h); go();
+      var go = function () { if (done) return; done = true; w.location = link.getAttribute('href'); };
+      if (col) {
+        col.addEventListener('transitionend', function h(ev) {
+          if (ev.propertyName !== 'opacity') return;
+          col.removeEventListener('transitionend', h); go();
         });
       }
-      // Never let a missed transitionend strand the user on a faded card.
-      setTimeout(function () { if (!done) { done = true; go(); } }, 260);
+      // Never let a missed transitionend strand the user on a faded page.
+      setTimeout(go, 340);
     });
 
-    // Coming back via the back button restores the faded-out card from
-    // bfcache — clear the state so the page isn't left invisible.
+    // Coming back via the back button restores the faded-out page from
+    // bfcache — clear the state so it isn't left invisible.
     w.addEventListener('pageshow', function (e) {
-      if (e.persisted) card.classList.remove('is-leaving');
+      if (e.persisted) stage.classList.remove('is-leaving');
     });
   }
 

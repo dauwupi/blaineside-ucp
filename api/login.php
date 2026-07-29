@@ -74,29 +74,36 @@ $_SESSION['remember'] = $remember;
 // If "remember me" was checked, issue a persistent token stored in the DB.
 // The bootstrap picks this up on future requests even after the PHP session expires.
 if ($remember) {
-    $rm_token   = bin2hex(random_bytes(32));
-    $rm_expires = time() + 30 * 24 * 3600;
-    $pdo->prepare(
-        'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
-    )->execute([$rm_token, $rm_expires, (int)$acc['id']]);
+    // Remember-me must never be able to break a sign-in that has already
+    // succeeded. If the token can't be stored (missing column, DB hiccup),
+    // log it and continue — the user still gets their normal session.
+    try {
+        $rm_token   = bin2hex(random_bytes(32));
+        $rm_expires = time() + 30 * 24 * 3600;
+        $pdo->prepare(
+            'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
+        )->execute([$rm_token, $rm_expires, (int)$acc['id']]);
 
-    $secure = (($_SERVER['HTTPS'] ?? '') === 'on');
-    // Persistent remember-me cookie (read by _bootstrap.php to restore the session).
-    setcookie('bsucp_rm', $rm_token, [
-        'expires'  => $rm_expires,
-        'path'     => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-        'secure'   => $secure,
-    ]);
-    // Also extend the session cookie so it survives beyond the browser session.
-    setcookie(session_name(), session_id(), [
-        'expires'  => $rm_expires,
-        'path'     => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-        'secure'   => $secure,
-    ]);
+        $secure = (($_SERVER['HTTPS'] ?? '') === 'on');
+        // Persistent remember-me cookie (read by _bootstrap.php to restore the session).
+        setcookie('bsucp_rm', $rm_token, [
+            'expires'  => $rm_expires,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure'   => $secure,
+        ]);
+        // Also extend the session cookie so it survives beyond the browser session.
+        setcookie(session_name(), session_id(), [
+            'expires'  => $rm_expires,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure'   => $secure,
+        ]);
+    } catch (Throwable $e) {
+        error_log('UCP remember-me could not be stored: ' . $e->getMessage());
+    }
 }
 
 // ---- "Last sign-in …" notice -------------------------------------------

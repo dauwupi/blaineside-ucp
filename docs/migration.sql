@@ -24,6 +24,22 @@ ALTER TABLE ucp_accounts
 ALTER TABLE ucp_accounts
   ADD INDEX idx_reset_token (reset_token);
 
+
+-- ---------------------------------------------------------------------
+-- 1b. Remember-me columns
+--
+-- The login code has always written these, but no earlier migration
+-- created them — so "Remember me" could never work, and on some setups a
+-- successful sign-in came back as "Incorrect UCP name or password".
+-- If they already exist, MySQL errors harmlessly and you can skip this.
+-- ---------------------------------------------------------------------
+ALTER TABLE ucp_accounts
+  ADD COLUMN remember_token   VARCHAR(64)  DEFAULT NULL AFTER reset_expires,
+  ADD COLUMN remember_expires INT UNSIGNED DEFAULT NULL AFTER remember_token;
+
+ALTER TABLE ucp_accounts
+  ADD INDEX idx_remember_token (remember_token);
+
 -- Notes:
 --   reset_token    64-char hex, single use, cleared on use/expiry.
 --   reset_expires  unix timestamp; 30 minutes after issue.

@@ -23,31 +23,40 @@ a{text-decoration:none;color:inherit}
 
 /* ---------------------------------------------------------------------
    Sign in <-> Create UCP transition
-   The two tabs are separate documents, so the "switch" is a cross-fade:
-   the outgoing pane eases out, the incoming one eases in on load. The
-   tab bar itself never moves, which is what makes it read as one card
-   rather than a page reload.
+
+   The two tabs are separate documents, so the "switch" is a cross-fade
+   across the whole centre column — the intro copy on the left AND the
+   card on the right move together. The backdrop, header and footer stay
+   put, so it reads as one continuous page rather than a reload.
    --------------------------------------------------------------------- */
-@keyframes bsPaneIn{
-  from{opacity:0;transform:translateY(6px)}
+@keyframes bsCenterIn{
+  from{opacity:0;transform:translateY(10px) scale(.994)}
   to  {opacity:1;transform:none}
 }
 
-.auth .form{animation:bsPaneIn .26s cubic-bezier(.22,.61,.36,1) both}
-
-/* Set on the card the moment the other tab is clicked, just before we
-   navigate. Only the body moves; the tabs stay anchored. */
-.auth.is-leaving .form{
-  opacity:0;
-  transform:translateY(-5px);
-  transition:opacity .17s ease, transform .17s ease;
-  animation:none;
+.stage .center{
+  animation:bsCenterIn .38s cubic-bezier(.22,.61,.36,1) both;
+  will-change:opacity,transform;
 }
 
-/* The underline slides to the clicked tab before the page changes. */
-.auth .tab{transition:color .18s ease, border-color .18s ease, background .18s ease}
+/* Once the entry animation has played, JS clears it. This matters: an
+   animation with fill-mode "both" keeps controlling opacity forever, and
+   would override the fade-out transition below — making the exit snap
+   instantly to invisible instead of easing. */
+.stage .center.bs-anim-done{animation:none}
+
+/* Set the moment the other tab is clicked, just before we navigate. */
+.stage.is-leaving .center{
+  opacity:0;
+  transform:translateY(-8px) scale(.994);
+  transition:opacity .24s ease, transform .24s ease;
+}
+
+/* The underline and label slide to the clicked tab before the page
+   changes, so the tab bar itself animates rather than jumping. */
+.tabs .tab{transition:color .22s ease, border-color .22s ease, background .22s ease}
 
 @media (prefers-reduced-motion: reduce){
-  .auth .form,
-  .auth.is-leaving .form{animation:none;transition:none;opacity:1;transform:none}
+  .stage .center,
+  .stage.is-leaving .center{animation:none;transition:none;opacity:1;transform:none}
 }
