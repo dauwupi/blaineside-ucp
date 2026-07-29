@@ -86,6 +86,16 @@ $forumMemberId = ips_provision_member($username, $email, $CONFIG);
 if ($forumMemberId) {
     $pdo->prepare('UPDATE ucp_accounts SET forum_member_id = ? WHERE id = ?')
         ->execute([$forumMemberId, $accountId]);
+
+    // Push the UCP name into the forum profile ("UCP Name" field) immediately.
+    // Fire-and-forget; the hourly cron + IPS webhook act as fallbacks.
+    $sync = curl_init('https://blaineside.com/ucp-name-sync.php?key=bs-sync-9f2k7');
+    curl_setopt_array($sync, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 5,
+    ]);
+    curl_exec($sync);
+    curl_close($sync);
 }
 
 // ---- Send verification email ----
