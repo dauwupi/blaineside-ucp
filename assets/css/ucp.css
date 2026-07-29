@@ -6,10 +6,10 @@ a{text-decoration:none;color:inherit}
 .stage.tod-dawn .tod{background:rgba(78,44,66,.42)}
 .stage.tod-day .tod{background:rgba(64,46,26,.20)}
 .stage.tod-dusk .tod{background:rgba(150,72,22,.42)}
-.brand{display:flex;align-items:baseline;gap:11px}
-.brand .mark{font-size:19px;font-weight:900;letter-spacing:.02em}
+.brand{display:flex;align-items:baseline;gap:13px}
+.brand .mark{font-size:24px;font-weight:900;letter-spacing:.02em}
 .brand .mark em{font-style:normal;color:var(--gold)}
-.brand .tag{font-size:9.5px;font-weight:700;letter-spacing:.2em;color:var(--text-faint);border:1px solid var(--border);border-radius:5px;padding:3px 7px;position:relative;top:-2px}
+.brand .tag{font-size:11px;font-weight:700;letter-spacing:.2em;color:var(--text-faint);border:1px solid var(--border);border-radius:6px;padding:4px 9px;position:relative;top:-3px}
 .navbtns{margin-left:auto;display:flex;gap:10px}
 .navbtn{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--text-dim);padding:9px 16px;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.015);transition:.18s cubic-bezier(.2,.8,.2,1)}
 .navbtn .fa{font-size:12px;color:var(--text-faint);transition:.18s}
@@ -19,3 +19,35 @@ a{text-decoration:none;color:inherit}
 .foot .links a:hover{color:var(--gold)}
 /* background extracted from the mockups' inline base64 */
 .scene{background-image:url('../img/bg-sandy.jpg')!important}
+
+
+/* ---------------------------------------------------------------------
+   Sign in <-> Create UCP transition
+   The two tabs are separate documents, so the "switch" is a cross-fade:
+   the outgoing pane eases out, the incoming one eases in on load. The
+   tab bar itself never moves, which is what makes it read as one card
+   rather than a page reload.
+   --------------------------------------------------------------------- */
+@keyframes bsPaneIn{
+  from{opacity:0;transform:translateY(6px)}
+  to  {opacity:1;transform:none}
+}
+
+.auth .form{animation:bsPaneIn .26s cubic-bezier(.22,.61,.36,1) both}
+
+/* Set on the card the moment the other tab is clicked, just before we
+   navigate. Only the body moves; the tabs stay anchored. */
+.auth.is-leaving .form{
+  opacity:0;
+  transform:translateY(-5px);
+  transition:opacity .17s ease, transform .17s ease;
+  animation:none;
+}
+
+/* The underline slides to the clicked tab before the page changes. */
+.auth .tab{transition:color .18s ease, border-color .18s ease, background .18s ease}
+
+@media (prefers-reduced-motion: reduce){
+  .auth .form,
+  .auth.is-leaving .form{animation:none;transition:none;opacity:1;transform:none}
+}

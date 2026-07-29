@@ -153,6 +153,11 @@ ucp/
 - Login uses a uniform "incorrect username or password" message so account
   existence isn't leaked.
 - Basic per-session rate limiting on register/login/resend.
+- **Password reset by email** — `/reset` mints a single-use 30-minute token and
+  mails a `/reset-confirm?token=…` link; `reset-confirm.php` re-checks the
+  password rules, writes the new hash, burns the token, drops every remember-me
+  session and clears any lockout. The "sent" response is neutral either way, so
+  the form never reveals whether an address has an account.
 - **Change the database and mailbox passwords** now that they've been typed in
   chat, and update `config.php` to match.
 
@@ -160,8 +165,6 @@ ucp/
 
 ## What's NOT done yet (future)
 
-- Password reset via email (the front-end reset form exists; needs a
-  `reset.php` + `reset-confirm.php` pair — say the word and I'll add them).
 - Account ID pages (`?id=1042` lookups) — the schema supports it; the viewer
-  page is a future build.
+  page has no approved design yet.
 - Live dashboard data (stats, bulletins) still use mock arrays until wired.

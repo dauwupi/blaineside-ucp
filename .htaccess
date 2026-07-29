@@ -11,6 +11,7 @@
 # =====================================================================
 
 RewriteEngine On
+RewriteBase /
 
 # ---------------------------------------------------------------------
 # Leave the API completely alone. It has its own .htaccess.
@@ -18,41 +19,68 @@ RewriteEngine On
 RewriteRule ^api/ - [L]
 
 # ---------------------------------------------------------------------
-# 1. Old links -> canonical clean URL (301, so search engines and
-#    browsers update). Only fires on a real browser request, never on
-#    our own internal rewrite below.
+# 1. Old .html links -> canonical clean URL (301).
+#
+#    These match on THE_REQUEST — the literal request line the browser
+#    sent — NOT on the current rewritten path. That distinction matters:
+#    after rule 2 below rewrites /login to login.html internally, Apache
+#    runs this whole file again with the new path. Matching on the path
+#    would re-fire the 301, sending the browser back to /login, which
+#    rewrites to login.html again — an infinite redirect loop.
+#    THE_REQUEST never changes during internal rewrites, so these rules
+#    fire only when someone genuinely typed a .html URL.
 # ---------------------------------------------------------------------
-RewriteCond %{ENV:REDIRECT_STATUS} ^$
-RewriteRule ^(.+)\.html$ /$1 [R=301,L]
 
-# The old root dashboard page moved into the folder.
-RewriteRule ^dashboard\.html$ /dashboard [R=301,L]
+# /index.html -> /   and   /dashboard/index.html -> /dashboard/
+RewriteCond %{THE_REQUEST} \s/+(.*?)index\.html[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
+
+# /login.html -> /login   and   /dashboard.html -> /dashboard
+RewriteCond %{THE_REQUEST} \s/+(.*?)\.html[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
 
 # ---------------------------------------------------------------------
 # 2. Clean URL -> the real file.
-#    /dashboard      -> dashboard/index.html   (directory)
 #    /login          -> login.html             (file)
+#    /dashboard      -> dashboard/index.html   (directory)
+#
+#    Both are internal rewrites, so the address bar keeps the clean URL.
 # ---------------------------------------------------------------------
+
 # DirectorySlash would otherwise bounce /dashboard -> /dashboard/ first.
 DirectorySlash Off
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteCond %{REQUEST_FILENAME}/index.html -f
-RewriteRule ^(.+?)/?$ $1/index.html [L]
 
+# A path that already resolves to a real file is served as-is. This is
+# what stops the rewrite loop: on the second pass login.html exists, so
+# nothing below matches and rewriting ends.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -l
+RewriteRule ^ - [L]
+
+# /login -> login.html
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.html -f
 RewriteRule ^(.+?)/?$ $1.html [L]
 
+# /dashboard (or /dashboard/) -> dashboard/index.html
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME}/index.html -f
+RewriteRule ^(.+?)/?$ $1/index.html [L]
+
 # ---------------------------------------------------------------------
-# 3. "/" serves the sign-in page directly rather than bouncing through
-#    index.html's meta refresh.
+# 3. "/" serves the sign-in page.
 # ---------------------------------------------------------------------
 DirectoryIndex index.html
 
 # ---------------------------------------------------------------------
 # Housekeeping
+#
+# Options is wrapped because a few shared hosts disallow it in .htaccess
+# and would return 500 for the whole site rather than ignoring the line.
 # ---------------------------------------------------------------------
-Options -Indexes
+<IfModule mod_autoindex.c>
+  Options -Indexes
+</IfModule>
 
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"

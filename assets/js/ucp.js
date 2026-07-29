@@ -83,6 +83,46 @@
     setInterval(tick, 30000);
   }
 
+  /* ---- Sign in <-> Create UCP cross-fade --------------------------------
+     Intercepts the tab link, moves the active underline, fades the card
+     body out, then navigates. Falls straight through to a normal click
+     for modified clicks (new tab) or when the user prefers less motion. */
+  function initTabFade() {
+    var card = document.querySelector('.auth');
+    if (!card) return;
+    var reduce = w.matchMedia && w.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    card.addEventListener('click', function (e) {
+      var link = e.target.closest ? e.target.closest('a.tab') : null;
+      if (!link || reduce) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+
+      e.preventDefault();
+      var current = card.querySelector('.tab.on');
+      if (current) current.classList.remove('on');
+      link.classList.add('on');
+      card.classList.add('is-leaving');
+
+      var go = function () { w.location = link.getAttribute('href'); };
+      var done = false;
+      var form = card.querySelector('.form');
+      if (form) {
+        form.addEventListener('transitionend', function h() {
+          if (done) return; done = true;
+          form.removeEventListener('transitionend', h); go();
+        });
+      }
+      // Never let a missed transitionend strand the user on a faded card.
+      setTimeout(function () { if (!done) { done = true; go(); } }, 260);
+    });
+
+    // Coming back via the back button restores the faded-out card from
+    // bfcache — clear the state so the page isn't left invisible.
+    w.addEventListener('pageshow', function (e) {
+      if (e.persisted) card.classList.remove('is-leaving');
+    });
+  }
+
   /* ---- Misc helpers ----------------------------------------------------- */
   function esc(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
@@ -122,6 +162,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     applyTod();
     startClock();
+    initTabFade();
     loadCsrf();
   });
 })(window);

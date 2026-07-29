@@ -177,7 +177,7 @@ ok([
     'name' => $acc['username'],
     'rank' => $rank,                 // 0–9
     'role' => rank_name($rank),      // display name ('' for Members)
-    'redirect' => 'dashboard.html',
+    'redirect' => '/dashboard',
     'last_login'  => $prevLogin,
     'same_device' => $sameDevice,
 ]);
