@@ -69,14 +69,14 @@ $token = bin2hex(random_bytes(32));
 
 $stmt = $pdo->prepare(
     'INSERT INTO ucp_accounts
-       (username, username_lower, email, email_lower, discord, password_hash, status, verify_token, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, "pending", ?, NOW())'
+       (username, username_lower, email, email_lower, discord, password_hash, status, verify_token, verify_expires, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, \'pending\', ?, ?, NOW())'
 );
 $stmt->execute([
     $username, strtolower($username),
     $email,    strtolower($email),
     $discord !== '' ? $discord : null,
-    $hash, $token,
+    $hash, $token, time() + 172800,   // link valid 48 hours
 ]);
 $accountId = (int)$pdo->lastInsertId();
 

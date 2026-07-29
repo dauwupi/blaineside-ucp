@@ -57,10 +57,24 @@ session_name('BSUCP');
 session_start();
 
 // ── CSRF ─────────────────────────────────────────────────────────────────────
-// Only POST is guarded. A forged logout is a nuisance rather than a breach, but
-// the token closes it off entirely. The GET ?next= path below is a top-level
-// browser navigation (used by Switch-account style links), where a token can't
-// be attached — it stays as it was.
+// POST + CSRF token, always.
+//
+// This used to accept a bare GET. That meant any other site could end a
+// visitor's session just by linking here (or by loading the URL), because
+// SameSite=Lax still sends the cookie on a top-level GET navigation. Not a
+// breach — nothing is exposed — but it reads to users as "the UCP keeps
+// signing me out", and it is trivial to abuse.
+//
+// The dashboard already sends POST with a token, so nothing user-facing
+// changes. Anything that needs a link-style logout should POST a tiny form.
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    http_response_code(405);
+    header('Allow: POST');
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => false, 'error' => 'Logout requires POST.']);
+    exit;
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $sent = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     if ($sent === '') {
@@ -70,9 +84,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
     $have = $_SESSION['csrf'] ?? '';
     if ($have === '' || $sent === '' || !hash_equals($have, $sent)) {
-        http_response_code(419);
+        // See _bootstrap.php: 419 is rewritten to 500 by Apache.
+        http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['ok' => false, 'error' => 'Your session expired. Refresh the page and try again.']);
+        echo json_encode(['ok' => false, 'csrf' => true, 'error' => 'Your session expired. Refresh the page and try again.']);
         exit;
     }
 }

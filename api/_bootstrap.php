@@ -206,15 +206,55 @@ function db(): PDO {
     return $__PDO;
 }
 
-/** Very small rate-limit guard per session+action (defeats casual hammering). */
+/**
+ * Rate limit an action for this client.
+ *
+ * The original version counted in $_SESSION, which any script defeats simply
+ * by not sending a cookie — each request looked like a brand-new visitor.
+ * That left /api/reset.php and /api/resend.php usable as a mail cannon
+ * against any address someone knows.
+ *
+ * This counts in the database against the client IP, so discarding cookies
+ * gains nothing. The session counter is kept as a cheap first line for
+ * ordinary browsers; the DB check is the one that actually binds.
+ */
 function throttle(string $key, int $maxPerMin = 8): void {
     $now = time();
+
+    // Cheap in-session check first — avoids a DB round trip for normal use.
     $bucket = $_SESSION['rl'][$key] ?? ['n' => 0, 't' => $now];
     if ($now - $bucket['t'] >= 60) { $bucket = ['n' => 0, 't' => $now]; }
     $bucket['n']++;
     $_SESSION['rl'][$key] = $bucket;
     if ($bucket['n'] > $maxPerMin) {
         fail('Too many attempts. Please wait a minute and try again.', 429);
+    }
+
+    // Authoritative check, keyed on IP + action and immune to cookie dropping.
+    try {
+        $pdo = db();
+        $ip  = client_ip();
+        $pdo->prepare(
+            'INSERT INTO ucp_rate_limits (action, ip, window_start, hits)
+                  VALUES (?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE
+                  hits         = IF(window_start < ?, 1, hits + 1),
+                  window_start = IF(window_start < ?, ?, window_start)'
+        )->execute([$key, $ip, $now, $now - 60, $now - 60, $now]);
+
+        $st = $pdo->prepare(
+            'SELECT hits FROM ucp_rate_limits WHERE action = ? AND ip = ? LIMIT 1'
+        );
+        $st->execute([$key, $ip]);
+        $hits = (int)$st->fetchColumn();
+
+        if ($hits > $maxPerMin) {
+            fail('Too many attempts. Please wait a minute and try again.', 429);
+        }
+    } catch (Throwable $e) {
+        // A missing table must not take the site down — log and fall back to
+        // the session counter above.
+        error_log('UCP throttle unavailable: ' . $e->getMessage());
     }
 }
 
@@ -242,7 +282,12 @@ function require_csrf(): void {
     }
     $have = $_SESSION['csrf'] ?? '';
     if ($have === '' || $sent === '' || !hash_equals($have, $sent)) {
-        fail('Your session expired. Refresh the page and try again.', 419);
+        // 403, not 419: 419 is non-standard and Apache rewrites it to a
+        // 500 before it reaches the browser, so the client's "stale token,
+        // fetch a new one and retry" path never ran — users saw a hard
+        // error instead. The csrf flag is what the client keys off.
+        json_out(['ok' => false, 'csrf' => true,
+                  'error' => 'Your session expired. Refresh the page and try again.'], 403);
     }
 }
 

@@ -19,7 +19,8 @@
   }
 
   /* POST JSON to an endpoint. Resolves { status, data } either way so callers
-     can branch on HTTP status (401 wrong password, 429 locked, 419 stale CSRF). */
+     can branch on HTTP status (401 wrong password, 429 locked). A stale
+     CSRF token comes back as 403 with { csrf: true }. */
   function post(endpoint, body) {
     function send() {
       return fetch(API + endpoint, {
@@ -37,7 +38,9 @@
     }
     return (csrf ? Promise.resolve() : loadCsrf()).then(send).then(function (res) {
       // A stale token (session recycled) — refresh once and retry silently.
-      if (res.status === 419) {
+      // Keyed on the body flag: the old check was res.status === 419, but
+      // Apache rewrites that non-standard code to 500, so it never matched.
+      if ((res.data && res.data.csrf) || res.status === 419) {
         return loadCsrf().then(send);
       }
       return res;
