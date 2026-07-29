@@ -16,6 +16,38 @@ if (!file_exists($configPath)) {
 }
 $CONFIG = require $configPath;
 
+/**
+ * Was THIS request made over HTTPS by the browser?
+ *
+ * Order matters. A TLS-terminating edge (OVH, Cloudflare) forwards the
+ * client's real scheme in X-Forwarded-Proto, while $_SERVER['HTTPS'] may
+ * describe the edge's own connection and read "on" even when the visitor
+ * is on plain HTTP. Trusting HTTPS first marks cookies Secure on an HTTP
+ * page, and the browser then silently discards every one of them — no
+ * session, no remember-me, straight back to the login screen.
+ */
+function is_https(): bool {
+    // 1. A TLS-terminating edge states the CLIENT's scheme here. Most
+    //    authoritative signal available, so it wins outright.
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+        return strtolower(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'])[0]) === 'https';
+    }
+    if (!empty($_SERVER['HTTP_X_FORWARDED_SSL'])) {
+        return strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on';
+    }
+
+    // 2. REQUEST_SCHEME describes the connection Apache actually accepted.
+    //    If it says http, believe it even when HTTPS is set to "on" — some
+    //    hosts set HTTPS globally regardless of how the visitor arrived.
+    $scheme = strtolower($_SERVER['REQUEST_SCHEME'] ?? '');
+    if ($scheme === 'http')  return false;
+    if ($scheme === 'https') return true;
+
+    $h = $_SERVER['HTTPS'] ?? '';
+    if ($h !== '' && strtolower($h) !== 'off') return true;
+    return ((int)($_SERVER['SERVER_PORT'] ?? 0)) === 443;
+}
+
 // ---- Sessions ----
 // Cookie-based session for keeping people logged in.
 session_set_cookie_params([
@@ -23,7 +55,7 @@ session_set_cookie_params([
     'path'     => '/',
     'httponly' => true,
     'samesite' => 'Lax',
-    'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+    'secure'   => is_https(),
 ]);
 session_name('BSUCP');
 session_start();
@@ -61,7 +93,7 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
             'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
         )->execute([$new_token, $new_expires, (int)$rm_acc['id']]);
 
-        $secure = (($_SERVER['HTTPS'] ?? '') === 'on');
+        $secure = is_https();
         setcookie('bsucp_rm', $new_token, [
             'expires'  => $new_expires,
             'path'     => '/',
@@ -84,7 +116,7 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
             'path'     => '/',
             'httponly' => true,
             'samesite' => 'Lax',
-            'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+            'secure'   => is_https(),
         ]);
     }
 } catch (Throwable $e) {

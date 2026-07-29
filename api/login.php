@@ -84,7 +84,7 @@ if ($remember) {
             'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
         )->execute([$rm_token, $rm_expires, (int)$acc['id']]);
 
-        $secure = (($_SERVER['HTTPS'] ?? '') === 'on');
+        $secure = is_https();
         // Persistent remember-me cookie (read by _bootstrap.php to restore the session).
         setcookie('bsucp_rm', $rm_token, [
             'expires'  => $rm_expires,
@@ -123,7 +123,7 @@ if (!preg_match('/^[a-f0-9]{32}$/', $deviceRaw)) {
 $deviceHash = hash('sha256', $deviceRaw);
 $sameDevice = ($prevDevice !== null && hash_equals((string)$prevDevice, $deviceHash));
 
-$secureCookie = (($_SERVER['HTTPS'] ?? '') === 'on');
+$secureCookie = is_https();
 setcookie('bsucp_dev', $deviceRaw, [
     'expires'  => time() + 90 * 24 * 3600,
     'path'     => '/',
