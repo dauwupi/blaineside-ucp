@@ -128,6 +128,19 @@ setcookie('bsucp_rm', '', [
     'secure'   => $secure,
 ]);
 
+// Device-tracking cookies belong to the account that just signed out. Leaving
+// them behind meant the next person on a shared machine was greeted with the
+// previous user's "last sign-in ... from this device" notice.
+foreach (['bsucp_dev', 'bsucp_last'] as $c) {
+    setcookie($c, '', [
+        'expires'  => time() - 3600,
+        'path'     => '/',
+        'httponly' => ($c === 'bsucp_dev'),
+        'samesite' => 'Lax',
+        'secure'   => $secure,
+    ]);
+}
+
 // ── ?next redirect (for browser-initiated logout, e.g. Switch button) ────────
 $next = $_GET['next'] ?? $_POST['next'] ?? '';
 if ($next !== '') {

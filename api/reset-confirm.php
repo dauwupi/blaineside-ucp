@@ -60,15 +60,22 @@ $pdo->prepare(
             reset_token     = NULL,
             reset_expires   = NULL,
             remember_token  = NULL,
-            remember_expires = NULL
+            remember_expires = NULL,
+            session_epoch   = session_epoch + 1
       WHERE id = ?'
 )->execute([$hash, (int)$acc['id']]);
 
 // Any failed-login lockout for this account is cleared — they proved ownership.
 $pdo->prepare('DELETE FROM ucp_login_attempts WHERE account_id = ?')->execute([(int)$acc['id']]);
 
-// If the person resetting happens to be signed in here, end that session too.
+// Bumping session_epoch above is what actually ends sessions on OTHER
+// devices. This file's docblock always claimed it did that, but it only ever
+// destroyed the session of the browser doing the reset — so someone holding a
+// stolen session cookie stayed signed in after the victim changed their
+// password, which is the one moment a password change most needs to work.
+// session.php now compares the epoch on every request.
 if (!empty($_SESSION['uid']) && (int)$_SESSION['uid'] === (int)$acc['id']) {
+    $_SESSION = [];
     session_destroy();
 }
 

@@ -90,13 +90,23 @@ if ($forumMemberId) {
 
     // Push the UCP name into the forum profile ("UCP Name" field) immediately.
     // Fire-and-forget; the hourly cron + IPS webhook act as fallbacks.
-    $sync = curl_init('https://blaineside.com/ucp-name-sync.php?key=bs-sync-9f2k7');
-    curl_setopt_array($sync, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 5,
-    ]);
-    curl_exec($sync);
-    curl_close($sync);
+    // The sync key used to be hardcoded here AND passed in the query string,
+    // so it landed in the receiving server's access log and in any Referer.
+    // It now comes from config and travels in a header instead.
+    $syncUrl = $CONFIG['sync']['url'] ?? '';
+    $syncKey = $CONFIG['sync']['key'] ?? '';
+    if ($syncUrl !== '' && $syncKey !== '') {
+        $sync = curl_init($syncUrl);
+        curl_setopt_array($sync, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 5,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HTTPHEADER     => ['X-Sync-Key: ' . $syncKey],
+        ]);
+        curl_exec($sync);
+        curl_close($sync);
+    }
 }
 
 // ---- Send verification email ----
@@ -137,10 +147,16 @@ ok([
  */
 function ips_provision_member(string $username, string $email, array $config): ?int {
     // Config check — skip silently if not configured
-    $ips = $config['ips'] ?? [];
-    if (empty($ips['api_url']) || empty($ips['api_key'])) return null;
+    // config.php and login.php both use ips.url / ips.key. This function read
+    // ips.api_url / ips.api_key, which don't exist — so it returned null on
+    // the very first line and forum accounts were never provisioned. Accept
+    // both spellings so neither side can drift again.
+    $ips    = $config['ips'] ?? [];
+    $apiUrl = $ips['url']  ?? $ips['api_url']  ?? '';
+    $apiKey = $ips['key']  ?? $ips['api_key']  ?? '';
+    if ($apiUrl === '' || $apiKey === '') return null;
 
-    $apiUrl = rtrim($ips['api_url'], '/') . '/core/members';
+    $apiUrl = rtrim($apiUrl, '/') . '/core/members';
 
     // IPS requires a password on account creation even for OAuth-only accounts.
     // We set a long random password — the player will never use it (OAuth is the gate).
@@ -159,7 +175,7 @@ function ips_provision_member(string $username, string $email, array $config): ?
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_USERPWD        => $ips['api_key'] . ':',   // Basic auth: key as username, empty pw
+        CURLOPT_USERPWD        => $apiKey . ':',   // Basic auth: key as username, empty pw
         CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_SSL_VERIFYPEER => true,

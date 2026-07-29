@@ -21,7 +21,7 @@ if ($username === '' || $password === '') {
 
 $pdo  = db();
 $stmt = $pdo->prepare(
-    'SELECT id, username, password_hash, admin_rank, status
+    'SELECT id, username, password_hash, admin_rank, status, session_epoch
        FROM ucp_accounts WHERE username_lower = ? LIMIT 1'
 );
 $stmt->execute([strtolower($username)]);
@@ -30,8 +30,11 @@ $acc = $stmt->fetch();
 // ---- Server-side lockout (enforced here, not in the browser) ----
 $ip        = client_ip();
 $accountId = $acc ? (int)$acc['id'] : null;
+// Unknown names get their own bucket, keyed on the name itself, so they
+// throttle exactly like real ones and can't be told apart by the response.
+$probe = $acc ? '' : hash('sha256', strtolower($username));
 
-$lockLeft = lock_seconds_left($pdo, $accountId, $ip);
+$lockLeft = lock_seconds_left($pdo, $accountId, $ip, $probe);
 if ($lockLeft > 0) {
     json_out([
         'ok'           => false,
@@ -52,13 +55,13 @@ $dummyHash = '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
 $okPassword = password_verify($password, $acc['password_hash'] ?? $dummyHash);
 
 if (!$acc || !$okPassword) {
-    $lockedFor = record_failure($pdo, $accountId, $ip);
+    $lockedFor = record_failure($pdo, $accountId, $ip, $probe);
     json_out([
         'ok'         => false,
         'error'      => 'Incorrect UCP name or password.',
         'locked'     => $lockedFor > 0,
         'locked_for' => $lockedFor,
-        'left'       => $lockedFor > 0 ? 0 : attempts_left($pdo, $accountId, $ip),
+        'left'       => $lockedFor > 0 ? 0 : attempts_left($pdo, $accountId, $ip, $probe),
     ], $lockedFor > 0 ? 429 : 401);
 }
 
@@ -71,13 +74,14 @@ if ($acc['status'] === 'suspended') {
 }
 
 // Success — establish the session.
-clear_failures($pdo, $accountId, $ip);
+clear_failures($pdo, $accountId, $ip, '');
 $rank     = (int)$acc['admin_rank'];
 $remember = !empty($in['remember']);
 session_regenerate_id(true);
 $_SESSION['uid']      = (int)$acc['id'];
 $_SESSION['name']     = $acc['username'];
 $_SESSION['rank']     = $rank;
+$_SESSION['epoch']    = (int)($acc['session_epoch'] ?? 0);
 $_SESSION['remember'] = $remember;
 
 // If "remember me" was checked, issue a persistent token stored in the DB.
@@ -142,9 +146,12 @@ setcookie('bsucp_dev', $deviceRaw, [
 ]);
 // Readable by the login page (not httponly) purely to render the notice.
 // Contains only a timestamp + a flag — no account identifiers.
+// $sameDevice was computed above but thrown away here — the cookie always
+// claimed "same", so the login page's "from this device" line was shown to
+// everyone, including someone signing in from a machine they'd never used.
 setcookie('bsucp_last', json_encode([
     'ts'   => time(),
-    'same' => true,
+    'same' => $sameDevice,
 ]), [
     'expires'  => time() + 90 * 24 * 3600,
     'path'     => '/',
@@ -167,12 +174,23 @@ if ($fmData && $fmData['forum_member_id'] === null) {
     $ips_url = rtrim($CONFIG['ips']['url'] ?? '', '/');
     $ips_key = $CONFIG['ips']['key'] ?? '';
     if ($ips_url !== '' && $ips_key !== '') {
-        $lookup = $ips_url . '/core/members&' . http_build_query(['key' => $ips_key, 'email' => $fmData['email']]);
+        // '?' not '&' — the old URL put the query in the path, so this
+        // lookup could never succeed. Which meant it also never stopped
+        // retrying: forum_member_id stayed NULL, so EVERY subsequent login
+        // paid for the request again.
+        $lookup = $ips_url . '/core/members?' . http_build_query(['key' => $ips_key, 'email' => $fmData['email']]);
         $ch = curl_init($lookup);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 10,
-            CURLOPT_FOLLOWLOCATION => true,
+            // Sign-in blocks on this. 10s meant a slow or unreachable forum
+            // held the user on a spinner for ten seconds before letting them
+            // in; 3s is plenty for a same-provider API call and the lookup is
+            // optional anyway.
+            CURLOPT_TIMEOUT        => 3,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            // The API key rides in the query string, so following a redirect
+            // would hand it to whatever host the redirect names.
+            CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_HTTPHEADER     => ['Accept: application/json'],
         ]);
         $body = curl_exec($ch);

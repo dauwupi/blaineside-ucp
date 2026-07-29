@@ -121,3 +121,46 @@ CREATE TABLE IF NOT EXISTS ucp_rate_limits (
 -- ---------------------------------------------------------------------
 --   SHOW COLUMNS FROM ucp_accounts LIKE 'verify_expires';
 --   SELECT * FROM ucp_rate_limits;
+
+
+-- =====================================================================
+-- Round 3 — audit fixes (run once)
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 6. Password reset now ends sessions on every other device
+--
+-- Previously a reset only ended the session of the browser doing the
+-- resetting. Someone holding a stolen session cookie stayed signed in
+-- through a password change — the exact moment it most needs to work.
+-- Each reset bumps session_epoch; session.php refuses any session issued
+-- under an older value.
+-- ---------------------------------------------------------------------
+ALTER TABLE ucp_accounts
+  ADD COLUMN session_epoch INT UNSIGNED NOT NULL DEFAULT 0;
+
+
+-- ---------------------------------------------------------------------
+-- 7. Per-name lockout buckets (closes username enumeration)
+--
+-- Failed logins for names that don't exist all shared one bucket per IP
+-- (account_id = NULL). Lock it with three junk names and you had an
+-- oracle: real names answered 401, fake ones 429. Each unknown name now
+-- gets its own bucket, keyed on a hash of the submitted name.
+--
+-- Existing rows are cleared: they were counted under the old scheme.
+-- ---------------------------------------------------------------------
+ALTER TABLE ucp_login_attempts
+  ADD COLUMN probe CHAR(64) NOT NULL DEFAULT '' AFTER ip;
+
+ALTER TABLE ucp_login_attempts DROP INDEX uq_account_ip;
+ALTER TABLE ucp_login_attempts ADD UNIQUE KEY uq_bucket (account_id, ip, probe);
+
+DELETE FROM ucp_login_attempts;
+
+
+-- ---------------------------------------------------------------------
+-- Verification
+-- ---------------------------------------------------------------------
+--   SHOW COLUMNS FROM ucp_accounts LIKE 'session_epoch';
+--   SHOW COLUMNS FROM ucp_login_attempts LIKE 'probe';

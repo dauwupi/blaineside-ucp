@@ -87,7 +87,7 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
     $rm_cookie = $_COOKIE['bsucp_rm'];
     $rm_pdo    = db();
     $rm_stmt   = $rm_pdo->prepare(
-        'SELECT id, username, admin_rank
+        'SELECT id, username, admin_rank, session_epoch
            FROM ucp_accounts
           WHERE remember_token = ?
             AND remember_expires > ?
@@ -103,6 +103,7 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
         $_SESSION['uid']      = (int)$rm_acc['id'];
         $_SESSION['name']     = $rm_acc['username'];
         $_SESSION['rank']     = (int)$rm_acc['admin_rank'];
+        $_SESSION['epoch']    = (int)($rm_acc['session_epoch'] ?? 0);
         $_SESSION['remember'] = true;
 
         // Rotate the token so each use issues a fresh one (prevents replay if ever leaked).
@@ -310,12 +311,27 @@ function client_ip(): string {
  * $accountId may be null for attempts against a name that doesn't exist —
  * those are tracked per-IP so name-guessing is throttled too.
  */
-function lock_seconds_left(PDO $pdo, ?int $accountId, string $ip): int {
+/**
+ * Lockout buckets.
+ *
+ * These used to key on (account_id, ip) alone, with account_id NULL for any
+ * name that doesn't exist. That put EVERY unknown username from an IP into
+ * one shared bucket, which leaked account existence outright: lock the NULL
+ * bucket with three garbage names, then probe. A real name resolves to its
+ * own unlocked bucket and answers 401; a fake one hits the locked shared
+ * bucket and answers 429. A perfect yes/no oracle, and probing never
+ * throttled because the lock didn't apply to real names.
+ *
+ * $probe fixes that — a hash of the submitted name for unknown accounts, ''
+ * for real ones — so each fake name gets its own bucket and behaves exactly
+ * like a real one.
+ */
+function lock_seconds_left(PDO $pdo, ?int $accountId, string $ip, string $probe = ''): int {
     $stmt = $pdo->prepare(
         'SELECT locked_until FROM ucp_login_attempts
-          WHERE account_id <=> ? AND ip = ? LIMIT 1'
+          WHERE account_id <=> ? AND ip = ? AND probe = ? LIMIT 1'
     );
-    $stmt->execute([$accountId, $ip]);
+    $stmt->execute([$accountId, $ip, $probe]);
     $row = $stmt->fetch();
     if (!$row) return 0;
     $left = (int)$row['locked_until'] - time();
@@ -323,12 +339,12 @@ function lock_seconds_left(PDO $pdo, ?int $accountId, string $ip): int {
 }
 
 /** Records a failed attempt and locks the pair once BS_MAX_FAILS is reached. */
-function record_failure(PDO $pdo, ?int $accountId, string $ip): int {
+function record_failure(PDO $pdo, ?int $accountId, string $ip, string $probe = ''): int {
     $stmt = $pdo->prepare(
         'SELECT id, fails, lock_level FROM ucp_login_attempts
-          WHERE account_id <=> ? AND ip = ? LIMIT 1'
+          WHERE account_id <=> ? AND ip = ? AND probe = ? LIMIT 1'
     );
-    $stmt->execute([$accountId, $ip]);
+    $stmt->execute([$accountId, $ip, $probe]);
     $row = $stmt->fetch();
 
     $fails = ($row ? (int)$row['fails'] : 0) + 1;
@@ -349,26 +365,26 @@ function record_failure(PDO $pdo, ?int $accountId, string $ip): int {
         )->execute([$fails, $level, $until, (int)$row['id']]);
     } else {
         $pdo->prepare(
-            'INSERT INTO ucp_login_attempts (account_id, ip, fails, lock_level, locked_until, updated_at)
-             VALUES (?, ?, ?, ?, ?, NOW())'
-        )->execute([$accountId, $ip, $fails, $level, $until]);
+            'INSERT INTO ucp_login_attempts (account_id, ip, probe, fails, lock_level, locked_until, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())'
+        )->execute([$accountId, $ip, $probe, $fails, $level, $until]);
     }
 
     return $until > 0 ? $until - time() : 0;
 }
 
 /** Clears the failure record after a successful sign-in. */
-function clear_failures(PDO $pdo, ?int $accountId, string $ip): void {
-    $pdo->prepare('DELETE FROM ucp_login_attempts WHERE account_id <=> ? AND ip = ?')
-        ->execute([$accountId, $ip]);
+function clear_failures(PDO $pdo, ?int $accountId, string $ip, string $probe = ''): void {
+    $pdo->prepare('DELETE FROM ucp_login_attempts WHERE account_id <=> ? AND ip = ? AND probe = ?')
+        ->execute([$accountId, $ip, $probe]);
 }
 
 /** How many attempts are left before the next lock kicks in. */
-function attempts_left(PDO $pdo, ?int $accountId, string $ip): int {
+function attempts_left(PDO $pdo, ?int $accountId, string $ip, string $probe = ''): int {
     $stmt = $pdo->prepare(
-        'SELECT fails FROM ucp_login_attempts WHERE account_id <=> ? AND ip = ? LIMIT 1'
+        'SELECT fails FROM ucp_login_attempts WHERE account_id <=> ? AND ip = ? AND probe = ? LIMIT 1'
     );
-    $stmt->execute([$accountId, $ip]);
+    $stmt->execute([$accountId, $ip, $probe]);
     $row = $stmt->fetch();
     $left = BS_MAX_FAILS - ($row ? (int)$row['fails'] : 0);
     return $left > 0 ? $left : 0;
