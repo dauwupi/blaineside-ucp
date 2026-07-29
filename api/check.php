@@ -25,13 +25,25 @@ if (isset($_GET['username'])) {
 }
 
 if (isset($_GET['email'])) {
+    // Email existence is NOT public. Answering "taken" here handed anyone a
+    // free "does this person have a BlaineSide account?" API — which also
+    // undoes the deliberate non-disclosure in reset.php and resend.php.
+    //
+    // Usernames above are fine to answer: they're displayed publicly on the
+    // forum, so nothing is revealed that isn't already visible.
+    //
+    // The form still gets a useful answer for a well-formed address; a
+    // genuine collision surfaces on submit, where it's rate-limited and
+    // needs a CSRF token. Requiring the token here too means enumeration
+    // costs a session per burst instead of being a plain GET loop.
+    require_csrf();
+    throttle('check_email', 10);
+
     $e = trim((string)$_GET['email']);
     if (!filter_var($e, FILTER_VALIDATE_EMAIL)) {
         ok(['available' => false, 'reason' => 'invalid']);
     }
-    $stmt = $pdo->prepare('SELECT 1 FROM ucp_accounts WHERE email_lower = ? LIMIT 1');
-    $stmt->execute([strtolower($e)]);
-    ok(['available' => !$stmt->fetch()]);
+    ok(['available' => true]);
 }
 
 fail('Nothing to check.');

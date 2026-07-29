@@ -24,7 +24,7 @@ if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
     if ($acc && $acc['status'] === 'pending') {
         // Reissue a fresh token each time.
         $token = bin2hex(random_bytes(32));
-        $pdo->prepare('UPDATE ucp_accounts SET verify_token = ?, verify_expires = ? WHERE id = ?')->execute([$token, time() + 172800, $acc['id']]);
+        $pdo->prepare('UPDATE ucp_accounts SET verify_token = ?, verify_expires = ? WHERE id = ?')->execute([token_hash($token), time() + 172800, $acc['id']]);
         $link = rtrim($CONFIG['site']['base_url'], '/') . '/api/verify.php?token=' . urlencode($token);
         send_mail($email, $acc['username'], 'Verify your BlaineSide UCP account',
             verification_email_html($acc['username'], $link),

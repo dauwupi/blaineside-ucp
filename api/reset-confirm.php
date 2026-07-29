@@ -38,7 +38,7 @@ $stmt = $pdo->prepare(
     'SELECT id, username, reset_expires FROM ucp_accounts
       WHERE reset_token = ? AND status = \'active\' LIMIT 1'
 );
-$stmt->execute([$token]);
+$stmt->execute([token_hash($token)]);
 $acc = $stmt->fetch();
 
 if (!$acc) {

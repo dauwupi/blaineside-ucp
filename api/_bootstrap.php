@@ -94,7 +94,7 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
             AND status = \'active\'
           LIMIT 1'
     );
-    $rm_stmt->execute([$rm_cookie, time()]);
+    $rm_stmt->execute([token_hash($rm_cookie), time()]);
     $rm_acc = $rm_stmt->fetch();
 
     if ($rm_acc) {
@@ -111,7 +111,7 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
         $new_expires = time() + 30 * 24 * 3600;
         $rm_pdo->prepare(
             'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
-        )->execute([$new_token, $new_expires, (int)$rm_acc['id']]);
+        )->execute([token_hash($new_token), $new_expires, (int)$rm_acc['id']]);
 
         $secure = is_https();
         setcookie('bsucp_rm', $new_token, [
@@ -187,6 +187,22 @@ function read_input(): array {
         if (is_array($j)) return $j;
     }
     return $_POST ?: [];
+}
+
+/**
+ * Store tokens hashed, never raw.
+ *
+ * Verify / reset / remember-me tokens are bearer credentials: whoever holds
+ * one IS the account. Kept in plaintext, a leaked backup, a read-only SQL
+ * injection anywhere, or a downloaded dump hands over instant account
+ * takeover on every row. Hashed, a stolen database yields nothing usable.
+ *
+ * SHA-256 with no salt is deliberate: these are 256 bits of random_bytes,
+ * not passwords, so there is nothing to brute-force and the lookup has to
+ * stay a single indexed equality match.
+ */
+function token_hash(string $token): string {
+    return hash('sha256', $token);
 }
 
 /** Open a PDO connection using config. */

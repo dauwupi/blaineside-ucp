@@ -76,7 +76,7 @@ $stmt->execute([
     $username, strtolower($username),
     $email,    strtolower($email),
     $discord !== '' ? $discord : null,
-    $hash, $token, time() + 172800,   // link valid 48 hours
+    $hash, token_hash($token), time() + 172800,   // link valid 48 hours; only the hash is stored
 ]);
 $accountId = (int)$pdo->lastInsertId();
 

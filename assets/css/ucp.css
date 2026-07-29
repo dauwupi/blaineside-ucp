@@ -60,3 +60,24 @@ a{text-decoration:none;color:inherit}
   .stage .center,
   .stage.is-leaving .center{animation:none;transition:none;opacity:1;transform:none}
 }
+
+
+/* ---------------------------------------------------------------------
+   Auth-page form shell
+   ---------------------------------------------------------------------
+   These rules were duplicated inline in login / create / reset /
+   reset-confirm, and had drifted apart: the SAME .field carried a
+   margin-top of 18px, 16px, 20px and 18px on the four pages, .alt was
+   18/16/18/16, only login gave .alt a a pointer cursor, and only create
+   centred its label row. Nothing about those pages justifies the
+   differences — they're four copies of one component that were edited at
+   different times.
+
+   Defined once here so they can't drift again. Anything genuinely
+   page-specific (the two-column layout on login/create, the larger badge
+   and heading on verify/welcome) stays inline on the page that needs it.
+   --------------------------------------------------------------------- */
+.field{margin-top:18px}
+.field label{display:flex;align-items:center;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:8px}
+.alt{text-align:center;font-size:13px;color:var(--text-dim);margin-top:18px}
+.alt a{color:var(--gold);font-weight:700;cursor:pointer}

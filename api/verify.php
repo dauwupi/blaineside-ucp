@@ -34,7 +34,7 @@ if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
 
 $pdo  = db();
 $stmt = $pdo->prepare('SELECT id, status, verify_expires FROM ucp_accounts WHERE verify_token = ? LIMIT 1');
-$stmt->execute([$token]);
+$stmt->execute([token_hash($token)]);
 $acc = $stmt->fetch();
 
 if (!$acc) {

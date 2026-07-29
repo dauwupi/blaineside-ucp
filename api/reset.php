@@ -37,7 +37,7 @@ if (filter_var($email, FILTER_VALIDATE_EMAIL) && strlen($email) <= 190) {
         $expires = time() + 1800; // 30 minutes — keep in sync with the page copy
 
         $pdo->prepare('UPDATE ucp_accounts SET reset_token = ?, reset_expires = ? WHERE id = ?')
-            ->execute([$token, $expires, (int)$acc['id']]);
+            ->execute([token_hash($token), $expires, (int)$acc['id']]);
 
         $link = rtrim($CONFIG['site']['base_url'], '/')
               . '/reset-confirm?token=' . urlencode($token);

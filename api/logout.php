@@ -102,7 +102,7 @@ if (!empty($_COOKIE['bsucp_rm']) && isset($CONFIG)) {
         $pdo->prepare(
             'UPDATE ucp_accounts SET remember_token = NULL, remember_expires = NULL
               WHERE remember_token = ?'
-        )->execute([$_COOKIE['bsucp_rm']]);
+        )->execute([hash('sha256', $_COOKIE['bsucp_rm'])]);
     } catch (Throwable $e) { /* DB down — still proceed with cookie/session cleanup */ }
 }
 

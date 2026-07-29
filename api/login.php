@@ -95,7 +95,7 @@ if ($remember) {
         $rm_expires = time() + 30 * 24 * 3600;
         $pdo->prepare(
             'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
-        )->execute([$rm_token, $rm_expires, (int)$acc['id']]);
+        )->execute([token_hash($rm_token), $rm_expires, (int)$acc['id']]);
 
         $secure = is_https();
         // Persistent remember-me cookie (read by _bootstrap.php to restore the session).

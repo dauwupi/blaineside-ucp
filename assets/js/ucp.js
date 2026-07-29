@@ -48,8 +48,20 @@
   }
 
   function get(endpoint) {
-    return fetch(API + endpoint, { credentials: 'include' })
-      .then(function (r) { return r.json(); })
+    function send() {
+      return fetch(API + endpoint, {
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': csrf || '' }
+      }).then(function (r) { return r.json(); });
+    }
+    // Some read endpoints (the email availability check) require the token
+    // too, so make sure we have one before the first call.
+    return (csrf ? Promise.resolve() : loadCsrf())
+      .then(send)
+      .then(function (d) {
+        if (d && d.ok === false && d.csrf) { return loadCsrf().then(send); }
+        return d;
+      })
       .catch(function () { return { ok: false }; });
   }
 

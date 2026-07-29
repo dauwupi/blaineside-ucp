@@ -164,3 +164,31 @@ DELETE FROM ucp_login_attempts;
 -- ---------------------------------------------------------------------
 --   SHOW COLUMNS FROM ucp_accounts LIKE 'session_epoch';
 --   SHOW COLUMNS FROM ucp_login_attempts LIKE 'probe';
+
+
+-- =====================================================================
+-- Round 4 — tokens are now stored hashed (NO schema change needed)
+-- =====================================================================
+--
+-- verify_token, reset_token and remember_token now hold sha256(token)
+-- instead of the token itself. The column types already fit (64 hex
+-- chars), so there is nothing to ALTER.
+--
+-- Existing tokens were issued in plaintext and will no longer match, so
+-- clear them once when you deploy. Effect on people:
+--   * anyone signed in via "remember me" signs in again (normal sessions
+--     are unaffected)
+--   * unverified accounts need a fresh link — the Resend button on the
+--     verify page issues one
+--   * any outstanding reset link stops working; request a new one
+--     (they only lived 30 minutes anyway)
+--
+-- Skip this and those tokens simply never match — nothing breaks, the
+-- rows just sit there dead. Running it is tidier.
+
+UPDATE ucp_accounts
+   SET verify_token    = NULL,
+       reset_token     = NULL,
+       reset_expires   = NULL,
+       remember_token  = NULL,
+       remember_expires = NULL;
