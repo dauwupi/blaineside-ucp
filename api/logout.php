@@ -66,12 +66,48 @@ session_start();
 // signing me out", and it is trivial to abuse.
 //
 // The dashboard already sends POST with a token, so nothing user-facing
-// changes. Anything that needs a link-style logout should POST a tiny form.
+// changes. Browser-level GET navigations (e.g. the IPS forum logout redirect)
+// get an intermediate HTML page that auto-submits a POST with the real CSRF
+// token — security is preserved, and the redirect still works.
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-    http_response_code(405);
-    header('Allow: POST');
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['ok' => false, 'error' => 'Logout requires POST.']);
+    // Ensure the CSRF token exists in the session (session_start() already ran).
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
+    $csrf_token = $_SESSION['csrf'];
+    $next_val   = htmlspecialchars($_GET['next'] ?? '', ENT_QUOTES, 'UTF-8');
+    $action     = htmlspecialchars($_SERVER['PHP_SELF'] ?? '/api/logout.php', ENT_QUOTES, 'UTF-8');
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo <<<HTML
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Signing out… — BlaineSide UCP</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;
+  background:#100f0e;font-family:Inter,system-ui,sans-serif;color:#f1efe9}
+.card{text-align:center;max-width:360px;padding:36px 30px;background:#1a1816;
+  border:1px solid #332e27;border-radius:14px}
+h1{font-size:18px;font-weight:700;margin:0 0 8px}
+p{font-size:13.5px;color:#a49a8c;margin:0 0 20px}
+button{padding:11px 22px;background:#d4923a;color:#1a1206;border:none;
+  border-radius:8px;font-weight:700;font-size:14px;cursor:pointer}
+</style></head>
+<body>
+<div class="card">
+  <h1>Signing out…</h1>
+  <p>Please wait while we sign you out securely.</p>
+  <form id="lf" method="POST" action="{$action}">
+    <input type="hidden" name="next"  value="{$next_val}">
+    <input type="hidden" name="csrf"  value="{$csrf_token}">
+    <noscript><button type="submit">Sign out</button></noscript>
+  </form>
+</div>
+<script>document.getElementById('lf').submit();</script>
+</body></html>
+HTML;
     exit;
 }
 
@@ -153,11 +189,20 @@ if ($next !== '') {
 
     if ($next[0] === '/' && ($next[1] ?? '') !== '/' && ($next[1] ?? '') !== '\\') {
         $allowed = $next;                       // e.g. "/login", "/dashboard"
-    } elseif (isset($CONFIG['site']['base_url'])) {
-        $ourHost  = parse_url($CONFIG['site']['base_url'], PHP_URL_HOST);
-        $theirs   = parse_url($next, PHP_URL_HOST);
-        $scheme   = strtolower((string)parse_url($next, PHP_URL_SCHEME));
-        if ($ourHost && $theirs && strcasecmp($ourHost, $theirs) === 0
+    } else {
+        // Build a list of trusted hosts: the UCP domain + the IPS forum domain.
+        $trustedHosts = [];
+        if (isset($CONFIG['site']['base_url'])) {
+            $h = parse_url($CONFIG['site']['base_url'], PHP_URL_HOST);
+            if ($h) $trustedHosts[] = strtolower($h);
+        }
+        if (isset($CONFIG['ips']['url'])) {
+            $h = parse_url($CONFIG['ips']['url'], PHP_URL_HOST);
+            if ($h) $trustedHosts[] = strtolower($h);
+        }
+        $theirs = strtolower((string)parse_url($next, PHP_URL_HOST));
+        $scheme = strtolower((string)parse_url($next, PHP_URL_SCHEME));
+        if ($theirs && in_array($theirs, $trustedHosts, true)
             && in_array($scheme, ['http', 'https'], true)) {
             $allowed = $next;
         }
