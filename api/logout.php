@@ -120,7 +120,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $sent = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     if ($sent === '') {
         $raw  = file_get_contents('php://input');
-        $body = $raw ? (json_decode($raw, true) ?: []) : $_POST;
+        // json_decode returns null on failure; ?? falls back to $_POST so
+        // URL-encoded form submissions (from the GET→POST bridge page) are
+        // handled correctly alongside JSON bodies (from the dashboard fetch).
+        $body = ($raw !== '') ? (json_decode($raw, true) ?? $_POST) : $_POST;
         $sent = (string)($body['csrf'] ?? '');
     }
     $have = $_SESSION['csrf'] ?? '';
