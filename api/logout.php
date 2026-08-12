@@ -77,6 +77,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     $csrf_token = $_SESSION['csrf'];
     $next_val   = htmlspecialchars($_GET['next'] ?? '', ENT_QUOTES, 'UTF-8');
     $action     = htmlspecialchars($_SERVER['PHP_SELF'] ?? '/api/logout.php', ENT_QUOTES, 'UTF-8');
+    // Flush the session to disk NOW, before we send the page that will
+    // auto-submit a POST back to us. Without this, the GET and POST requests
+    // can race: the POST arrives while the GET's session write is still
+    // pending, so $_SESSION['csrf'] looks empty on the POST side.
+    session_write_close();
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-store');
     echo <<<HTML
