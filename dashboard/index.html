@@ -358,10 +358,10 @@
   .ann-eyebrow .ago{color:var(--text-faint);font-weight:700;letter-spacing:.08em}
   .ann-head{font-size:14px;font-weight:700;color:var(--parchment);line-height:1.35;
     letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  /* One line each, ellipsised. An announcement that needs a paragraph
-     needs a link to the paragraph. */
-  .ann-detail{font-size:12.5px;color:var(--text-dim);line-height:1.45;margin-top:2px;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* The detail wraps onto a second line and stops there — long enough to
+     say the thing, short enough that the strip keeps a fixed height. */
+  .ann-detail{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-top:3px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .ann-acts{flex:none;display:flex;align-items:center;gap:8px}
   .ann-link{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
     padding:7px 12px;border-radius:100px;white-space:nowrap;
@@ -382,8 +382,9 @@
 
   @media (max-width:760px){
     .ann{align-items:flex-start;gap:12px;padding:12px 13px}
-    .ann-head,.ann-detail{white-space:normal;
+    .ann-head{white-space:normal;
       display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .ann-detail{-webkit-line-clamp:3}
     .ann-acts{flex-direction:column;align-items:flex-end;gap:6px}
     .ann-link{padding:6px 10px}
   }
