@@ -127,7 +127,7 @@ button{font-family:inherit}
    and swaps a tod-* class on it — the same code the sign-in page
    uses, so the two can never drift out of step.
    ============================================================ */
-.bg-stage{position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
+.bg-stage{position:fixed;inset:0;top:var(--header-h);left:var(--sidebar-w);z-index:0;pointer-events:none;
   overflow:hidden;background:#0b0a08}
 .bg-stage .scene{position:absolute;inset:0;
   background:url('/assets/img/bg-sandy.jpg') center/cover no-repeat;
@@ -146,8 +146,6 @@ button{font-family:inherit}
   radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.10), transparent 62%),
   linear-gradient(90deg,rgba(10,9,8,.82) 0%,rgba(10,9,8,.62) 45%,rgba(10,9,8,.42) 100%),
   linear-gradient(180deg,rgba(10,9,8,.55) 0%,rgba(10,9,8,.28) 34%,rgba(10,9,8,.5) 70%,rgba(10,9,8,.86) 100%)}
-.bg-stage .bg-grain{position:absolute;inset:0;
-  background-image:repeating-linear-gradient(122deg,rgba(255,255,255,.012) 0 1px,transparent 1px 34px)}
 @media (max-width:760px){ .bg-stage{left:0} }
 .topbar,.content{position:relative;z-index:1}
 
@@ -751,7 +749,6 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   <div class="scene"></div>
   <div class="tod"></div>
   <div class="bg-scrim"></div>
-  <div class="bg-grain"></div>
 </div>
 
 <aside class="sidebar">
