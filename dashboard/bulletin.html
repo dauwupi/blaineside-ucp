@@ -258,7 +258,10 @@
   .drop .browse{color:var(--gold);font-weight:700}
   .imgframe{position:relative;height:190px;overflow:hidden;background:var(--charcoal-3);cursor:grab}
   .imgframe.dragging{cursor:grabbing}
-  .imgframe img{position:absolute;width:100%;min-height:100%;user-select:none;-webkit-user-drag:none;will-change:transform;object-fit:cover}
+    /* height:100% is what makes this draggable. Without it the box is the
+     image's own height, object-fit:cover has nothing to crop, and
+     object-position moves nothing — which is exactly how it behaved. */
+.imgframe img{position:absolute;inset:0;width:100%;height:100%;user-select:none;-webkit-user-drag:none;object-fit:cover}
   .imgframe .hint{position:absolute;left:0;right:0;bottom:0;padding:9px 12px;font-size:11px;font-weight:600;color:#e6d3b2;
     background:linear-gradient(180deg,transparent,rgba(12,11,10,.85));display:flex;align-items:center;gap:7px;pointer-events:none}
   .imgframe .hint svg{width:13px;height:13px}
@@ -278,13 +281,25 @@
   .pv-slide.g1 .pvbg{background:linear-gradient(120deg,#3a2a16,#191510)}
   .pv-slide.g2 .pvbg{background:linear-gradient(120deg,#2c2617,#181712)}
   .pv-slide.g3 .pvbg{background:linear-gradient(120deg,#33211a,#191310)}
-  .pv-slide .pvbg img{position:absolute;width:100%;min-height:100%;object-fit:cover}
+  .pv-slide .pvbg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .pv-slide .pvbg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,11,10,.1),rgba(12,11,10,.55) 55%,rgba(12,11,10,.95))}
-  .pv-slide .cap{position:relative;padding:24px;width:100%}
-  .pv-slide .cap .tg{position:static;display:inline-block;margin-bottom:12px}
-  .pv-slide .cap h4{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px}
-  .pv-slide .cap p{font-size:13px;color:#c9bea9;max-width:92%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  /* A photograph needs far more protection than a flat gradient does: the
+     text sits in the bottom-left, so that corner gets weighted twice. */
+  .pv-slide.has-img .pvbg::after{background:
+    linear-gradient(180deg,rgba(10,9,8,.34) 0%,rgba(10,9,8,.12) 30%,rgba(10,9,8,.74) 66%,rgba(10,9,8,.96) 100%),
+    linear-gradient(90deg,rgba(10,9,8,.72) 0%,rgba(10,9,8,.28) 46%,rgba(10,9,8,0) 78%)}
+  .pv-slide .cap{position:relative;padding:22px;width:100%}
+  .pv-slide .cap .tg{position:static;display:inline-block;margin-bottom:11px}
+  .pv-slide .cap h4{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* Two lines, never more. A long description over a photo turns the slide
+     into wallpaper with words on it. */
+  .pv-slide .cap p{font-size:13px;line-height:1.55;color:#cdc2ad;max-width:56ch;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pv-slide.has-img .cap h4{text-shadow:0 1px 12px rgba(0,0,0,.55)}
+  .pv-slide.has-img .cap p{color:#ddd3c2;text-shadow:0 1px 10px rgba(0,0,0,.5)}
   .pv-slide .cap .m{font-size:11.5px;color:var(--text-faint);margin-top:10px;font-weight:600}
+  .pv-slide.has-img .cap .m{color:#b6ab99}
   .pv-link{display:inline-flex;align-items:center;gap:6px;margin-top:11px;font-size:11.5px;font-weight:700;
     color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));padding:5px 11px;border-radius:100px}
   .pv-link svg{width:13px;height:13px}
@@ -483,11 +498,11 @@
                 <div class="m" id="pvMeta">Just now · Staff Team</div>
                 <span class="pv-link" id="pvLink" hidden>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
-                  Clicking opens the link
+                  Read more
                 </span>
               </div>
             </div>
-            <p class="pv-note">This is exactly how the bulletin looks on the dashboard when set to show. Drag the image inside its frame to reposition it.</p>
+            <p class="pv-note">Exactly how it looks on the dashboard when shown — including the Read more button, which appears whenever a link is set. Drag the image in its frame above to reposition it.</p>
           </div>
         </div>
       </div>
@@ -791,7 +806,7 @@
 
     const theme=THEME_BY_TYPE[draft.type];
     const pv=document.getElementById('pv');
-    pv.className='pv-slide g'+theme;
+    pv.className='pv-slide g'+theme+(draft.image?' has-img':'');
     const tag=document.getElementById('pvTag');
     tag.className='tag tg '+(TAGCLASS[draft.type]||'');
     tag.textContent=TAGLABEL[draft.type];

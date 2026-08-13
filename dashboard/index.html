@@ -248,13 +248,25 @@
   .slide.s3 .bg{background:linear-gradient(120deg,#33211a,#191310)}
   .slide .bg::after{content:"";position:absolute;inset:0;
     background:linear-gradient(180deg,rgba(12,11,10,.1),rgba(12,11,10,.55) 55%,rgba(12,11,10,.95))}
+  /* A photograph needs far more protection than a flat gradient does: the
+     caption sits bottom-left, so that corner is weighted twice. */
+  .slide.has-img .bg::after{background:
+    linear-gradient(180deg,rgba(10,9,8,.34) 0%,rgba(10,9,8,.12) 30%,rgba(10,9,8,.74) 66%,rgba(10,9,8,.96) 100%),
+    linear-gradient(90deg,rgba(10,9,8,.72) 0%,rgba(10,9,8,.28) 46%,rgba(10,9,8,0) 78%)}
   .slide .cap{position:relative;padding:24px;width:100%}
   .slide .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
     color:#1a1206;background:var(--gold);padding:3px 9px;border-radius:100px;margin-bottom:12px}
   .slide .tag.evt{background:var(--danger);color:#fff}
   .slide .tag.upd{background:var(--stone);color:#141210}
-  .slide h4{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px}
-  .slide p{font-size:13px;color:#c9bea9;max-width:92%}
+  .slide h4{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* Two lines, never more — a long description over a photo turns the slide
+     into wallpaper with words on it. */
+  .slide p{font-size:13px;line-height:1.55;color:#c9bea9;max-width:56ch;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .slide.has-img h4{text-shadow:0 1px 12px rgba(0,0,0,.55)}
+  .slide.has-img p{color:#ddd3c2;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+  .slide.has-img .meta{color:#b6ab99}
   .slide .meta{font-size:11.5px;color:var(--text-faint);margin-top:10px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .slide.has-link{cursor:pointer}
   .slide.has-link .cap{transition:transform .55s ease, opacity .55s ease}
@@ -1059,7 +1071,7 @@
         ? `<div class="bg"><img src="${p.image}" alt="" style="object-position:center ${p.imgpos||50}%"></div>`
         : `<div class="bg"></div>`;
       return `
-      <div class="slide s${THEME_BY_TYPE[p.type]||1} ${i===0?'on':''}${p.link?' has-link':''}"${linkAttr}>
+      <div class="slide s${THEME_BY_TYPE[p.type]||1} ${i===0?'on':''}${p.link?' has-link':''}${p.image?' has-img':''}"${linkAttr}>
         ${bg}
         <div class="cap">
           <span class="tag ${TAGCLASS[p.type]||''}">${esc(TAGLABEL[p.type]||'Notice')}</span>
