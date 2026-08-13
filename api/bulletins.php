@@ -70,7 +70,20 @@ $st = $pdo->prepare(
 $st->execute();
 
 $out = [];
-foreach ($st->fetchAll() as $r) $out[] = bulletin_out($r, false);
+foreach ($st->fetchAll() as $r) {
+    // Rows written before thumbnails existed get one made now, once, and
+    // stored — so this heals itself instead of needing a re-upload. If GD
+    // isn't available it stays null and the card shows its type wash.
+    if (empty($r['thumb']) && !empty($r['image'])) {
+        $thumb = bulletin_make_thumb((string)$r['image']);
+        if ($thumb !== null) {
+            $pdo->prepare('UPDATE ucp_bulletins SET thumb = ? WHERE id = ?')
+                ->execute([$thumb, (int)$r['id']]);
+            $r['thumb'] = $thumb;
+        }
+    }
+    $out[] = bulletin_out($r, false);
+}
 
 ok([
     'bulletins' => $out,

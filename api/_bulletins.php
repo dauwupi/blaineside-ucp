@@ -28,6 +28,9 @@ const BS_BULLETIN_PER_PAGE = 6;
 /** Biggest image we'll store, as data-URL characters. See migration-bulletins.sql. */
 const BS_BULLETIN_MAX_IMAGE = 1258291;   // 1.2 MB
 
+/** Biggest card thumbnail. A 560px JPEG lands well under this. */
+const BS_BULLETIN_MAX_THUMB = 262144;    // 256 KB
+
 const BS_BULLETIN_TYPES = ['event', 'update', 'notice'];
 
 
@@ -77,6 +80,10 @@ function bulletin_out(array $r, bool $withImage = true): array
     ];
     if ($withImage) {
         $out['image'] = !empty($r['image']) ? (string)$r['image'] : null;
+    } else {
+        // The listing gets the small one — enough for a card thumbnail at a
+        // fraction of the bytes.
+        $out['thumb'] = !empty($r['thumb']) ? (string)$r['thumb'] : null;
     }
     return $out;
 }
@@ -90,11 +97,11 @@ function bulletin_out(array $r, bool $withImage = true): array
  * so what goes in the column has to be something that can only ever be an
  * image.
  */
-function bulletin_check_image(?string $image): ?string
+function bulletin_check_image(?string $image, int $max = BS_BULLETIN_MAX_IMAGE): ?string
 {
     if ($image === null || $image === '') return null;
 
-    if (strlen($image) > BS_BULLETIN_MAX_IMAGE) {
+    if (strlen($image) > $max) {
         json_out(['ok' => false, 'field' => 'image',
                   'error' => 'That image is too large. Try a smaller one.'], 400);
     }
@@ -103,6 +110,45 @@ function bulletin_check_image(?string $image): ?string
                   'error' => 'That image could not be read. Use a PNG, JPG or WebP.'], 400);
     }
     return $image;
+}
+
+/**
+ * Makes a card-sized thumbnail from a stored data: URL.
+ *
+ * Only used to heal rows written before thumbnails existed — the editor
+ * sends its own, made in the browser, for everything new. Returns null if
+ * GD isn't available or the image won't decode, and the card falls back to
+ * its type wash rather than to an error.
+ */
+function bulletin_make_thumb(string $dataUrl): ?string
+{
+    if (!function_exists('imagecreatefromstring')) return null;
+
+    $comma = strpos($dataUrl, ',');
+    if ($comma === false) return null;
+    $raw = base64_decode(substr($dataUrl, $comma + 1), true);
+    if ($raw === false) return null;
+
+    $src = @imagecreatefromstring($raw);
+    if (!$src) return null;
+
+    $w = imagesx($src); $h = imagesy($src);
+    if ($w < 1 || $h < 1) { imagedestroy($src); return null; }
+
+    $tw = 560;
+    $th = max(1, (int)round($h * ($tw / $w)));
+    if ($w <= $tw) { $tw = $w; $th = $h; }
+
+    $dst = imagecreatetruecolor($tw, $th);
+    imagecopyresampled($dst, $src, 0, 0, 0, 0, $tw, $th, $w, $h);
+    imagedestroy($src);
+
+    ob_start();
+    imagejpeg($dst, null, 72);
+    $out = ob_get_clean();
+    imagedestroy($dst);
+
+    return $out === false ? null : 'data:image/jpeg;base64,' . base64_encode($out);
 }
 
 /**

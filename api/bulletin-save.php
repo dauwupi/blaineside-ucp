@@ -49,8 +49,15 @@ $link   = bulletin_check_link($in['link'] ?? null);
 $image  = bulletin_check_image(isset($in['image']) ? (string)$in['image'] : null);
 $imgpos = max(0, min(100, (int)($in['imgpos'] ?? 50)));
 
+// The card thumbnail, made in the browser next to the banner. If the editor
+// didn't send one — an older page, or a browser that couldn't — make it here
+// so the listing still has something to draw.
+$thumb = isset($in['thumb'])
+    ? bulletin_check_image((string)$in['thumb'], BS_BULLETIN_MAX_THUMB)
+    : ($image !== null ? bulletin_make_thumb($image) : null);
+
 if ($id !== null) {
-    $st = $pdo->prepare('SELECT id, image FROM ucp_bulletins WHERE id = ? LIMIT 1');
+    $st = $pdo->prepare('SELECT id, image, thumb FROM ucp_bulletins WHERE id = ? LIMIT 1');
     $st->execute([$id]);
     $existing = $st->fetch();
     if (!$existing) fail('That bulletin no longer exists.', 404);
@@ -58,22 +65,25 @@ if ($id !== null) {
     // The listing doesn't carry image data, so an editor opened from there
     // and saved without touching the picture must not wipe it. Only an
     // explicit null — the Remove button — clears it.
-    $keepImage = !array_key_exists('image', $in) ? (string)$existing['image'] : $image;
+    $untouched = !array_key_exists('image', $in);
+    $keepImage = $untouched ? (string)$existing['image'] : $image;
+    $keepThumb = $untouched ? (string)$existing['thumb'] : $thumb;
 
     $pdo->prepare(
         'UPDATE ucp_bulletins
-            SET type = ?, title = ?, body = ?, link = ?, image = ?, image_pos = ?, updated_at = ?
+            SET type = ?, title = ?, body = ?, link = ?, image = ?, thumb = ?,
+                image_pos = ?, updated_at = ?
           WHERE id = ?'
-    )->execute([$type, $title, $body, $link, $keepImage, $imgpos, time(), $id]);
+    )->execute([$type, $title, $body, $link, $keepImage, $keepThumb, $imgpos, time(), $id]);
 
     ok(['id' => $id, 'message' => 'Bulletin updated.']);
 }
 
 $pdo->prepare(
     'INSERT INTO ucp_bulletins
-        (type, title, body, link, image, image_pos, on_dashboard, author_id, author_name, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)'
-)->execute([$type, $title, $body, $link, $image, $imgpos,
+        (type, title, body, link, image, thumb, image_pos, on_dashboard, author_id, author_name, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)'
+)->execute([$type, $title, $body, $link, $image, $thumb, $imgpos,
             (int)$acc['id'], (string)$acc['username'], time()]);
 
 ok([

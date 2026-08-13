@@ -598,9 +598,11 @@
   function cardHTML(b){
     const full=shownCount()>=MAX_SHOWN;
     const lockOff = !b.shown && full; /* can't turn on when full */
-    const thumb = `<div class="thumb noimg g${THEME_BY_TYPE[b.type]}">${b.has_image
-      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16l5-5 4 4 3-3 4 4M4 20h16V4H4z"/></svg>`
-      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h13v14H4z"/><path d="M17 8h3v9M7 9h7M7 13h7"/></svg>`}</div>`;
+    /* The listing carries a small thumbnail, not the full banner. Cards
+       without one (no image, or an older row) fall back to the type wash. */
+    const thumb = b.thumb
+      ? `<div class="thumb"><img src="${b.thumb}" style="object-position:center ${b.imgpos}%"><div class="grad"></div></div>`
+      : `<div class="thumb noimg g${THEME_BY_TYPE[b.type]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h13v14H4z"/><path d="M17 8h3v9M7 9h7M7 13h7"/></svg></div>`;
     return `<div class="bcard ${b.shown?'shown':''}" data-id="${b.id}">
       <div class="thumb-wrap" style="position:relative">
         ${thumb}
@@ -726,7 +728,7 @@
 
   /* ===================== EDITOR ===================== */
   let editingId=null;
-  let draft={type:'event',title:'',body:'',link:'',image:null,imgpos:50,imageTouched:false};
+  let draft={type:'event',title:'',body:'',link:'',image:null,thumb:null,imgpos:50,imageTouched:false};
 
   function showView(name){
     document.getElementById('view-list').classList.toggle('active',name==='list');
@@ -741,7 +743,7 @@
          opening — otherwise a save would look like the picture was removed. */
       const b=BULLETINS.find(x=>x.id===id); if(!b) return;
       editingId=id;
-      draft={type:b.type,title:b.title,body:b.body,link:b.link||'',image:null,imgpos:b.imgpos,imageTouched:false};
+      draft={type:b.type,title:b.title,body:b.body,link:b.link||'',image:null,thumb:null,imgpos:b.imgpos,imageTouched:false};
       if(b.has_image){
         UCP.get('bulletins.php?id='+id).then(function(d){
           if(d && d.ok===true && d.bulletin && editingId===id){
@@ -755,7 +757,7 @@
       document.getElementById('saveBtn').textContent='Save changes';
     } else {
       editingId=null;
-      draft={type:'event',title:'',body:'',link:'',image:null,imgpos:50,imageTouched:false};
+      draft={type:'event',title:'',body:'',link:'',image:null,thumb:null,imgpos:50,imageTouched:false};
       document.getElementById('editTitle').textContent='New bulletin';
       document.getElementById('saveBtn').textContent='Publish bulletin';
     }
@@ -853,6 +855,15 @@
         let out; try{ out=c.toDataURL('image/jpeg',0.82); }catch(e){ out=r.result; }
         /* Small PNGs sometimes grow when re-encoded — keep whichever is smaller. */
         draft.image = out.length < r.result.length ? out : r.result;
+
+        /* And a card-sized copy in the same pass, so the management listing
+           can show six thumbnails without shipping six banners. */
+        const tw=560, ts=Math.min(1, tw/img.width);
+        const t=document.createElement('canvas');
+        t.width=Math.round(img.width*ts); t.height=Math.round(img.height*ts);
+        t.getContext('2d').drawImage(img,0,0,t.width,t.height);
+        try{ draft.thumb=t.toDataURL('image/jpeg',0.72); }catch(e){ draft.thumb=null; }
+
         draft.imgpos=50; draft.imageTouched=true;
         renderUploader(); syncPreview();
       };
@@ -899,7 +910,7 @@
     const fi=document.getElementById('fileInput');
     document.getElementById('replaceImg').onclick=()=>fi.click();
     fi.addEventListener('change',e=>{if(e.target.files[0])loadImage(e.target.files[0]);});
-    document.getElementById('removeImg').onclick=()=>{draft.image=null;draft.imgpos=50;draft.imageTouched=true;renderUploader();syncPreview();};
+    document.getElementById('removeImg').onclick=()=>{draft.image=null;draft.thumb=null;draft.imgpos=50;draft.imageTouched=true;renderUploader();syncPreview();};
 
     const frame=document.getElementById('imgframe'), img=document.getElementById('frameImg');
     let dragging=false, startY=0, startPos=draft.imgpos;
@@ -946,7 +957,10 @@
     /* Only send `image` when it is part of this edit. Leaving the key out
        tells the server to keep what it has; sending null is how the Remove
        button clears it. */
-    if(!editingId || draft.imageTouched) payload.image=draft.image;
+    if(!editingId || draft.imageTouched){
+      payload.image=draft.image;
+      payload.thumb=draft.thumb||null;
+    }
 
     UCP.post('bulletin-save.php',payload).then(function(res){
       btn.disabled=false; btn.textContent=label;
