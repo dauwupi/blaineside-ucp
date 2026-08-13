@@ -396,43 +396,92 @@
 
 
   /* ---------- GROUP MANAGEMENT ---------- */
-  .mtools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .msearch{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:220px;max-width:380px;
+
+  /* The ladder, as tiles. This is the resting state of the page: ten groups
+     with a headcount each, which is the thing worth knowing at a glance —
+     not page one of every account in the UCP. */
+  .ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px;margin-bottom:22px}
+  .gtile{position:relative;text-align:left;padding:14px 15px;border-radius:12px;cursor:pointer;
+    background:var(--charcoal-2);border:1px solid var(--border-soft);transition:.16s;overflow:hidden}
+  .gtile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tone,var(--charcoal-4))}
+  .gtile:hover{border-color:var(--border);background:var(--charcoal-3);transform:translateY(-1px)}
+  .gtile.on{border-color:color-mix(in srgb, var(--tone) 55%, transparent);
+    background:linear-gradient(180deg, color-mix(in srgb, var(--tone) 12%, transparent), transparent)}
+  .gtile .gt-n{font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--parchment);
+    font-variant-numeric:tabular-nums;line-height:1}
+  .gtile .gt-l{font-size:12px;font-weight:700;color:var(--tone);margin-top:6px;letter-spacing:.02em}
+  .gtile .gt-s{font-size:11px;color:var(--text-faint);margin-top:2px}
+  .gtile.dim .gt-n{color:var(--stone)}
+
+  .tone-0{--tone:#7d7365} .tone-1{--tone:#9c8f79} .tone-2{--tone:#8fa9c4}
+  .tone-3{--tone:#c0a878} .tone-4{--tone:#cfa963} .tone-5{--tone:#d8a94f}
+  .tone-6{--tone:#e0b45c} .tone-7{--tone:#e8c069} .tone-8{--tone:var(--gold)}
+  .tone-9{--tone:#d0644d}
+
+  .mtools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .msearch{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:220px;max-width:360px;
     background:var(--charcoal-2);border:1px solid var(--border);border-radius:10px}
   .msearch svg{width:15px;height:15px;color:var(--text-faint);flex:none;stroke-width:2}
   .msearch input{flex:1;background:none;border:none;outline:none;color:var(--parchment);font-size:13.5px;font-family:inherit}
-  .mcount{font-size:12.5px;color:var(--text-faint);font-weight:600;margin-left:auto}
+  .mcount{font-size:12.5px;color:var(--text-faint);font-weight:600;margin-left:auto;font-variant-numeric:tabular-nums}
 
-  .mrow{display:flex;align-items:center;gap:16px;padding:13px 16px;border:1px solid var(--border-soft);
-    border-radius:12px;background:var(--charcoal-2);margin-bottom:9px}
-  .mrow.is-you{border-color:rgba(226,182,92,.32);background:linear-gradient(180deg,rgba(226,182,92,.05),transparent)}
-  .mrow .mid{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;
-    background:var(--charcoal-3);color:var(--stone);font-size:12px;font-weight:800}
-  .mrow .mwho{flex:1;min-width:0}
-  .mrow .mname{font-size:13.5px;font-weight:700;color:var(--parchment);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-  .mrow .mmeta{font-size:11.5px;color:var(--text-faint);margin-top:4px;font-weight:500}
-  .mrow .mact{flex:none;display:flex;align-items:center;gap:9px}
-  .mrow select{height:36px;padding:0 32px 0 12px;border-radius:9px;background:var(--charcoal-3);
-    border:1px solid var(--border);color:var(--parchment);font-size:13px;font-family:inherit;
-    appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7f70' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 10px center;cursor:pointer}
+  /* Selected-group header, so it is always obvious what the list below is. */
+  .mscope{display:flex;align-items:center;gap:12px;padding:12px 15px;margin-bottom:12px;
+    border-radius:11px;background:var(--charcoal-2);border:1px solid var(--border-soft)}
+  .mscope .gbadge{flex:none}
+  .mscope .txt{flex:1;min-width:0;font-size:13px;color:var(--text-dim)}
+  .mscope .txt b{color:var(--parchment);font-weight:700}
+
+  /* Rows read as a table without being one: the header labels the columns,
+     and every row lines up under it. */
+  .mhead{display:grid;grid-template-columns:64px 1.6fr 1fr 1fr 132px 200px;gap:14px;align-items:center;
+    padding:0 16px 9px;font-size:10.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--text-faint)}
+  /* display:grid beats the [hidden] attribute's UA rule, so say it again. */
+  .mhead[hidden]{display:none}
+  .mrow{display:grid;grid-template-columns:64px 1.6fr 1fr 1fr 132px 200px;gap:14px;align-items:center;
+    padding:12px 16px;border:1px solid var(--border-soft);border-radius:12px;
+    background:var(--charcoal-2);margin-bottom:8px}
+  .mrow.is-you{border-color:rgba(226,182,92,.3);background:linear-gradient(180deg,rgba(226,182,92,.05),transparent)}
+  .mrow .mid{font-size:12px;font-weight:700;color:var(--stone);font-variant-numeric:tabular-nums}
+  .mname{font-size:13.5px;font-weight:700;color:var(--parchment);display:flex;align-items:center;gap:8px;
+    flex-wrap:wrap;min-width:0}
+  .mname .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mcell{font-size:12.5px;color:var(--text-dim);min-width:0}
+  .mcell .sm{display:block;font-size:11px;color:var(--text-faint);margin-top:2px}
+  .mflags{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .flag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;
+    padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint)}
+  .flag svg{width:11px;height:11px;stroke-width:2.4}
+  .flag.on{color:#9ec178;border-color:rgba(127,160,90,.32);background:rgba(127,160,90,.08)}
+  .flag.off{color:var(--stone)}
+  .mact{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+  .mrow select{height:34px;padding:0 30px 0 11px;border-radius:9px;background:var(--charcoal-3);
+    border:1px solid var(--border);color:var(--parchment);font-size:12.5px;font-family:inherit;
+    appearance:none;max-width:132px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7f70' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 9px center;cursor:pointer}
   .mrow select:focus{outline:none;border-color:rgba(226,182,92,.5)}
-  .mrow select:disabled{opacity:.5;cursor:not-allowed}
-  /* The group badge carries the ladder: member grey, staff gold, the top two
-     unmistakable. Somebody scanning this list is looking for the outliers. */
+  /* A disabled Apply has to look disabled — otherwise the row reads as
+     "press me" when the selection hasn't changed. */
+  .mrow .btn:disabled{opacity:.4;cursor:not-allowed;filter:saturate(.5)}
+
   .gbadge{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
     padding:3px 9px;border-radius:100px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap}
   .gbadge.g-staff{color:#dcbd8b;border-color:rgba(212,146,58,.35);background:rgba(212,146,58,.08)}
   .gbadge.g-mgmt{color:#1a1206;background:var(--gold);border-color:transparent}
   .gbadge.g-founder{color:#fff;background:var(--danger);border-color:transparent}
-  /* A disabled Apply has to look disabled — otherwise the row reads as
-     "press me" when the selection hasn't changed. */
-  .mrow .btn:disabled{opacity:.4;cursor:not-allowed;filter:saturate(.5)}
   .mlock{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text-faint)}
   .mlock svg{width:13px;height:13px;stroke-width:2}
-  @media (max-width:760px){
-    .mrow{flex-wrap:wrap}
-    .mrow .mact{width:100%;justify-content:flex-end}
+
+  .pcount{font-size:12.5px;color:var(--text-faint);font-weight:600;font-variant-numeric:tabular-nums}
+
+  @media (max-width:1100px){
+    .mhead{display:none}
+    .mrow{grid-template-columns:56px 1fr 200px;row-gap:8px}
+    .mrow .mcell{grid-column:2/4;font-size:12px}
+    .mrow .mflags{grid-column:2/4}
+    .mact{grid-column:1/4;justify-content:flex-start}
   }
 
   /* toast */
@@ -539,14 +588,22 @@
           </div>
         </div>
 
+        <!-- the ladder: every group with a headcount, click to list -->
+        <div class="ladder" id="ladder"></div>
+
         <div class="mtools">
           <label class="msearch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-            <input type="text" id="q" placeholder="Search by UCP name…" autocomplete="off" spellcheck="false">
+            <input type="text" id="q" placeholder="Or search every group by UCP name…" autocomplete="off" spellcheck="false">
           </label>
           <span class="mcount" id="mcount"></span>
         </div>
 
+        <div id="mscope"></div>
+        <div class="mhead" id="mhead" hidden>
+          <span>Account</span><span>UCP name</span><span>Member since</span>
+          <span>Last sign-in</span><span>Security</span><span></span>
+        </div>
         <div id="mlist"></div>
         <div class="pager" id="pager"></div>
       </div>
@@ -632,43 +689,89 @@
   /* =====================================================================
      GROUP MANAGEMENT
 
+     Resting state is the ladder: ten groups, a headcount each. Nothing is
+     listed until a group is picked or a name is searched — page one of every
+     account in the UCP is not an answer to any question somebody came here
+     with.
+
      The rules are the server's (api/_groups.php); this page asks what it is
      allowed to offer and renders that. A row it can't touch says why rather
-     than simply being greyed out — "you can't" is not an explanation.
+     than being greyed out — "you can't" is not an explanation.
      ===================================================================== */
   let RANKS=[], ASSIGNABLE=[], YOU={id:0,rank:0};
-  let ITEMS=[], TOTAL_PAGES=1, curPage=1, QUERY='', LOADING=false;
+  let ITEMS=[], TOTAL_PAGES=1, curPage=1, QUERY='', GROUP=null, LOADING=false;
 
   function badgeClass(rank){
     return rank>=9 ? 'g-founder' : rank>=8 ? 'g-mgmt' : rank>=1 ? 'g-staff' : '';
   }
-  function whenFrom(ts){
-    if(!ts) return 'never';
-    const t=Math.floor(new Date(ts.replace(' ','T')+'Z').getTime()/1000);
+  function rankName(r){ return (RANKS.find(x=>x.rank===r)||{}).name||('Group '+r); }
+
+  /* Dates arrive as UTC SQL strings; times as relative, with the exact value
+     on hover — "3 days ago" is what you scan for, the timestamp is what you
+     quote in a report. */
+  function toTs(sql){
+    if(!sql) return null;
+    const m=String(sql).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    return m ? Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6])/1000 : null;
+  }
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dateOf(sql){
+    const t=toTs(sql); if(!t) return '—';
+    const d=new Date(t*1000);
+    return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear();
+  }
+  function agoOf(sql){
+    const t=toTs(sql); if(!t) return 'never';
     if(window.UCP && UCP.relTime) return UCP.relTime(t);
-    return ts;
+    return dateOf(sql);
+  }
+  function exactOf(sql){
+    const t=toTs(sql); if(!t) return 'Never signed in';
+    const d=new Date(t*1000), p=n=>String(n).padStart(2,'0');
+    return dateOf(sql)+', '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC';
   }
 
-  function rowHTML(m){
-    const opts = ASSIGNABLE.map(r=>{
-      const label=(RANKS.find(x=>x.rank===r)||{}).name||('Group '+r);
-      return `<option value="${r}" ${r===m.rank?'selected':''}>${escapeHtml(label)}</option>`;
-    }).join('');
+  /* ---- the ladder ---- */
+  function renderLadder(){
+    document.getElementById('ladder').innerHTML = RANKS.slice().reverse().map(r=>`
+      <button class="gtile tone-${r.rank} ${GROUP===r.rank?'on':''} ${r.count?'':'dim'}" data-group="${r.rank}">
+        <div class="gt-n">${r.count.toLocaleString('en-GB')}</div>
+        <div class="gt-l">${escapeHtml(r.name)}</div>
+        <div class="gt-s">${r.count===1?'1 account':'accounts'}</div>
+      </button>`).join('');
+  }
+  document.getElementById('ladder').addEventListener('click',e=>{
+    const t=e.target.closest('[data-group]'); if(!t) return;
+    const g=+t.dataset.group;
+    GROUP = (GROUP===g) ? null : g;      /* clicking the open one closes it */
+    QUERY=''; document.getElementById('q').value='';
+    loadPage(1);
+  });
 
-    /* Somebody whose current group is above what this actor may hand out
-       still needs their group SHOWN, so it goes in the list as a disabled
-       option rather than vanishing. */
+  function rowHTML(m){
+    const opts = ASSIGNABLE.map(r=>
+      `<option value="${r}" ${r===m.rank?'selected':''}>${escapeHtml(rankName(r))}</option>`).join('');
+    /* Someone whose group is above what this actor may hand out still needs
+       their group SHOWN, so it goes in as a disabled option. */
     const missing = !ASSIGNABLE.includes(m.rank)
       ? `<option value="${m.rank}" selected disabled>${escapeHtml(m.role)}</option>` : '';
 
     return `<div class="mrow ${m.self?'is-you':''}" data-id="${m.id}">
       <span class="mid">#${m.id}</span>
-      <div class="mwho">
-        <div class="mname">${escapeHtml(m.name)}
-          <span class="gbadge ${badgeClass(m.rank)}">${escapeHtml(m.role)}</span>
-          ${m.self?`<span class="gbadge">You</span>`:''}
-        </div>
-        <div class="mmeta">Last sign-in ${escapeHtml(whenFrom(m.last_login))}${m.status!=='active'?' · '+escapeHtml(m.status):''}</div>
+      <div class="mname">
+        <span class="nm">${escapeHtml(m.name)}</span>
+        <span class="gbadge ${badgeClass(m.rank)}">${escapeHtml(m.role)}</span>
+        ${m.self?`<span class="gbadge">You</span>`:''}
+        ${m.status!=='active'?`<span class="gbadge">${escapeHtml(m.status)}</span>`:''}
+      </div>
+      <div class="mcell">${escapeHtml(dateOf(m.created_at))}<span class="sm">${escapeHtml(agoOf(m.created_at))}</span></div>
+      <div class="mcell" title="${escapeHtml(exactOf(m.last_login))}">${escapeHtml(agoOf(m.last_login))}</div>
+      <div class="mflags">
+        <span class="flag ${m.twofa?'on':'off'}" title="${m.twofa?'Two-step verification on':'No two-step verification'}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>${m.twofa?'<path d="M9 12l2 2 4-4"/>':''}</svg>
+          ${m.twofa?'2FA':'No 2FA'}
+        </span>
+        ${m.forum?`<span class="flag" title="Forum account linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>Forum</span>`:''}
       </div>
       <div class="mact">
         ${m.editable
@@ -682,55 +785,87 @@
     </div>`;
   }
 
-  function renderList(){
+  function renderScope(d){
+    const host=document.getElementById('mscope');
+    if(!d.listed){ host.innerHTML=''; return; }
+    if(QUERY){
+      host.innerHTML=`<div class="mscope"><div class="txt">Searching every group for <b>${escapeHtml(QUERY)}</b> — ${d.total} ${d.total===1?'match':'matches'}</div>
+        <button class="btn sm ghost" data-clear>Clear</button></div>`;
+    } else {
+      host.innerHTML=`<div class="mscope">
+        <span class="gbadge ${badgeClass(GROUP)}">${escapeHtml(rankName(GROUP))}</span>
+        <div class="txt"><b>${d.total.toLocaleString('en-GB')}</b> ${d.total===1?'account':'accounts'} in this group</div>
+        <button class="btn sm ghost" data-clear>Show all groups</button></div>`;
+    }
+    host.querySelector('[data-clear]').onclick=()=>{
+      GROUP=null; QUERY=''; document.getElementById('q').value=''; loadPage(1);
+    };
+  }
+
+  function renderList(d){
     const host=document.getElementById('mlist');
+    document.getElementById('mhead').hidden = !(d.listed && ITEMS.length);
+
+    if(!d.listed){
+      host.innerHTML=`<div class="empty">
+        <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span>
+        <h4>Pick a group</h4>
+        <p>Choose one above to see who's in it, or search for someone by name across every group.</p>
+      </div>`;
+      document.getElementById('pager').innerHTML='';
+      return;
+    }
     if(!ITEMS.length){
       host.innerHTML=`<div class="empty">
         <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
-        <h4>No accounts found</h4>
-        <p>${QUERY?'Nothing matches “'+escapeHtml(QUERY)+'”.':'There are no accounts to show.'}</p>
+        <h4>Nobody here</h4>
+        <p>${QUERY?'Nothing matches “'+escapeHtml(QUERY)+'”.':'This group is empty.'}</p>
       </div>`;
       document.getElementById('pager').innerHTML='';
       return;
     }
     host.innerHTML=ITEMS.map(rowHTML).join('');
-    renderPager();
+    renderPager(d);
   }
 
-  function renderPager(){
+  function renderPager(d){
     const pager=document.getElementById('pager');
-    if(TOTAL_PAGES<=1){ pager.innerHTML=''; return; }
-    let out=`<button class="pg" data-pg="${curPage-1}" ${curPage===1?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>`;
-    for(let i=1;i<=TOTAL_PAGES;i++){
-      if(i===1||i===TOTAL_PAGES||Math.abs(i-curPage)<=1) out+=`<button class="pg ${i===curPage?'on':''}" data-pg="${i}">${i}</button>`;
-      else if(Math.abs(i-curPage)===2) out+=`<span class="pg-gap">…</span>`;
+    if(TOTAL_PAGES<=1){
+      pager.innerHTML = d.total>0 ? `<span class="pcount">${d.total} ${d.total===1?'account':'accounts'}</span>` : '';
+      return;
     }
-    out+=`<button class="pg" data-pg="${curPage+1}" ${curPage===TOTAL_PAGES?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>`;
-    pager.innerHTML=out;
+    let nums='';
+    for(let i=1;i<=TOTAL_PAGES;i++){
+      if(i===1||i===TOTAL_PAGES||Math.abs(i-curPage)<=1) nums+=`<button class="pg ${i===curPage?'on':''}" data-pg="${i}">${i}</button>`;
+      else if(Math.abs(i-curPage)===2) nums+=`<span class="pg-gap">…</span>`;
+    }
+    pager.innerHTML=
+      `<span class="pcount">${d.from}–${d.to} of ${d.total.toLocaleString('en-GB')}</span>`+
+      `<button class="pg" data-pg="${curPage-1}" ${curPage===1?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>`+
+      nums+
+      `<button class="pg" data-pg="${curPage+1}" ${curPage===TOTAL_PAGES?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>`;
   }
   document.getElementById('pager').addEventListener('click',e=>{
     const b=e.target.closest('[data-pg]'); if(!b||b.disabled) return;
     loadPage(parseInt(b.dataset.pg,10));
+    document.querySelector('.content').scrollIntoView({behavior:'smooth',block:'start'});
   });
 
-  /* Apply only lights up once the selection actually differs — so the button
-     always means "make this change", never "save what's already true". */
+  /* Apply lights up only once the selection differs — so the button always
+     means "make this change", never "save what's already true". */
   document.getElementById('mlist').addEventListener('change',e=>{
     const sel=e.target.closest('[data-rank]'); if(!sel) return;
-    const id=+sel.dataset.rank;
-    const m=ITEMS.find(x=>x.id===id);
-    const btn=document.querySelector(`[data-apply="${id}"]`);
+    const m=ITEMS.find(x=>x.id===+sel.dataset.rank);
+    const btn=document.querySelector(`[data-apply="${sel.dataset.rank}"]`);
     if(btn) btn.disabled = (+sel.value === m.rank);
   });
 
   document.getElementById('mlist').addEventListener('click',e=>{
     const btn=e.target.closest('[data-apply]'); if(!btn||btn.disabled) return;
     const id=+btn.dataset.apply;
-    const sel=document.querySelector(`[data-rank="${id}"]`);
-    if(!sel) return;
-    const rank=+sel.value;
+    const sel=document.querySelector(`[data-rank="${id}"]`); if(!sel) return;
     btn.disabled=true; btn.textContent='Applying…';
-    UCP.post('member-rank.php',{id:id,rank:rank}).then(function(res){
+    UCP.post('member-rank.php',{id:id,rank:+sel.value}).then(function(res){
       const d=res.data||{};
       btn.textContent='Apply';
       if(!d.ok){ toast(d.error||'That did not work'); loadPage(); return; }
@@ -741,7 +876,8 @@
   function loadPage(n){
     if(LOADING) return Promise.resolve();
     LOADING=true; curPage=n||curPage;
-    return UCP.get('members.php?page='+curPage+'&q='+encodeURIComponent(QUERY)).then(function(d){
+    const qs='page='+curPage+'&q='+encodeURIComponent(QUERY)+(GROUP===null?'':'&group='+GROUP);
+    return UCP.get('members.php?'+qs).then(function(d){
       LOADING=false;
       if(!d || d.ok!==true){
         if(d && d.authenticated===false){ window.location.replace('/login?return='+encodeURIComponent('/dashboard/groups')); return; }
@@ -750,8 +886,8 @@
       ITEMS=d.members||[]; TOTAL_PAGES=d.pages||1; curPage=d.page||curPage;
       RANKS=d.ranks||RANKS; ASSIGNABLE=d.assignable||ASSIGNABLE; YOU=d.you||YOU;
       document.getElementById('mcount').textContent =
-        d.total===1 ? '1 account' : d.total.toLocaleString('en-GB')+' accounts';
-      renderList();
+        d.total_all.toLocaleString('en-GB')+' accounts in the UCP';
+      renderLadder(); renderScope(d); renderList(d);
     }).catch(function(){ LOADING=false; toast('Could not reach the server'); });
   }
 
@@ -760,7 +896,7 @@
   document.getElementById('q').addEventListener('input',function(){
     const v=this.value.trim();
     clearTimeout(qTimer);
-    qTimer=setTimeout(function(){ QUERY=v; loadPage(1); },320);
+    qTimer=setTimeout(function(){ QUERY=v; if(v) GROUP=null; loadPage(1); },320);
   });
 
   /* ===================== UTIL ===================== */
