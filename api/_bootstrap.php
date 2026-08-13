@@ -121,6 +121,17 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
             'samesite' => 'Lax',
             'secure'   => $secure,
         ]);
+        // A restored session is a sign-in like any other and belongs in the
+        // activity log — it is exactly the event someone scanning for
+        // "was that me?" needs to see.
+        try {
+            require_once __DIR__ . '/_sessions.php';
+            session_begin($rm_pdo, (int)$rm_acc['id'], true);
+            security_log($rm_pdo, (int)$rm_acc['id'], 'signin', 'Remembered device', 'info');
+        } catch (Throwable $e) {
+            error_log('UCP remember-me logging failed: ' . $e->getMessage());
+        }
+
         // Also slide the session cookie forward so it survives the browser session.
         setcookie(session_name(), session_id(), [
             'expires'  => $new_expires,
@@ -143,6 +154,36 @@ if (empty($_SESSION['uid']) && !empty($_COOKIE['bsucp_rm'])) try {
     // A missing remember_token column or DB hiccup must never break page
     // loads for someone who is simply not signed in.
     error_log('UCP remember-me restore failed: ' . $e->getMessage());
+}
+
+// ---- Session tracking + security log ----
+//
+// Every signed-in request checks its own row in ucp_sessions. That check is
+// what makes "sign this device out" real: session_epoch can only end every
+// session at once, so without a per-session record the button on the profile
+// page would be a lie.
+//
+// Nothing here is allowed to be load-bearing. session_touch() returns true on
+// any error — a missing table or a database blip must not sign the site out.
+require_once __DIR__ . '/_sessions.php';
+
+if (!empty($_SESSION['uid'])) {
+    try {
+        if (!session_touch(db(), (int)$_SESSION['uid'])) {
+            // Ended from another device while this one was idle.
+            $_SESSION = [];
+            session_destroy();
+            setcookie('bsucp_rm', '', [
+                'expires'  => time() - 3600,
+                'path'     => '/',
+                'httponly' => true,
+                'samesite' => 'Lax',
+                'secure'   => is_https(),
+            ]);
+        }
+    } catch (Throwable $e) {
+        error_log('UCP session check failed: ' . $e->getMessage());
+    }
 }
 
 // ---- CORS / headers ----

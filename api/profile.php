@@ -14,6 +14,7 @@
 require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
+require_once __DIR__ . '/_sessions.php';
 
 $pdo = db();
 $acc = current_account($pdo);
@@ -95,6 +96,12 @@ $forum = $acc['forum_member_id'] !== null
     ? forum_display_name($acc, $CONFIG)
     : ['name' => null, 'profile_url' => null];
 
+// ---- Device list + activity log --------------------------------------------
+// Both live behind the same migration, so one check covers both. A UCP that
+// hasn't run docs/migration-sessions.sql yet reports the feature as missing
+// and the page keeps its honest empty state.
+$tracking = sessions_available($pdo);
+
 // ---- Account age -----------------------------------------------------------
 $createdTs  = $acc['created_at'] ? strtotime((string)$acc['created_at']) : null;
 $memberDays = $createdTs ? (int)floor((time() - $createdTs) / 86400) : null;
@@ -138,14 +145,20 @@ ok([
         'backup_total'     => BS_BACKUP_CODE_COUNT,
     ],
 
+    // Where you're signed in, and what has happened to this account. Both are
+    // empty arrays rather than absent when the tables aren't there — the
+    // features block below is what tells the page which state to draw.
+    'sessions' => $tracking ? sessions_list($pdo, $uid) : [],
+    'activity' => $tracking ? security_log_list($pdo, $uid, 25) : [],
+
     // Which sections of the page have a backend behind them. Everything false
     // here renders as an honest "not available yet" rather than sample data.
     'features' => [
-        'characters'     => false,   // no character tables yet
-        'record'         => false,   // administrative record system not built
-        'sessions'       => false,   // needs one row per session, not one token per account
-        'activity_log'   => false,   // needs a security-events table
-        'discord_link'   => false,   // no OAuth app for Discord yet
+        'characters'     => false,       // no character tables yet
+        'record'         => false,       // administrative record system not built
+        'sessions'       => $tracking,   // ucp_sessions
+        'activity_log'   => $tracking,   // ucp_security_log
+        'discord_link'   => false,       // no OAuth app for Discord yet
         'self_delete'    => (bool)($CONFIG['security']['allow_self_delete'] ?? false),
     ],
 ]);

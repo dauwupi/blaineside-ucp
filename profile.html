@@ -748,7 +748,7 @@ button{font-family:inherit}
           Account security
         </a>
         <div class="menu-sep"></div>
-        <a class="menu-item danger" href="/api/logout.php">
+        <a class="menu-item danger" id="logoutBtn" href="/api/logout.php?next=/login">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>
           Log out
         </a>
@@ -1850,6 +1850,21 @@ button{font-family:inherit}
   accMenu.addEventListener('click', function(e){ e.stopPropagation(); });
   document.addEventListener('click', function(){ accMenu.style.display='none'; });
 
+  /* Log out through fetch, so the browser never lands on the endpoint's raw
+     JSON. The href stays a working no-JS fallback: ?next=/login makes
+     logout.php redirect after its POST bridge instead of answering in JSON. */
+  $('logoutBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    var a = this;
+    a.style.pointerEvents = 'none';
+    UCP.post('logout.php', {}).then(function(res){
+      var d = res && res.data ? res.data : {};
+      window.location.replace(d.redirect || '/login');
+    }).catch(function(){
+      window.location.href = '/api/logout.php?next=/login';
+    });
+  });
+
   var scrim=$('scrim');
   $('menuToggle').addEventListener('click', function(e){ e.stopPropagation();
     document.body.classList.toggle('nav-open');
@@ -2135,22 +2150,119 @@ button{font-family:inherit}
         'so no code will work. Contact a Founder — this needs fixing on the server, not on your phone.');
     }
 
-    /* FEATURE-GATED: sessions + activity log */
+    renderSessions(d);
+    renderActivity(d);
+  }
+
+  /* ------------------------------------------------------ where you're signed in */
+  var DEV_ICO = {
+    desktop:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    phone:'<rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18.5h2"/>',
+    tablet:'<rect x="4" y="2" width="16" height="20" rx="2.5"/><path d="M10 19h4"/>'
+  };
+  function renderSessions(d){
     if(!d.features.sessions){
       $('sessHost').innerHTML = blank('screen',
         'Not available yet',
-        'Listing your devices needs one record per session. Today the UCP keeps a single ' +
-        '"remember me" token per account, which can only ever describe one device.');
+        'Your UCP hasn\'t had the session table added yet, so there is nothing to list. ' +
+        'Ask a Founder to run the sessions migration.');
       $('sessAside').textContent = '';
-      $('sessLede').textContent = 'You can still end every other session from the Settings tab.';
+      $('sessLede').textContent  = 'You can still end every other session from the Settings tab.';
+      return;
     }
+
+    var s = d.sessions || [];
+    $('sessAside').textContent = s.length === 1 ? '1 active session' : s.length+' active sessions';
+    $('sessLede').textContent  = 'Anything you don\'t recognise, sign it out and change your password.';
+
+    $('sessHost').innerHTML = '<div class="rows">' + s.map(function(x){
+      var seen = new Date(x.last_seen*1000);
+      var when = x.current ? 'active now' : 'last active '+ago(seen);
+      var meta = [esc(x.ip), when];
+      if(x.remembered && !x.current) meta.push('remembered on this device');
+      return '<div class="sess">' +
+        '<span class="sess-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+          (DEV_ICO[x.kind] || DEV_ICO.desktop) + '</svg></span>' +
+        '<div class="sess-body">' +
+          '<div class="n">'+esc(x.device)+
+            (x.current ? ' <span class="tagnow">This device</span>' : '')+'</div>' +
+          '<div class="s">'+meta.join(' · ')+'</div>' +
+        '</div>' +
+        '<div class="row-r">' + (x.current
+          ? '<button class="btn" disabled>Current</button>'
+          : '<button class="btn danger" data-revoke="'+esc(x.id)+'">Sign out</button>') +
+        '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  /* One click, no confirmation. Ending a session is the safe direction — the
+     worst case is signing yourself out of a device you still have. */
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-revoke]');
+    if(!b) return;
+    e.preventDefault();
+    busyBtn(b, true, 'Signing out…');
+    UCP.post('session-revoke.php', {id: b.getAttribute('data-revoke')}).then(function(res){
+      if(bounceIfSignedOut(res)) return;
+      var r = res.data || {};
+      busyBtn(b, false);
+      if(!r.ok){ flash('err', esc(r.error || 'That device could not be signed out.')); return; }
+      flash('ok', esc(r.message));
+      reload();
+    }).catch(function(){
+      busyBtn(b, false);
+      flash('err', 'Could not reach the server. Try again.');
+    });
+  });
+
+  /* ------------------------------------------------------- security activity */
+  /* The server sends an event name and a plain-English detail; the wording of
+     the headline lives here so it can be changed without a migration. */
+  var EVENTS = {
+    signin:            'Signed in',
+    signin_failed:     'Failed sign-in attempt',
+    signout:           'Signed out',
+    password_changed:  'Password changed',
+    email_change_requested: 'Email change requested',
+    email_changed:     'Email address changed',
+    name_changed:      'UCP name changed',
+    '2fa_enabled':     'Two-step verification turned on',
+    '2fa_disabled':    'Two-step verification turned off',
+    '2fa_codes':       'Recovery codes replaced',
+    sessions_revoked:  'Signed out everywhere',
+    session_revoked:   'A device was signed out',
+    challenge_failed:  'Failed confirmation'
+  };
+  function renderActivity(d){
     if(!d.features.activity_log){
       $('logHost').innerHTML = blank('clock',
         'Not available yet',
-        'Sign-ins and security changes aren\'t recorded to a table you can read yet. Until they ' +
-        'are, this stays empty rather than showing you a partial picture.');
+        'Your UCP hasn\'t had the activity table added yet. Ask a Founder to run the ' +
+        'sessions migration and this fills in from your next sign-in.');
       $('logAside').textContent = '';
+      return;
     }
+
+    var a = d.activity || [];
+    $('logAside').textContent = 'Times in UTC';
+
+    if(!a.length){
+      $('logHost').innerHTML = blank('clock', 'Nothing recorded yet',
+        'This fills in from your next sign-in, and every time your password, email or ' +
+        'two-step settings change.');
+      return;
+    }
+
+    $('logHost').innerHTML = '<div class="log">' + a.map(function(x){
+      var t = new Date(x.at*1000);
+      var head = EVENTS[x.event] || 'Account activity';
+      var stamp = shortDate(t)+', '+hhmm(t);
+      return '<div class="log-row '+(x.level === 'good' ? 'good' : x.level === 'warn' ? 'warn' : '')+'">' +
+        '<span class="log-dot"></span>' +
+        '<div class="log-t"><b>'+esc(head)+'</b>'+(x.detail ? ' · '+esc(x.detail) : '')+'</div>' +
+        '<div class="log-s">'+esc(stamp)+' · '+esc(x.device)+' · '+esc(x.ip)+'</div>' +
+      '</div>';
+    }).join('') + '</div>';
   }
 
   /* ----------------------------------------------------------------- RECORD */

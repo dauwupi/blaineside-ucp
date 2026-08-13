@@ -57,6 +57,10 @@ clear_failures($pdo, $uid, $ip, '2fa_settings');
 
 $codes = twofa_issue_backup_codes($pdo, $uid);
 
+require_once __DIR__ . '/_sessions.php';
+security_log($pdo, $uid, '2fa_codes',
+    'The previous set stopped working immediately', 'info');
+
 ok([
     'backup_codes' => $codes,
     'backup_total' => BS_BACKUP_CODE_COUNT,

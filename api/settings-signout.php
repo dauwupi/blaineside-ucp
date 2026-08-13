@@ -23,4 +23,8 @@ require_password($pdo, $acc, (string)(read_input()['password'] ?? ''), 'settings
 sign_out_other_devices($pdo, (int)$acc['id']);
 session_regenerate_id(true);
 
+require_once __DIR__ . '/_sessions.php';
+security_log($pdo, (int)$acc['id'], 'sessions_revoked',
+    'Every other device', 'good');
+
 ok(['message' => 'Signed out on every other device. You are still signed in here.']);

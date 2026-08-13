@@ -80,4 +80,8 @@ send_mail(
     "If this wasn't you, contact staff on Discord immediately."
 );
 
+require_once __DIR__ . '/_sessions.php';
+security_log($pdo, (int)$acc['id'], 'email_changed',
+    'Now ' . mask_email($new), 'good');
+
 email_redirect('email=changed', $base);

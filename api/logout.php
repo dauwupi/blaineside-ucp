@@ -150,6 +150,29 @@ if (!empty($_COOKIE['bsucp_rm']) && isset($CONFIG)) {
     } catch (Throwable $e) { /* DB down — still proceed with cookie/session cleanup */ }
 }
 
+// ── Close this device's row in the session list ───────────────────────────────
+// Written here rather than through _sessions.php because this endpoint is
+// deliberately standalone (no _bootstrap.php). Without it, a signed-out
+// browser would sit in "Where you're signed in" until it aged out — the one
+// place the list would be flatly wrong.
+if (!empty($_SESSION['sid']) && !empty($_SESSION['uid']) && isset($CONFIG)) {
+    $c   = $CONFIG['db'];
+    $dsn = "mysql:host={$c['host']};dbname={$c['name']};charset={$c['charset']}";
+    try {
+        $lpdo = new PDO($dsn, $c['user'], $c['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $lpdo->prepare('UPDATE ucp_sessions SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL')
+             ->execute([time(), $_SESSION['sid']]);
+        $lpdo->prepare(
+            'INSERT INTO ucp_security_log (account_id, event, detail, level, device, ip, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        )->execute([
+            (int)$_SESSION['uid'], 'signout', 'Signed out', 'info',
+            substr((string)($_SESSION['sid_device'] ?? 'This device'), 0, 120),
+            $_SERVER['REMOTE_ADDR'] ?? null, time(),
+        ]);
+    } catch (Throwable $e) { /* logging is never allowed to block a logout */ }
+}
+
 // ── Destroy the session ───────────────────────────────────────────────────────
 session_unset();
 session_destroy();

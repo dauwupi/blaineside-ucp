@@ -23,7 +23,8 @@ declare(strict_types=1);
  * @param array $acc   Row with id, username, admin_rank, session_epoch.
  * @param array $extra Additional keys merged into the JSON response.
  */
-function login_finish(PDO $pdo, array $acc, bool $remember, array $extra = []): void
+function login_finish(PDO $pdo, array $acc, bool $remember, array $extra = [],
+                      string $method = 'password'): void
 {
     global $CONFIG;
 
@@ -55,6 +56,17 @@ function login_finish(PDO $pdo, array $acc, bool $remember, array $extra = []): 
     $_SESSION['rank']     = $rank;
     $_SESSION['epoch']    = (int)($acc['session_epoch'] ?? 0);
     $_SESSION['remember'] = $remember;
+
+    // ---- Device list + activity log ----------------------------------------
+    // Both are best-effort by design (see _sessions.php): a sign-in that has
+    // already been authorised must not fail because a logging table is missing.
+    require_once __DIR__ . '/_sessions.php';
+    session_begin($pdo, $uid, $remember);
+    security_log($pdo, $uid, 'signin', [
+        'password' => 'Password only',
+        'totp'     => 'Password and a code from your authenticator app',
+        'backup'   => 'Password and a recovery code',
+    ][$method] ?? 'Password only', $method === 'password' ? 'info' : 'good');
 
     // ---- Remember me --------------------------------------------------------
     // Must never be able to break a sign-in that has already succeeded. If the

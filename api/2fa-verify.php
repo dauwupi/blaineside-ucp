@@ -83,6 +83,10 @@ $method = twofa_check($pdo, $acc, $code);
 if ($method === null) {
     $tries     = (int)($_SESSION['pending_2fa_tries'] ?? 0) + 1;
     $lockedFor = record_failure($pdo, $uid, $ip, '2fa');
+
+    require_once __DIR__ . '/_sessions.php';
+    security_log($pdo, $uid, 'signin_failed',
+        'Wrong two-step code' . ($lockedFor > 0 ? ' — locked out temporarily' : ''), 'warn');
     $_SESSION['pending_2fa_tries'] = $tries;
 
     // Session-level cap on top of the IP lockout: burn the pending state
@@ -121,4 +125,4 @@ $remaining = twofa_backup_remaining($pdo, $uid);
 login_finish($pdo, $acc, $remember, [
     'used_backup_code' => ($method === 'backup'),
     'backup_remaining' => $remaining,
-]);
+], $method === 'backup' ? 'backup' : 'totp');

@@ -80,6 +80,14 @@ function require_password(PDO $pdo, array $acc, string $password, string $probe 
 
     if ($password === '' || !password_verify($password, (string)$acc['password_hash'])) {
         $lockedFor = record_failure($pdo, (int)$acc['id'], $ip, $probe);
+
+        // Someone sitting at an unlocked machine guessing at the password to
+        // change an email or turn two-step off is exactly what the activity
+        // log exists to surface. The probe says which change they were after.
+        require_once __DIR__ . '/_sessions.php';
+        security_log($pdo, (int)$acc['id'], 'challenge_failed',
+            'Wrong password given when confirming a change (' . str_replace('_', ' ', $probe) . ')'
+            . ($lockedFor > 0 ? ' — locked for ' . $lockedFor . ' seconds' : ''), 'warn');
         json_out([
             'ok'         => false,
             'field'      => 'password',
@@ -113,6 +121,12 @@ function sign_out_other_devices(PDO $pdo, int $uid): void
                 remember_expires = NULL
           WHERE id = ?'
     )->execute([$uid]);
+
+    // The epoch bump above ends every session; this ends the ROWS, so the
+    // device list reflects it immediately instead of waiting for each browser
+    // to come back and discover it has been signed out.
+    require_once __DIR__ . '/_sessions.php';
+    sessions_revoke_others($pdo, $uid);
 
     $st = $pdo->prepare('SELECT session_epoch FROM ucp_accounts WHERE id = ? LIMIT 1');
     $st->execute([$uid]);

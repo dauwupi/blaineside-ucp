@@ -63,6 +63,16 @@ $okPassword = password_verify($password, $acc['password_hash'] ?? $dummyHash);
 
 if (!$acc || !$okPassword) {
     $lockedFor = record_failure($pdo, $accountId, $ip, $probe);
+
+    // Only logged against a real account — a wrong guess at a name nobody
+    // owns has no account to file it under, and inventing one would be a
+    // free way to fill someone else's log with noise.
+    if ($accountId !== null) {
+        require_once __DIR__ . '/_sessions.php';
+        security_log($pdo, $accountId, 'signin_failed',
+            'Wrong password' . ($lockedFor > 0 ? ' — account locked for ' . $lockedFor . ' seconds' : ''),
+            'warn');
+    }
     json_out([
         'ok'         => false,
         'error'      => 'Incorrect UCP name or password.',

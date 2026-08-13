@@ -97,6 +97,10 @@ if (!$sent['ok']) {
               'error' => 'We couldn\'t send the confirmation email. Try again in a minute.'], 502);
 }
 
+require_once __DIR__ . '/_sessions.php';
+security_log($pdo, $uid, 'email_change_requested',
+    'Waiting on the link sent to ' . mask_email($email), 'warn');
+
 ok([
     'pending' => mask_email($email),
     'expires' => $expires,

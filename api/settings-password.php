@@ -71,4 +71,8 @@ send_mail(
     "were signed out. If this wasn't you, reset it from the sign-in page immediately."
 );
 
+require_once __DIR__ . '/_sessions.php';
+security_log($pdo, $uid, 'password_changed',
+    'Every other device was signed out', 'good');
+
 ok(['message' => 'Password updated. Every other device has been signed out.']);

@@ -75,6 +75,10 @@ try {
     throw $e;
 }
 
+require_once __DIR__ . '/_sessions.php';
+security_log($pdo, $uid, '2fa_disabled',
+    'Recovery codes deleted', 'warn');
+
 ok([
     'enabled' => false,
     'message' => 'Two-factor authentication is off. Your recovery codes have been deleted.',

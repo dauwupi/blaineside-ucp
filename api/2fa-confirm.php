@@ -101,6 +101,10 @@ setcookie('bsucp_rm', '', [
     'secure'   => is_https(),
 ]);
 
+require_once __DIR__ . '/_sessions.php';
+security_log($pdo, $uid, '2fa_enabled',
+    BS_BACKUP_CODE_COUNT . ' recovery codes issued', 'good');
+
 ok([
     'enabled'       => true,
     'backup_codes'  => $codes,

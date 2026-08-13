@@ -117,6 +117,10 @@ if ($acc['forum_member_id'] !== null) {
     }
 }
 
+require_once __DIR__ . '/_sessions.php';
+security_log($pdo, $uid, 'name_changed',
+    $old . ' → ' . $username, 'info');
+
 ok([
     'name'     => $username,
     'previous' => $old,
