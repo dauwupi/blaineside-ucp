@@ -1859,9 +1859,13 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       { label:'Listings', href:'#' },
     ]},
     { heading:'Administration', admin:true },
+    { label:'Founder', icon:'crown', founder:true, children:[
+      { label:'Group Management', href:'/dashboard/groups' },
+    ]},
     { label:'Management', icon:'shield', admin:true, children:[
       { label:'County Bulletin', href:'/dashboard/bulletin' },
       { label:'Announcements',   href:'/dashboard/announcements' },
+      { label:'Group Management', href:'/dashboard/groups', notFounder:true },
     ]},
     { heading:'Account' },
     { label:'My Profile',        icon:'user',  href:'/profile', active:true },
@@ -1870,6 +1874,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     { label:'XM Radio',          icon:'radio', href:'#' },
   ];
   var ICONS = {
+    crown:'<path d="M4 18h16M4 18l-1.5-9 5 3.5L12 5l4.5 7.5 5-3.5L20 18"/>',
     shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>',
     home:'<path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
     user:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
@@ -1885,13 +1890,13 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   /* Administration items appear only for Management and Founders. The pages
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
-  var IS_MANAGER = false;
+  var IS_MANAGER = false, IS_FOUNDER = false;
 
   function renderNav(){
-  $('nav').innerHTML = SIDEBAR.filter(function(it){ return !it.admin || IS_MANAGER; }).map(function(it){
+  $('nav').innerHTML = SIDEBAR.filter(function(it){ return (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER); }).map(function(it){
     if(it.heading) return '<div class="nav-heading">'+esc(it.heading)+'</div>';
     if(it.children){
-      var subs = it.children.map(function(c){
+      var subs = it.children.filter(function(c){ return !c.notFounder || !IS_FOUNDER; }).map(function(c){
         return c.empty ? '<a class="slot-empty">'+esc(c.label)+'</a>'
                        : '<a href="'+esc(c.href||'#')+'">'+esc(c.label)+'</a>';
       }).join('');
@@ -2060,7 +2065,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('acctName').textContent = d.name;
     $('acctRole').textContent = d.role || 'Member';
 
-    if(d.rank >= 8 && !IS_MANAGER){ IS_MANAGER = true; renderNav(); }
+    if(d.rank >= 8 && !IS_MANAGER){ IS_MANAGER = true; IS_FOUNDER = d.rank >= 9; renderNav(); }
 
     renderProfileTab(d);
     renderSettings(d);

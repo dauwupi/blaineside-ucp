@@ -525,9 +525,15 @@
     {label:'Factions',icon:'briefcase',children:[{label:'Legal factions',href:'#'},{label:'Illegal factions',href:'#'},{label:'Applications',href:'#'}]},
     {label:'Properties',icon:'house',children:[{label:'My properties',href:'#'},{label:'Businesses',href:'#'},{label:'Listings',href:'#'}]},
     {heading:'Administration',admin:true},
+    /* Founder-only. Managers reach Group Management through the Management
+       group below instead — same page, fewer powers, enforced server-side. */
+    {label:'Founder',icon:'crown',founder:true,children:[
+      {label:'Group Management',href:'/dashboard/groups'},
+    ]},
     {label:'Management',icon:'shield',admin:true,children:[
       {label:'County Bulletin',href:'/dashboard/bulletin'},
       {label:'Announcements',href:'/dashboard/announcements'},
+      {label:'Group Management',href:'/dashboard/groups',notFounder:true},
     ]},
     {heading:'Account'},
     {label:'My Profile',icon:'user',href:'/profile'},
@@ -535,7 +541,7 @@
     {label:'World Points',icon:'clock',href:'#'},
     {label:'XM Radio',icon:'radio',href:'#'},
   ];
-  const ICONS={shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>',home:'<path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+  const ICONS={crown:'<path d="M4 18h16M4 18l-1.5-9 5 3.5L12 5l4.5 7.5 5-3.5L20 18"/>',shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>',home:'<path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
     user:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
     chat:'<path d="M4 5h16v11H8l-4 3z"/>',briefcase:'<path d="M4 7h16v13H4z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>',
     house:'<path d="M3 10.5L12 4l9 6.5V20H3zM9 20v-6h6v6"/>',doc:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
@@ -545,9 +551,9 @@
   /* Administration items appear only for Management and Founders. The pages
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
-  let IS_MANAGER=false;
+  let IS_MANAGER=false, IS_FOUNDER=false;
   function renderSidebar(items){
-    items=items.filter(it=>!it.admin || IS_MANAGER);
+    items=items.filter(it=>(!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER));
     document.getElementById('nav').innerHTML=items.map(it=>{
       if(it.heading) return `<div class="nav-heading">${escapeHtml(it.heading)}</div>`;
       if(it.children){
@@ -1043,7 +1049,7 @@
     /* 8 = Management, 9 = Founder — the same line the server draws. */
     if((d.rank|0) < 8){ lockOut(); return; }
 
-    IS_MANAGER=true; renderSidebar(SIDEBAR);
+    IS_MANAGER=true; IS_FOUNDER=(d.rank|0) >= 9; renderSidebar(SIDEBAR);
 
     loadPage(1);
   }).catch(function(){ toast('Could not reach the server'); });

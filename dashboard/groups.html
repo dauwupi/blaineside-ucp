@@ -394,6 +394,47 @@
   .switchrow.on .sw{background:rgba(226,182,92,.3);border-color:rgba(226,182,92,.5)}
   .switchrow.on .sw::after{left:19px;background:var(--gold)}
 
+
+  /* ---------- GROUP MANAGEMENT ---------- */
+  .mtools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .msearch{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:220px;max-width:380px;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:10px}
+  .msearch svg{width:15px;height:15px;color:var(--text-faint);flex:none;stroke-width:2}
+  .msearch input{flex:1;background:none;border:none;outline:none;color:var(--parchment);font-size:13.5px;font-family:inherit}
+  .mcount{font-size:12.5px;color:var(--text-faint);font-weight:600;margin-left:auto}
+
+  .mrow{display:flex;align-items:center;gap:16px;padding:13px 16px;border:1px solid var(--border-soft);
+    border-radius:12px;background:var(--charcoal-2);margin-bottom:9px}
+  .mrow.is-you{border-color:rgba(226,182,92,.32);background:linear-gradient(180deg,rgba(226,182,92,.05),transparent)}
+  .mrow .mid{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;
+    background:var(--charcoal-3);color:var(--stone);font-size:12px;font-weight:800}
+  .mrow .mwho{flex:1;min-width:0}
+  .mrow .mname{font-size:13.5px;font-weight:700;color:var(--parchment);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .mrow .mmeta{font-size:11.5px;color:var(--text-faint);margin-top:4px;font-weight:500}
+  .mrow .mact{flex:none;display:flex;align-items:center;gap:9px}
+  .mrow select{height:36px;padding:0 32px 0 12px;border-radius:9px;background:var(--charcoal-3);
+    border:1px solid var(--border);color:var(--parchment);font-size:13px;font-family:inherit;
+    appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7f70' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;cursor:pointer}
+  .mrow select:focus{outline:none;border-color:rgba(226,182,92,.5)}
+  .mrow select:disabled{opacity:.5;cursor:not-allowed}
+  /* The group badge carries the ladder: member grey, staff gold, the top two
+     unmistakable. Somebody scanning this list is looking for the outliers. */
+  .gbadge{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    padding:3px 9px;border-radius:100px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap}
+  .gbadge.g-staff{color:#dcbd8b;border-color:rgba(212,146,58,.35);background:rgba(212,146,58,.08)}
+  .gbadge.g-mgmt{color:#1a1206;background:var(--gold);border-color:transparent}
+  .gbadge.g-founder{color:#fff;background:var(--danger);border-color:transparent}
+  /* A disabled Apply has to look disabled — otherwise the row reads as
+     "press me" when the selection hasn't changed. */
+  .mrow .btn:disabled{opacity:.4;cursor:not-allowed;filter:saturate(.5)}
+  .mlock{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text-faint)}
+  .mlock svg{width:13px;height:13px;stroke-width:2}
+  @media (max-width:760px){
+    .mrow{flex-wrap:wrap}
+    .mrow .mact{width:100%;justify-content:flex-end}
+  }
+
   /* toast */
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);z-index:200;
     display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:11px;background:var(--charcoal-3);
@@ -468,7 +509,7 @@
       <button class="icon-btn hamburger" id="menuToggle" aria-label="Open menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <div class="page-title"><h1>Announcements</h1></div>
+      <div class="page-title"><h1>Group Management</h1></div>
       <div class="spacer"></div>
       <div class="searchbox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -493,76 +534,21 @@
 
         <div class="phead">
           <div>
-            <h2>Announcements</h2>
-            <p>The strip across the top of the dashboard. <b>One is live at a time</b> — putting one up takes the other down.</p>
+            <h2>Group Management</h2>
+            <p id="introLine">Promote and demote accounts. Every change is written to that account's security log.</p>
           </div>
-          <button class="btn primary" onclick="openEditor()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
-            New announcement
-          </button>
         </div>
 
-        <!-- what players are seeing right now -->
-        <div class="slotbar" id="liveBar" style="display:block;padding:0;border:0;background:none"></div>
+        <div class="mtools">
+          <label class="msearch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input type="text" id="q" placeholder="Search by UCP name…" autocomplete="off" spellcheck="false">
+          </label>
+          <span class="mcount" id="mcount"></span>
+        </div>
 
-        <div id="alist" style="margin-top:18px"></div>
+        <div id="mlist"></div>
         <div class="pager" id="pager"></div>
-      </div>
-
-      <!-- ============ EDITOR ============ -->
-      <div class="view" id="view-edit">
-        <a class="page-back" href="#" onclick="closeEditor();return false;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>Back to announcements</a>
-
-        <div class="phead"><div><h2 id="editTitle">New announcement</h2><p>The preview below is exactly what players see on the dashboard.</p></div></div>
-
-        <div class="editor">
-          <div class="form-card">
-            <div class="field">
-              <label><span class="lt">Type</span></label>
-              <div class="seg" id="typeSeg">
-                <button data-type="notice" class="on"><span class="swatch" style="background:var(--gold)"></span>Notice</button>
-                <button data-type="maintenance"><span class="swatch" style="background:#6f9bcc"></span>Maintenance</button>
-                <button data-type="warning"><span class="swatch" style="background:var(--amber)"></span>Warning</button>
-                <button data-type="critical"><span class="swatch" style="background:var(--danger)"></span>Critical</button>
-                <button data-type="success"><span class="swatch" style="background:var(--ok)"></span>Resolved</button>
-              </div>
-            </div>
-
-            <div class="field">
-              <label><span class="lt">Headline <span class="req">*</span></span><span class="count"><span id="leadCount">0</span>/120</span></label>
-              <input type="text" id="fLead" maxlength="120" placeholder="e.g. Scheduled maintenance this Sunday, 03:00 UTC." oninput="syncPreview()">
-              <span class="field-hint">Shown in bold, first. Lead with the fact.</span>
-            </div>
-
-            <div class="field">
-              <label><span class="lt">Detail</span><span class="count"><span id="bodyCount">0</span>/240</span></label>
-              <textarea id="fBody" maxlength="240" placeholder="The server and UCP will be offline for roughly two hours while we roll out the 3.2 update." oninput="syncPreview()"></textarea>
-            </div>
-
-            <div class="field">
-              <label><span class="lt">Link</span></label>
-              <input type="text" id="fLink" placeholder="https://… — optional, makes the strip clickable" oninput="syncPreview()">
-              <span class="field-hint" id="linkHint"></span>
-            </div>
-
-            <label class="switchrow" id="dismissRow" onclick="toggleDismiss()">
-              <span class="sw"></span>
-              <span id="dismissLabel">Players can dismiss this</span>
-            </label>
-            <span class="field-hint" style="margin-top:8px;display:block">Turn this off for an outage or anything nobody should be able to hide.</span>
-
-            <div class="form-acts">
-              <button class="btn primary" id="saveBtn" onclick="saveAnnouncement()">Save announcement</button>
-              <button class="btn ghost" onclick="closeEditor()">Cancel</button>
-            </div>
-          </div>
-
-          <div class="preview-wrap">
-            <div class="preview-label"><span class="dotlbl"></span>Dashboard preview</div>
-            <div class="apreview" id="apv"></div>
-            <p class="pv-note">Saving does not put it up. Publish it from the list when you're ready — that takes any other announcement down.</p>
-          </div>
-        </div>
       </div>
 
     </main>
@@ -642,92 +628,67 @@
   }
 
 
+
   /* =====================================================================
-     ANNOUNCEMENTS
+     GROUP MANAGEMENT
 
-     The strip across the top of the dashboard. Everything here talks to
-     api/announcement-*.php; nothing is kept client-side beyond the page
-     currently on screen, so two managers working at once see the same
-     truth after any action.
+     The rules are the server's (api/_groups.php); this page asks what it is
+     allowed to offer and renders that. A row it can't touch says why rather
+     than simply being greyed out — "you can't" is not an explanation.
      ===================================================================== */
-  let UCP_NAME="";
-  let ITEMS=[], TOTAL_PAGES=1, curPage=1, LOADING=false;
+  let RANKS=[], ASSIGNABLE=[], YOU={id:0,rank:0};
+  let ITEMS=[], TOTAL_PAGES=1, curPage=1, QUERY='', LOADING=false;
 
-  const ICONS_ANN={
-    notice:'<path d="M3 11l14-5v12L3 15v-4z"/><path d="M17 8a3 3 0 0 1 0 8M6 15v3a1 1 0 0 0 1 1h2"/>',
-    maintenance:'<path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.3-2.3z"/>',
-    warning:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>',
-    critical:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5h.01"/>',
-    success:'<path d="M20 6L9 17l-5-5"/>'
-  };
-  const TYPES={
-    notice:      {label:'Announcement', cls:'t-notice'},
-    maintenance: {label:'Maintenance',  cls:'t-maintenance'},
-    warning:     {label:'Warning',      cls:'t-warning'},
-    critical:    {label:'Critical',     cls:'t-critical'},
-    success:     {label:'Resolved',     cls:'t-success'}
-  };
-
+  function badgeClass(rank){
+    return rank>=9 ? 'g-founder' : rank>=8 ? 'g-mgmt' : rank>=1 ? 'g-staff' : '';
+  }
   function whenFrom(ts){
-    if(window.UCP && UCP.relTime) return UCP.relTime(ts);
-    const d=Math.floor(Date.now()/1000)-ts;
-    return d<3600 ? Math.max(1,Math.floor(d/60))+' min ago' : Math.floor(d/3600)+'h ago';
+    if(!ts) return 'never';
+    const t=Math.floor(new Date(ts.replace(' ','T')+'Z').getTime()/1000);
+    if(window.UCP && UCP.relTime) return UCP.relTime(t);
+    return ts;
   }
 
-  /* The strip itself — used for the preview, the "live now" panel and the
-     dashboard. One function, so the three can't drift apart. */
-  /* The strip itself — used for the preview and the "live now" panel, and
-     kept identical to the dashboard's own renderer so the preview can't
-     quietly become a lie. */
-  function stripHTML(a){
-    const t=TYPES[a.type]||TYPES.notice;
-    return `<div class="ann ${t.cls}">
-      <span class="ann-stamp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">${ICONS_ANN[a.type]||ICONS_ANN.notice}</svg></span>
-      <div class="ann-main">
-        <div class="ann-eyebrow">${escapeHtml(t.label)}<span class="sep">·</span><span class="ago">${escapeHtml(a.at?whenFrom(a.at):'just now')}</span></div>
-        <div class="ann-head">${escapeHtml(a.lead)}</div>
-        ${a.body?`<div class="ann-detail">${escapeHtml(a.body)}</div>`:''}
-      </div>
-      <div class="ann-acts">
-        ${a.link?`<span class="ann-link">Read more<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>`:''}
-        ${a.dismissable?`<button class="ann-x" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:''}
-      </div>
-    </div>`;
-  }
+  function rowHTML(m){
+    const opts = ASSIGNABLE.map(r=>{
+      const label=(RANKS.find(x=>x.rank===r)||{}).name||('Group '+r);
+      return `<option value="${r}" ${r===m.rank?'selected':''}>${escapeHtml(label)}</option>`;
+    }).join('');
 
-  function rowHTML(a){
-    const t=TYPES[a.type]||TYPES.notice;
-    return `<div class="arow ${a.active?'live':''}" data-id="${a.id}">
-      <div class="abody">
-        <div class="aline">
-          <span class="tchip">${escapeHtml(t.label)}</span>
-          ${escapeHtml(a.lead)}
-          ${a.active?`<span class="live-badge"><span class="dot"></span>Live</span>`:''}
+    /* Somebody whose current group is above what this actor may hand out
+       still needs their group SHOWN, so it goes in the list as a disabled
+       option rather than vanishing. */
+    const missing = !ASSIGNABLE.includes(m.rank)
+      ? `<option value="${m.rank}" selected disabled>${escapeHtml(m.role)}</option>` : '';
+
+    return `<div class="mrow ${m.self?'is-you':''}" data-id="${m.id}">
+      <span class="mid">#${m.id}</span>
+      <div class="mwho">
+        <div class="mname">${escapeHtml(m.name)}
+          <span class="gbadge ${badgeClass(m.rank)}">${escapeHtml(m.role)}</span>
+          ${m.self?`<span class="gbadge">You</span>`:''}
         </div>
-        ${a.body?`<div class="asub">${escapeHtml(a.body)}</div>`:''}
-        <div class="ameta">${escapeHtml(whenFrom(a.at))} · ${escapeHtml(a.by)}${a.dismissable?'':' · not dismissable'}</div>
+        <div class="mmeta">Last sign-in ${escapeHtml(whenFrom(m.last_login))}${m.status!=='active'?' · '+escapeHtml(m.status):''}</div>
       </div>
-      <div class="aacts">
-        <button class="btn sm ${a.active?'ghost':'primary'}" onclick="setActive(${a.id},${a.active?'false':'true'})">${a.active?'Take down':'Publish'}</button>
-        <button class="icon-act" title="Edit" onclick="openEditor(${a.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="M13 5l4 4"/></svg></button>
-        <button class="icon-act del" title="Delete" onclick="askDelete(${a.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 7h14M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>
+      <div class="mact">
+        ${m.editable
+          ? `<select data-rank="${m.id}">${missing}${opts}</select>
+             <button class="btn sm primary" data-apply="${m.id}" disabled>Apply</button>`
+          : `<span class="mlock" title="${escapeHtml(m.blocked_by||'')}">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+               ${escapeHtml(m.self ? 'Your own group' : 'Founder only')}
+             </span>`}
       </div>
     </div>`;
   }
 
   function renderList(){
-    const host=document.getElementById('alist');
-    const live=ITEMS.find(a=>a.active);
-    document.getElementById('liveBar').innerHTML = live
-      ? `<div class="preview-label" style="margin-bottom:9px"><span class="dotlbl"></span>Live on the dashboard now</div>${stripHTML(live)}`
-      : `<div class="slotbar" style="margin:0"><span class="cnt" style="color:var(--text-dim);font-weight:600">Nothing is showing on the dashboard.</span></div>`;
-
+    const host=document.getElementById('mlist');
     if(!ITEMS.length){
       host.innerHTML=`<div class="empty">
-        <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l14-5v12L3 15v-4z"/><path d="M17 8a3 3 0 0 1 0 8"/></svg></span>
-        <h4>No announcements yet</h4>
-        <p>Write one for downtime, an event, or anything the whole county needs to see.</p>
-        <button class="btn primary" onclick="openEditor()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>New announcement</button>
+        <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+        <h4>No accounts found</h4>
+        <p>${QUERY?'Nothing matches “'+escapeHtml(QUERY)+'”.':'There are no accounts to show.'}</p>
       </div>`;
       document.getElementById('pager').innerHTML='';
       return;
@@ -740,7 +701,10 @@
     const pager=document.getElementById('pager');
     if(TOTAL_PAGES<=1){ pager.innerHTML=''; return; }
     let out=`<button class="pg" data-pg="${curPage-1}" ${curPage===1?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>`;
-    for(let i=1;i<=TOTAL_PAGES;i++) out+=`<button class="pg ${i===curPage?'on':''}" data-pg="${i}">${i}</button>`;
+    for(let i=1;i<=TOTAL_PAGES;i++){
+      if(i===1||i===TOTAL_PAGES||Math.abs(i-curPage)<=1) out+=`<button class="pg ${i===curPage?'on':''}" data-pg="${i}">${i}</button>`;
+      else if(Math.abs(i-curPage)===2) out+=`<span class="pg-gap">…</span>`;
+    }
     out+=`<button class="pg" data-pg="${curPage+1}" ${curPage===TOTAL_PAGES?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>`;
     pager.innerHTML=out;
   }
@@ -749,135 +713,55 @@
     loadPage(parseInt(b.dataset.pg,10));
   });
 
+  /* Apply only lights up once the selection actually differs — so the button
+     always means "make this change", never "save what's already true". */
+  document.getElementById('mlist').addEventListener('change',e=>{
+    const sel=e.target.closest('[data-rank]'); if(!sel) return;
+    const id=+sel.dataset.rank;
+    const m=ITEMS.find(x=>x.id===id);
+    const btn=document.querySelector(`[data-apply="${id}"]`);
+    if(btn) btn.disabled = (+sel.value === m.rank);
+  });
+
+  document.getElementById('mlist').addEventListener('click',e=>{
+    const btn=e.target.closest('[data-apply]'); if(!btn||btn.disabled) return;
+    const id=+btn.dataset.apply;
+    const sel=document.querySelector(`[data-rank="${id}"]`);
+    if(!sel) return;
+    const rank=+sel.value;
+    btn.disabled=true; btn.textContent='Applying…';
+    UCP.post('member-rank.php',{id:id,rank:rank}).then(function(res){
+      const d=res.data||{};
+      btn.textContent='Apply';
+      if(!d.ok){ toast(d.error||'That did not work'); loadPage(); return; }
+      toast(d.message); loadPage();
+    }).catch(function(){ btn.textContent='Apply'; toast('Could not reach the server'); });
+  });
+
   function loadPage(n){
     if(LOADING) return Promise.resolve();
     LOADING=true; curPage=n||curPage;
-    return UCP.get('announcements.php?scope=all&page='+curPage).then(function(d){
+    return UCP.get('members.php?page='+curPage+'&q='+encodeURIComponent(QUERY)).then(function(d){
       LOADING=false;
       if(!d || d.ok!==true){
-        if(d && d.authenticated===false){ window.location.replace('/login?return='+encodeURIComponent('/dashboard/announcements')); return; }
-        toast('Could not load announcements'); return;
+        if(d && d.authenticated===false){ window.location.replace('/login?return='+encodeURIComponent('/dashboard/groups')); return; }
+        toast('Could not load accounts'); return;
       }
-      ITEMS=d.announcements||[]; TOTAL_PAGES=d.pages||1; curPage=d.page||curPage;
+      ITEMS=d.members||[]; TOTAL_PAGES=d.pages||1; curPage=d.page||curPage;
+      RANKS=d.ranks||RANKS; ASSIGNABLE=d.assignable||ASSIGNABLE; YOU=d.you||YOU;
+      document.getElementById('mcount').textContent =
+        d.total===1 ? '1 account' : d.total.toLocaleString('en-GB')+' accounts';
       renderList();
     }).catch(function(){ LOADING=false; toast('Could not reach the server'); });
   }
 
-  /* ---- publish / take down ---- */
-  function setActive(id,on){
-    UCP.post('announcement-activate.php',{id:id,on:on}).then(function(res){
-      const d=res.data||{};
-      if(!d.ok){ toast(d.error||'That did not work'); return; }
-      toast(d.message); loadPage();
-    }).catch(function(){ toast('Could not reach the server'); });
-  }
-
-  /* ---- delete, confirmed in place ---- */
-  function askDelete(id){
-    const row=document.querySelector(`.arow[data-id="${id}"]`); if(!row) return;
-    const acts=row.querySelector('.aacts');
-    if(row.dataset.confirming) return;
-    row.dataset.confirming='1';
-    const prev=acts.innerHTML;
-    acts.innerHTML=`<span class="q" style="font-size:12.5px;color:#e0a99b;font-weight:600">Delete this?</span>
-      <button class="btn sm ghost" data-cancel>Cancel</button>
-      <button class="btn sm danger" data-confirm>Delete</button>`;
-    acts.querySelector('[data-cancel]').onclick=()=>{acts.innerHTML=prev;delete row.dataset.confirming;};
-    acts.querySelector('[data-confirm]').onclick=()=>{
-      UCP.post('announcement-delete.php',{id:id}).then(function(res){
-        const d=res.data||{};
-        if(!d.ok){ toast(d.error||'That did not work'); acts.innerHTML=prev; delete row.dataset.confirming; return; }
-        toast(d.message); loadPage();
-      }).catch(function(){ toast('Could not reach the server'); acts.innerHTML=prev; delete row.dataset.confirming; });
-    };
-  }
-
-  /* ===================== EDITOR ===================== */
-  let editingId=null;
-  let draft={type:'notice',lead:'',body:'',link:'',dismissable:true};
-
-  function showView(name){
-    document.getElementById('view-list').classList.toggle('active',name==='list');
-    document.getElementById('view-edit').classList.toggle('active',name==='edit');
-    document.querySelector('.page-title h1').textContent = name==='edit' ? 'Announcements — Editor' : 'Announcements';
-    window.scrollTo(0,0);
-  }
-
-  function openEditor(id){
-    if(id){
-      const a=ITEMS.find(x=>x.id===id); if(!a) return;
-      editingId=id;
-      draft={type:a.type,lead:a.lead,body:a.body||'',link:a.link||'',dismissable:a.dismissable};
-      document.getElementById('editTitle').textContent='Edit announcement';
-    } else {
-      editingId=null;
-      draft={type:'notice',lead:'',body:'',link:'',dismissable:true};
-      document.getElementById('editTitle').textContent='New announcement';
-    }
-    document.getElementById('fLead').value=draft.lead;
-    document.getElementById('fBody').value=draft.body;
-    document.getElementById('fLink').value=draft.link;
-    document.querySelectorAll('#typeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.type===draft.type));
-    document.getElementById('dismissRow').classList.toggle('on',draft.dismissable);
-    document.getElementById('dismissLabel').textContent = draft.dismissable ? 'Players can dismiss this' : 'Players cannot dismiss this';
-    showView('edit'); syncPreview();
-  }
-  function closeEditor(){ showView('list'); }
-
-  document.getElementById('typeSeg').addEventListener('click',e=>{
-    const b=e.target.closest('button'); if(!b) return;
-    draft.type=b.dataset.type;
-    document.querySelectorAll('#typeSeg button').forEach(x=>x.classList.toggle('on',x===b));
-    syncPreview();
+  /* Debounced search — one request when they stop typing, not one per key. */
+  let qTimer=null;
+  document.getElementById('q').addEventListener('input',function(){
+    const v=this.value.trim();
+    clearTimeout(qTimer);
+    qTimer=setTimeout(function(){ QUERY=v; loadPage(1); },320);
   });
-
-  function toggleDismiss(){
-    draft.dismissable=!draft.dismissable;
-    document.getElementById('dismissRow').classList.toggle('on',draft.dismissable);
-    document.getElementById('dismissLabel').textContent = draft.dismissable ? 'Players can dismiss this' : 'Players cannot dismiss this';
-    syncPreview();
-  }
-
-  function syncPreview(){
-    draft.lead=document.getElementById('fLead').value;
-    draft.body=document.getElementById('fBody').value;
-    draft.link=document.getElementById('fLink').value;
-    document.getElementById('leadCount').textContent=draft.lead.length;
-    document.getElementById('bodyCount').textContent=draft.body.length;
-
-    const lc=checkLink(draft.link);
-    const hint=document.getElementById('linkHint');
-    hint.textContent=lc.msg;
-    hint.className='field-hint '+(draft.link.trim()?(lc.ok?'ok':'err'):'');
-
-    document.getElementById('apv').innerHTML=stripHTML({
-      type:draft.type,
-      lead:draft.lead||'Your headline appears here',
-      body:draft.body,
-      link:(lc.ok?lc.url:null),
-      dismissable:draft.dismissable
-    });
-    document.getElementById('saveBtn').disabled = !(draft.lead.trim() && (!draft.link.trim() || lc.ok));
-  }
-
-  function saveAnnouncement(){
-    if(!draft.lead.trim()) return;
-    const lc=checkLink(draft.link);
-    if(draft.link.trim() && !lc.ok){ toast('Fix the link first'); return; }
-
-    const btn=document.getElementById('saveBtn'), label=btn.textContent;
-    btn.disabled=true; btn.textContent='Saving…';
-    const payload={type:draft.type,lead:draft.lead.trim(),body:draft.body.trim(),
-                   link:lc.url||'',dismissable:draft.dismissable};
-    if(editingId) payload.id=editingId;
-
-    UCP.post('announcement-save.php',payload).then(function(res){
-      btn.disabled=false; btn.textContent=label;
-      const d=res.data||{};
-      if(!d.ok){ toast(d.error||'That did not work'); return; }
-      toast(d.message); closeEditor(); loadPage(editingId?curPage:1);
-    }).catch(function(){ btn.disabled=false; btn.textContent=label; toast('Could not reach the server'); });
-  }
 
   /* ===================== UTIL ===================== */
   function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -903,31 +787,38 @@
   tickClock();setInterval(tickClock,1000);
 
 
+
   /* =====================================================================
-     BOOT — same gate as the bulletin page. The endpoints enforce it too.
+     BOOT — Management and above. The endpoints check it themselves too.
      ===================================================================== */
   function lockOut(){
     document.querySelector('.content').innerHTML=`
       <div class="empty" style="margin:60px auto;max-width:520px">
         <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
         <h4>Management only</h4>
-        <p>Announcements are managed by Management and Founders. If you think you should have access, speak to a Founder.</p>
+        <p>Groups are managed by Management and Founders. If you think you should have access, speak to a Founder.</p>
         <a class="btn primary" href="/dashboard">Back to dashboard</a>
       </div>`;
   }
 
   UCP.get('session.php').then(function(d){
     if(!d || d.authenticated!==true){
-      window.location.replace('/login?return='+encodeURIComponent('/dashboard/announcements'));
+      window.location.replace('/login?return='+encodeURIComponent('/dashboard/groups'));
       return;
     }
-    UCP_NAME=d.name||'';
     const an=document.getElementById('acctName'), ar=document.getElementById('acctRole');
-    if(an) an.textContent=UCP_NAME;
+    if(an) an.textContent=d.name||'';
     if(ar) ar.textContent=d.role||'Member';
     if((d.rank|0) < 8){ lockOut(); return; }
 
     IS_MANAGER=true; IS_FOUNDER=(d.rank|0) >= 9; renderSidebar(SIDEBAR);
+
+    /* Say the limits out loud rather than letting people discover them by
+       being refused. */
+    document.getElementById('introLine').textContent = IS_FOUNDER
+      ? 'Promote and demote any account. Every change is written to that account\'s security log.'
+      : 'Promote and demote up to Lead Admin. Management and Founders are Founder-only, and nobody changes their own group.';
+
     loadPage(1);
   }).catch(function(){ toast('Could not reach the server'); });
 
