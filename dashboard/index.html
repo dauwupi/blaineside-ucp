@@ -662,7 +662,7 @@
       <div class="stats" id="statStrip">
         <div class="stat">
           <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>Registered users</div>
-          <div class="num" data-count="42318">42,318</div>
+          <div class="num" id="statUsers" data-count="42318">42,318</div>
         </div>
         <div class="stat">
           <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20v-1a4 4 0 0 1 4-4h4M14 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>Created characters</div>
@@ -1311,9 +1311,33 @@
     document.querySelectorAll('.skeleton').forEach(s=>s.classList.remove('skeleton'));
     document.querySelectorAll('#statStrip .num[data-count]').forEach(countUp);
   }
-  /* demo timing — remove/replace with your real data callback */
+  /* ===== REAL DATA =====
+     Registered users comes from api/stats.php — a count of UCP accounts that
+     have confirmed their email. The other four tiles have no tables behind
+     them yet and keep their designed placeholders until they do.
+
+     finishLoading() runs either way: if the call fails, the numbers already
+     in the HTML stay and the strip still reveals, rather than leaving
+     skeletons on screen forever. */
   startLoading();
-  setTimeout(finishLoading, 900);
+  (function loadStats(){
+    var done = false;
+    var reveal = function(){ if(!done){ done = true; finishLoading(); } };
+
+    fetch('/api/stats.php', {credentials:'include'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.ok === true && typeof d.users === 'number'){
+          var el = document.getElementById('statUsers');
+          if(el) el.dataset.count = d.users;
+        }
+      })
+      .catch(function(){})
+      .then(reveal);
+
+    /* A slow or hanging request must not hold the page in skeletons. */
+    setTimeout(reveal, 2500);
+  })();
 
   /* apply the signed-in user's name/role across the header + greeting */
   applyIdentity();
