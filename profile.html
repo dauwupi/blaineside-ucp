@@ -1980,6 +1980,14 @@ button{font-family:inherit}
     if(d.forum.linked){
       chips.push('<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>Forum linked</span>');
     }
+    /* Only shown for a verified link — the name someone typed at sign-up
+       proves nothing and must not earn a badge up here. */
+    if(d.discord && d.discord.linked){
+      chips.push('<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+        '<path d="M8 11a1 1 0 1 0 0-.01M16 11a1 1 0 1 0 0-.01"/>' +
+        '<path d="M8.5 17c-2 0-3.5-1.2-4-3.5C4 10 5 6.8 6.5 5.5 7.4 5 8.6 4.7 9.5 4.6l.6 1.2a12 12 0 0 1 3.8 0l.6-1.2c.9.1 2.1.4 3 .9C19 6.8 20 10 19.5 13.5c-.5 2.3-2 3.5-4 3.5l-.9-1.5"/>' +
+        '<path d="M8.5 17l-1 2.5M15.5 17l1 2.5"/></svg>Discord linked</span>');
+    }
     $('idChips').innerHTML = chips.join('');
 
     /* ---- account menu ---- */
@@ -2029,7 +2037,7 @@ button{font-family:inherit}
     if(dis.linked){
       var since = dis.linked_at ? new Date(dis.linked_at*1000) : null;
       $('discordStatus').innerHTML = 'Linked as <b>'+esc(dis.username)+'</b>' +
-        (since ? ' <span class="chip good sm">Verified</span> · since '+esc(shortDate(since)) : '');
+        (since ? ' · since '+esc(shortDate(since)) : '');
     } else if(dis.given){
       $('discordStatus').innerHTML = 'Given at sign-up as <b>'+esc(dis.given)+'</b> — ' +
         '<span class="none">not verified</span>';
