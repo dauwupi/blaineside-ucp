@@ -1,0 +1,53 @@
+/* =====================================================================
+   BlaineSide UCP — group tier colours.
+
+   One file, loaded by every page that shows a group anywhere: the row in
+   Group Management, the chip in the account button, and whatever comes
+   next. Nothing defines a tier colour inline any more, so a change here
+   is a change everywhere.
+
+   Three variables per tier, because one colour can't do three jobs on a
+   #121110 page:
+
+     --tone       the tier's colour. Fills chips and draws rails, where it
+                  sits behind or beside things rather than being read.
+     --tone-ink   what reads on top of that fill.
+     --tone-text  the tier's colour as TEXT on the dark background. Support
+                  Staff's deep red is the reason this exists — as a solid
+                  chip with white on it it is fine, as a label it is almost
+                  the page. Every tier gets one so none is a special case.
+
+   The values are the community's palette, taken down in saturation so
+   they sit inside the charcoal-and-gold scheme rather than shouting over
+   it. Hues are unchanged: Founder is still violet, Management amber,
+   every Admin rung the same green, Development blue, Support red.
+   ===================================================================== */
+
+.tone-0{--tone:#7d7365;--tone-ink:#16130f;--tone-text:#9a9082}   /* Member            */
+.tone-1{--tone:#6b3230;--tone-ink:#ffffff;--tone-text:#b3706a}   /* Support Staff     */
+.tone-2{--tone:#3b6280;--tone-ink:#ffffff;--tone-text:#7ba3bf}   /* Development Team  */
+.tone-3,.tone-4,.tone-5,.tone-6,.tone-7{                         /* Trainee → Lead    */
+        --tone:#4a8f4a;--tone-ink:#04230a;--tone-text:#69ad69}
+.tone-8{--tone:#cf8b3a;--tone-ink:#241200;--tone-text:#dda157}   /* Management        */
+.tone-9{--tone:#8f83c9;--tone-ink:#16102e;--tone-text:#a89ddd}   /* Founder           */
+
+
+/* ---------------------------------------------------------------------
+   The signed-in player's own tier.
+
+   assets/js/ucp.js puts a me-* class on <html> as soon as the session is
+   known, which makes the caller's own colour available to any page as
+   --me / --me-text without that page having to know the ladder at all.
+   --------------------------------------------------------------------- */
+.me-0{--me:#7d7365;--me-text:#9a9082}
+.me-1{--me:#6b3230;--me-text:#b3706a}
+.me-2{--me:#3b6280;--me-text:#7ba3bf}
+.me-3,.me-4,.me-5,.me-6,.me-7{--me:#4a8f4a;--me-text:#69ad69}
+.me-8{--me:#cf8b3a;--me-text:#dda157}
+.me-9{--me:#8f83c9;--me-text:#a89ddd}
+
+/* The role line in the account button, and the same line inside the
+   account dropdown. Falls back to amber on a page that hasn't reported a
+   rank yet, which is what it was before this file existed. */
+.account-meta .r,
+#menuRole{color:var(--me-text,var(--amber))!important}

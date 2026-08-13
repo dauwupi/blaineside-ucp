@@ -739,6 +739,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
+<link rel="stylesheet" href="/assets/css/tones.css">
 </head>
 <body>
 
@@ -2064,6 +2065,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('menuRole').textContent = d.role || 'Member';
     $('acctName').textContent = d.name;
     $('acctRole').textContent = d.role || 'Member';
+    UCP.setTone(d.rank|0);   /* tier colour for the account chip — assets/css/tones.css */
 
     if(d.rank >= 8 && !IS_MANAGER){ IS_MANAGER = true; IS_FOUNDER = d.rank >= 9; renderNav(); }
 

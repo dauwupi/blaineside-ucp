@@ -439,6 +439,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
+<link rel="stylesheet" href="/assets/css/tones.css">
 </head>
 <body>
 
@@ -925,6 +926,7 @@
     const an=document.getElementById('acctName'), ar=document.getElementById('acctRole');
     if(an) an.textContent=UCP_NAME;
     if(ar) ar.textContent=d.role||'Member';
+    UCP.setTone(d.rank|0);   /* tier colour for the account chip — assets/css/tones.css */
     if((d.rank|0) < 8){ lockOut(); return; }
 
     IS_MANAGER=true; IS_FOUNDER=(d.rank|0) >= 9; renderSidebar(SIDEBAR);

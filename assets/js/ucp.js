@@ -179,9 +179,27 @@
     return m ? (m + 'm ' + (r < 10 ? '0' : '') + r + 's') : (r + 's');
   }
 
+  /**
+   * Records the signed-in player's group on <html> as a me-* class.
+   *
+   * assets/css/tones.css turns that into --me and --me-text, which is how
+   * the role line in the account button gets its tier colour. Call it from
+   * wherever the page already learns the rank — session.php, profile.php —
+   * and every page picks the colour up without repeating the ladder.
+   *
+   * Any new page only has to load tones.css and call this.
+   */
+  function setTone(rank) {
+    var r = (typeof rank === 'number' && rank >= 0 && rank <= 9) ? (rank | 0) : 0;
+    var el = document.documentElement;
+    el.className = el.className.replace(/\bme-\d\b/g, '').trim();
+    el.classList.add('me-' + r);
+  }
+
   w.UCP = {
     post: post, get: get, loadCsrf: loadCsrf,
-    esc: esc, relTime: relTime, readCookie: readCookie, fmtSecs: fmtSecs
+    esc: esc, relTime: relTime, readCookie: readCookie, fmtSecs: fmtSecs,
+    setTone: setTone
   };
 
   applyTod();
