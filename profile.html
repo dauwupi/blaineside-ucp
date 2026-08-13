@@ -1,0 +1,2702 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<!-- =====================================================================
+     BlaineSide UCP — MY PROFILE
+
+     Tabs: Profile · Settings · Security · Administrative Record.
+
+     LIVE: Settings and Security. Everything on those two tabs talks to
+     api/profile.php, api/settings-*.php and api/2fa-*.php.
+
+     NOT LIVE: Characters, the administrative record, "where you're signed in"
+     and the security activity log. None of them have a backend yet, so
+     api/profile.php reports them in its `features` block and this page renders
+     an honest "not available yet" state rather than sample data. Search for
+     FEATURE-GATED below. When the tables exist, flip the flag server-side and
+     fill in the render function — the markup is already here.
+     ===================================================================== -->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile — BlaineSide UCP</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='23' fill='%23121110'/%3E%3Ctext x='50' y='70' font-family='Oswald,sans-serif' font-size='60' font-weight='700' fill='%23e2b65c' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — identical to dashboard/index.html. Kept in sync by hand
+   for now; these should move to assets/css/ucp.css and be imported
+   by both before a third page copies them.
+   ============================================================ */
+:root{
+  --amber:#d4923a;
+  --gold:#e2b65c;
+  --charcoal:#121110;
+  --charcoal-2:#1a1815;
+  --charcoal-3:#221f1b;
+  --charcoal-4:#2b2723;
+  --parchment:#f1efe9;
+  --stone:#8a7f70;
+  --text-dim:#655e51;
+  --text-faint:#968e7e;
+  --border:#26221e;
+  --border-soft:#1f1c18;
+  /* divider inside a card — --border-soft vanishes against --charcoal-2 */
+  --rule:#302b25;
+  --danger:#c1553f;
+  --ok:#7fa05a;
+  --warn:#e2b65c;
+  --sidebar-w:256px;
+  --header-h:66px;
+  --content-bg:#100f0e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+/* display:flex/grid on a component beats the [hidden] attribute's UA rule,
+   which is how the empty state ended up rendering underneath the table. */
+[hidden]{display:none !important}
+html{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--content-bg);
+  color:var(--parchment);
+  -webkit-font-smoothing:antialiased;
+  display:flex;min-height:100vh;
+  font-size:14px;line-height:1.5;
+}
+a{color:var(--gold);text-decoration:none}
+button{font-family:inherit}
+::-webkit-scrollbar{width:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--charcoal-4);border-radius:6px}
+
+/* ================= SIDEBAR (matches dashboard) ================= */
+.sidebar{width:var(--sidebar-w);flex:none;position:relative;
+  background:var(--charcoal-2);border-right:1px solid var(--border-soft);z-index:50}
+.side-inner{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding-bottom:66px}
+.side-brand{display:flex;align-items:center;height:var(--header-h);padding:0 24px;
+  border-bottom:1px solid var(--border-soft);flex:none}
+.side-brand .name{font-family:'Oswald',sans-serif;font-weight:600;font-size:25px;
+  letter-spacing:.07em;text-transform:uppercase;line-height:1;color:var(--parchment)}
+.side-brand .name b{color:var(--gold);font-weight:700}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 14px 18px}
+.nav-group{margin-bottom:1px}
+.nav-item{display:flex;align-items:center;gap:13px;padding:11px 12px;border-radius:9px;
+  font-size:14px;font-weight:500;color:var(--text-faint);cursor:pointer;
+  transition:background .14s,color .14s;position:relative;user-select:none}
+.nav-item svg.i{width:18px;height:18px;flex:none;stroke-width:1.8}
+.nav-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+.nav-item.active{background:var(--charcoal-3);color:var(--parchment)}
+.nav-item.active::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;
+  border-radius:0 3px 3px 0;background:linear-gradient(180deg,var(--gold),var(--amber))}
+.nav-item.active svg.i{color:var(--gold)}
+.nav-item .lbl{flex:1}
+.nav-item .chev{width:15px;height:15px;opacity:.5;transition:transform .2s;flex:none;stroke-width:2}
+.nav-group.open > .nav-item .chev{transform:rotate(90deg)}
+.sub{max-height:0;overflow:hidden;transition:max-height .26s ease;margin-left:9px;
+  border-left:1px solid var(--border);padding-left:8px}
+.nav-group.open .sub{max-height:340px}
+.sub a{display:block;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--text-faint);transition:.13s;margin:1px 0}
+.sub a:hover{background:var(--charcoal-3);color:var(--parchment)}
+.sub a.slot-empty{color:var(--text-dim);font-style:italic;cursor:default}
+.sub a.slot-empty:hover{background:transparent;color:var(--text-dim)}
+.nav-heading{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--stone);padding:18px 12px 8px}
+.side-foot{position:absolute;left:0;right:0;bottom:0;background:var(--charcoal-2);
+  padding:13px 20px 15px;border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:5px}
+.foot-line{font-size:11px;color:var(--text-faint);font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.5}
+.foot-line .fv{color:var(--parchment);font-weight:600}
+.foot-line .st{display:inline-flex;align-items:center;gap:6px}
+.foot-line .st .d{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+
+/* ================= MAIN SHELL (matches dashboard) ================= */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;
+  background:
+    radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.13), transparent 62%),
+    radial-gradient(700px 500px at -8% 4%, rgba(165,72,22,.10), transparent 58%),
+    radial-gradient(120% 45% at 50% 115%, rgba(6,4,2,.75), transparent 62%),
+    linear-gradient(165deg,#1c1610 0%,#141109 35%,#0e0c09 65%,#0a0907 100%)}
+.main::before{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900' viewBox='0 0 1200 900'%3E%3Cg fill='none' stroke='%23e2b65c' stroke-opacity='0.04' stroke-width='1'%3E%3Cpath d='M-60 180 C 150 130 320 220 560 190 S 920 110 1300 175'/%3E%3Cpath d='M-60 260 C 160 210 330 300 570 270 S 930 195 1300 255'/%3E%3Cpath d='M-60 380 C 180 340 360 420 600 390 S 960 320 1300 375'/%3E%3Cpath d='M-60 480 C 190 445 370 515 610 488 S 970 422 1300 472'/%3E%3Cpath d='M-60 610 C 200 575 390 640 640 615 S 990 555 1300 608'/%3E%3Cpath d='M-60 720 C 210 690 400 750 650 728 S 1000 672 1300 718'/%3E%3Cpath d='M-60 830 C 220 804 410 860 660 840 S 1010 790 1300 828'/%3E%3C/g%3E%3C/svg%3E") repeat-y center top / 1200px auto}
+.main::after{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
+  background:linear-gradient(128deg,rgba(212,146,58,.06) 0%,transparent 45%),
+    linear-gradient(90deg,rgba(0,0,0,.18) 0%,transparent 12%),
+    linear-gradient(270deg,rgba(0,0,0,.12) 0%,transparent 10%)}
+@media (max-width:760px){.main::before,.main::after{left:0}}
+.topbar,.content{position:relative;z-index:1}
+.topbar{height:var(--header-h);flex:none;display:flex;align-items:center;gap:16px;
+  padding:0 26px;background:var(--charcoal-2);border-bottom:1px solid var(--border);
+  box-shadow:0 1px 0 rgba(0,0,0,.4), 0 6px 18px -12px rgba(0,0,0,.7);
+  position:sticky;top:0;z-index:45}
+.page-title h1{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.topbar .spacer{flex:1}
+.icon-btn{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;
+  background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint);cursor:pointer;
+  transition:.14s;position:relative}
+.icon-btn:hover{color:var(--parchment);background:var(--charcoal-3)}
+.icon-btn svg{width:18px;height:18px;stroke-width:1.9}
+.divider{width:1px;height:30px;background:var(--border);flex:none}
+.account{position:relative}
+.account-btn{display:flex;align-items:center;gap:12px;padding:6px 12px;border-radius:10px;
+  background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;min-width:170px}
+.account-btn:hover{background:var(--charcoal-3)}
+.account-meta{display:flex;flex-direction:column;line-height:1.3;flex:1;min-width:0;text-align:left}
+.account-meta .u{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-meta .r{font-size:11px;color:var(--amber);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-btn .caret{width:15px;height:15px;color:var(--stone);stroke-width:2;flex:none}
+.account-btn .acct-ico{display:none}
+.account-menu{position:absolute;right:0;top:calc(100% + 10px);width:230px;
+  background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
+  box-shadow:0 24px 50px -18px rgba(0,0,0,.8);padding:8px;z-index:60}
+.account-menu .mhead{padding:8px 10px 12px;border-bottom:1px solid var(--border-soft);margin-bottom:6px}
+.account-menu .mhead .n{font-size:14px;font-weight:700}
+.account-menu .mhead .rr{font-size:12px;color:var(--amber);font-weight:600;margin-top:1px}
+.menu-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;
+  font-size:13.5px;font-weight:500;color:var(--text-faint);cursor:pointer;transition:.13s}
+.menu-item svg{width:16px;height:16px;stroke-width:1.9;flex:none}
+.menu-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+.menu-item.on{background:var(--charcoal-3);color:var(--parchment)}
+.menu-item.on svg{color:var(--gold)}
+.menu-item.danger{color:#d98a78}
+.menu-item.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6}
+.menu-sep{height:1px;background:var(--border-soft);margin:6px 4px}
+.hamburger{display:none}
+.scrim{display:none;position:fixed;inset:0;background:rgba(8,7,6,.6);
+  backdrop-filter:blur(2px);z-index:48;opacity:0;transition:opacity .22s}
+.scrim.show{display:block;opacity:1}
+
+/* ============================================================
+   PAGE
+
+   Everything sits on a surface. Nothing floats directly on the
+   background gradient — text over the amber bloom is hard to read,
+   and a group with no edge has nothing to scan against.
+   ============================================================ */
+.content{padding:26px 30px 60px;max-width:1180px;width:100%;margin:0 auto}
+
+/* The card is the page's only container. No nesting: a bordered box
+   inside a bordered box reads as a mistake, so things that live in a
+   card (the FAQ, fact lists, the 2FA detail rows) are separated by
+   hairlines rather than boxed again. */
+.card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 20px 44px -30px rgba(0,0,0,.9);overflow:hidden}
+.card + .card{margin-top:20px}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:17px 22px 15px;border-bottom:1px solid var(--rule)}
+.card-h h3{font-size:15.5px;font-weight:700;letter-spacing:-.015em}
+.card-h .aside{font-size:12.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.card-b{padding:6px 22px 16px}
+.card-lede{font-size:13px;color:var(--text-faint);line-height:1.65;padding-top:14px;
+  max-width:80ch;text-wrap:pretty}
+.card-lede + *{margin-top:16px}
+.card.danger .card-h{border-bottom-color:rgba(193,85,63,.22)}
+.card.danger .card-h h3{color:#dfa294}
+
+/* ---- identity header ---- */
+.idcard{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:20px 22px}
+.idcard .who{flex:1;min-width:250px}
+.nameline{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.nameline h2{font-size:27px;font-weight:700;letter-spacing:-.025em;line-height:1.15}
+.rank{font-size:11.5px;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:100px;
+  color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));white-space:nowrap}
+.rank.member{background:var(--charcoal-3);color:var(--text-faint);border:1px solid var(--border)}
+.idmeta{margin-top:8px;font-size:13px;color:var(--text-faint);display:flex;flex-wrap:wrap;
+  align-items:center;gap:5px 10px}
+.idmeta .sep{color:var(--stone)}
+.idmeta b{color:var(--parchment);font-weight:600}
+.idchips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+  padding:7px 12px 7px 10px;border-radius:9px;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--text-faint);white-space:nowrap}
+.chip svg{width:14px;height:14px;stroke-width:2;flex:none}
+.chip.good{color:#9ec178;border-color:rgba(127,160,90,.34);background:rgba(127,160,90,.09)}
+.chip.warn{color:#e3bd72;border-color:rgba(226,182,92,.32);background:rgba(226,182,92,.08)}
+.chip.off{color:var(--stone)}
+.chip.sm{padding:3px 8px;font-size:10.5px;gap:5px}
+
+/* ---- tab bar --------------------------------------------------------
+   A boxed segmented control rather than underlined text. Three sections
+   is a real switch, not a hint: it needs an edge you can find without
+   hunting, and an active state that holds up over the amber bloom. */
+.tabbar{display:inline-flex;gap:4px;margin:20px 0;padding:5px;border-radius:13px;
+  background:var(--charcoal-2);border:1px solid var(--border);
+  box-shadow:0 14px 32px -26px rgba(0,0,0,.9);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{display:inline-flex;align-items:center;gap:9px;padding:10px 17px;border-radius:9px;
+  border:1px solid transparent;background:none;cursor:pointer;white-space:nowrap;
+  font-size:13.5px;font-weight:600;color:var(--text-faint);
+  transition:background .15s,color .15s,border-color .15s}
+.tab svg{width:16px;height:16px;stroke-width:1.9;flex:none;color:var(--stone);transition:color .15s}
+.tab:hover{background:var(--charcoal-3);color:var(--parchment)}
+.tab:hover svg{color:var(--text-faint)}
+.tab[aria-selected="true"]{background:var(--charcoal-4);color:var(--parchment);
+  border-color:rgba(226,182,92,.34);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.tab[aria-selected="true"] svg{color:var(--gold)}
+.tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.tabpanel[hidden]{display:none}
+
+/* ---- profile two-column split ---- */
+.pgrid{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:20px;align-items:start}
+.pgrid > .col-r{position:sticky;top:calc(var(--header-h) + 20px)}
+
+/* ---- settings row: label + description left, control right ---- */
+.rows > .row:first-child,
+.rows > .link-row:first-child,
+.rows > .kv:first-child,
+.rows > .sess:first-child{padding-top:16px}
+.row{display:flex;align-items:flex-start;gap:20px;padding:16px 0}
+.row + .row{border-top:1px solid var(--rule)}
+.row-l{flex:1;min-width:0}
+.row-t{font-size:13.5px;font-weight:600;color:var(--parchment);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.row-v{font-size:13px;color:var(--text-faint);margin-top:4px;word-break:break-word}
+.row-v b{color:var(--parchment);font-weight:600}
+.row-d{font-size:12.5px;color:var(--text-faint);margin-top:5px;line-height:1.6;
+  max-width:72ch;text-wrap:pretty}
+.row-r{flex:none;display:flex;align-items:center;gap:9px;padding-top:1px}
+
+/* ---- buttons ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:9px 15px;border-radius:9px;border:1px solid var(--border);background:var(--charcoal);
+  color:var(--text-faint);font-size:13px;font-weight:600;cursor:pointer;
+  transition:background .14s,color .14s,border-color .14s,transform .12s;white-space:nowrap}
+.btn:hover{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
+.btn:active{transform:scale(.975)}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn svg{width:15px;height:15px;stroke-width:2;flex:none}
+.btn.primary{background:linear-gradient(180deg,var(--gold),var(--amber));border-color:transparent;
+  color:#17140f;font-weight:800;box-shadow:0 10px 22px -12px rgba(212,146,58,.75)}
+.btn.primary:hover{filter:brightness(1.06);color:#17140f}
+.btn.danger{color:#d98a78;border-color:rgba(193,85,63,.36)}
+.btn.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6;border-color:rgba(193,85,63,.55)}
+.btn.lg{padding:12px 20px;font-size:13.5px}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.42;pointer-events:none;box-shadow:none}
+
+/* A value the player can't change. Labelled rather than shown as a greyed
+   -out button, so it doesn't read as a control that happens to be broken. */
+.locked{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;
+  color:var(--stone);padding:7px 12px 7px 10px;border-radius:9px;
+  border:1px dashed var(--border);background:var(--charcoal);white-space:nowrap}
+.locked svg{width:13px;height:13px;stroke-width:2;flex:none}
+
+/* ---- segmented control ---- */
+.seg{display:inline-flex;padding:3px;gap:2px;border-radius:11px;
+  background:var(--charcoal);border:1px solid var(--border)}
+.seg button{padding:9px 16px;border-radius:8px;border:1px solid transparent;background:none;
+  cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-faint);transition:.14s}
+.seg button:hover{color:var(--parchment)}
+.seg button[aria-pressed="true"]{background:var(--charcoal-4);color:var(--parchment);
+  border-color:rgba(226,182,92,.3)}
+
+/* ---- inline expanding form ---- */
+.expand{display:none;padding:2px 0 18px}
+.expand.on{display:block;animation:expandIn .22s cubic-bezier(.2,.8,.3,1) both}
+@keyframes expandIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.form{background:var(--charcoal);border:1px solid var(--border);border-radius:12px;
+  padding:20px;max-width:620px}
+.form-grid{display:grid;gap:16px;max-width:430px}
+.fld label{display:block;font-size:12.5px;font-weight:600;color:var(--parchment);margin-bottom:7px}
+.fld input,.fld select,.fld textarea{width:100%;background:var(--charcoal-2);
+  border:1px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--parchment);
+  font-family:inherit;font-size:13.5px;outline:none;transition:border-color .14s,box-shadow .14s}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--stone)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--amber);
+  box-shadow:0 0 0 3px rgba(212,146,58,.14)}
+/* A validated field: the border carries the state and the hint line under it
+   turns into the result, so there is one place to look rather than two. */
+.ctl{position:relative}
+.fld.chk input{padding-right:42px}
+.fld.ok input{border-color:rgba(127,160,90,.6);box-shadow:0 0 0 3px rgba(127,160,90,.12);
+  background:rgba(127,160,90,.04)}
+.fld.err input{border-color:rgba(193,85,63,.72);box-shadow:0 0 0 3px rgba(193,85,63,.13);
+  background:rgba(193,85,63,.05)}
+.fld.ok input:focus{border-color:rgba(127,160,90,.85)}
+.fld.err input:focus{border-color:rgba(193,85,63,.9)}
+.ind{position:absolute;right:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;
+  display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .15s}
+.fld.ok .ind,.fld.err .ind,.fld.busy .ind{opacity:1}
+.ind svg{width:18px;height:18px;stroke-width:2.4}
+.fld.ok .ind{color:var(--ok)}
+.fld.err .ind{color:#d98a78}
+.fld.busy .ind{color:var(--stone)}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--charcoal-4);
+  border-top-color:var(--stone);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fld .hint{font-size:11.5px;color:var(--text-faint);margin-top:6px;line-height:1.5;max-width:52ch;
+  display:flex;align-items:flex-start;gap:6px}
+.fld .hint.ok{color:#9ec178}
+.fld .hint.err{color:#dd8878}
+.fld .hint b{color:inherit;font-weight:700}
+.form-acts{display:flex;gap:9px;margin-top:20px;flex-wrap:wrap}
+
+/* password strength — same three rules as reset-confirm.html */
+.meter{display:flex;gap:5px;margin-top:10px}
+.meter i{height:4px;flex:1;border-radius:3px;background:var(--charcoal-4);transition:background .25s}
+.meter.s1 i:nth-child(1){background:var(--danger)}
+.meter.s2 i:nth-child(-n+2){background:var(--amber)}
+.meter.s3 i:nth-child(-n+3){background:var(--gold)}
+.meter.s4 i{background:var(--ok)}
+.reqs{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.req{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
+  color:var(--text-faint);border:1px solid var(--border);border-radius:100px;padding:5px 11px}
+.req svg{width:11px;height:11px;stroke-width:2.6}
+.req.met{color:#9ec178;border-color:rgba(127,160,90,.35);background:rgba(127,160,90,.08)}
+
+/* ---- notes / callouts ---- */
+.note{display:flex;gap:11px;padding:13px 15px;border-radius:11px;font-size:12.5px;line-height:1.65;
+  border:1px solid var(--border);background:var(--charcoal);color:var(--text-faint);
+  margin-top:16px;max-width:88ch;text-wrap:pretty}
+.note svg{width:16px;height:16px;flex:none;stroke-width:2;margin-top:1px;color:var(--stone)}
+.note b{color:var(--parchment);font-weight:700}
+.note.amber{border-color:rgba(212,146,58,.3);background:rgba(212,146,58,.07);color:#dcbd8b}
+.note.amber svg{color:var(--gold)}
+.note.amber b{color:#f3e2c4}
+.note.red{border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.08);color:#dfa294}
+.note.red svg{color:#d98a78}
+.note.red b{color:#f4d4cb}
+.note.green{border-color:rgba(127,160,90,.32);background:rgba(127,160,90,.08);color:#b6cd97}
+.note.green svg{color:#9ec178}
+.note.green b{color:#dcecc6}
+.blank.soon .ei{color:var(--stone);background:rgba(255,255,255,.02)}
+
+/* ---- linked accounts ---- */
+.link-row{display:flex;align-items:center;gap:14px;padding:15px 0}
+.link-row + .link-row{border-top:1px solid var(--rule)}
+.link-mark{width:40px;height:40px;border-radius:11px;flex:none;display:grid;place-items:center;
+  background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint)}
+.link-mark svg{width:19px;height:19px;stroke-width:1.9}
+.link-mark.forum{color:var(--gold);background:rgba(212,146,58,.11);border-color:rgba(212,146,58,.26)}
+.link-mark.discord{color:#a8afd4;background:rgba(107,116,168,.16);border-color:rgba(107,116,168,.3)}
+.link-mark.game{color:#8fb4d6;background:rgba(120,160,200,.12);border-color:rgba(120,160,200,.26)}
+.link-body{flex:1;min-width:0}
+.link-body .n{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.link-body .s{font-size:12.5px;color:var(--text-faint);margin-top:4px;line-height:1.55}
+.link-body .s b{color:var(--parchment);font-weight:600}
+.link-body .s.none{color:var(--stone)}
+.link-body .s.mono b{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.02em}
+.link-body .s .lic{color:var(--stone);font-weight:500}
+
+/* ---- your account: a stacked key/value list, not a boxed grid ---- */
+.kv{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:12px 0}
+.kv + .kv{border-top:1px solid var(--rule)}
+.kv .k{font-size:12.5px;color:var(--text-faint);font-weight:500;flex:none}
+.kv .v{font-size:13.5px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;gap:7px;justify-content:flex-end;flex-wrap:wrap}
+.kv .v .sm{font-size:12px;font-weight:500;color:var(--text-faint);font-variant-numeric:normal}
+.copy{background:none;border:none;padding:2px;color:var(--stone);cursor:pointer;
+  display:grid;place-items:center;border-radius:5px;transition:.13s}
+.copy:hover{color:var(--gold)}
+.copy svg{width:14px;height:14px;stroke-width:2}
+
+/* ============================================================
+   SECURITY
+   ============================================================ */
+.tfa-head{display:flex;align-items:flex-start;gap:16px;padding:22px 22px 20px}
+.tfa-shield{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
+  background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint)}
+.tfa-shield svg{width:23px;height:23px;stroke-width:1.8}
+.card[data-on="1"] .tfa-shield{color:var(--ok);background:rgba(127,160,90,.11);border-color:rgba(127,160,90,.3)}
+.tfa-head .t{flex:1;min-width:0}
+.tfa-head h4{font-size:16.5px;font-weight:700;letter-spacing:-.015em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tfa-state{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 9px;border-radius:100px;background:var(--charcoal-4);color:var(--text-faint)}
+.card[data-on="1"] .tfa-state{background:rgba(127,160,90,.16);color:#9ec178}
+.tfa-head p{font-size:13px;color:var(--text-faint);line-height:1.65;margin-top:8px;
+  max-width:80ch;text-wrap:pretty}
+.tfa-body{padding:0 22px 20px}
+.tfa-foot{display:flex;gap:9px;flex-wrap:wrap;padding:16px 22px;
+  border-top:1px solid var(--rule);background:rgba(0,0,0,.2);border-radius:0 0 13px 13px}
+
+/* three prerequisites in no particular order — check marks, not step numbers */
+.need{list-style:none;margin-top:18px;display:grid;gap:11px}
+.need li{position:relative;padding-left:28px;font-size:13px;
+  color:var(--text-faint);line-height:1.6;max-width:78ch;text-wrap:pretty}
+.need li::before{content:"";position:absolute;left:2px;top:5px;width:12px;height:8px;
+  border-left:2px solid var(--gold);border-bottom:2px solid var(--gold);
+  transform:rotate(-45deg);border-radius:1px}
+.need li b{color:var(--parchment);font-weight:600}
+.need.loss li::before{border:none;width:11px;height:2px;background:#d98a78;transform:none;
+  top:11px;left:3px;border-radius:2px}
+
+/* method + recovery rows — hairlines, no second box */
+.tfa-detail{margin-top:18px}
+.tfa-detail > div{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 0}
+.tfa-detail > div + div{border-top:1px solid var(--rule)}
+.tfa-detail .k{font-size:12.5px;color:var(--text-faint);font-weight:600;width:150px;flex:none}
+.tfa-detail .v{font-size:13.5px;font-weight:600;flex:1;min-width:140px}
+.tfa-detail .v .sm{display:block;font-size:12px;font-weight:500;color:var(--text-faint);margin-top:3px}
+.codes-left{display:flex;align-items:center;gap:10px}
+.pips{display:flex;gap:3px}
+.pips i{width:7px;height:14px;border-radius:2px;background:var(--ok);opacity:.85}
+.pips i.spent{background:var(--charcoal-4);opacity:1}
+.tfa-detail .v.low{color:#e3bd72}
+.tfa-detail .v.low .pips i:not(.spent){background:var(--warn)}
+
+/* setup steps */
+.steps{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-faint)}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;
+  font-weight:800;border:1px solid var(--border);background:var(--charcoal);color:var(--text-faint)}
+.step.on{color:var(--parchment)}
+.step.on .n{background:linear-gradient(145deg,var(--gold),var(--amber));border-color:transparent;color:#17140f}
+.step.done .n{background:rgba(127,160,90,.16);border-color:rgba(127,160,90,.34);color:#9ec178}
+.step-line{flex:1;min-width:16px;height:1px;background:var(--border)}
+
+.scan{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.qrbox{width:196px;padding:12px;background:#fff;border-radius:12px;line-height:0;flex:none}
+.qrbox svg{width:172px;height:172px;display:block}
+.scan-side{flex:1;min-width:250px;max-width:420px}
+.keyval{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
+  font-weight:700;color:var(--gold);letter-spacing:.05em;line-height:1.8;word-break:break-all;
+  padding:12px 14px;border:1px dashed var(--border);border-radius:10px;background:var(--charcoal);
+  cursor:pointer;margin-top:8px}
+.keyval:hover{border-color:var(--stone)}
+.codeinput input{text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:23px;font-weight:700;letter-spacing:.4em;text-indent:.4em;padding:13px}
+
+/* recovery code sheet */
+.codes{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:18px;max-width:880px}
+.codes span{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
+  font-weight:700;letter-spacing:.04em;text-align:center;padding:11px 6px;border-radius:9px;
+  border:1px solid var(--border);background:var(--charcoal);font-variant-numeric:tabular-nums}
+.ack{display:flex;align-items:flex-start;gap:11px;margin-top:20px;font-size:13px;
+  color:var(--text-faint);cursor:pointer;line-height:1.5}
+.ack .box{width:19px;height:19px;flex:none;border-radius:6px;border:1px solid var(--border);
+  background:var(--charcoal);display:grid;place-items:center;margin-top:1px;transition:.14s}
+.ack .box svg{width:12px;height:12px;stroke-width:3;color:transparent}
+.ack.on .box{background:var(--amber);border-color:var(--amber)}
+.ack.on .box svg{color:#17140f}
+
+/* ---- guidance disclosures — flush inside the card, no second border ---- */
+.faq{margin-top:16px;display:grid;gap:8px}
+.faq details{border:1px solid var(--rule);border-radius:11px;background:var(--charcoal);
+  overflow:hidden;transition:border-color .15s}
+.faq details[open]{border-color:rgba(226,182,92,.32)}
+.faq summary{list-style:none;cursor:pointer;padding:14px 16px;font-size:13.5px;font-weight:600;
+  display:flex;align-items:center;gap:12px;transition:background .14s,color .14s;color:var(--parchment)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:hover{background:var(--charcoal-3)}
+.faq summary:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.faq summary .cv{width:15px;height:15px;flex:none;color:var(--stone);stroke-width:2.4;
+  transition:transform .2s;margin-left:auto}
+.faq details[open] summary .cv{transform:rotate(90deg);color:var(--gold)}
+.faq details[open] summary{color:var(--gold)}
+/* The answer runs the full width of the card rather than sitting in a narrow
+   column with dead space beside it. */
+.faq .a{padding:2px 16px 18px;font-size:13.5px;color:var(--text-faint);line-height:1.8;
+  border-top:1px solid var(--rule);padding-top:14px;margin:0 0 0 0}
+.faq .a p + p{margin-top:12px}
+.faq .a b{color:var(--parchment);font-weight:600}
+
+/* ---- sessions + activity ---- */
+.sess{display:flex;align-items:center;gap:14px;padding:15px 0}
+.sess + .sess{border-top:1px solid var(--rule)}
+.sess-ico{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;
+  background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint)}
+.sess-ico svg{width:18px;height:18px;stroke-width:1.8}
+.sess-body{flex:1;min-width:0}
+.sess-body .n{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sess-body .s{font-size:12.5px;color:var(--text-faint);margin-top:3px}
+.tagnow{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 8px;border-radius:100px;background:rgba(127,160,90,.16);color:#9ec178}
+
+.log{position:relative;margin-top:18px;padding-left:26px}
+.log::before{content:"";position:absolute;left:8px;top:8px;bottom:12px;width:1px;background:var(--border)}
+.log-row{position:relative;padding:0 0 20px}
+.log-row:last-child{padding-bottom:2px}
+.log-dot{position:absolute;left:-22px;top:4px;width:9px;height:9px;border-radius:50%;
+  background:var(--stone);border:2px solid var(--charcoal-2);box-shadow:0 0 0 1px var(--border)}
+.log-row.good .log-dot{background:var(--ok);box-shadow:0 0 0 1px rgba(127,160,90,.5)}
+.log-row.warn .log-dot{background:var(--warn);box-shadow:0 0 0 1px rgba(226,182,92,.5)}
+.log-t{font-size:13.5px;font-weight:500;line-height:1.5}
+.log-t b{font-weight:700}
+.log-s{font-size:12px;color:var(--text-faint);margin-top:3px;font-variant-numeric:tabular-nums}
+
+/* ============================================================
+   CHARACTERS
+   ============================================================ */
+.chars{display:grid;gap:10px;margin-top:16px}
+.char{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:11px;
+  border:1px solid var(--rule);background:var(--charcoal)}
+.char-ico{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;
+  background:var(--charcoal-3);border:1px solid var(--border);color:var(--stone)}
+.char-ico svg{width:20px;height:20px;stroke-width:1.8}
+.char.filled .char-ico{color:var(--gold);background:rgba(212,146,58,.1);border-color:rgba(212,146,58,.26)}
+.char-body{flex:1;min-width:0}
+.char-body .n{font-size:14px;font-weight:700;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.char-body .s{font-size:12.5px;color:var(--text-faint);margin-top:4px}
+.char.empty{border-style:dashed;background:transparent}
+.char.empty .char-body .n{color:var(--stone);font-weight:600}
+.char-state{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 8px;border-radius:100px;background:rgba(127,160,90,.16);color:#9ec178}
+.char-state.away{background:var(--charcoal-4);color:var(--text-faint)}
+
+/* ============================================================
+   ADMINISTRATIVE RECORD
+   ============================================================ */
+.standing{display:flex;align-items:center;gap:16px;padding:16px 0 18px}
+.standing-ico{width:48px;height:48px;border-radius:13px;flex:none;display:grid;place-items:center;
+  background:rgba(127,160,90,.11);border:1px solid rgba(127,160,90,.3);color:var(--ok)}
+.standing-ico svg{width:24px;height:24px;stroke-width:1.8}
+.standing.bad .standing-ico{background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.3);color:var(--warn)}
+.standing .t{flex:1;min-width:0}
+.standing .t .h{font-size:19px;font-weight:700;letter-spacing:-.02em;color:#9ec178}
+.standing.bad .t .h{color:#e3bd72}
+.standing .t .s{font-size:13px;color:var(--text-faint);margin-top:4px;line-height:1.6;
+  max-width:78ch;text-wrap:pretty}
+
+/* counters — labelled and period-qualified, so they read as a record summary
+   rather than four decorative numbers */
+.tally{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rule)}
+.tally > div{padding:16px 0 6px;text-align:left}
+.tally > div + div{border-left:1px solid var(--rule);padding-left:18px}
+.tally .k{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint)}
+.tally .n{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:8px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.tally .n.zero{color:var(--stone)}
+.tally .n.hit{color:#e3bd72}
+.tally .p{font-size:11.5px;color:var(--text-faint);margin-top:6px}
+
+/* Segmented bar: spans the card, equal segments, gold wash and a solid
+   underline on the active one. Loud enough that nobody misses it, and the
+   table below reads as belonging to whichever segment is lit. */
+.filters{display:grid;grid-template-columns:repeat(4,1fr);margin-top:16px;
+  border:1px solid var(--rule);border-radius:11px;overflow:hidden;background:var(--charcoal)}
+.filters button{display:flex;align-items:center;justify-content:center;gap:9px;
+  padding:13px 8px;border:none;background:none;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:700;color:var(--text-faint);
+  transition:background .15s,color .15s}
+.filters button + button{border-left:1px solid var(--rule)}
+.filters button:hover{background:var(--charcoal-3);color:var(--parchment)}
+.filters button[aria-pressed="true"]{color:var(--parchment);
+  background:linear-gradient(180deg,rgba(226,182,92,.19),rgba(212,146,58,.09))}
+.filters button:focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
+.fc{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
+  padding:2px 7px;border-radius:100px;background:var(--charcoal-3);color:var(--text-faint);
+  transition:background .15s,color .15s}
+.filters button[aria-pressed="true"] .fc{background:rgba(226,182,92,.2);color:var(--gold)}
+
+.rec{margin-top:16px}
+.rec-row{display:grid;grid-template-columns:94px 108px minmax(0,1fr) 132px 152px;gap:16px;
+  align-items:baseline;padding:14px 0;font-size:13px}
+.rec-row + .rec-row{border-top:1px solid var(--rule)}
+.rec-head{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-faint);padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.rec-head .rec-row{padding:0;border:none}
+.rec .date{color:var(--parchment);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.rec .date .tm{display:block;font-weight:500;color:var(--text-faint);font-size:12px;margin-top:3px}
+.rec .why{color:var(--parchment);line-height:1.55}
+.rec .by{color:var(--text-faint)}
+.rec .by b{color:var(--parchment);font-weight:600;display:block;font-size:12.5px}
+.rec .len{color:var(--text-faint);font-variant-numeric:tabular-nums}
+.kind{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
+  padding:4px 10px;border-radius:100px;white-space:nowrap;
+  border:1px solid var(--rule);background:var(--charcoal);color:var(--text-faint)}
+.kind::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.kind.warn{color:#e3bd72;border-color:rgba(226,182,92,.3);background:rgba(226,182,92,.08)}
+.kind.kick{color:#a8afd4;border-color:rgba(107,116,168,.32);background:rgba(107,116,168,.1)}
+.kind.ban{color:#d98a78;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+.rec .st{font-size:12px;font-weight:600;color:var(--text-faint);line-height:1.5}
+.rec .st.live{color:#e79187}
+.rec .st.done{color:var(--stone)}
+
+/* pagination */
+.pager{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-top:18px;padding-top:16px;border-top:1px solid var(--rule)}
+.pcount{font-size:12.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.pnav{display:flex;gap:6px;align-items:center}
+.pnav button{min-width:34px;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--rule);
+  background:var(--charcoal);color:var(--text-faint);font-size:12.5px;font-weight:600;cursor:pointer;
+  display:grid;place-items:center;transition:.14s}
+.pnav button:hover:not([disabled]){color:var(--parchment);border-color:var(--charcoal-4)}
+.pnav button[aria-current="true"]{background:var(--charcoal-4);color:var(--parchment);
+  border-color:rgba(226,182,92,.3)}
+.pnav button[disabled]{opacity:.35;cursor:default}
+.pnav svg{width:15px;height:15px;stroke-width:2.2}
+
+/* footer stamp — this page gets screenshotted into appeals */
+.stamp{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);
+  font-size:11.5px;color:var(--text-faint);font-variant-numeric:tabular-nums;
+  display:flex;gap:6px 14px;flex-wrap:wrap}
+.stamp b{color:var(--parchment);font-weight:600}
+
+.blank{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;
+  padding:44px 24px 40px}
+.blank .ei{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;
+  background:rgba(127,160,90,.1);border:1px solid rgba(127,160,90,.28);color:var(--ok)}
+.blank .ei svg{width:24px;height:24px;stroke-width:1.7}
+.blank h4{font-size:15.5px;font-weight:700}
+.blank p{font-size:13px;color:var(--text-faint);max-width:46ch;line-height:1.65}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:1140px){
+  .rec-row{grid-template-columns:104px 104px minmax(0,1fr) 128px}
+  .rec-row .st{grid-column:1 / -1;padding-top:2px}
+  .pgrid{grid-template-columns:1fr}
+  .pgrid > .col-r{position:static}
+  .pgrid > .col-r > .card{margin-top:20px}
+  .codes{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:900px){
+  .row{flex-direction:column;align-items:stretch;gap:12px}
+  .row-r{padding-top:0}
+  .row-r .btn{flex:1}
+  .tfa-detail .k{width:auto;flex-basis:100%}
+}
+@media (max-width:760px){
+  .sidebar{position:fixed;left:0;top:0;height:100dvh;transform:translateX(-100%);
+    transition:transform .26s ease}
+  .side-inner{position:static;height:100dvh}
+  body.nav-open .sidebar{transform:translateX(0);box-shadow:0 0 60px rgba(0,0,0,.6)}
+  .hamburger{display:grid}
+  .topbar{padding:0 14px;gap:10px}
+  .divider{display:none}
+  .page-title h1{font-size:15px}
+  .account-btn{min-width:0;padding:9px 11px;gap:6px}
+  .account-meta{display:none}
+  .account-btn .acct-ico{display:block;width:18px;height:18px;color:var(--text-faint)}
+  .account-menu{width:220px;right:-4px}
+  .content{padding:18px 14px 60px}
+  .idcard{padding:18px}
+  .nameline h2{font-size:23px}
+  .card-h,.card-b,.tfa-head,.tfa-body,.tfa-foot{padding-left:16px;padding-right:16px}
+  .faq{margin-left:-16px;margin-right:-16px}
+  .faq summary,.faq .a{padding-left:16px;padding-right:16px}
+  /* four tabs won't share 390px — let the bar scroll instead of squeezing
+     "Administrative record" into two cramped lines */
+  .tabbar{width:100%;justify-content:flex-start}
+  .tab{padding:10px 13px;font-size:13px}
+  .tally{grid-template-columns:1fr}
+  .tally > div + div{border-left:none;padding-left:0;border-top:1px solid var(--rule);padding-top:16px}
+  .filters{grid-template-columns:repeat(2,1fr)}
+  .filters button:nth-child(odd){border-left:none}
+  .filters button:nth-child(n+3){border-top:1px solid var(--rule)}
+  .rec-head{display:none}
+  .rec-row{grid-template-columns:1fr;gap:6px;padding:16px 0}
+  .rec-row .date{order:-1}
+  .rec-row .date .tm{display:inline;margin:0 0 0 6px}
+  /* stacked, the name and rank run together — give them a separator */
+  .rec-row .by b{display:inline}
+  .rec-row .by b::after{content:" · ";font-weight:400;color:var(--stone)}
+  .pager{flex-direction:column;align-items:stretch}
+  .pnav{justify-content:center}
+  .blank{padding:32px 12px}
+  .tfa-foot .btn{flex:1}
+  .qrbox{margin:0 auto}
+  .scan{gap:20px}
+  .codes{grid-template-columns:repeat(2,1fr)}
+  .link-row{flex-wrap:wrap}
+  .link-row .row-r{width:100%}
+  .link-row .row-r .btn,.link-row .row-r .locked{flex:1;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="side-inner">
+    <div class="side-brand"><span class="name">Blaine<b>Side</b></span></div>
+    <nav class="side-scroll" id="nav"></nav>
+  </div>
+  <div class="side-foot">
+    <div class="foot-line"><span class="fv" id="utcTime">00:00:00</span> UTC · <span id="utcDate">—</span></div>
+    <div class="foot-line">UCP v2.4.1 · <span class="st"><span class="d"></span>All systems normal</span></div>
+  </div>
+</aside>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="main">
+
+  <header class="topbar">
+    <button class="icon-btn hamburger" id="menuToggle" title="Menu" aria-label="Open menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <div class="page-title"><h1>My Profile</h1></div>
+    <div class="spacer"></div>
+    <button class="icon-btn" title="Notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+    </button>
+    <div class="divider"></div>
+    <div class="account">
+      <button class="account-btn" id="acctBtn">
+        <svg class="acct-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
+        <span class="account-meta">
+          <span class="u" id="acctName">&nbsp;</span>
+          <span class="r" id="acctRole">&nbsp;</span>
+        </span>
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="account-menu" id="acctMenu">
+        <div class="mhead">
+          <div class="n" id="menuName">&nbsp;</div>
+          <div class="rr" id="menuRole">&nbsp;</div>
+        </div>
+        <a class="menu-item on" href="/profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
+          My Profile
+        </a>
+        <a class="menu-item" href="/profile#security">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          Account security
+        </a>
+        <div class="menu-sep"></div>
+        <a class="menu-item danger" href="/api/logout.php">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>
+          Log out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- Page-level messages: the result of an email-change link, a
+         mandatory-2FA prompt, or a hard load failure. Injected by the script. -->
+    <div id="flash"></div>
+
+    <!-- ============ IDENTITY ============ -->
+    <div class="card">
+      <div class="idcard">
+        <div class="who">
+          <div class="nameline">
+            <h2 id="idName">&nbsp;</h2>
+            <span class="rank member" id="idRank" hidden></span>
+          </div>
+          <div class="idmeta" id="idMeta"></div>
+        </div>
+        <div class="idchips" id="idChips"></div>
+      </div>
+    </div>
+
+    <!-- ============ TABS ============ -->
+    <div class="tabbar" role="tablist" aria-label="Profile sections">
+      <button class="tab" role="tab" id="t-profile" aria-controls="p-profile" aria-selected="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
+        Profile
+      </button>
+      <button class="tab" role="tab" id="t-settings" aria-controls="p-settings" aria-selected="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        Settings
+      </button>
+      <button class="tab" role="tab" id="t-security" aria-controls="p-security" aria-selected="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+        Security
+      </button>
+      <button class="tab" role="tab" id="t-record" aria-controls="p-record" aria-selected="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>
+        Administrative Record
+      </button>
+    </div>
+
+    <!-- ================================================================
+         PROFILE
+         ================================================================ -->
+    <section class="tabpanel" role="tabpanel" id="p-profile" aria-labelledby="t-profile">
+      <div class="pgrid">
+
+        <div class="col-l">
+
+          <!-- Profiles are staff-only, so there is no visibility setting to make.
+               This slot shows the thing a player actually comes here to check. -->
+          <!-- FEATURE-GATED: no character tables yet. -->
+          <div class="card">
+            <div class="card-h">
+              <h3>Characters</h3>
+              <span class="aside" id="charsAside"></span>
+            </div>
+            <div class="card-b" id="charsHost"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h3>Linked accounts</h3></div>
+            <div class="card-b">
+              <p class="card-lede">Your UCP is the account everything else hangs off. Your game
+                accounts are read from the server the moment you connect — you never type them in.</p>
+
+              <div class="rows">
+
+                <div class="link-row">
+                  <span class="link-mark forum">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>
+                  </span>
+                  <div class="link-body">
+                    <div class="n">BlaineSide Forums</div>
+                    <div class="s" id="forumStatus"></div>
+                  </div>
+                  <div class="row-r">
+                    <a class="btn" id="forumOpen" href="https://forum.blaineside.com" target="_blank" rel="noopener" hidden>Open the forums</a>
+                    <span class="locked" id="forumWait" hidden>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                      Links on first sign-in
+                    </span>
+                  </div>
+                </div>
+
+                <div class="link-row" id="discordRow" hidden>
+                  <span class="link-mark discord">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 11a1 1 0 1 0 0-.01M16 11a1 1 0 1 0 0-.01"/><path d="M8.5 17c-2 0-3.5-1.2-4-3.5C4 10 5 6.8 6.5 5.5 7.4 5 8.6 4.7 9.5 4.6l.6 1.2a12 12 0 0 1 3.8 0l.6-1.2c.9.1 2.1.4 3 .9C19 6.8 20 10 19.5 13.5c-.5 2.3-2 3.5-4 3.5l-.9-1.5"/><path d="M8.5 17l-1 2.5M15.5 17l1 2.5"/></svg>
+                  </span>
+                  <div class="link-body">
+                    <div class="n">Discord</div>
+                    <div class="s" id="discordStatus"></div>
+                  </div>
+                  <div class="row-r">
+                    <button class="btn" id="discordBtn" hidden>Link Discord</button>
+                    <span class="locked" id="discordSoon" hidden>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                      Linking not available yet
+                    </span>
+                  </div>
+                </div>
+
+                <div class="link-row">
+                  <span class="link-mark game">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16" cy="12" r="1"/><circle cx="18.5" cy="14" r="1"/></svg>
+                  </span>
+                  <div class="link-body">
+                    <div class="n">Game accounts</div>
+                    <div class="s none">Your Rockstar Social Club and FiveM identifiers are captured
+                      the first time you connect to the server, and are what staff use in reports and
+                      appeals. Nothing shows here until the game server is linked to the UCP.</div>
+                  </div>
+                  <div class="row-r">
+                    <span class="locked">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                      Set automatically
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <div class="col-r">
+          <div class="card">
+            <div class="card-h"><h3>Your account</h3></div>
+            <div class="card-b">
+              <div class="rows" id="acctRows"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================
+         SETTINGS
+         ================================================================ -->
+    <section class="tabpanel" role="tabpanel" id="p-settings" aria-labelledby="t-settings" hidden>
+
+      <div class="card">
+        <div class="card-h"><h3>Sign-in details</h3></div>
+        <div class="card-b">
+          <p class="card-lede">Each of these asks for your password on its own, at the moment you
+            change it — so you always know which change you just approved.</p>
+
+          <div class="rows">
+
+            <!-- UCP name -->
+            <div class="row">
+              <div class="row-l">
+                <div class="row-t">UCP name</div>
+                <div class="row-v" id="rowNameValue"></div>
+                <div class="row-d" id="rowNameNote">The name you sign in with, and the name staff and
+                  other players know you by.</div>
+              </div>
+              <div class="row-r"><button class="btn" id="btnNameOpen" data-expand="exName">Change</button></div>
+            </div>
+            <div class="expand" id="exName">
+              <div class="form">
+                <div class="form-grid">
+                  <div class="fld chk" id="fldName">
+                    <label for="newName">New UCP name</label>
+                    <div class="ctl">
+                      <input id="newName" type="text" placeholder="Choose a new name" autocomplete="off"
+                             spellcheck="false" autocapitalize="off">
+                      <span class="ind" id="indName"></span>
+                    </div>
+                    <div class="hint" id="hintName">3–20 characters. Letters, numbers and underscores.</div>
+                  </div>
+                  <div class="fld chk" id="fldNamePw">
+                    <label for="namePw">Your password</label>
+                    <div class="ctl">
+                      <input id="namePw" type="password" placeholder="Confirm it's you" autocomplete="current-password">
+                      <span class="ind" id="indNamePw"></span>
+                    </div>
+                    <div class="hint" id="hintNamePw"></div>
+                  </div>
+                </div>
+                <div class="note amber">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>
+                  <div id="nameCooldownNote"></div>
+                </div>
+                <div class="form-acts">
+                  <button class="btn primary" id="btnName">Change UCP name</button>
+                  <button class="btn" data-cancel="exName">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="row">
+              <div class="row-l">
+                <div class="row-t">Email address</div>
+                <div class="row-v" id="rowEmailValue"></div>
+                <div class="row-d">Used for password resets and anything staff need to reach you
+                  about. Never shown to other players.</div>
+              </div>
+              <div class="row-r"><button class="btn" data-expand="exEmail">Change</button></div>
+            </div>
+            <div class="note" id="emailPending" style="margin:0 0 4px" hidden></div>
+            <div class="expand" id="exEmail">
+              <div class="form">
+                <div class="form-grid">
+                  <div class="fld chk" id="fldEmail">
+                    <label for="newEmail">New email address</label>
+                    <div class="ctl">
+                      <input id="newEmail" type="email" placeholder="you@example.com" autocomplete="email"
+                             spellcheck="false">
+                      <span class="ind" id="indEmail"></span>
+                    </div>
+                    <div class="hint" id="hintEmail">We check the address is usable when you submit.</div>
+                  </div>
+                  <div class="fld chk" id="fldEmailPw">
+                    <label for="emailPw">Your password</label>
+                    <div class="ctl">
+                      <input id="emailPw" type="password" placeholder="Confirm it's you" autocomplete="current-password">
+                      <span class="ind" id="indEmailPw"></span>
+                    </div>
+                    <div class="hint" id="hintEmailPw"></div>
+                  </div>
+                </div>
+                <div class="note">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  <div>We'll send a link to the new address. <b>Your current address keeps working
+                    until you open it</b>, so a typo can't lock you out. The link lasts two hours.</div>
+                </div>
+                <div class="form-acts">
+                  <button class="btn primary" id="btnEmail">Send verification link</button>
+                  <button class="btn" data-cancel="exEmail">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="row">
+              <div class="row-l">
+                <div class="row-t">Password</div>
+                <div class="row-v" id="rowPwValue"></div>
+                <div class="row-d">Use something you don't use anywhere else. A password manager is
+                  worth more than any rule we could write here.</div>
+              </div>
+              <div class="row-r"><button class="btn" data-expand="exPw">Change</button></div>
+            </div>
+            <div class="expand" id="exPw">
+              <div class="form">
+                <div class="form-grid">
+                  <div class="fld chk" id="fldCurPw">
+                    <label for="curPw">Current password</label>
+                    <div class="ctl">
+                      <input id="curPw" type="password" placeholder="Your current password" autocomplete="current-password">
+                      <span class="ind" id="indCurPw"></span>
+                    </div>
+                    <div class="hint" id="hintCurPw"></div>
+                  </div>
+                  <div class="fld chk" id="fldNp">
+                    <label for="np">New password</label>
+                    <div class="ctl">
+                      <input id="np" type="password" placeholder="Create a new password" autocomplete="new-password">
+                      <span class="ind" id="indNp"></span>
+                    </div>
+                    <div class="meter" id="meter"><i></i><i></i><i></i><i></i></div>
+                    <div class="reqs">
+                      <span class="req" id="rLen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg> 8+ characters</span>
+                      <span class="req" id="rUpp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg> Uppercase</span>
+                      <span class="req" id="rNum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg> Number</span>
+                    </div>
+                  </div>
+                  <div class="fld chk" id="fldNp2">
+                    <label for="np2">Confirm new password</label>
+                    <div class="ctl">
+                      <input id="np2" type="password" placeholder="Re-enter your new password" autocomplete="new-password">
+                      <span class="ind" id="indNp2"></span>
+                    </div>
+                    <div class="hint" id="matchHint"></div>
+                  </div>
+                </div>
+                <div class="note amber">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>
+                  <div><b>Changing your password signs you out on every other device</b>, and cancels
+                    any email change still waiting on its link. Two-step verification stays on — a
+                    password change doesn't touch it.</div>
+                </div>
+                <div class="form-acts">
+                  <button class="btn primary" id="btnPassword">Update password</button>
+                  <button class="btn" data-cancel="exPw">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="card danger">
+        <div class="card-h"><h3>Danger zone</h3></div>
+        <div class="card-b">
+          <div class="rows">
+
+            <div class="row">
+              <div class="row-l">
+                <div class="row-t">Sign out everywhere</div>
+                <div class="row-d">Ends every session except this one, including "remember me" on
+                  devices you no longer have. Your password and two-step verification stay as they are.</div>
+              </div>
+              <div class="row-r"><button class="btn danger" data-expand="exSignout">Sign out all devices</button></div>
+            </div>
+            <div class="expand" id="exSignout">
+              <div class="form">
+                <div class="form-grid">
+                  <div class="fld chk" id="fldSignoutPw">
+                    <label for="signoutPw">Confirm with your password</label>
+                    <div class="ctl">
+                      <input id="signoutPw" type="password" placeholder="Your UCP password" autocomplete="current-password">
+                      <span class="ind" id="indSignoutPw"></span>
+                    </div>
+                    <div class="hint" id="hintSignoutPw"></div>
+                  </div>
+                </div>
+                <div class="note">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  <div>You stay signed in here. Everywhere else — including the forums — has to sign
+                    in again. If you think someone has your password, change it instead: that does
+                    this as well.</div>
+                </div>
+                <div class="form-acts">
+                  <button class="btn danger" id="btnSignout">Sign out all other devices</button>
+                  <button class="btn" data-cancel="exSignout">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- FEATURE-GATED: deletion is off unless security.allow_self_delete
+                 is set in config.php, and the server also refuses while there is
+                 anything on the administrative record. -->
+            <div class="row">
+              <div class="row-l">
+                <div class="row-t">Delete your UCP</div>
+                <div class="row-d">Permanently removes this account, your characters, your
+                  properties and your forum posts. Money and vehicles are not refunded, and the
+                  name is released for someone else. This cannot be undone.</div>
+              </div>
+              <div class="row-r">
+                <button class="btn danger" id="delBtn" data-expand="exDelete" hidden>Delete my UCP</button>
+                <span class="locked" id="delLocked" hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                  Not available
+                </span>
+              </div>
+            </div>
+
+            <div class="expand" id="exDelete">
+              <div class="form">
+
+                <div id="delBlocked" hidden>
+                  <div class="note red" style="margin-top:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>
+                    <div><b>Deleting your UCP isn't available yet.</b> Deletion has to erase the
+                      administrative record along with the account, so it stays closed until that
+                      system is built — otherwise a punished player could wipe their history and
+                      start again.</div>
+                  </div>
+                  <p class="card-lede" style="padding-top:14px">If you want to stop playing in the
+                    meantime, sign out everywhere and stop using the account. Ask a Founder if you
+                    need it closed sooner.</p>
+                  <div class="form-acts">
+                    <button class="btn" data-cancel="exDelete">Close</button>
+                  </div>
+                </div>
+
+                <div id="delAllowed" hidden>
+                  <div class="note red" style="margin-top:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>
+                    <div><b>This is permanent.</b> There is no restore, no grace period and no way
+                      for staff to bring it back afterwards.</div>
+                  </div>
+
+                  <p class="card-lede" style="padding-top:14px">Deleting removes, immediately and
+                    for good:</p>
+                  <ul class="need loss" style="margin-top:12px">
+                    <li>Every character on this account, with their money, vehicles and properties.
+                      None of it is refunded or transferred.</li>
+                    <li>Your <b>forum account and every post on it</b>.</li>
+                    <li id="delLosesName">Your UCP name is released for anyone else to take.</li>
+                  </ul>
+
+                  <div class="form-grid" style="margin-top:20px">
+                    <div class="fld chk" id="fldDelPw">
+                      <label for="delPw">Confirm with your password</label>
+                      <div class="ctl">
+                        <input id="delPw" type="password" placeholder="Your UCP password" autocomplete="current-password">
+                        <span class="ind" id="indDelPw"></span>
+                      </div>
+                      <div class="hint" id="hintDelPw"></div>
+                    </div>
+                  </div>
+
+                  <label class="ack" id="delAck">
+                    <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg></span>
+                    <span>I understand my characters, money, properties and forum posts are deleted
+                      permanently and cannot be restored.</span>
+                  </label>
+
+                  <div class="form-acts">
+                    <button class="btn danger" id="delConfirm" aria-disabled="true">Delete my UCP permanently</button>
+                    <button class="btn" data-cancel="exDelete">Cancel</button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         SECURITY
+         ================================================================ -->
+    <section class="tabpanel" role="tabpanel" id="p-security" aria-labelledby="t-security" hidden>
+
+      <!-- ---------- STATE: OFF ---------- -->
+      <div class="card" data-state="off">
+        <div class="tfa-head">
+          <span class="tfa-shield">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/></svg>
+          </span>
+          <div class="t">
+            <h4>Two-step verification <span class="tfa-state">Off</span></h4>
+            <p>Right now your password is the only thing between someone and your account — here and
+              on the forums, since the forums sign you in through your UCP. Turn this on and a stolen
+              password isn't enough on its own.</p>
+            <ul class="need">
+              <li>A phone with an <b>authenticator app</b> — Google Authenticator, Authy, 1Password,
+                Aegis or Ente all work.</li>
+              <li>Somewhere to keep <b>ten recovery codes</b>. A password manager, or printed and put away.</li>
+              <li>About <b>two minutes</b>.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="tfa-foot">
+          <button class="btn primary lg" data-step-go="1">Turn on two-step verification</button>
+        </div>
+      </div>
+
+      <!-- ---------- STATE: ON ---------- -->
+      <div class="card" data-state="on" hidden>
+        <div class="tfa-head">
+          <span class="tfa-shield">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          </span>
+          <div class="t">
+            <h4>Two-step verification <span class="tfa-state">On</span></h4>
+            <p>Every sign-in asks for a code from your authenticator app — on the UCP and on the forums.</p>
+          </div>
+        </div>
+        <div class="tfa-body">
+          <div class="tfa-detail">
+            <div>
+              <span class="k">Method</span>
+              <span class="v">Authenticator app
+                <span class="sm">A time-based code, generated on your phone. Nothing is sent to you.</span></span>
+            </div>
+            <div>
+              <span class="k">Recovery codes</span>
+              <span class="v">
+                <span class="codes-left">
+                  <span class="pips" data-pips></span>
+                  <span data-codes-left>—</span>
+                </span>
+                <span class="sm">Each works once, in place of a code from your app.</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="tfa-foot">
+          <button class="btn" data-tfa-action="codes">Generate new recovery codes</button>
+          <button class="btn danger" data-tfa-action="disable" data-disable-2fa>Turn off two-step verification</button>
+        </div>
+      </div>
+
+      <!-- ---------- STATE: ON, RECOVERY CODES RUNNING OUT ---------- -->
+      <div class="card" data-state="low" hidden>
+        <div class="tfa-head">
+          <span class="tfa-shield">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          </span>
+          <div class="t">
+            <h4>Two-step verification <span class="tfa-state">On</span></h4>
+            <p>Every sign-in asks for a code from your authenticator app — on the UCP and on the forums.</p>
+          </div>
+        </div>
+        <div class="tfa-body">
+          <div class="note amber" style="margin-top:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>
+            <div id="lowCodesNote"></div>
+          </div>
+          <div class="tfa-detail">
+            <div>
+              <span class="k">Method</span>
+              <span class="v">Authenticator app
+                <span class="sm">A time-based code, generated on your phone. Nothing is sent to you.</span></span>
+            </div>
+            <div>
+              <span class="k">Recovery codes</span>
+              <span class="v low">
+                <span class="codes-left">
+                  <span class="pips" data-pips></span>
+                  <span data-codes-left>—</span>
+                </span>
+                <span class="sm" id="codesUsedNote"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="tfa-foot">
+          <button class="btn primary" data-tfa-action="codes">Generate new recovery codes</button>
+          <button class="btn danger" data-tfa-action="disable" data-disable-2fa>Turn off two-step verification</button>
+        </div>
+      </div>
+
+      <!-- ---------- STATE: CONFIRM (turn off / regenerate codes) ----------
+           Both changes ask for the password AND a current code: a session left
+           open on a shared machine must not be enough to strip the second
+           factor off, or the second factor was never worth having. -->
+      <div class="card" data-state="action" hidden>
+        <div class="tfa-body" style="padding-top:22px">
+          <h4 id="tfaActionTitle" style="font-size:16.5px;font-weight:700;letter-spacing:-.015em"></h4>
+          <p class="card-lede" style="padding-top:8px" id="tfaActionLede"></p>
+
+          <div class="form-grid" style="margin-top:18px">
+            <div class="fld chk" id="fldTfaPw">
+              <label for="tfaPw">Your password</label>
+              <div class="ctl">
+                <input id="tfaPw" type="password" placeholder="Your UCP password" autocomplete="current-password">
+                <span class="ind" id="indTfaPw"></span>
+              </div>
+              <div class="hint" id="hintTfaPw"></div>
+            </div>
+            <div class="fld chk" id="fldTfaCode">
+              <label for="tfaCode">Code from your app</label>
+              <div class="ctl">
+                <input id="tfaCode" type="text" inputmode="text" placeholder="000000" autocomplete="one-time-code"
+                       spellcheck="false" autocapitalize="characters">
+                <span class="ind" id="indTfaCode"></span>
+              </div>
+              <div class="hint" id="hintTfaCode">A code from your app, or one of your recovery codes.</div>
+            </div>
+          </div>
+
+          <div class="form-acts">
+            <button class="btn primary" id="btnTfaAction">Continue</button>
+            <button class="btn" id="btnTfaCancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- STATE: SETUP ---------- -->
+      <div class="card" data-state="setup" hidden>
+        <div class="tfa-body" style="padding-top:22px">
+
+          <div class="steps" id="tfaSteps">
+            <span class="step" data-step="1"><span class="n">1</span> Confirm password</span>
+            <span class="step-line"></span>
+            <span class="step" data-step="2"><span class="n">2</span> Scan the code</span>
+            <span class="step-line"></span>
+            <span class="step" data-step="3"><span class="n">3</span> Save recovery codes</span>
+          </div>
+
+          <div class="setup-step" data-s="1">
+            <h4 style="font-size:16.5px;font-weight:700;letter-spacing:-.015em">Confirm your password</h4>
+            <p class="card-lede" style="padding-top:8px">Before changing how your account is
+              protected, we check it's really you at the keyboard.</p>
+            <div class="form-grid" style="margin-top:18px">
+              <div class="fld chk" id="fldSetupPw">
+                <label for="setupPw">Your password</label>
+                <div class="ctl">
+                  <input id="setupPw" type="password" placeholder="Your UCP password" autocomplete="current-password">
+                  <span class="ind" id="indSetupPw"></span>
+                </div>
+                <div class="hint" id="hintSetupPw"></div>
+              </div>
+            </div>
+            <div class="form-acts">
+              <button class="btn primary" id="btnSetupNext" data-step-go="2">Continue</button>
+              <button class="btn" data-step-go="off">Cancel</button>
+            </div>
+          </div>
+
+          <div class="setup-step" data-s="2" hidden>
+            <h4 style="font-size:16.5px;font-weight:700;letter-spacing:-.015em">Scan this code</h4>
+            <p class="card-lede" style="padding-top:8px">Open your authenticator app, choose "add
+              account", and point it at this. If the camera won't cooperate, type the key in by hand
+              instead — the entry type is <b style="color:var(--parchment)">time-based</b>.</p>
+
+            <div class="scan" style="margin-top:20px">
+              <div class="qrbox" id="qrBox"></div>
+              <div class="scan-side">
+                <div class="fld">
+                  <label>Setup key</label>
+                  <div class="keyval" id="keyVal" title="Click to copy"></div>
+                  <div class="hint" id="keyHint">Click to copy.</div>
+                </div>
+                <div class="fld chk codeinput" id="fldSetCode" style="margin-top:18px">
+                  <label for="setCode">Enter the 6-digit code your app shows</label>
+                  <div class="ctl">
+                    <input id="setCode" type="text" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+                    <span class="ind" id="indSetCode"></span>
+                  </div>
+                  <div class="hint" id="hintSetCode">The code changes every 30 seconds. If it keeps being
+                    rejected, check your phone's date and time are set to automatic.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-acts">
+              <button class="btn primary" id="btnConfirm2fa">Turn on two-step verification</button>
+              <button class="btn" data-step-go="off">Cancel</button>
+            </div>
+          </div>
+
+          <div class="setup-step" data-s="3" hidden>
+            <div class="card-h" style="border:0;padding:0 0 8px">
+              <h4 id="codesTitle" style="font-size:16.5px;font-weight:700;letter-spacing:-.015em">Save your recovery codes</h4>
+              <span class="aside" id="codesEyebrow"></span>
+            </div>
+            <p class="card-lede">These are the only way back into your account if you lose your
+              phone. Each one works once.</p>
+
+            <div class="note amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>
+              <div><b>This is the only time they are shown.</b> They can't be looked up later — you
+                can only replace the whole set.</div>
+            </div>
+
+            <div class="codes" id="codeList"></div>
+
+            <div class="form-acts" style="margin-top:16px">
+              <button class="btn" id="btnCopyCodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Copy</button>
+              <button class="btn" id="btnDownloadCodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4v11M8 11l4 4 4-4M4 20h16"/></svg> Download</button>
+              <button class="btn" id="btnPrintCodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 9V4h10v5M7 19h10v-5H7z"/><path d="M5 9h14a2 2 0 0 1 2 2v4h-4M7 15H3v-4a2 2 0 0 1 2-2"/></svg> Print</button>
+            </div>
+
+            <label class="ack" id="ack">
+              <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg></span>
+              <span>I have saved these recovery codes somewhere I'll still have access to if I lose my phone.</span>
+            </label>
+
+            <div class="form-acts">
+              <button class="btn primary" id="ackDone" aria-disabled="true">Done</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>How two-step verification works</h3></div>
+        <div class="card-b">
+          <p class="card-lede">Worth two minutes before you turn it on — especially the part about
+            losing your phone.</p>
+
+          <div class="faq">
+            <details name="tfa-faq">
+              <summary>Which apps can I use?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>Any of them. This uses the standard every authenticator speaks, so
+                  <b>Google Authenticator</b>, <b>Authy</b>, <b>1Password</b>, <b>Bitwarden</b>,
+                  <b>Aegis</b> and <b>Ente Auth</b> all work identically. We don't have an app of our
+                  own and never will — that's the point of a standard.</p>
+                <p>If you already use a password manager, put the code in there: it syncs across your
+                  devices, so a lost phone stops being a crisis.</p>
+              </div>
+            </details>
+            <details name="tfa-faq">
+              <summary>Does this protect my forum account too?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>Yes. The forums don't have their own password — signing in there hands you to the
+                  UCP, and the UCP is what asks for your code. So turning it on here covers
+                  <b>forum.blaineside.com</b> in the same move.</p>
+                <p>The forum software has its own separate 2FA setting in its profile area. You don't
+                  need it, and turning it on means entering two codes for one sign-in.</p>
+              </div>
+            </details>
+            <details name="tfa-faq">
+              <summary>What happens if I lose my phone?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>You use a recovery code. At the sign-in prompt, click <b>"Lost your phone? Use a
+                  recovery code"</b> and enter one of the ten you saved. It signs you in exactly like
+                  an app code does, then gets marked used.</p>
+                <p>Once you're in, turn two-step off and set it up again on your new phone.</p>
+                <p>If you've lost the phone <b>and</b> the recovery codes, there is no self-service
+                  way back in — that is what makes it worth having. Open a ticket and a Founder will
+                  clear it after verifying who you are. Expect that to take a day or two, and expect
+                  to be asked questions only you can answer.</p>
+              </div>
+            </details>
+            <details name="tfa-faq">
+              <summary>What exactly are recovery codes?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>Ten one-time passwords, generated when you switch two-step on. Each is accepted
+                  once at the sign-in prompt instead of a code from your app, and is then dead forever.</p>
+                <p>They're shown once and stored scrambled, so nobody — staff included — can look
+                  yours up afterwards. If you lose the list, generate a new set from this page: it
+                  replaces all ten and the old ones stop working immediately.</p>
+              </div>
+            </details>
+            <details name="tfa-faq">
+              <summary>Can I get past it by resetting my password?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>No, deliberately. A password reset only proves someone can read your email — if
+                  that were enough to strip two-step off, then anyone who got into your inbox would
+                  own your account, and the second step would be decoration.</p>
+                <p>So a reset changes your password and leaves two-step exactly as it was. Your
+                  recovery codes are the way through, which is why saving them matters.</p>
+              </div>
+            </details>
+            <details name="tfa-faq">
+              <summary>I think someone has my password. What now?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>In this order: change your password from the <b>Settings</b> tab — that signs out
+                  every other device on its own — then turn on two-step verification if it isn't
+                  already, then check <b>Where you're signed in</b> below for anything you don't
+                  recognise.</p>
+                <p>If you see a sign-in that wasn't you, tell staff in Discord with the date and time.
+                  We keep sign-in records and can check them against what you report.</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEATURE-GATED: one row per session doesn't exist yet, so the server
+           reports sessions:false and this renders an honest empty state. -->
+      <div class="card">
+        <div class="card-h">
+          <h3>Where you're signed in</h3>
+          <span class="aside" id="sessAside"></span>
+        </div>
+        <div class="card-b">
+          <p class="card-lede" id="sessLede">Anything you don't recognise, sign it out and change your password.</p>
+          <div id="sessHost"></div>
+        </div>
+      </div>
+
+      <!-- FEATURE-GATED: no security-events table yet. -->
+      <div class="card">
+        <div class="card-h">
+          <h3>Recent security activity</h3>
+          <span class="aside" id="logAside"></span>
+        </div>
+        <div class="card-b">
+          <p class="card-lede">Sign-ins and changes to how your account is protected.</p>
+          <div id="logHost"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================================
+         ADMINISTRATIVE RECORD
+         FEATURE-GATED. The punishment system doesn't exist yet, so this whole
+         tab renders an "not available yet" state and the sample table below is
+         left in place, hidden, as the shape to fill in later.
+         ================================================================ -->
+    <section class="tabpanel" role="tabpanel" id="p-record" aria-labelledby="t-record" hidden>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>Standing</h3>
+          <span class="aside" id="recLast">Last entry: none</span>
+        </div>
+        <div class="card-b" id="standingHost">
+
+          <div class="standing" id="standing">
+            <span class="standing-ico" id="standingIco">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+            </span>
+            <div class="t">
+              <div class="h" id="standingH">In good standing</div>
+              <div class="s" id="standingS">Nothing on your record. Standing is worked out from what
+                you have picked up in the last 30 days and how recently the last entry was made, so
+                older entries stop counting against you on their own.</div>
+            </div>
+          </div>
+
+          <div class="tally">
+            <div>
+              <div class="k">Warnings</div>
+              <div class="n zero" data-t="warn">0</div>
+              <div class="p" data-p="warn">none on record</div>
+            </div>
+            <div>
+              <div class="k">Kicks</div>
+              <div class="n zero" data-t="kick">0</div>
+              <div class="p" data-p="kick">none on record</div>
+            </div>
+            <div>
+              <div class="k">Bans</div>
+              <div class="n zero" data-t="ban">0</div>
+              <div class="p" data-p="ban">none on record</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card" id="recordHost">
+        <div class="card-h">
+          <h3>Full record</h3>
+          <span class="aside" id="recCount">0 entries</span>
+        </div>
+        <div class="card-b">
+          <p class="card-lede">Everything staff have ever logged against this account. Nothing is
+            removed. Warnings and kicks stop affecting your standing after 30 days but stay here;
+            a temporary ban expires on its own date, a permanent one doesn't.</p>
+
+          <div class="filters" id="recFilters" role="group" aria-label="Filter record">
+            <button aria-pressed="true"  data-f="all">All Record<span class="fc" data-c="all">0</span></button>
+            <button aria-pressed="false" data-f="warn">Warnings<span class="fc" data-c="warn">0</span></button>
+            <button aria-pressed="false" data-f="kick">Kicks<span class="fc" data-c="kick">0</span></button>
+            <button aria-pressed="false" data-f="ban">Bans<span class="fc" data-c="ban">0</span></button>
+          </div>
+
+          <!-- empty -->
+          <div class="blank" id="recEmpty">
+            <span class="ei">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+            </span>
+            <h4>Nothing on your record</h4>
+            <p>No warnings, kicks or bans have ever been issued against this account.</p>
+          </div>
+
+          <!-- populated — rows are rendered from the placeholder array in the
+               script below, so the filters and pagination actually work -->
+          <div class="rec" id="recList" hidden>
+            <div class="rec-head">
+              <div class="rec-row">
+                <span>Date &amp; time (UTC)</span><span>Type</span><span>Reason</span><span>Issued by</span><span>Status</span>
+              </div>
+            </div>
+            <div id="recRows"></div>
+          </div>
+
+          <div class="pager" id="recPager" hidden>
+            <span class="pcount" id="recShowing"></span>
+            <div class="pnav" id="recNav"></div>
+          </div>
+
+          <!-- Screenshots of this page get passed around in appeals, so the
+               footer stamps who it belongs to and when it was taken. -->
+          <div class="stamp" id="recStamp" hidden></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>How your record works</h3></div>
+        <div class="card-b">
+          <div class="faq">
+            <details name="rec-faq">
+              <summary>What affects my standing?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>A warning or a kick turns your standing yellow for <b>30 days from the day it was
+                  issued</b>. Go 30 days without picking one up and it goes back to normal on its own.</p>
+                <p>Nothing ever leaves your record. The entry stays there permanently — it just
+                  stops affecting your standing.</p>
+                <p>Bans work differently: a temporary one ends on its own date, and a permanent one
+                  is permanent.</p>
+              </div>
+            </details>
+            <details name="rec-faq">
+              <summary>Who can see this?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>You and staff, nobody else. It isn't on your forum profile, it doesn't show in
+                  game, and other players can't look it up.</p>
+              </div>
+            </details>
+            <details name="rec-faq">
+              <summary>I think an entry is wrong. What do I do?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>Appeal it from <b>Reports &amp; Appeals</b> and give the date and time off the
+                  row. It goes to someone other than the admin who issued it.</p>
+                <p>If it's overturned we mark it void — it stays on your record, but it stops
+                  counting.</p>
+              </div>
+            </details>
+            <details name="rec-faq">
+              <summary>Why can't I delete my UCP while I have entries?
+                <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary>
+              <div class="a">
+                <p>Deleting the account would take the record with it. If that worked, anyone facing
+                  a ban could wipe their history and come straight back as a new player.</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script src="/assets/js/ucp.js"></script>
+<script src="/assets/js/qrcode.js" defer></script>
+<script>
+/* =====================================================================
+   BlaineSide UCP — profile page
+
+   Settings and Security are live. Everything they show comes from
+   api/profile.php and everything they change goes through
+   api/settings-*.php or api/2fa-*.php.
+
+   Characters, the administrative record, the session list and the activity
+   log are FEATURE-GATED: api/profile.php reports whether each has a backend,
+   and anything false renders "not available yet". The server decides, so this
+   page can never drift into showing convincing sample data to a real player.
+   ===================================================================== */
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+  var DATA = null;                       // whatever api/profile.php last returned
+  var LOGIN = '/login?return=' + encodeURIComponent('/profile');
+
+  /* ---- small formatting helpers ---- */
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MONTH = ['January','February','March','April','May','June','July',
+               'August','September','October','November','December'];
+
+  /** "2019-04-20 12:00:00" (server time, UTC) -> Date, or null. */
+  function parseUTC(sqlDate){
+    if(!sqlDate) return null;
+    var m = String(sqlDate).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    if(!m) return null;
+    return new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]));
+  }
+  function longDate(d){ return d ? d.getUTCDate()+' '+MONTH[d.getUTCMonth()]+' '+d.getUTCFullYear() : '—'; }
+  function shortDate(d){ return d ? d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear() : '—'; }
+  function hhmm(d){
+    if(!d) return '';
+    var p = function(n){ return String(n).padStart(2,'0'); };
+    return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC';
+  }
+  /** "2 hours ago" / "yesterday" / "3 months ago" from a Date. */
+  function ago(d){
+    if(!d) return 'never';
+    var s = Math.floor((Date.now() - d.getTime())/1000);
+    if(s < 60) return 'just now';
+    if(s < 3600){ var mi = Math.floor(s/60); return mi+(mi===1?' minute ago':' minutes ago'); }
+    if(s < 86400){ var h = Math.floor(s/3600); return h+(h===1?' hour ago':' hours ago'); }
+    var dd = Math.floor(s/86400);
+    if(dd === 1) return 'yesterday';
+    if(dd < 30) return dd+' days ago';
+    var mo = Math.floor(dd/30);
+    if(mo < 12) return mo+(mo===1?' month ago':' months ago');
+    var y = Math.floor(dd/365);
+    return y+(y===1?' year ago':' years ago');
+  }
+  function n(x){ return Number(x||0).toLocaleString('en-GB'); }
+
+  /* =====================================================================
+     FIELD STATE
+     One helper for every validated field: the border carries the state, a
+     mark sits inside the field, and the hint underneath becomes the message.
+     ===================================================================== */
+  var ICO = {
+    ok:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>',
+    err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 7l10 10M17 7L7 17"/></svg>',
+    busy:'<span class="spin"></span>'
+  };
+  function setField(fldId, indId, hintId, state, msg){
+    var f=$(fldId), h=$(hintId), i=$(indId);
+    if(!f) return;
+    f.classList.remove('ok','err','busy');
+    if(state) f.classList.add(state);
+    if(i) i.innerHTML = ICO[state] || '';
+    if(h){
+      h.className = 'hint' + (state==='ok' ? ' ok' : state==='err' ? ' err' : '');
+      if(msg !== undefined) h.innerHTML = msg;
+    }
+  }
+  function busyBtn(btn, on, label){
+    if(!btn) return;
+    btn.setAttribute('aria-disabled', on ? 'true' : 'false');
+    if(on){ btn.dataset.label = btn.innerHTML; btn.innerHTML = label || 'Working…'; }
+    else if(btn.dataset.label){ btn.innerHTML = btn.dataset.label; }
+  }
+
+  /** Anything that means "your session is gone" sends you back to sign in. */
+  function bounceIfSignedOut(res){
+    var d = res && res.data ? res.data : res;
+    if(d && d.authenticated === false){ window.location.replace(LOGIN); return true; }
+    return false;
+  }
+
+  /* =====================================================================
+     PAGE-LEVEL FLASH
+     ===================================================================== */
+  var ICONS_NOTE = {
+    info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>',
+    warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>',
+    ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>'
+  };
+  function flash(kind, html){
+    var cls = kind === 'ok' ? 'green' : kind === 'err' ? 'red' : kind === 'warn' ? 'amber' : '';
+    var ico = kind === 'err' || kind === 'warn' ? ICONS_NOTE.warn
+            : kind === 'ok' ? ICONS_NOTE.ok : ICONS_NOTE.info;
+    $('flash').innerHTML =
+      '<div class="note '+cls+'" style="margin:0 0 18px">'+ico+'<div>'+html+'</div></div>';
+  }
+
+  /* =====================================================================
+     SIDEBAR + TOPBAR (identical config to the dashboard)
+     ===================================================================== */
+  var SIDEBAR = [
+    { label:'Dashboard', icon:'home', href:'/dashboard' },
+    { label:'Characters', icon:'user', children:[
+      { label:'No characters yet', empty:true },
+    ]},
+    { heading:'Community' },
+    { label:'Forums', icon:'chat', children:[
+      { label:'Forums', href:'https://forum.blaineside.com' },
+      { label:'Community Rules', href:'#' },
+      { label:'Development Changelog', href:'#' },
+    ]},
+    { label:'Factions', icon:'briefcase', children:[
+      { label:'Legal factions', href:'#' },
+      { label:'Illegal factions', href:'#' },
+      { label:'Applications', href:'#' },
+    ]},
+    { label:'Properties', icon:'house', children:[
+      { label:'My properties', href:'#' },
+      { label:'Businesses', href:'#' },
+      { label:'Listings', href:'#' },
+    ]},
+    { heading:'Account' },
+    { label:'My Profile',        icon:'user',  href:'/profile', active:true },
+    { label:'Reports & Appeals', icon:'doc',   href:'#' },
+    { label:'World Points',      icon:'clock', href:'#' },
+    { label:'XM Radio',          icon:'radio', href:'#' },
+  ];
+  var ICONS = {
+    home:'<path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+    user:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+    chat:'<path d="M4 5h16v11H8l-4 3z"/>',
+    briefcase:'<path d="M4 7h16v13H4z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>',
+    house:'<path d="M3 10.5L12 4l9 6.5V20H3zM9 20v-6h6v6"/>',
+    doc:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
+    clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+    radio:'<path d="M8 6l10 6-10 6z"/><path d="M4 5v14"/>',
+    chev:'<path d="M9 6l6 6-6 6"/>',
+  };
+  function svg(nm,c){ return '<svg class="'+c+'" viewBox="0 0 24 24" fill="none" stroke="currentColor">'+(ICONS[nm]||'')+'</svg>'; }
+  $('nav').innerHTML = SIDEBAR.map(function(it){
+    if(it.heading) return '<div class="nav-heading">'+esc(it.heading)+'</div>';
+    if(it.children){
+      var subs = it.children.map(function(c){
+        return c.empty ? '<a class="slot-empty">'+esc(c.label)+'</a>'
+                       : '<a href="'+esc(c.href||'#')+'">'+esc(c.label)+'</a>';
+      }).join('');
+      return '<div class="nav-group" data-collapsible><div class="nav-item">'+
+        svg(it.icon,'i')+'<span class="lbl">'+esc(it.label)+'</span>'+svg('chev','chev')+
+        '</div><div class="sub">'+subs+'</div></div>';
+    }
+    return '<div class="nav-group"><a class="nav-item '+(it.active?'active':'')+'" href="'+esc(it.href||'#')+'">'+
+      svg(it.icon,'i')+'<span class="lbl">'+esc(it.label)+'</span></a></div>';
+  }).join('');
+  Array.prototype.forEach.call($('nav').querySelectorAll('.nav-group[data-collapsible] > .nav-item'), function(item){
+    item.addEventListener('click', function(){ item.parentElement.classList.toggle('open'); });
+  });
+
+  var accBtn=$('acctBtn'), accMenu=$('acctMenu');
+  accMenu.style.display='none';
+  accBtn.addEventListener('click', function(e){ e.stopPropagation();
+    accMenu.style.display = accMenu.style.display==='none' ? 'block' : 'none'; });
+  accMenu.addEventListener('click', function(e){ e.stopPropagation(); });
+  document.addEventListener('click', function(){ accMenu.style.display='none'; });
+
+  var scrim=$('scrim');
+  $('menuToggle').addEventListener('click', function(e){ e.stopPropagation();
+    document.body.classList.toggle('nav-open');
+    scrim.classList.toggle('show', document.body.classList.contains('nav-open')); });
+  scrim.addEventListener('click', function(){
+    document.body.classList.remove('nav-open'); scrim.classList.remove('show'); });
+
+  var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  (function tickClock(){
+    var d=new Date(), p=function(x){ return String(x).padStart(2,'0'); };
+    $('utcTime').textContent = p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds());
+    $('utcDate').textContent = DAYS[d.getUTCDay()]+', '+d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear();
+    setTimeout(tickClock, 1000);
+  })();
+
+  /* =====================================================================
+     TABS — hash-addressable, so /profile#security is linkable and survives
+     a refresh. The account menu links straight to it.
+     ===================================================================== */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  function selectTab(name, push){
+    tabs.forEach(function(t){
+      var on = t.id === 't-'+name;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.setAttribute('tabindex', on ? '0' : '-1');
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    if(push && history.replaceState) history.replaceState(null,'','#'+name);
+  }
+  tabs.forEach(function(t, i){
+    t.addEventListener('click', function(){ selectTab(t.id.slice(2), true); });
+    t.addEventListener('keydown', function(e){
+      var d = e.key==='ArrowRight' ? 1 : e.key==='ArrowLeft' ? -1 : 0;
+      if(!d) return;
+      e.preventDefault();
+      var next = tabs[(i + d + tabs.length) % tabs.length];
+      next.focus(); selectTab(next.id.slice(2), true);
+    });
+  });
+  document.addEventListener('click', function(e){
+    var g = e.target.closest && e.target.closest('[data-goto]');
+    if(!g) return;
+    e.preventDefault();
+    selectTab(g.getAttribute('data-goto'), true);
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+  var initialTab = (location.hash||'').replace('#','');
+  selectTab(['profile','settings','security','record'].indexOf(initialTab) > -1 ? initialTab : 'profile', false);
+
+  /* =====================================================================
+     EXPANDING SETTINGS ROWS
+     One open at a time: two half-filled password forms on screen is how
+     people approve the wrong change.
+     ===================================================================== */
+  function closeExpands(){
+    Array.prototype.forEach.call(document.querySelectorAll('.expand.on'), function(x){
+      x.classList.remove('on');
+    });
+  }
+  document.addEventListener('click', function(e){
+    var open = e.target.closest && e.target.closest('[data-expand]');
+    var shut = e.target.closest && e.target.closest('[data-cancel]');
+    if(open && !open.hasAttribute('disabled')){
+      var el = $(open.getAttribute('data-expand'));
+      if(!el) return;
+      var already = el.classList.contains('on');
+      closeExpands();
+      if(!already){
+        el.classList.add('on');
+        var f = el.querySelector('input');
+        if(f) f.focus();
+      }
+    }
+    if(shut) $(shut.getAttribute('data-cancel')).classList.remove('on');
+  });
+
+  /* Accordions: one open at a time. <details name> does this natively in
+     current browsers; this is the fallback for the ones that ignore it. */
+  Array.prototype.forEach.call(document.querySelectorAll('details[name]'), function(d){
+    d.addEventListener('toggle', function(){
+      if(!d.open) return;
+      var g = d.getAttribute('name');
+      Array.prototype.forEach.call(document.querySelectorAll('details[name="'+g+'"]'), function(o){
+        if(o !== d) o.open = false;
+      });
+    });
+  });
+
+  /* =====================================================================
+     RENDER — everything below draws from DATA
+     ===================================================================== */
+  function render(d){
+    DATA = d;
+
+    /* ---- identity ---- */
+    $('idName').textContent = d.name;
+    var rank = $('idRank');
+    rank.hidden = false;
+    rank.textContent = d.role || 'Member';
+    rank.className = 'rank' + (d.rank > 0 ? '' : ' member');
+
+    var created = parseUTC(d.created_at), last = parseUTC(d.last_login);
+    $('idMeta').innerHTML =
+      '<span>Account <b>#'+d.id+'</b></span>' +
+      (created ? '<span class="sep">·</span><span>Joined <b>'+longDate(created)+'</b></span>' : '') +
+      (last ? '<span class="sep">·</span><span>Last sign-in <b>'+ago(last)+'</b></span>' : '');
+
+    var chips = [];
+    chips.push(d.twofa.enabled
+      ? '<span class="chip good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Two-step on</span>'
+      : '<span class="chip off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/></svg>Two-step off</span>');
+    if(d.forum.linked){
+      chips.push('<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>Forum linked</span>');
+    }
+    $('idChips').innerHTML = chips.join('');
+
+    /* ---- account menu ---- */
+    $('menuName').textContent = d.name;
+    $('menuRole').textContent = d.role || 'Member';
+    $('acctName').textContent = d.name;
+    $('acctRole').textContent = d.role || 'Member';
+
+    renderProfileTab(d);
+    renderSettings(d);
+    renderSecurity(d);
+    renderRecord(d);
+
+    if(d.twofa.required && !d.twofa.enabled){
+      flash('warn', '<b>Two-step verification is required for your staff rank.</b> ' +
+        'Set it up on the <a data-goto="security" href="#security">Security</a> tab to keep using your UCP.');
+    }
+  }
+
+  /* ---------------------------------------------------------------- PROFILE */
+  function renderProfileTab(d){
+    /* FEATURE-GATED: characters */
+    if(!d.features.characters){
+      $('charsHost').innerHTML = blank('user',
+        'Characters aren\'t here yet',
+        'Once the game server is linked to the UCP your characters will appear here, with their ' +
+        'playtime, faction and last session.');
+      $('charsAside').textContent = '';
+    }
+
+    /* Linked accounts */
+    var forum = d.forum.linked
+      ? 'Linked · forum member #'+d.forum.member_id
+      : 'Not linked yet — it links itself the first time you sign in to the forums';
+    $('forumStatus').innerHTML = d.forum.linked
+      ? esc(forum)
+      : '<span class="none">'+esc(forum)+'</span>';
+    $('forumOpen').href = d.forum.url;
+    $('forumOpen').hidden = !d.forum.linked;
+    $('forumWait').hidden = d.forum.linked;
+
+    $('discordRow').hidden = false;
+    $('discordStatus').innerHTML = d.discord
+      ? 'Given at sign-up as <b>'+esc(d.discord)+'</b> — not verified yet'
+      : '<span class="none">Not linked</span>';
+    $('discordBtn').hidden   = true;      /* no Discord OAuth app yet */
+    $('discordSoon').hidden  = false;
+
+    /* Your account */
+    var created = parseUTC(d.created_at), last = parseUTC(d.last_login);
+    var rows = [
+      ['Account ID', '#'+d.id, null, true],
+      ['Rank', d.role || 'Member', null],
+      ['Member since', created ? shortDate(created) : '—',
+        d.member_days != null ? n(d.member_days)+' days' : null],
+      ['Last sign-in', last ? hhmm(last) : '—', last ? ago(last) : null]
+    ];
+    $('acctRows').innerHTML = rows.map(function(r){
+      return '<div class="kv"><span class="k">'+esc(r[0])+'</span>'+
+        '<span class="v">'+esc(r[1])+
+        (r[2] ? ' <span class="sm">'+esc(r[2])+'</span>' : '')+
+        (r[3] ? ' <button class="copy" id="copyId" title="Copy account ID" aria-label="Copy account ID">'+
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>' : '')+
+        '</span></div>';
+    }).join('');
+    var cp = $('copyId');
+    if(cp) cp.addEventListener('click', function(){
+      if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(String(d.id));
+    });
+  }
+
+  /** The shared "there's nothing here yet" block. */
+  function blank(icon, title, body){
+    var paths = {
+      user:'<circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/>',
+      doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/>',
+      screen:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+      clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+    };
+    return '<div class="blank soon"><span class="ei">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+(paths[icon]||paths.doc)+'</svg>'+
+      '</span><h4>'+esc(title)+'</h4><p>'+esc(body)+'</p></div>';
+  }
+
+  /* --------------------------------------------------------------- SETTINGS */
+  function renderSettings(d){
+    /* UCP name */
+    $('rowNameValue').innerHTML = '<b>'+esc(d.name)+'</b>';
+    var nc = d.name_change;
+    var nameBtn = $('btnNameOpen');
+    if(nc.allowed){
+      nameBtn.removeAttribute('disabled');
+      nameBtn.textContent = 'Change';
+      $('rowNameNote').innerHTML = 'The name you sign in with, and the name staff and other ' +
+        'players know you by. You can change it once every '+nc.cooldown_days+' days.';
+    } else {
+      nameBtn.setAttribute('disabled','disabled');
+      nameBtn.textContent = 'Locked';
+      $('rowNameNote').innerHTML = 'You changed your UCP name recently. You can change it again ' +
+        'in <b>'+nc.days_left+' '+(nc.days_left===1?'day':'days')+'</b>.';
+      $('exName').classList.remove('on');
+    }
+    $('nameCooldownNote').innerHTML =
+      '<b>You can change this once every '+nc.cooldown_days+' days.</b> Your forum display name ' +
+      'changes with it, and your old name is released for someone else to take.';
+
+    /* Email */
+    $('rowEmailValue').innerHTML = '<b>'+esc(d.email)+'</b>';
+    var pend = $('emailPending');
+    if(d.email_change){
+      pend.hidden = false;
+      pend.innerHTML = ICONS_NOTE.info +
+        '<div>A change to <b>'+esc(d.email_change.masked)+'</b> is waiting on the link we sent ' +
+        'there. Until it\'s opened, this address stays on the account. Changing your password ' +
+        'cancels it.</div>';
+    } else {
+      pend.hidden = true;
+    }
+
+    /* Password */
+    var pw = d.password_changed_at ? new Date(d.password_changed_at*1000) : null;
+    $('rowPwValue').innerHTML = pw
+      ? 'Last changed <b>'+ago(pw)+'</b>'
+      : '<span style="color:var(--stone)">We don\'t have a record of when this was last changed</span>';
+
+    /* Delete — FEATURE-GATED on security.allow_self_delete */
+    var canDelete = d.features.self_delete;
+    $('delBtn').hidden    = !canDelete;
+    $('delLocked').hidden = canDelete;
+    $('delBlocked').hidden = canDelete;
+    $('delAllowed').hidden = !canDelete;
+    if(!canDelete){
+      $('delLocked').setAttribute('data-expand','exDelete');
+      $('delLocked').style.cursor = 'pointer';
+    }
+    $('delLosesName').innerHTML = 'Your UCP name — <b>'+esc(d.name)+'</b> is released for anyone else to take.';
+  }
+
+  /* --------------------------------------------------------------- SECURITY */
+  function renderSecurity(d){
+    var t = d.twofa;
+    var state = t.enabled ? (t.backup_remaining <= 2 ? 'low' : 'on') : 'off';
+    showTfa(state);
+
+    if(t.enabled){
+      var left = t.backup_remaining, total = t.backup_total;
+      Array.prototype.forEach.call(document.querySelectorAll('[data-codes-left]'), function(el){
+        el.textContent = left+' of '+total+' left';
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-pips]'), function(el){
+        var out = '';
+        for(var i=0;i<total;i++) out += '<i'+(i<left?'':' class="spent"')+'></i>';
+        el.innerHTML = out;
+      });
+      $('lowCodesNote').innerHTML =
+        '<b>You have '+left+' recovery code'+(left===1?'':'s')+' left.</b> If you lose your phone ' +
+        'with none left, only a Founder can get you back in. Generate a new set now — it takes a ' +
+        'few seconds and replaces all ten.';
+      $('codesUsedNote').textContent = (total-left)+' have been used. Used codes never come back.';
+
+      /* Staff who must have 2FA can't switch it off; the server refuses too. */
+      Array.prototype.forEach.call(document.querySelectorAll('[data-disable-2fa]'), function(b){
+        b.hidden = !!t.required;
+      });
+    }
+
+    if(t.misconfigured){
+      flash('err', '<b>Two-step verification is on but the server can\'t read your stored secret</b>, ' +
+        'so no code will work. Contact a Founder — this needs fixing on the server, not on your phone.');
+    }
+
+    /* FEATURE-GATED: sessions + activity log */
+    if(!d.features.sessions){
+      $('sessHost').innerHTML = blank('screen',
+        'Not available yet',
+        'Listing your devices needs one record per session. Today the UCP keeps a single ' +
+        '"remember me" token per account, which can only ever describe one device.');
+      $('sessAside').textContent = '';
+      $('sessLede').textContent = 'You can still end every other session from the Settings tab.';
+    }
+    if(!d.features.activity_log){
+      $('logHost').innerHTML = blank('clock',
+        'Not available yet',
+        'Sign-ins and security changes aren\'t recorded to a table you can read yet. Until they ' +
+        'are, this stays empty rather than showing you a partial picture.');
+      $('logAside').textContent = '';
+    }
+  }
+
+  /* ----------------------------------------------------------------- RECORD */
+  function renderRecord(d){
+    /* FEATURE-GATED: the whole tab */
+    if(!d.features.record){
+      $('standingHost').innerHTML = blank('doc',
+        'Not available yet',
+        'The administrative record system isn\'t built. When it is, this shows every warning, ' +
+        'kick and ban on your account, and whether anything from the last 30 days is holding ' +
+        'your standing.');
+      $('recLast').textContent = '';
+      $('recordHost').hidden = true;
+    }
+  }
+
+  /* =====================================================================
+     TWO-FACTOR — panel switching
+     ===================================================================== */
+  var tfaPanels = {};
+  Array.prototype.forEach.call(document.querySelectorAll('[data-state]'), function(el){
+    tfaPanels[el.getAttribute('data-state')] = el;
+  });
+  function showTfa(name){
+    var step = name.indexOf('setup')===0 ? +name.slice(5) : 0;
+    var key  = step ? 'setup' : name;
+    Object.keys(tfaPanels).forEach(function(k){ tfaPanels[k].hidden = (k !== key); });
+    if(step){
+      Array.prototype.forEach.call(tfaPanels.setup.querySelectorAll('.setup-step'), function(s){
+        s.hidden = +s.getAttribute('data-s') !== step;
+      });
+      Array.prototype.forEach.call(tfaPanels.setup.querySelectorAll('.step'), function(s){
+        var i = +s.getAttribute('data-step');
+        s.classList.toggle('on',   i === step);
+        s.classList.toggle('done', i <  step);
+      });
+    }
+  }
+
+  /* step 1 -> ask for the password, which is also what mints the secret */
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-step-go]'); if(!b) return;
+    e.preventDefault();
+    var go = b.getAttribute('data-step-go');
+    if(go === 'off'){
+      setField('fldSetupPw','indSetupPw','hintSetupPw',null,'');
+      $('setupPw').value = '';
+      showTfa(DATA && DATA.twofa.enabled ? (DATA.twofa.backup_remaining<=2?'low':'on') : 'off');
+      return;
+    }
+    if(go === '1'){ setField('fldSetupPw','indSetupPw','hintSetupPw',null,''); $('setupPw').value=''; showTfa('setup1'); return; }
+    if(go === '2'){ startSetup(); return; }
+  });
+
+  /** POST /api/2fa-setup.php — password in, secret + otpauth URI back. */
+  function startSetup(){
+    var pw = $('setupPw').value;
+    if(!pw){
+      setField('fldSetupPw','indSetupPw','hintSetupPw','err','Enter your password to continue.');
+      $('setupPw').focus(); return;
+    }
+    var btn = $('btnSetupNext');
+    busyBtn(btn, true, 'Checking…');
+    UCP.post('2fa-setup.php', {password: pw}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var d = res.data || {};
+      if(!d.ok){
+        setField('fldSetupPw','indSetupPw','hintSetupPw','err', esc(d.error || 'That did not work.'));
+        $('setupPw').select(); return;
+      }
+      $('keyVal').textContent = d.secret_pretty || d.secret;
+      $('keyVal').dataset.raw = d.secret || '';
+      drawQR(d.uri);
+      $('setCode').value = '';
+      setField('fldSetCode','indSetCode','hintSetCode',null,
+        'The code changes every 30 seconds. If it keeps being rejected, check your phone\'s date and time are set to automatic.');
+      showTfa('setup2');
+      $('setCode').focus();
+    }).catch(function(){
+      busyBtn(btn, false);
+      setField('fldSetupPw','indSetupPw','hintSetupPw','err','Could not reach the server. Try again.');
+    });
+  }
+
+  function drawQR(uri){
+    var box = $('qrBox');
+    box.innerHTML = '';
+    box.style.background = '#fff';
+    try{
+      var qr = window.qrcode(0,'M');
+      qr.addData(uri); qr.make();
+      box.innerHTML = qr.createSvgTag({cellSize:4, margin:2, scalable:true});
+    }catch(err){
+      box.style.background = 'none';
+      box.innerHTML = '<div style="color:var(--stone);font-size:12px;line-height:1.5;padding:8px">' +
+        'Couldn\'t draw the QR code — enter the key beside it by hand instead.</div>';
+    }
+  }
+
+  /** POST /api/2fa-confirm.php — the code proves the app has the secret. */
+  function confirmSetup(){
+    var code = $('setCode').value.replace(/\D/g,'');
+    if(code.length !== 6){
+      setField('fldSetCode','indSetCode','hintSetCode','err','Enter the 6-digit code from your app.');
+      $('setCode').focus(); return;
+    }
+    var btn = $('btnConfirm2fa');
+    busyBtn(btn, true, 'Checking…');
+    UCP.post('2fa-confirm.php', {code: code}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var d = res.data || {};
+      if(!d.ok){
+        setField('fldSetCode','indSetCode','hintSetCode','err', esc(d.error || 'That code did not match.'));
+        $('setCode').value = ''; $('setCode').focus();
+        if(d.restart) setTimeout(function(){ showTfa('off'); reload(); }, 2500);
+        return;
+      }
+      showCodes(d.backup_codes || [], true);
+    }).catch(function(){
+      busyBtn(btn, false);
+      setField('fldSetCode','indSetCode','hintSetCode','err','Could not reach the server. Try again.');
+    });
+  }
+  $('setCode').addEventListener('input', function(){
+    var v = this.value.replace(/\D/g,'').slice(0,6);
+    this.value = v;
+    if(v.length === 6) confirmSetup();
+  });
+  $('setCode').addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();confirmSetup();} });
+  $('btnConfirm2fa').addEventListener('click', function(e){ e.preventDefault(); confirmSetup(); });
+  $('btnSetupNext').addEventListener('click', function(e){ e.preventDefault(); startSetup(); });
+  $('setupPw').addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();startSetup();} });
+  $('setupPw').addEventListener('input', function(){ setField('fldSetupPw','indSetupPw','hintSetupPw',null,''); });
+
+  /* ---- recovery codes ---- */
+  var currentCodes = [];
+  function showCodes(codes, firstTime){
+    currentCodes = codes;
+    $('codeList').innerHTML = codes.map(function(c){ return '<span>'+esc(c)+'</span>'; }).join('');
+    $('codesTitle').textContent   = firstTime ? 'Save your recovery codes' : 'Your new recovery codes';
+    $('codesEyebrow').textContent = firstTime ? '' : 'Replaces your previous set';
+    var st=$('tfaSteps'); if(st) st.hidden = !firstTime;
+    $('ack').classList.remove('on');
+    $('ackDone').setAttribute('aria-disabled','true');
+    showTfa('setup3');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  function codesText(){
+    return 'BlaineSide UCP — recovery codes\r\n' +
+      'Account: ' + (DATA ? DATA.name : '') + '\r\n' +
+      'Issued: ' + new Date().toISOString().slice(0,10) + '\r\n' +
+      'Each code can be used once, in place of your authenticator code.\r\n\r\n' +
+      currentCodes.join('\r\n') + '\r\n';
+  }
+  $('btnCopyCodes').addEventListener('click', function(){
+    var btn = this, txt = codesText();
+    var done = function(){
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg> Copied';
+      setTimeout(function(){ btn.innerHTML = btn.dataset.orig; }, 1800);
+    };
+    if(!btn.dataset.orig) btn.dataset.orig = btn.innerHTML;
+    if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(txt).then(done, fallback); }
+    else fallback();
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){}
+      document.body.removeChild(ta);
+    }
+  });
+  $('btnDownloadCodes').addEventListener('click', function(){
+    var blob = new Blob([codesText()], {type:'text/plain'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'blaineside-recovery-codes.txt';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  });
+  $('btnPrintCodes').addEventListener('click', function(){ window.print(); });
+  $('ack').addEventListener('click', function(){
+    this.classList.toggle('on');
+    $('ackDone').setAttribute('aria-disabled', this.classList.contains('on') ? 'false' : 'true');
+  });
+  $('ackDone').addEventListener('click', function(e){
+    e.preventDefault();
+    if(this.getAttribute('aria-disabled') === 'true') return;
+    currentCodes = []; $('codeList').innerHTML = '';
+    reload();
+  });
+  $('keyVal').addEventListener('click', function(){
+    var raw = this.dataset.raw || this.textContent.replace(/\s+/g,'');
+    if(navigator.clipboard && window.isSecureContext){
+      var h = $('keyHint');
+      navigator.clipboard.writeText(raw).then(function(){
+        h.textContent = 'Copied to clipboard.';
+        setTimeout(function(){ h.textContent = 'Click to copy.'; }, 1800);
+      }, function(){});
+    }
+  });
+
+  /* ---- regenerate / disable: password + code, same form ---- */
+  var tfaIntent = null;
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-tfa-action]'); if(!b) return;
+    e.preventDefault();
+    tfaIntent = b.getAttribute('data-tfa-action');
+    $('tfaActionTitle').textContent = tfaIntent === 'disable'
+      ? 'Turn off two-step verification' : 'Generate new recovery codes';
+    $('tfaActionLede').textContent = tfaIntent === 'disable'
+      ? 'Your account goes back to being protected by your password alone, and your current recovery codes are deleted. Confirm both factors to continue.'
+      : 'Your existing recovery codes stop working immediately and are replaced with a new set of ten.';
+    $('btnTfaAction').textContent = tfaIntent === 'disable' ? 'Turn off two-step verification' : 'Generate new codes';
+    $('btnTfaAction').classList.toggle('danger', tfaIntent === 'disable');
+    $('btnTfaAction').classList.toggle('primary', tfaIntent !== 'disable');
+    $('tfaPw').value = ''; $('tfaCode').value = '';
+    setField('fldTfaPw','indTfaPw','hintTfaPw',null,'');
+    setField('fldTfaCode','indTfaCode','hintTfaCode',null,'A code from your app, or one of your recovery codes.');
+    showTfa('action');
+  });
+  $('btnTfaCancel').addEventListener('click', function(e){
+    e.preventDefault();
+    showTfa(DATA && DATA.twofa.backup_remaining <= 2 ? 'low' : 'on');
+  });
+  $('btnTfaAction').addEventListener('click', function(e){
+    e.preventDefault();
+    var pw = $('tfaPw').value, code = $('tfaCode').value.trim();
+    if(!pw){ setField('fldTfaPw','indTfaPw','hintTfaPw','err','Enter your password.'); $('tfaPw').focus(); return; }
+    if(!code){ setField('fldTfaCode','indTfaCode','hintTfaCode','err','Enter a code from your app, or a recovery code.'); $('tfaCode').focus(); return; }
+    var btn = this;
+    busyBtn(btn, true, 'Checking…');
+    UCP.post(tfaIntent === 'disable' ? '2fa-disable.php' : '2fa-codes.php',
+             {password: pw, code: code}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var d = res.data || {};
+      if(!d.ok){
+        var f = d.field === 'code' ? ['fldTfaCode','indTfaCode','hintTfaCode', $('tfaCode')]
+                                   : ['fldTfaPw','indTfaPw','hintTfaPw', $('tfaPw')];
+        var msg = d.locked && d.locked_for
+          ? 'Too many attempts. Try again in '+UCP.fmtSecs(d.locked_for)+'.'
+          : esc(d.error || 'That did not work.');
+        setField(f[0], f[1], f[2], 'err', msg);
+        f[3].focus(); f[3].select && f[3].select();
+        return;
+      }
+      if(tfaIntent === 'disable'){
+        flash('ok', 'Two-step verification is off. Your recovery codes have been deleted.');
+        reload();
+      } else {
+        showCodes(d.backup_codes || [], false);
+      }
+    }).catch(function(){
+      busyBtn(btn, false);
+      setField('fldTfaPw','indTfaPw','hintTfaPw','err','Could not reach the server. Try again.');
+    });
+  });
+  $('tfaCode').addEventListener('input', function(){
+    var v = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    this.value = /^\d*$/.test(v) ? v.slice(0,6) : v.slice(0,12).replace(/(.{4})(?=.)/g,'$1-');
+    setField('fldTfaCode','indTfaCode','hintTfaCode',null,'A code from your app, or one of your recovery codes.');
+  });
+  $('tfaPw').addEventListener('input', function(){ setField('fldTfaPw','indTfaPw','hintTfaPw',null,''); });
+
+  /* =====================================================================
+     SETTINGS — UCP name
+     Live availability against api/check.php, which is the same endpoint the
+     sign-up form uses, so the two can never disagree about what is free.
+     ===================================================================== */
+  var nameTimer = null, nameOK = false;
+  $('newName').addEventListener('input', function(){
+    var v = this.value.trim();
+    nameOK = false;
+    clearTimeout(nameTimer);
+
+    if(v === ''){
+      setField('fldName','indName','hintName',null,'3–20 characters. Letters, numbers and underscores.');
+      return;
+    }
+    if(DATA && v.toLowerCase() === DATA.name.toLowerCase()){
+      setField('fldName','indName','hintName','err','That is already your name.'); return;
+    }
+    if(v.length < 3){ setField('fldName','indName','hintName','err','Too short — 3 characters minimum.'); return; }
+    if(v.length > 20){ setField('fldName','indName','hintName','err','Too long — 20 characters maximum.'); return; }
+    if(!/^[A-Za-z0-9_]+$/.test(v)){
+      setField('fldName','indName','hintName','err','Letters, numbers and underscores only — no spaces or punctuation.');
+      return;
+    }
+
+    setField('fldName','indName','hintName','busy','Checking availability…');
+    nameTimer = setTimeout(function(){
+      UCP.get('check.php?username=' + encodeURIComponent(v)).then(function(d){
+        if($('newName').value.trim() !== v) return;      // they kept typing
+        if(!d || d.ok !== true){
+          setField('fldName','indName','hintName',null,'We\'ll check this when you submit.');
+          return;
+        }
+        if(d.available){
+          nameOK = true;
+          setField('fldName','indName','hintName','ok','“'+esc(v)+'” is available.');
+        } else {
+          setField('fldName','indName','hintName','err',
+            d.reason === 'reserved' ? 'That name is reserved and can\'t be used.'
+                                    : 'That name is already taken.');
+        }
+      });
+    }, 420);
+  });
+
+  $('btnName').addEventListener('click', function(e){
+    e.preventDefault();
+    var name = $('newName').value.trim(), pw = $('namePw').value;
+    if(!name){ setField('fldName','indName','hintName','err','Enter the new name.'); $('newName').focus(); return; }
+    if(!pw){ setField('fldNamePw','indNamePw','hintNamePw','err','Enter your password to confirm this change.'); $('namePw').focus(); return; }
+    var btn = this;
+    busyBtn(btn, true, 'Changing…');
+    UCP.post('settings-name.php', {username:name, password:pw}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var d = res.data || {};
+      if(!d.ok){
+        var f = d.field === 'username' ? ['fldName','indName','hintName', $('newName')]
+                                       : ['fldNamePw','indNamePw','hintNamePw', $('namePw')];
+        var msg = d.locked && d.locked_for
+          ? 'Too many attempts. Try again in '+UCP.fmtSecs(d.locked_for)+'.'
+          : esc(d.error || 'That did not work.');
+        setField(f[0], f[1], f[2], 'err', msg);
+        f[3].focus(); f[3].select && f[3].select();
+        return;
+      }
+      closeExpands();
+      flash('ok', 'Your UCP name is now <b>'+esc(d.name)+'</b>. It was <b>'+esc(d.previous)+'</b>.');
+      try{ localStorage.setItem('bs-last-user', d.name); }catch(err){}
+      reload();
+    }).catch(function(){
+      busyBtn(btn, false);
+      setField('fldNamePw','indNamePw','hintNamePw','err','Could not reach the server. Try again.');
+    });
+  });
+  $('namePw').addEventListener('input', function(){ setField('fldNamePw','indNamePw','hintNamePw',null,''); });
+
+  /* ---------------------------------------------------------- email change */
+  $('newEmail').addEventListener('input', function(){
+    var v = this.value.trim();
+    if(v === ''){
+      setField('fldEmail','indEmail','hintEmail',null,'We check the address is usable when you submit.');
+      return;
+    }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)){
+      setField('fldEmail','indEmail','hintEmail','err','That doesn\'t look like an email address.');
+      return;
+    }
+    /* Deliberately not checked live. api/check.php refuses to say whether an
+       address already has an account — answering hands anyone a free "does
+       this person play here?" lookup and undoes the same non-disclosure in
+       reset.php. A real collision comes back on submit. */
+    setField('fldEmail','indEmail','hintEmail','ok','Looks right. We confirm it is free when you submit.');
+  });
+
+  $('btnEmail').addEventListener('click', function(e){
+    e.preventDefault();
+    var email = $('newEmail').value.trim(), pw = $('emailPw').value;
+    if(!email){ setField('fldEmail','indEmail','hintEmail','err','Enter the new address.'); $('newEmail').focus(); return; }
+    if(!pw){ setField('fldEmailPw','indEmailPw','hintEmailPw','err','Enter your password to confirm this change.'); $('emailPw').focus(); return; }
+    var btn = this;
+    busyBtn(btn, true, 'Sending…');
+    UCP.post('settings-email.php', {email:email, password:pw}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var d = res.data || {};
+      if(!d.ok){
+        var f = d.field === 'email' ? ['fldEmail','indEmail','hintEmail', $('newEmail')]
+                                    : ['fldEmailPw','indEmailPw','hintEmailPw', $('emailPw')];
+        var msg = d.locked && d.locked_for
+          ? 'Too many attempts. Try again in '+UCP.fmtSecs(d.locked_for)+'.'
+          : esc(d.error || 'That did not work.');
+        setField(f[0], f[1], f[2], 'err', msg);
+        f[3].focus(); f[3].select && f[3].select();
+        return;
+      }
+      closeExpands();
+      flash('ok', esc(d.message));
+      reload();
+    }).catch(function(){
+      busyBtn(btn, false);
+      setField('fldEmailPw','indEmailPw','hintEmailPw','err','Could not reach the server. Try again.');
+    });
+  });
+  $('emailPw').addEventListener('input', function(){ setField('fldEmailPw','indEmailPw','hintEmailPw',null,''); });
+
+  /* ------------------------------------------------------- password change */
+  var np=$('np'), np2=$('np2'), meter=$('meter');
+  function pwSync(){
+    var v=np.value, len=v.length>=8, upp=/[A-Z]/.test(v), num=/[0-9]/.test(v);
+    $('rLen').classList.toggle('met',len);
+    $('rUpp').classList.toggle('met',upp);
+    $('rNum').classList.toggle('met',num);
+    var score = 0;
+    if(len)score++; if(upp)score++; if(num)score++;
+    if(v.length>=12 || /[^A-Za-z0-9]/.test(v))score++;
+    if(!v)score=0;
+    meter.className = 'meter' + (score ? ' s'+score : '');
+
+    var strong = len && upp && num;
+    $('fldNp').classList.remove('ok','err');
+    $('indNp').innerHTML = '';
+    if(v){
+      $('fldNp').classList.add(strong ? 'ok' : 'err');
+      $('indNp').innerHTML = strong ? ICO.ok : ICO.err;
+    }
+    if(!np2.value) setField('fldNp2','indNp2','matchHint',null,'');
+    else if(np2.value===v) setField('fldNp2','indNp2','matchHint','ok','Passwords match.');
+    else setField('fldNp2','indNp2','matchHint','err',"Passwords don't match.");
+  }
+  np.addEventListener('input', pwSync);
+  np2.addEventListener('input', pwSync);
+  $('curPw').addEventListener('input', function(){ setField('fldCurPw','indCurPw','hintCurPw',null,''); });
+
+  $('btnPassword').addEventListener('click', function(e){
+    e.preventDefault();
+    var cur=$('curPw').value, a=np.value, b=np2.value;
+    if(!cur){ setField('fldCurPw','indCurPw','hintCurPw','err','Enter your current password.'); $('curPw').focus(); return; }
+    if(a.length<8 || !/[A-Z]/.test(a) || !/[0-9]/.test(a)){
+      setField('fldNp','indNp','matchHint','err','Password needs 8+ characters, an uppercase letter and a number.');
+      np.focus(); return;
+    }
+    if(a !== b){ setField('fldNp2','indNp2','matchHint','err',"Passwords don't match."); np2.focus(); return; }
+    var btn = this;
+    busyBtn(btn, true, 'Updating…');
+    UCP.post('settings-password.php', {current:cur, password:a}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var d = res.data || {};
+      if(!d.ok){
+        var msg = d.locked && d.locked_for
+          ? 'Too many attempts. Try again in '+UCP.fmtSecs(d.locked_for)+'.'
+          : esc(d.error || 'That did not work.');
+        /* The server reports both the current-password failure and the new
+           -password rules under field:"password"; the wording tells them
+           apart, so put a rules failure on the new field and the rest on the
+           current one. */
+        if(/8\+ characters|too long|already your password/i.test(d.error||'')){
+          setField('fldNp','indNp','matchHint','err', msg); np.focus();
+        } else {
+          setField('fldCurPw','indCurPw','hintCurPw','err', msg); $('curPw').select();
+        }
+        return;
+      }
+      closeExpands();
+      np.value=''; np2.value=''; $('curPw').value=''; pwSync();
+      flash('ok', esc(d.message));
+      reload();
+    }).catch(function(){
+      busyBtn(btn, false);
+      setField('fldCurPw','indCurPw','hintCurPw','err','Could not reach the server. Try again.');
+    });
+  });
+
+  /* ------------------------------------------------- sign out everywhere */
+  $('btnSignout').addEventListener('click', function(e){
+    e.preventDefault();
+    var pw = $('signoutPw').value;
+    if(!pw){ setField('fldSignoutPw','indSignoutPw','hintSignoutPw','err','Enter your password to confirm.'); $('signoutPw').focus(); return; }
+    var btn = this;
+    busyBtn(btn, true, 'Signing out…');
+    UCP.post('settings-signout.php', {password: pw}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var d = res.data || {};
+      if(!d.ok){
+        var msg = d.locked && d.locked_for
+          ? 'Too many attempts. Try again in '+UCP.fmtSecs(d.locked_for)+'.'
+          : esc(d.error || 'That did not work.');
+        setField('fldSignoutPw','indSignoutPw','hintSignoutPw','err', msg);
+        $('signoutPw').select(); return;
+      }
+      closeExpands();
+      $('signoutPw').value = '';
+      flash('ok', esc(d.message));
+    }).catch(function(){
+      busyBtn(btn, false);
+      setField('fldSignoutPw','indSignoutPw','hintSignoutPw','err','Could not reach the server. Try again.');
+    });
+  });
+  $('signoutPw').addEventListener('input', function(){ setField('fldSignoutPw','indSignoutPw','hintSignoutPw',null,''); });
+
+  /* ------------------------------------------------------------- delete */
+  var delAck=$('delAck'), delConfirm=$('delConfirm'), delPw=$('delPw');
+  function delSync(){
+    delConfirm.setAttribute('aria-disabled',
+      (delAck.classList.contains('on') && delPw.value.length > 0) ? 'false' : 'true');
+  }
+  delAck.addEventListener('click', function(){ this.classList.toggle('on'); delSync(); });
+  delPw.addEventListener('input', function(){ setField('fldDelPw','indDelPw','hintDelPw',null,''); delSync(); });
+  delConfirm.addEventListener('click', function(e){
+    e.preventDefault();
+    if(this.getAttribute('aria-disabled') === 'true') return;
+    var btn = this;
+    busyBtn(btn, true, 'Deleting…');
+    UCP.post('settings-delete.php', {password: delPw.value}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var d = res.data || {};
+      if(d.ok && d.deleted){ window.location.replace(d.redirect || '/login'); return; }
+      setField('fldDelPw','indDelPw','hintDelPw','err', esc(d.error || 'That did not work.'));
+    }).catch(function(){
+      busyBtn(btn, false);
+      setField('fldDelPw','indDelPw','hintDelPw','err','Could not reach the server. Try again.');
+    });
+  });
+
+  /* =====================================================================
+     LOAD
+     ===================================================================== */
+  function reload(){
+    return UCP.get('profile.php').then(function(d){
+      if(!d || d.ok !== true){
+        if(d && d.authenticated === false){ window.location.replace(LOGIN); return; }
+        flash('err', 'Couldn\'t load your account. Refresh the page, and tell staff if it keeps happening.');
+        return;
+      }
+      render(d);
+    });
+  }
+
+  /* Messages carried back from the email-confirmation link. */
+  (function(){
+    var q = new URLSearchParams(window.location.search).get('email');
+    if(!q) return;
+    var msgs = {
+      changed: ['ok',   'Your email address has been changed. We\'ve told the old address too.'],
+      expired: ['warn', 'That confirmation link had expired — they last two hours. Start the change again.'],
+      used:    ['warn', 'That confirmation link has already been used, or the change was cancelled.'],
+      taken:   ['err',  'That address was claimed by another account while the link sat unopened. Try a different one.'],
+      invalid: ['err',  'That confirmation link was not valid.']
+    };
+    var m = msgs[q];
+    if(m) flash(m[0], m[1]);
+    if(history.replaceState) history.replaceState(null, '', '/profile#settings');
+    selectTab('settings', false);
+  })();
+
+  reload();
+})();
+</script>
+</body>
+</html>

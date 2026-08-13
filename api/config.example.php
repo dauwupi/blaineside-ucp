@@ -69,8 +69,27 @@ return [
     // 1     = every staff member (Support Staff and above) must enable it
     // 9     = Founders only
     //
-    // Accounts at or above this rank are sent to /security on sign-in until
-    // 2FA is on, and cannot switch it back off. Members are never affected.
+    // Accounts at or above this rank are sent to the Security tab on sign-in
+    // until 2FA is on, and cannot switch it back off. Members are never affected.
     'totp_required_rank' => null,
+
+    // ---- Self-service account deletion (off) ----
+    //
+    // A player may not delete their UCP while anything sits on their
+    // administrative record — otherwise anyone facing a ban wipes their
+    // history and comes back clean. That record system does not exist yet,
+    // so api/settings-delete.php refuses outright and the Settings tab shows
+    // the button as unavailable.
+    //
+    // Turn this on only once the punishment tables are live AND the check in
+    // settings-delete.php points at them. With the flag on and the tables
+    // missing, the endpoint fails closed rather than letting anyone through.
+    'allow_self_delete' => false,
+  ],
+
+  // ---- Forum ----
+  'forum' => [
+    // Used to build the "open your forum profile" link on the profile page.
+    'url' => 'https://forum.blaineside.com',
   ],
 ];

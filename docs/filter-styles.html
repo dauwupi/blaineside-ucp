@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- =====================================================================
+     BlaineSide UCP — filter control, five options.
+     Scratch comparison page for picking a direction. Not part of the site;
+     lives in docs/ which .htaccess 404s, so it never serves in production.
+     Every option is live — click through the states.
+     ===================================================================== -->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Record filters — five options</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --amber:#d4923a; --gold:#e2b65c;
+  --charcoal:#121110; --charcoal-2:#1a1815; --charcoal-3:#221f1b; --charcoal-4:#2b2723;
+  --parchment:#f1efe9; --stone:#8a7f70; --text-faint:#968e7e;
+  --border:#26221e; --rule:#302b25;
+  --ok:#7fa05a; --content-bg:#100f0e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;
+  color:var(--parchment);-webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.13), transparent 62%),
+    radial-gradient(700px 500px at -8% 4%, rgba(165,72,22,.10), transparent 58%),
+    linear-gradient(165deg,#1c1610 0%,#141109 35%,#0e0c09 65%,#0a0907 100%);
+  min-height:100vh;padding:36px 28px 80px}
+.wrap{max-width:1060px;margin:0 auto}
+.head{margin-bottom:30px}
+.head h1{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.head p{font-size:13.5px;color:var(--text-faint);margin-top:8px;max-width:70ch;line-height:1.65}
+
+.opt{margin-bottom:22px}
+.opt-h{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.opt-n{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--gold);
+  border:1px solid rgba(226,182,92,.32);background:rgba(226,182,92,.1);
+  padding:3px 9px;border-radius:100px}
+.opt-h h2{font-size:16px;font-weight:700;letter-spacing:-.015em}
+.opt-h .note{font-size:12.5px;color:var(--text-faint);flex-basis:100%;line-height:1.6;max-width:82ch}
+.opt-h .note b{color:var(--parchment);font-weight:600}
+
+.card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 20px 44px -30px rgba(0,0,0,.9);overflow:hidden}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding:15px 20px 13px;border-bottom:1px solid var(--rule)}
+.card-h h3{font-size:15px;font-weight:700;letter-spacing:-.015em}
+.card-h .aside{font-size:12.5px;color:var(--text-faint)}
+.card-b{padding:16px 20px 18px}
+
+/* shared mini table so each control is judged with rows under it */
+.rows{margin-top:16px}
+.r{display:grid;grid-template-columns:96px 108px minmax(0,1fr) 132px;gap:16px;
+  align-items:baseline;padding:12px 0;font-size:12.5px}
+.r + .r{border-top:1px solid var(--rule)}
+.r .d{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.r .d span{display:block;font-weight:500;color:var(--text-faint);font-size:11.5px;margin-top:2px}
+.r .w{color:var(--parchment);line-height:1.5}
+.r .s{font-size:11.5px;font-weight:600;color:var(--text-faint)}
+.r .s.live{color:#e3bd72}
+.kind{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+  padding:4px 9px;border-radius:100px;white-space:nowrap;
+  border:1px solid var(--rule);background:var(--charcoal);color:var(--text-faint)}
+.kind::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex:none}
+.kind.warn{color:#e3bd72;border-color:rgba(226,182,92,.3);background:rgba(226,182,92,.08)}
+.kind.kick{color:#a8afd4;border-color:rgba(107,116,168,.32);background:rgba(107,116,168,.1)}
+.kind.ban{color:#d98a78;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+
+/* ============================================================
+   1 — SEGMENTED BAR
+   Full width, equal segments, gold wash + underline on the active one.
+   ============================================================ */
+.s1{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--rule);
+  border-radius:11px;overflow:hidden;background:var(--charcoal)}
+.s1 button{display:flex;align-items:center;justify-content:center;gap:9px;
+  padding:13px 8px;border:none;background:none;cursor:pointer;position:relative;
+  font-family:inherit;font-size:13px;font-weight:700;color:var(--text-faint);
+  transition:background .15s,color .15s}
+.s1 button + button{border-left:1px solid var(--rule)}
+.s1 button:hover{background:var(--charcoal-3);color:var(--parchment)}
+.s1 button[aria-pressed="true"]{color:var(--parchment);
+  background:linear-gradient(180deg,rgba(226,182,92,.15),rgba(212,146,58,.07));
+  box-shadow:inset 0 -2px 0 var(--gold)}
+.s1 .n{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
+  padding:2px 7px;border-radius:100px;background:var(--charcoal-3);color:var(--text-faint)}
+.s1 button[aria-pressed="true"] .n{background:rgba(226,182,92,.2);color:var(--gold)}
+
+/* ============================================================
+   2 — UNDERLINED TABS
+   Quiet and editorial. Reads as a view switcher on a table, not a control.
+   ============================================================ */
+.s2{display:flex;gap:28px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.s2 button{display:flex;align-items:baseline;gap:8px;padding:2px 0 13px;border:none;
+  background:none;cursor:pointer;position:relative;font-family:inherit;
+  font-size:14px;font-weight:600;color:var(--text-faint);transition:color .15s}
+.s2 button:hover{color:var(--parchment)}
+.s2 button[aria-pressed="true"]{color:var(--parchment)}
+.s2 button[aria-pressed="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;
+  height:2px;border-radius:2px;background:linear-gradient(90deg,var(--gold),var(--amber))}
+.s2 .n{font-size:12px;font-weight:600;color:var(--stone);font-variant-numeric:tabular-nums}
+.s2 button[aria-pressed="true"] .n{color:var(--gold)}
+
+/* ============================================================
+   3 — TYPE-COLOURED CHIPS
+   The active chip takes its own type's colour, so the filter and the badges
+   in the Type column are unmistakably the same thing.
+   ============================================================ */
+.s3{display:flex;gap:8px;flex-wrap:wrap}
+.s3 button{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;
+  border:1px solid var(--rule);background:var(--charcoal);cursor:pointer;font-family:inherit;
+  font-size:13px;font-weight:700;color:var(--text-faint);transition:.15s}
+.s3 button:hover{border-color:var(--charcoal-4);color:var(--parchment)}
+.s3 .n{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
+  padding:2px 7px;border-radius:100px;background:var(--charcoal-3);color:var(--text-faint)}
+.s3 button[aria-pressed="true"]{color:#f3e2c4;border-color:rgba(226,182,92,.55);
+  background:rgba(226,182,92,.14)}
+.s3 button[aria-pressed="true"] .n{background:rgba(226,182,92,.22);color:var(--gold)}
+.s3 button[data-f="kick"][aria-pressed="true"]{color:#cdd3ea;border-color:rgba(107,116,168,.6);
+  background:rgba(107,116,168,.18)}
+.s3 button[data-f="kick"][aria-pressed="true"] .n{background:rgba(107,116,168,.3);color:#cdd3ea}
+.s3 button[data-f="ban"][aria-pressed="true"]{color:#f0bcb0;border-color:rgba(193,85,63,.6);
+  background:rgba(193,85,63,.18)}
+.s3 button[data-f="ban"][aria-pressed="true"] .n{background:rgba(193,85,63,.3);color:#f0bcb0}
+
+/* ============================================================
+   4 — TABLE TOOLBAR
+   A dropdown and a search box on one line. Utilitarian, and the only option
+   that still works when there are eight punishment types instead of three.
+   ============================================================ */
+.s4{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.s4 .sel{position:relative}
+.s4 select{appearance:none;padding:10px 38px 10px 14px;border-radius:10px;
+  border:1px solid var(--rule);background:var(--charcoal);color:var(--parchment);
+  font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;outline:none}
+.s4 select:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.14)}
+.s4 .sel svg{position:absolute;right:13px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;stroke-width:2.2;color:var(--stone);pointer-events:none}
+.s4 .search{position:relative;flex:1;min-width:200px;max-width:320px}
+.s4 .search input{width:100%;padding:10px 14px 10px 38px;border-radius:10px;
+  border:1px solid var(--rule);background:var(--charcoal);color:var(--parchment);
+  font-family:inherit;font-size:13px;outline:none}
+.s4 .search input::placeholder{color:var(--stone)}
+.s4 .search input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.14)}
+.s4 .search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;stroke-width:2;color:var(--stone)}
+.s4 .count{margin-left:auto;font-size:12.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+
+/* ============================================================
+   5 — COUNTER TILES AS THE FILTER
+   The numbers from the Standing card become the control. One component
+   instead of two, and the filter shows you the shape of the record.
+   ============================================================ */
+.s5{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.s5 button{text-align:left;padding:14px 15px 13px;border-radius:12px;cursor:pointer;
+  border:1px solid var(--rule);background:var(--charcoal);font-family:inherit;
+  transition:border-color .15s,background .15s,transform .12s}
+.s5 button:hover{border-color:var(--charcoal-4);transform:translateY(-1px)}
+.s5 .k{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint)}
+.s5 .k i{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;opacity:.55}
+.s5 .v{display:block;font-size:25px;font-weight:700;letter-spacing:-.02em;margin-top:9px;line-height:1;
+  font-variant-numeric:tabular-nums;color:var(--stone)}
+.s5 .p{display:block;font-size:11px;color:var(--text-faint);margin-top:7px}
+.s5 button[aria-pressed="true"]{border-color:rgba(226,182,92,.45);
+  background:linear-gradient(180deg,rgba(226,182,92,.11),rgba(212,146,58,.04))}
+.s5 button[aria-pressed="true"] .v{color:var(--gold)}
+.s5 button[aria-pressed="true"] .k{color:var(--parchment)}
+.s5 button[aria-pressed="true"] .k i{opacity:1}
+.s5 .k.warn i{color:#e3bd72} .s5 .k.kick i{color:#a8afd4} .s5 .k.ban i{color:#d98a78}
+
+@media (max-width:760px){
+  body{padding:22px 14px 60px}
+  .s1{grid-template-columns:repeat(2,1fr)}
+  .s1 button:nth-child(odd){border-left:none}
+  .s1 button:nth-child(n+3){border-top:1px solid var(--rule)}
+  .s5{grid-template-columns:repeat(2,1fr)}
+  .s2{gap:18px;overflow-x:auto}
+  .r{grid-template-columns:1fr;gap:5px}
+  .card-h,.card-b{padding-left:15px;padding-right:15px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <h1>Record filters — five options</h1>
+    <p>Each one is live: click through the states. They all carry the same information —
+      four choices and a count each — so the difference is entirely in how much of the page's
+      attention they take and how well they scale.</p>
+  </div>
+
+  <!-- 1 -->
+  <div class="opt">
+    <div class="opt-h">
+      <span class="opt-n">01</span>
+      <h2>Segmented bar</h2>
+      <p class="note">Spans the card, equal segments, gold wash and a solid underline on the active
+        one. <b>The loudest option</b> — impossible to miss and it anchors the table beneath it.
+        Costs a full-width band of the card, and it stops working past about five types.</p>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Full record</h3><span class="aside">23 entries</span></div>
+      <div class="card-b">
+        <div class="s1 flt" data-style="1">
+          <button data-f="all"  aria-pressed="true">All <span class="n">23</span></button>
+          <button data-f="warn" aria-pressed="false">Warnings <span class="n">14</span></button>
+          <button data-f="kick" aria-pressed="false">Kicks <span class="n">6</span></button>
+          <button data-f="ban"  aria-pressed="false">Bans <span class="n">3</span></button>
+        </div>
+        <div class="rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="opt">
+    <div class="opt-h">
+      <span class="opt-n">02</span>
+      <h2>Underlined tabs</h2>
+      <p class="note">Labels on a rule, counts in a muted weight beside them, gold underline on the
+        active one. <b>The quietest option</b> — reads as a view switcher belonging to the table
+        rather than a control competing with it. Weakest at catching the eye of someone who
+        doesn't know it's there.</p>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Full record</h3><span class="aside">23 entries</span></div>
+      <div class="card-b">
+        <div class="s2 flt" data-style="2">
+          <button data-f="all"  aria-pressed="true">All <span class="n">23</span></button>
+          <button data-f="warn" aria-pressed="false">Warnings <span class="n">14</span></button>
+          <button data-f="kick" aria-pressed="false">Kicks <span class="n">6</span></button>
+          <button data-f="ban"  aria-pressed="false">Bans <span class="n">3</span></button>
+        </div>
+        <div class="rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="opt">
+    <div class="opt-h">
+      <span class="opt-n">03</span>
+      <h2>Type-coloured chips</h2>
+      <p class="note">The selected chip takes its own type's colour — amber for warnings, blue for
+        kicks, red for bans — matching the badges in the Type column exactly. <b>The clearest link
+        between the filter and the rows it produces</b>, and the state is obvious from across the
+        room. Puts more colour on the page than anything else here.</p>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Full record</h3><span class="aside">23 entries</span></div>
+      <div class="card-b">
+        <div class="s3 flt" data-style="3">
+          <button data-f="all"  aria-pressed="true">All <span class="n">23</span></button>
+          <button data-f="warn" aria-pressed="false">Warnings <span class="n">14</span></button>
+          <button data-f="kick" aria-pressed="false">Kicks <span class="n">6</span></button>
+          <button data-f="ban"  aria-pressed="false">Bans <span class="n">3</span></button>
+        </div>
+        <div class="rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="opt">
+    <div class="opt-h">
+      <span class="opt-n">04</span>
+      <h2>Table toolbar</h2>
+      <p class="note">A dropdown and a search field on one line, with the result count pushed right.
+        <b>The only option that still works at twenty types</b>, and search is genuinely useful on a
+        record with two years of entries. Costs you the at-a-glance counts, and one more click to
+        change type.</p>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Full record</h3><span class="aside">23 entries</span></div>
+      <div class="card-b">
+        <div class="s4">
+          <div class="sel">
+            <select id="s4sel">
+              <option value="all">All types — 23</option>
+              <option value="warn">Warnings — 14</option>
+              <option value="kick">Kicks — 6</option>
+              <option value="ban">Bans — 3</option>
+            </select>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input id="s4q" type="search" placeholder="Search reasons and admins…">
+          </div>
+          <span class="count" id="s4count">23 entries</span>
+        </div>
+        <div class="rows" id="s4rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="opt">
+    <div class="opt-h">
+      <span class="opt-n">05</span>
+      <h2>Counter tiles</h2>
+      <p class="note">The numbers become the control. <b>This one deletes a component</b> — the
+        Standing card's counters and the filter row are currently two things showing the same four
+        numbers, and this merges them into one. Tallest of the five, and it only works if you're
+        happy for the counters to move down here.</p>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Full record</h3><span class="aside">23 entries</span></div>
+      <div class="card-b">
+        <div class="s5 flt" data-style="5">
+          <button data-f="all" aria-pressed="true">
+            <span class="k">All entries</span>
+            <span class="v">23</span>
+            <span class="p">since Apr 2019</span>
+          </button>
+          <button data-f="warn" aria-pressed="false">
+            <span class="k warn"><i></i>Warnings</span>
+            <span class="v">14</span>
+            <span class="p">2 in the last 30 days</span>
+          </button>
+          <button data-f="kick" aria-pressed="false">
+            <span class="k kick"><i></i>Kicks</span>
+            <span class="v">6</span>
+            <span class="p">1 in the last 30 days</span>
+          </button>
+          <button data-f="ban" aria-pressed="false">
+            <span class="k ban"><i></i>Bans</span>
+            <span class="v">3</span>
+            <span class="p">none in the last 30 days</span>
+          </button>
+        </div>
+        <div class="rows"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var KIND = { warn:'Warning', kick:'Kick', ban:'Ban' };
+  var ROWS = [
+    {d:'2 Aug 2026',  t:'21:14', k:'warn', w:'Deathmatching without prior roleplay at Sandy Shores medical centre.', s:'Counts until 1 Sep', live:true},
+    {d:'19 Jul 2026', t:'23:41', k:'kick', w:'AFK in a public interior for over 30 minutes.', s:'Counts until 18 Aug', live:true},
+    {d:'21 Jun 2026', t:'18:30', k:'ban',  w:'Metagaming a faction conflict using Discord voice. 3 days.', s:'On record · ban ended 24 Jun'},
+    {d:'14 Jun 2026', t:'22:07', k:'warn', w:'Failure to value life during a traffic stop.', s:'On record'}
+  ];
+  function esc(x){ return String(x).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function rowHTML(r){
+    return '<div class="r"><span class="d">'+esc(r.d)+'<span>'+esc(r.t)+' UTC</span></span>'+
+      '<span><span class="kind '+r.k+'">'+KIND[r.k]+'</span></span>'+
+      '<span class="w">'+esc(r.w)+'</span>'+
+      '<span class="s'+(r.live?' live':'')+'">'+esc(r.s)+'</span></div>';
+  }
+  function paint(container, f, q){
+    var list = ROWS.filter(function(r){
+      if(f !== 'all' && r.k !== f) return false;
+      if(q && r.w.toLowerCase().indexOf(q.toLowerCase()) === -1) return false;
+      return true;
+    });
+    container.innerHTML = list.length ? list.map(rowHTML).join('')
+      : '<div class="r" style="grid-template-columns:1fr;color:var(--text-faint)">Nothing of that type in this sample.</div>';
+    return list.length;
+  }
+
+  // options 1, 2, 3 and 5 share the same pressed-button behaviour
+  Array.prototype.forEach.call(document.querySelectorAll('.flt'), function(grp){
+    var rows = grp.parentElement.querySelector('.rows');
+    paint(rows, 'all');
+    grp.addEventListener('click', function(e){
+      var b = e.target.closest('button[data-f]'); if(!b) return;
+      Array.prototype.forEach.call(grp.querySelectorAll('button'), function(x){
+        x.setAttribute('aria-pressed','false');
+      });
+      b.setAttribute('aria-pressed','true');
+      paint(rows, b.getAttribute('data-f'));
+    });
+  });
+
+  // option 4 drives off the select and the search box
+  var s4rows = document.getElementById('s4rows');
+  function s4(){
+    var n = paint(s4rows, document.getElementById('s4sel').value, document.getElementById('s4q').value);
+    document.getElementById('s4count').textContent = n + (n === 1 ? ' entry' : ' entries');
+  }
+  document.getElementById('s4sel').addEventListener('change', s4);
+  document.getElementById('s4q').addEventListener('input', s4);
+  s4();
+})();
+</script>
+</body>
+</html>

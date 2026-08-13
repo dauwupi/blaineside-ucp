@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/Totp.php';
+require_once __DIR__ . '/_account.php';
 
 /** How many recovery codes are issued at a time. */
 const BS_BACKUP_CODE_COUNT = 10;
@@ -288,72 +289,15 @@ function twofa_issuer(): string
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the signed-in account row, or ends the request with 401.
- *
- * Repeats session.php's checks rather than trusting $_SESSION alone: the
- * status and session_epoch comparisons are what make a suspension or a
- * password reset take effect on endpoints that change security settings —
- * exactly the ones where a stale session must not survive.
+ * Both of these moved to _account.php when the profile page started needing
+ * them too. Kept as wrappers so the 2fa-*.php endpoints read unchanged.
  */
 function twofa_current_account(PDO $pdo): array
 {
-    if (empty($_SESSION['uid'])) {
-        json_out(['ok' => false, 'authenticated' => false,
-                  'error' => 'Please sign in first.'], 401);
-    }
-
-    $st = $pdo->prepare(
-        'SELECT id, username, email, password_hash, admin_rank, status, session_epoch,
-                totp_enabled, totp_secret, totp_last_step
-           FROM ucp_accounts WHERE id = ? LIMIT 1'
-    );
-    $st->execute([(int)$_SESSION['uid']]);
-    $acc = $st->fetch();
-
-    if (!$acc
-        || $acc['status'] !== 'active'
-        || (int)($_SESSION['epoch'] ?? 0) !== (int)$acc['session_epoch']) {
-        $_SESSION = [];
-        session_destroy();
-        json_out(['ok' => false, 'authenticated' => false,
-                  'error' => 'Your session has ended. Please sign in again.'], 401);
-    }
-
-    return $acc;
+    return current_account($pdo);
 }
 
-/**
- * Re-checks the account password before a security setting is changed.
- *
- * Everything that turns 2FA on or off asks for it. Without this, a session
- * left open on a shared machine — or one lifted via any XSS the site ever
- * grows — is enough to strip the second factor straight back off, which would
- * make the whole feature decorative.
- */
 function twofa_require_password(PDO $pdo, array $acc, string $password): void
 {
-    $ip = client_ip();
-
-    $lockLeft = lock_seconds_left($pdo, (int)$acc['id'], $ip, '2fa_settings');
-    if ($lockLeft > 0) {
-        json_out([
-            'ok'         => false,
-            'error'      => 'Too many attempts. Try again shortly.',
-            'locked'     => true,
-            'locked_for' => $lockLeft,
-        ], 429);
-    }
-
-    if ($password === '' || !password_verify($password, (string)$acc['password_hash'])) {
-        $lockedFor = record_failure($pdo, (int)$acc['id'], $ip, '2fa_settings');
-        json_out([
-            'ok'         => false,
-            'field'      => 'password',
-            'error'      => 'That password is not correct.',
-            'locked'     => $lockedFor > 0,
-            'locked_for' => $lockedFor,
-        ], $lockedFor > 0 ? 429 : 401);
-    }
-
-    clear_failures($pdo, (int)$acc['id'], $ip, '2fa_settings');
+    require_password($pdo, $acc, $password, '2fa_settings');
 }
