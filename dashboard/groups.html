@@ -397,91 +397,173 @@
 
   /* ---------- GROUP MANAGEMENT ---------- */
 
-  /* The ladder, as tiles. This is the resting state of the page: ten groups
-     with a headcount each, which is the thing worth knowing at a glance —
-     not page one of every account in the UCP. */
-  .ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px;margin-bottom:22px}
-  .gtile{position:relative;text-align:left;padding:14px 15px;border-radius:12px;cursor:pointer;
-    background:var(--charcoal-2);border:1px solid var(--border-soft);transition:.16s;overflow:hidden}
-  .gtile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tone,var(--charcoal-4))}
-  .gtile:hover{border-color:var(--border);background:var(--charcoal-3);transform:translateY(-1px)}
-  .gtile.on{border-color:color-mix(in srgb, var(--tone) 55%, transparent);
-    background:linear-gradient(180deg, color-mix(in srgb, var(--tone) 12%, transparent), transparent)}
-  .gtile .gt-n{font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--parchment);
-    font-variant-numeric:tabular-nums;line-height:1}
-  .gtile .gt-l{font-size:12px;font-weight:700;color:var(--tone);margin-top:6px;letter-spacing:.02em}
-  .gtile .gt-s{font-size:11px;color:var(--text-faint);margin-top:2px}
-  .gtile.dim .gt-n{color:var(--stone)}
+  /* ---- Tier colours -------------------------------------------------
+     --tone      the group's own colour, exactly as specified
+     --tone-ink  what reads on top of it when it is a solid fill
+     --tone-lit  the same hue lifted off the charcoal enough to be text
 
-  .tone-0{--tone:#7d7365} .tone-1{--tone:#9c8f79} .tone-2{--tone:#8fa9c4}
-  .tone-3{--tone:#c0a878} .tone-4{--tone:#cfa963} .tone-5{--tone:#d8a94f}
-  .tone-6{--tone:#e0b45c} .tone-7{--tone:#e8c069} .tone-8{--tone:var(--gold)}
-  .tone-9{--tone:#d0644d}
+     The third variable exists because of Support Staff. #660000 at full
+     strength on a #121110 page is very nearly the page: fine as a 3px
+     rail or a solid chip with white on it, unreadable as a label. Every
+     tier goes through the same treatment so none of them is a special
+     case waiting to be forgotten.
+     ------------------------------------------------------------------ */
+  .tone-0{--tone:#7d7365;--tone-ink:#16130f}
+  .tone-1{--tone:#660000;--tone-ink:#ffffff}
+  .tone-2{--tone:#275976;--tone-ink:#ffffff}
+  .tone-3,.tone-4,.tone-5,.tone-6,.tone-7{--tone:#00aa00;--tone-ink:#04230a}
+  .tone-8{--tone:#ff9600;--tone-ink:#241200}
+  .tone-9{--tone:#9985ff;--tone-ink:#16102e}
+  .tone-0,.tone-1,.tone-2,.tone-3,.tone-4,
+  .tone-5,.tone-6,.tone-7,.tone-8,.tone-9{
+    --tone-lit:color-mix(in srgb, var(--tone) 50%, #f1efe9)}
 
-  .mtools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-  .msearch{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:220px;max-width:360px;
-    background:var(--charcoal-2);border:1px solid var(--border);border-radius:10px}
-  .msearch svg{width:15px;height:15px;color:var(--text-faint);flex:none;stroke-width:2}
-  .msearch input{flex:1;background:none;border:none;outline:none;color:var(--parchment);font-size:13.5px;font-family:inherit}
-  .mcount{font-size:12.5px;color:var(--text-faint);font-weight:600;margin-left:auto;font-variant-numeric:tabular-nums}
+  /* ---- The toolbar: pick a group, or search across all of them ---- */
+  .mtools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .mtools .msearch{display:flex;align-items:center;gap:10px;height:52px;padding:0 15px;
+    flex:1;min-width:230px;max-width:380px;border-radius:12px;
+    background:var(--charcoal-2);border:1px solid var(--border);transition:.15s}
+  .mtools .msearch:focus-within{border-color:var(--charcoal-4);background:var(--charcoal-3)}
+  .msearch svg{width:16px;height:16px;color:var(--text-faint);flex:none;stroke-width:2}
+  .msearch input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--parchment);
+    font-size:13.5px;font-family:inherit}
+  .msearch input::placeholder{color:var(--text-dim)}
+  .mcount{font-size:12px;color:var(--text-dim);font-weight:600;margin-left:auto;
+    font-variant-numeric:tabular-nums;text-align:right}
 
-  /* Selected-group header, so it is always obvious what the list below is. */
-  .mscope{display:flex;align-items:center;gap:12px;padding:12px 15px;margin-bottom:12px;
+  /* The group picker. A native <select> can't carry the tier colours, and
+     the colours are the point — so this is a button and a listbox, with a
+     headcount on every rung. */
+  .gpick{position:relative;flex:none;width:308px;max-width:100%}
+  .gpick-btn{width:100%;display:flex;align-items:center;gap:13px;height:52px;padding:0 15px;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:12px;
+    font-family:inherit;color:var(--parchment);cursor:pointer;text-align:left;transition:.15s}
+  .gpick-btn:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .gpick.open .gpick-btn{background:var(--charcoal-3);
+    border-color:color-mix(in srgb, var(--tone) 55%, transparent)}
+  .gdot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--tone);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--tone) 24%, transparent)}
+  .gpick-lbl{flex:1;min-width:0}
+  .gpick-lbl .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text-dim);line-height:1}
+  .gpick-lbl .v{display:block;font-size:14.5px;font-weight:700;letter-spacing:-.01em;margin-top:4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1}
+  .gpick-cnt{flex:none;font-size:11.5px;font-weight:700;color:var(--text-faint);
+    font-variant-numeric:tabular-nums;background:var(--charcoal);border:1px solid var(--border);
+    padding:4px 9px;border-radius:100px}
+  .gpick-chev{width:16px;height:16px;flex:none;color:var(--text-faint);stroke-width:2.2;transition:transform .18s}
+  .gpick.open .gpick-chev{transform:rotate(180deg)}
+
+  .gmenu{position:absolute;z-index:60;left:0;right:0;top:calc(100% + 7px);padding:6px;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
+    box-shadow:0 26px 54px -20px rgba(0,0,0,.85);max-height:min(62vh,420px);overflow-y:auto}
+  .gmenu[hidden]{display:none}
+  .gopt{display:flex;align-items:center;gap:12px;width:100%;padding:10px 11px;border-radius:9px;
+    background:none;border:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;
+    color:var(--text-faint);text-align:left;transition:.12s}
+  .gopt:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .gopt.on{color:var(--parchment);background:color-mix(in srgb, var(--tone) 15%, transparent)}
+  .gopt .gn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gopt .gc{flex:none;font-size:11.5px;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums}
+  .gopt.zero .gn,.gopt.zero .gc{color:var(--text-dim)}
+  .gopt.zero .gdot{opacity:.4;box-shadow:none}
+  .gmenu .gsep{height:1px;background:var(--border-soft);margin:5px 9px}
+
+  /* Search scope bar — only shown when a search is spanning every group,
+     because the picker already says which group is open. */
+  .mscope{display:flex;align-items:center;gap:12px;padding:11px 15px;margin-bottom:12px;
     border-radius:11px;background:var(--charcoal-2);border:1px solid var(--border-soft)}
-  .mscope .gbadge{flex:none}
   .mscope .txt{flex:1;min-width:0;font-size:13px;color:var(--text-dim)}
   .mscope .txt b{color:var(--parchment);font-weight:700}
 
-  /* Rows read as a table without being one: the header labels the columns,
-     and every row lines up under it. */
-  .mhead{display:grid;grid-template-columns:64px 1.6fr 1fr 1fr 132px 200px;gap:14px;align-items:center;
-    padding:0 16px 9px;font-size:10.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
-    color:var(--text-faint)}
-  /* display:grid beats the [hidden] attribute's UA rule, so say it again. */
-  .mhead[hidden]{display:none}
-  .mrow{display:grid;grid-template-columns:64px 1.6fr 1fr 1fr 132px 200px;gap:14px;align-items:center;
-    padding:12px 16px;border:1px solid var(--border-soft);border-radius:12px;
-    background:var(--charcoal-2);margin-bottom:8px}
-  .mrow.is-you{border-color:rgba(226,182,92,.3);background:linear-gradient(180deg,rgba(226,182,92,.05),transparent)}
-  .mrow .mid{font-size:12px;font-weight:700;color:var(--stone);font-variant-numeric:tabular-nums}
-  .mname{font-size:13.5px;font-weight:700;color:var(--parchment);display:flex;align-items:center;gap:8px;
-    flex-wrap:wrap;min-width:0}
-  .mname .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .mcell{font-size:12.5px;color:var(--text-dim);min-width:0}
-  .mcell .sm{display:block;font-size:11px;color:var(--text-faint);margin-top:2px}
-  .mflags{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-  .flag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;
-    padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint)}
+  /* ---- The member row ------------------------------------------------
+     Four zones: who (initials disc, tinted by tier), identity, the two
+     facts worth knowing about an account before you move it, and the
+     control. Every value carries its own small label, so the row is
+     readable on its own and there is no column header to keep in sync
+     with it.
+     -------------------------------------------------------------------- */
+  .mrow{position:relative;display:grid;
+    grid-template-columns:48px minmax(0,1fr) minmax(0,1.35fr) 252px;
+    gap:18px;align-items:center;padding:14px 18px 14px 21px;margin-bottom:9px;
+    border:1px solid var(--border-soft);border-radius:14px;background:var(--charcoal-2);
+    overflow:hidden;transition:border-color .15s, background .15s}
+  .mrow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tone)}
+  .mrow:hover{background:var(--charcoal-3);border-color:var(--border)}
+  .mrow.is-you{border-color:rgba(226,182,92,.32)}
+
+  .mav{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
+    font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;letter-spacing:.04em;
+    color:var(--tone-lit);background:color-mix(in srgb, var(--tone) 17%, var(--charcoal));
+    border:1px solid color-mix(in srgb, var(--tone) 40%, transparent)}
+
+  .mid-block{min-width:0}
+  .mname{display:flex;align-items:center;gap:8px;min-width:0}
+  .mname .nm{font-size:15px;font-weight:700;letter-spacing:-.012em;color:var(--parchment);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .msub{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+  .gchip{display:inline-flex;align-items:center;font-size:10px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;padding:4px 10px;border-radius:100px;white-space:nowrap;
+    color:var(--tone-ink);background:var(--tone)}
+  .gchip.quiet{color:var(--tone-lit);background:color-mix(in srgb, var(--tone) 15%, transparent);
+    border:1px solid color-mix(in srgb, var(--tone) 40%, transparent)}
+  .muid{font-size:11.5px;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums}
+  .mtag{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint);white-space:nowrap}
+  .mtag.you{color:var(--gold);border-color:rgba(226,182,92,.42);background:rgba(226,182,92,.09)}
+  .mtag.bad{color:#e0a99b;border-color:rgba(193,85,63,.42);background:rgba(193,85,63,.1)}
+
+  /* A grid, not a flex row: the labels have to line up down the page, and
+     with flex they slide left and right as the values change width. */
+  .mstats{display:grid;grid-template-columns:118px 126px minmax(0,1fr);gap:18px;align-items:start;min-width:0}
+  .mstat{min-width:0}
+  .mstat .lab{display:block;font-size:9px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text-dim);line-height:1}
+  .mstat .val{display:block;font-size:12.5px;font-weight:600;color:var(--parchment);
+    margin-top:6px;white-space:nowrap;line-height:1}
+  .mstat .val.dim{color:var(--text-faint);font-weight:500}
+  .mstat .chips{display:flex;align-items:center;gap:6px;margin-top:5px}
+  .flag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
+    padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint);white-space:nowrap}
   .flag svg{width:11px;height:11px;stroke-width:2.4}
-  .flag.on{color:#9ec178;border-color:rgba(127,160,90,.32);background:rgba(127,160,90,.08)}
+  .flag.on{color:#9ec178;border-color:rgba(127,160,90,.32);background:rgba(127,160,90,.09)}
   .flag.off{color:var(--stone)}
-  .mact{display:flex;align-items:center;gap:8px;justify-content:flex-end}
-  .mrow select{height:34px;padding:0 30px 0 11px;border-radius:9px;background:var(--charcoal-3);
+
+  .mact{display:flex;align-items:center;gap:9px;justify-content:flex-end;flex:none;min-width:0}
+  .mact .btn{flex:none}
+  .mrow select{height:36px;padding:0 32px 0 12px;border-radius:10px;background:var(--charcoal);
     border:1px solid var(--border);color:var(--parchment);font-size:12.5px;font-family:inherit;
-    appearance:none;max-width:132px;
+    appearance:none;flex:1;min-width:0;max-width:160px;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7f70' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 9px center;cursor:pointer}
-  .mrow select:focus{outline:none;border-color:rgba(226,182,92,.5)}
+    background-repeat:no-repeat;background-position:right 10px center;cursor:pointer;transition:.14s}
+  .mrow select:hover{border-color:var(--charcoal-4)}
+  .mrow select:focus{outline:none;border-color:rgba(226,182,92,.5);box-shadow:0 0 0 3px rgba(212,146,58,.13)}
   /* A disabled Apply has to look disabled — otherwise the row reads as
      "press me" when the selection hasn't changed. */
-  .mrow .btn:disabled{opacity:.4;cursor:not-allowed;filter:saturate(.5)}
-
-  .gbadge{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
-    padding:3px 9px;border-radius:100px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap}
-  .gbadge.g-staff{color:#dcbd8b;border-color:rgba(212,146,58,.35);background:rgba(212,146,58,.08)}
-  .gbadge.g-mgmt{color:#1a1206;background:var(--gold);border-color:transparent}
-  .gbadge.g-founder{color:#fff;background:var(--danger);border-color:transparent}
-  .mlock{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text-faint)}
-  .mlock svg{width:13px;height:13px;stroke-width:2}
+  .mrow .btn:disabled{opacity:.38;cursor:not-allowed;filter:saturate(.5)}
+  .mlock{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;
+    color:var(--text-faint);padding:8px 12px;border-radius:100px;
+    background:var(--charcoal);border:1px solid var(--border);white-space:nowrap}
+  .mlock svg{width:13px;height:13px;stroke-width:2;flex:none}
 
   .pcount{font-size:12.5px;color:var(--text-faint);font-weight:600;font-variant-numeric:tabular-nums}
 
-  @media (max-width:1100px){
-    .mhead{display:none}
-    .mrow{grid-template-columns:56px 1fr 200px;row-gap:8px}
-    .mrow .mcell{grid-column:2/4;font-size:12px}
-    .mrow .mflags{grid-column:2/4}
-    .mact{grid-column:1/4;justify-content:flex-start}
+  /* The stats and the control drop below the name rather than squeezing:
+     a truncated date is worse than a taller row. */
+  @media (max-width:1180px){
+    .mrow{grid-template-columns:48px minmax(0,1fr) auto;row-gap:14px}
+    .mstats{grid-column:2/4;grid-template-columns:auto auto minmax(0,1fr);gap:26px}
+    .mact{grid-column:2/4;justify-content:flex-start}
+  }
+  @media (max-width:620px){
+    .mrow{grid-template-columns:48px minmax(0,1fr);padding:14px 15px 14px 18px}
+    .mstats{grid-column:1/3;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
+    .mstat:nth-child(3){grid-column:1/-1}
+    .mrow select{max-width:none}
+    .mact{grid-column:1/3;flex-wrap:wrap}
+    .gpick{width:100%}
+    .mtools .msearch{max-width:none;width:100%}
+    .mcount{margin-left:0}
   }
 
   /* toast */
@@ -588,10 +670,8 @@
           </div>
         </div>
 
-        <!-- the ladder: every group with a headcount, click to list -->
-        <div class="ladder" id="ladder"></div>
-
         <div class="mtools">
+          <div class="gpick tone-0" id="gpick"></div>
           <label class="msearch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
             <input type="text" id="q" placeholder="Or search every group by UCP name…" autocomplete="off" spellcheck="false">
@@ -600,10 +680,6 @@
         </div>
 
         <div id="mscope"></div>
-        <div class="mhead" id="mhead" hidden>
-          <span>Account</span><span>UCP name</span><span>Member since</span>
-          <span>Last sign-in</span><span>Security</span><span></span>
-        </div>
         <div id="mlist"></div>
         <div class="pager" id="pager"></div>
       </div>
@@ -689,7 +765,7 @@
   /* =====================================================================
      GROUP MANAGEMENT
 
-     Resting state is the ladder: ten groups, a headcount each. Nothing is
+     Resting state is the picker: ten groups, a headcount each. Nothing is
      listed until a group is picked or a name is searched — page one of every
      account in the UCP is not an answer to any question somebody came here
      with.
@@ -701,9 +777,6 @@
   let RANKS=[], ASSIGNABLE=[], YOU={id:0,rank:0};
   let ITEMS=[], TOTAL_PAGES=1, curPage=1, QUERY='', GROUP=null, LOADING=false;
 
-  function badgeClass(rank){
-    return rank>=9 ? 'g-founder' : rank>=8 ? 'g-mgmt' : rank>=1 ? 'g-staff' : '';
-  }
   function rankName(r){ return (RANKS.find(x=>x.rank===r)||{}).name||('Group '+r); }
 
   /* Dates arrive as UTC SQL strings; times as relative, with the exact value
@@ -731,100 +804,165 @@
     return dateOf(sql)+', '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC';
   }
 
-  /* ---- the ladder ---- */
-  function renderLadder(){
-    document.getElementById('ladder').innerHTML = RANKS.slice().reverse().map(r=>`
-      <button class="gtile tone-${r.rank} ${GROUP===r.rank?'on':''} ${r.count?'':'dim'}" data-group="${r.rank}">
-        <div class="gt-n">${r.count.toLocaleString('en-GB')}</div>
-        <div class="gt-l">${escapeHtml(r.name)}</div>
-        <div class="gt-s">${r.count===1?'1 account':'accounts'}</div>
-      </button>`).join('');
+  /* ---- the group picker ----
+     RANKS arrives low-to-high; the menu shows it high-to-low, because the
+     groups people come here to hand out are at the top of the ladder. */
+  function toneOf(r){ return 'tone-' + (r >= 0 && r <= 9 ? r : 0); }
+  function initials(n){
+    const s = String(n || '?').trim();
+    const parts = s.split(/[\s._\-]+/).filter(Boolean);
+    if(parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return s.slice(0,2).toUpperCase();
   }
-  document.getElementById('ladder').addEventListener('click',e=>{
-    const t=e.target.closest('[data-group]'); if(!t) return;
-    const g=+t.dataset.group;
-    GROUP = (GROUP===g) ? null : g;      /* clicking the open one closes it */
-    QUERY=''; document.getElementById('q').value='';
-    loadPage(1);
+
+  let PICK_OPEN = false;
+
+  function renderPicker(){
+    const host = document.getElementById('gpick');
+    const cur  = GROUP === null ? null : RANKS.find(r => r.rank === GROUP);
+    const all  = RANKS.reduce((a,r) => a + (r.count|0), 0);
+
+    host.className = 'gpick ' + (cur ? toneOf(cur.rank) : 'tone-0') + (PICK_OPEN ? ' open' : '');
+    host.innerHTML =
+      '<button class="gpick-btn" type="button" id="gpickBtn" aria-haspopup="listbox" aria-expanded="' + PICK_OPEN + '">' +
+        '<span class="gdot"></span>' +
+        '<span class="gpick-lbl"><span class="k">Group</span>' +
+          '<span class="v">' + (cur ? escapeHtml(cur.name) : 'All groups') + '</span></span>' +
+        '<span class="gpick-cnt">' + (cur ? cur.count : all).toLocaleString('en-GB') + '</span>' +
+        '<svg class="gpick-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>' +
+      '</button>' +
+      '<div class="gmenu" role="listbox" ' + (PICK_OPEN ? '' : 'hidden') + '>' +
+        '<button class="gopt tone-0 ' + (GROUP === null ? 'on' : '') + '" type="button" role="option" data-pick="all">' +
+          '<span class="gdot"></span><span class="gn">All groups</span>' +
+          '<span class="gc">' + all.toLocaleString('en-GB') + '</span></button>' +
+        '<div class="gsep"></div>' +
+        RANKS.slice().reverse().map(function(r){
+          return '<button class="gopt ' + toneOf(r.rank) + ' ' + (GROUP === r.rank ? 'on' : '') +
+                 (r.count ? '' : ' zero') + '" type="button" role="option" data-pick="' + r.rank + '">' +
+            '<span class="gdot"></span><span class="gn">' + escapeHtml(r.name) + '</span>' +
+            '<span class="gc">' + (r.count|0).toLocaleString('en-GB') + '</span></button>';
+        }).join('') +
+      '</div>';
+  }
+
+  /* Opening and closing only touches classes — it does NOT re-render.
+     Re-rendering here detaches the very button that was clicked, and the
+     document-level "click outside" handler below then sees a node with no
+     parent, decides the click was outside, and shuts the menu again the
+     instant it opens. */
+  function setPickOpen(v){
+    PICK_OPEN = v;
+    const host = document.getElementById('gpick');
+    host.classList.toggle('open', v);
+    const menu = host.querySelector('.gmenu'), btn = host.querySelector('#gpickBtn');
+    if(menu) menu.hidden = !v;
+    if(btn)  btn.setAttribute('aria-expanded', String(v));
+  }
+
+  document.getElementById('gpick').addEventListener('click', function(e){
+    const opt = e.target.closest('[data-pick]');
+    if(opt){
+      const v = opt.dataset.pick;
+      GROUP = (v === 'all') ? null : +v;
+      QUERY = ''; document.getElementById('q').value = '';
+      setPickOpen(false);
+      loadPage(1);
+      return;
+    }
+    if(e.target.closest('#gpickBtn')) setPickOpen(!PICK_OPEN);
+  });
+  /* Clicking anywhere else, or Escape, closes it. */
+  document.addEventListener('click', function(e){
+    if(PICK_OPEN && !e.target.closest('#gpick')) setPickOpen(false);
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && PICK_OPEN) setPickOpen(false);
   });
 
   function rowHTML(m){
-    const opts = ASSIGNABLE.map(r=>
-      `<option value="${r}" ${r===m.rank?'selected':''}>${escapeHtml(rankName(r))}</option>`).join('');
+    const opts = ASSIGNABLE.map(function(r){
+      return '<option value="' + r + '"' + (r === m.rank ? ' selected' : '') + '>' +
+             escapeHtml(rankName(r)) + '</option>';
+    }).join('');
     /* Someone whose group is above what this actor may hand out still needs
        their group SHOWN, so it goes in as a disabled option. */
     const missing = !ASSIGNABLE.includes(m.rank)
-      ? `<option value="${m.rank}" selected disabled>${escapeHtml(m.role)}</option>` : '';
+      ? '<option value="' + m.rank + '" selected disabled>' + escapeHtml(m.role) + '</option>' : '';
 
-    return `<div class="mrow ${m.self?'is-you':''}" data-id="${m.id}">
-      <span class="mid">#${m.id}</span>
-      <div class="mname">
-        <span class="nm">${escapeHtml(m.name)}</span>
-        <span class="gbadge ${badgeClass(m.rank)}">${escapeHtml(m.role)}</span>
-        ${m.self?`<span class="gbadge">You</span>`:''}
-        ${m.status!=='active'?`<span class="gbadge">${escapeHtml(m.status)}</span>`:''}
-      </div>
-      <div class="mcell">${escapeHtml(dateOf(m.created_at))}<span class="sm">${escapeHtml(agoOf(m.created_at))}</span></div>
-      <div class="mcell" title="${escapeHtml(exactOf(m.last_login))}">${escapeHtml(agoOf(m.last_login))}</div>
-      <div class="mflags">
-        <span class="flag ${m.twofa?'on':'off'}" title="${m.twofa?'Two-step verification on':'No two-step verification'}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>${m.twofa?'<path d="M9 12l2 2 4-4"/>':''}</svg>
-          ${m.twofa?'2FA':'No 2FA'}
-        </span>
-        ${m.forum?`<span class="flag" title="Forum account linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>Forum</span>`:''}
-      </div>
-      <div class="mact">
-        ${m.editable
-          ? `<select data-rank="${m.id}">${missing}${opts}</select>
-             <button class="btn sm primary" data-apply="${m.id}" disabled>Apply</button>`
-          : `<span class="mlock" title="${escapeHtml(m.blocked_by||'')}">
-               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-               ${escapeHtml(m.self ? 'Your own group' : 'Founder only')}
-             </span>`}
-      </div>
-    </div>`;
+    const tag = m.self ? '<span class="mtag you">You</span>' : '';
+    const bad = m.status !== 'active' ? '<span class="mtag bad">' + escapeHtml(m.status) + '</span>' : '';
+
+    const twofa = '<span class="flag ' + (m.twofa ? 'on' : 'off') + '" title="' +
+      (m.twofa ? 'Two-step verification on' : 'No two-step verification') + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>' +
+      (m.twofa ? '<path d="M9 12l2 2 4-4"/>' : '') + '</svg>' + (m.twofa ? '2FA' : 'No 2FA') + '</span>';
+    const forum = m.forum
+      ? '<span class="flag on" title="Forum account linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>Forum</span>'
+      : '<span class="flag off" title="No forum account linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>No forum</span>';
+
+    const act = m.editable
+      ? '<select data-rank="' + m.id + '" aria-label="Group for ' + escapeHtml(m.name) + '">' + missing + opts + '</select>' +
+        '<button class="btn sm primary" data-apply="' + m.id + '" disabled>Apply</button>'
+      : '<span class="mlock" title="' + escapeHtml(m.blocked_by || '') + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' +
+          (m.self ? 'Your own group' : 'Founder only') + '</span>';
+
+    return '<div class="mrow ' + toneOf(m.rank) + (m.self ? ' is-you' : '') + '" data-id="' + m.id + '">' +
+      '<div class="mav" aria-hidden="true">' + escapeHtml(initials(m.name)) + '</div>' +
+      '<div class="mid-block">' +
+        '<div class="mname"><span class="nm">' + escapeHtml(m.name) + '</span>' + tag + bad + '</div>' +
+        '<div class="msub"><span class="gchip">' + escapeHtml(m.role) + '</span>' +
+          '<span class="muid">#' + m.id + '</span></div>' +
+      '</div>' +
+      '<div class="mstats">' +
+        '<div class="mstat"><span class="lab">Member since</span>' +
+          '<span class="val">' + escapeHtml(dateOf(m.created_at)) + '</span></div>' +
+        '<div class="mstat"><span class="lab">Last sign-in</span>' +
+          '<span class="val ' + (m.last_login ? '' : 'dim') + '" title="' + escapeHtml(exactOf(m.last_login)) + '">' +
+          escapeHtml(agoOf(m.last_login)) + '</span></div>' +
+        '<div class="mstat"><span class="lab">Security</span>' +
+          '<span class="chips">' + twofa + forum + '</span></div>' +
+      '</div>' +
+      '<div class="mact">' + act + '</div>' +
+    '</div>';
   }
 
+  /* The picker already names the open group, so the scope bar only earns
+     its place when a search is spanning all of them. */
   function renderScope(d){
-    const host=document.getElementById('mscope');
-    if(!d.listed){ host.innerHTML=''; return; }
-    if(QUERY){
-      host.innerHTML=`<div class="mscope"><div class="txt">Searching every group for <b>${escapeHtml(QUERY)}</b> — ${d.total} ${d.total===1?'match':'matches'}</div>
-        <button class="btn sm ghost" data-clear>Clear</button></div>`;
-    } else {
-      host.innerHTML=`<div class="mscope">
-        <span class="gbadge ${badgeClass(GROUP)}">${escapeHtml(rankName(GROUP))}</span>
-        <div class="txt"><b>${d.total.toLocaleString('en-GB')}</b> ${d.total===1?'account':'accounts'} in this group</div>
-        <button class="btn sm ghost" data-clear>Show all groups</button></div>`;
-    }
-    host.querySelector('[data-clear]').onclick=()=>{
-      GROUP=null; QUERY=''; document.getElementById('q').value=''; loadPage(1);
+    const host = document.getElementById('mscope');
+    if(!d.listed || !QUERY){ host.innerHTML = ''; return; }
+    host.innerHTML =
+      '<div class="mscope"><div class="txt">Searching every group for <b>' + escapeHtml(QUERY) + '</b>' +
+      ' \u2014 ' + d.total + ' ' + (d.total === 1 ? 'match' : 'matches') + '</div>' +
+      '<button class="btn sm ghost" data-clear>Clear</button></div>';
+    host.querySelector('[data-clear]').onclick = function(){
+      GROUP = null; QUERY = ''; document.getElementById('q').value = ''; loadPage(1);
     };
   }
 
   function renderList(d){
-    const host=document.getElementById('mlist');
-    document.getElementById('mhead').hidden = !(d.listed && ITEMS.length);
+    const host = document.getElementById('mlist');
 
     if(!d.listed){
-      host.innerHTML=`<div class="empty">
-        <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span>
-        <h4>Pick a group</h4>
-        <p>Choose one above to see who's in it, or search for someone by name across every group.</p>
-      </div>`;
-      document.getElementById('pager').innerHTML='';
+      host.innerHTML = '<div class="empty">' +
+        '<span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span>' +
+        '<h4>Pick a group</h4>' +
+        '<p>Choose one from the list above to see who\u2019s in it, or search for someone by name across every group.</p>' +
+        '</div>';
+      document.getElementById('pager').innerHTML = '';
       return;
     }
     if(!ITEMS.length){
-      host.innerHTML=`<div class="empty">
-        <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
-        <h4>Nobody here</h4>
-        <p>${QUERY?'Nothing matches “'+escapeHtml(QUERY)+'”.':'This group is empty.'}</p>
-      </div>`;
-      document.getElementById('pager').innerHTML='';
+      host.innerHTML = '<div class="empty">' +
+        '<span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>' +
+        '<h4>Nobody here</h4>' +
+        '<p>' + (QUERY ? 'Nothing matches \u201c' + escapeHtml(QUERY) + '\u201d.' : 'This group is empty.') + '</p>' +
+        '</div>';
+      document.getElementById('pager').innerHTML = '';
       return;
     }
-    host.innerHTML=ITEMS.map(rowHTML).join('');
+    host.innerHTML = ITEMS.map(rowHTML).join('');
     renderPager(d);
   }
 
@@ -887,7 +1025,7 @@
       RANKS=d.ranks||RANKS; ASSIGNABLE=d.assignable||ASSIGNABLE; YOU=d.you||YOU;
       document.getElementById('mcount').textContent =
         d.total_all.toLocaleString('en-GB')+' accounts in the UCP';
-      renderLadder(); renderScope(d); renderList(d);
+      renderPicker(); renderScope(d); renderList(d);
     }).catch(function(){ LOADING=false; toast('Could not reach the server'); });
   }
 
