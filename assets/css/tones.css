@@ -1,6 +1,12 @@
 /* =====================================================================
    BlaineSide UCP — group tier colours.
 
+   CACHE NOTE: every page loads this as tones.css?v=2.4.2. Browsers cache
+   a stylesheet for a long time and will happily keep serving yesterday's
+   copy after an upload — which shows up as half a change landing (the
+   colours arrive, the chip doesn't). When you edit this file, bump that
+   ?v= on every page that loads it, and on ucp.js alongside it.
+
    One file, loaded by every page that shows a group anywhere: the row in
    Group Management, the chip in the account button, and whatever comes
    next. Nothing defines a tier colour inline any more, so a change here
