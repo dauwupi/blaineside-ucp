@@ -128,10 +128,12 @@
   .bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
   .bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
   .bg-stage.tod-dusk  .tod{background:rgba(150,72,22,.42)}
+  /* An even vignette: equally dark on all four sides, lightest in the
+     middle. The old version graded left-to-right, which read as a black
+     band down one edge rather than as a backdrop. */
   .bg-stage .bg-scrim{position:absolute;inset:0;background:
-    radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.10), transparent 62%),
-    linear-gradient(90deg,rgba(10,9,8,.82) 0%,rgba(10,9,8,.62) 45%,rgba(10,9,8,.42) 100%),
-    linear-gradient(180deg,rgba(10,9,8,.55) 0%,rgba(10,9,8,.28) 34%,rgba(10,9,8,.5) 70%,rgba(10,9,8,.86) 100%)}
+    radial-gradient(115% 95% at 50% 50%,
+      rgba(10,9,8,.38) 0%, rgba(10,9,8,.66) 62%, rgba(10,9,8,.90) 100%)}
   @media (max-width:760px){ .bg-stage{left:0} }
 
   .topbar, .content{position:relative;z-index:1}
