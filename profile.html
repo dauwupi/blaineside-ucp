@@ -2102,12 +2102,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('discordUnlink').hidden = !dis.linked;
     $('discordSoon').hidden = d.features.discord_link || dis.linked;
 
-    /* Your account — the standing summary. Everything here is already known
-       to the page, so it costs nothing extra; rows that would need a system
-       we haven't built are simply absent rather than shown as unknown. */
+    /* Your account */
     var created = parseUTC(d.created_at), last = parseUTC(d.last_login);
-    var pw   = d.password_changed_at ? new Date(d.password_changed_at*1000) : null;
-    var t    = d.twofa, nc = d.name_change;
     var rows = [
       ['Account ID', '#'+d.id, null, true],
       ['Group', d.role || 'Member', null],
@@ -2116,30 +2112,17 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       ['Last sign-in', last ? hhmm(last) : '—', last ? ago(last) : null]
     ];
 
-    if(d.features.sessions){
-      var live = (d.sessions || []).length;
-      rows.push(['Signed in on', live+(live === 1 ? ' device' : ' devices'),
-                 live > 1 ? 'this one included' : 'this one']);
-    }
-
-    rows.push(['Two-step', t.enabled ? 'On' : 'Off',
-      t.enabled ? t.backup_remaining+' of '+t.backup_total+' codes left'
-                : (t.required ? 'required for your group' : 'not set up')]);
-
-    rows.push(['Password changed', pw ? ago(pw) : 'Not recorded',
-               pw ? null : 'no record kept before now']);
-
-    rows.push(['Name change', nc.allowed ? 'Available' : 'Locked',
-      nc.allowed ? 'every '+nc.cooldown_days+' days'
-                 : 'in '+nc.days_left+(nc.days_left === 1 ? ' day' : ' days')]);
-
     if(d.forum.linked){
       /* Prefer the URL IPS gave us. Without it — no API key configured, or
          the forum didn't answer — build the standard IPS profile path from
          the member id; the slug is cosmetic and IPS corrects a wrong one. */
       var fname = d.forum.name || DATA.name;
-      var furl  = d.forum.profile_url || (d.forum.url + '/profile/' + d.forum.member_id +
-                  '-' + String(fname).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''));
+      /* index.php? is not optional here: the forum runs without friendly
+         URLs, so /profile/1-name is a 404 and only the query form resolves.
+         A profile_url from the API already carries whatever form the forum
+         itself uses, so it wins when we have one. */
+      var furl  = d.forum.profile_url || (d.forum.url + '/index.php?/profile/' + d.forum.member_id +
+                  '-' + String(fname).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') + '/');
       rows.push(['Forum account',
         '<a class="ext" href="'+esc(furl)+'" target="_blank" rel="noopener">'+esc(fname)+
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 4h6v6"/>' +
@@ -2147,9 +2130,6 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         null, false, true]);
     }
 
-    if(d.discord && d.discord.linked){
-      rows.push(['Discord', d.discord.username, 'verified']);
-    }
     $('acctRows').innerHTML = rows.map(function(r){
       /* r[4] marks a value that is already markup — only the forum link
          uses it, and it is built from escaped parts below. */
