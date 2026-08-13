@@ -178,4 +178,4 @@ const BS_RESERVED_NAMES = [
  * putting a number back here starts enforcing it again immediately — from
  * the last change, not from the day you changed this line.
  */
-const BS_NAME_CHANGE_DAYS = 0;
+const BS_NAME_CHANGE_DAYS = 30;
