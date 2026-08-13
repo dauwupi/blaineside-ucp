@@ -87,6 +87,27 @@ return [
     'allow_self_delete' => false,
   ],
 
+  // ---- Discord account linking ----
+  //
+  // Leave the two values empty and the profile page shows "Linking not
+  // available yet" — nothing breaks, the button simply isn't offered.
+  //
+  // To turn it on:
+  //   1. https://discord.com/developers/applications -> New Application
+  //   2. OAuth2 -> copy the Client ID, then Reset Secret and copy that
+  //   3. OAuth2 -> Redirects -> add EXACTLY the redirect_uri below. Discord
+  //      compares it character for character; a missing /api or a trailing
+  //      slash is the usual cause of "invalid redirect_uri".
+  //
+  // The UCP only ever asks for the `identify` scope — the account id and
+  // username. The access token is used once and revoked in the same request,
+  // so nothing about the player's Discord is retained or actionable.
+  'discord' => [
+    'client_id'     => '',
+    'client_secret' => '',
+    'redirect_uri'  => 'https://ucp.blaineside.com/api/discord-callback.php',
+  ],
+
   // ---- Forum ----
   'forum' => [
     // Used to build the "open your forum profile" link on the profile page.

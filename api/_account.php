@@ -29,6 +29,7 @@ function current_account(PDO $pdo): array
 
     $st = $pdo->prepare(
         'SELECT id, username, username_lower, email, email_lower, discord,
+                discord_id, discord_username, discord_linked_at,
                 password_hash, admin_rank, status, session_epoch, created_at,
                 last_login, forum_member_id,
                 name_changed_at, password_changed_at,

@@ -850,6 +850,7 @@ button{font-family:inherit}
                   </div>
                   <div class="row-r">
                     <button class="btn" id="discordBtn" hidden>Link Discord</button>
+                    <button class="btn danger" id="discordUnlink" hidden>Unlink</button>
                     <span class="locked" id="discordSoon" hidden>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                       Linking not available yet
@@ -2020,12 +2021,24 @@ button{font-family:inherit}
     $('forumOpen').hidden = !d.forum.linked;
     $('forumWait').hidden = d.forum.linked;
 
+    /* Discord. Three states: verified link, an unverified name they typed at
+       sign-up, or nothing — and the button only appears once the server says
+       an application is configured. */
+    var dis = d.discord || {};
     $('discordRow').hidden = false;
-    $('discordStatus').innerHTML = d.discord
-      ? 'Given at sign-up as <b>'+esc(d.discord)+'</b> — not verified yet'
-      : '<span class="none">Not linked</span>';
-    $('discordBtn').hidden   = true;      /* no Discord OAuth app yet */
-    $('discordSoon').hidden  = false;
+    if(dis.linked){
+      var since = dis.linked_at ? new Date(dis.linked_at*1000) : null;
+      $('discordStatus').innerHTML = 'Linked as <b>'+esc(dis.username)+'</b>' +
+        (since ? ' <span class="chip good sm">Verified</span> · since '+esc(shortDate(since)) : '');
+    } else if(dis.given){
+      $('discordStatus').innerHTML = 'Given at sign-up as <b>'+esc(dis.given)+'</b> — ' +
+        '<span class="none">not verified</span>';
+    } else {
+      $('discordStatus').innerHTML = '<span class="none">Not linked</span>';
+    }
+    $('discordBtn').hidden  = !(d.features.discord_link && !dis.linked);
+    $('discordUnlink').hidden = !dis.linked;
+    $('discordSoon').hidden = d.features.discord_link || dis.linked;
 
     /* Your account */
     var created = parseUTC(d.created_at), last = parseUTC(d.last_login);
@@ -2790,6 +2803,30 @@ button{font-family:inherit}
     });
   }
 
+  /* Link Discord — a full page navigation, not a fetch. The whole point is
+     to leave the site and come back, which a background request can't do. */
+  $('discordBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    window.location.href = '/api/discord-link.php';
+  });
+
+  $('discordUnlink').addEventListener('click', function(e){
+    e.preventDefault();
+    var btn = this;
+    busyBtn(btn, true, 'Unlinking…');
+    UCP.post('discord-unlink.php', {}).then(function(res){
+      busyBtn(btn, false);
+      if(bounceIfSignedOut(res)) return;
+      var r = res.data || {};
+      if(!r.ok){ flash('err', esc(r.error || 'That did not work.')); return; }
+      flash('ok', esc(r.message));
+      reload();
+    }).catch(function(){
+      busyBtn(btn, false);
+      flash('err', 'Could not reach the server. Try again.');
+    });
+  });
+
   /* Messages carried back from the email-confirmation link. */
   (function(){
     var q = new URLSearchParams(window.location.search).get('email');
@@ -2805,6 +2842,24 @@ button{font-family:inherit}
     if(m) flash(m[0], m[1]);
     if(history.replaceState) history.replaceState(null, '', '/profile#settings');
     selectTab('settings', false);
+  })();
+
+  /* …and from the Discord round trip. */
+  (function(){
+    var q = new URLSearchParams(window.location.search).get('discord');
+    if(!q) return;
+    var msgs = {
+      linked:      ['ok',   'Your Discord account is linked and verified.'],
+      already:     ['info', 'A Discord account is already linked. Unlink it first to attach a different one.'],
+      denied:      ['warn', 'Discord linking was cancelled — nothing was changed.'],
+      taken:       ['err',  'That Discord account is already linked to another UCP. If it is yours, unlink it there first, or open a report.'],
+      state:       ['warn', 'That linking attempt expired or didn\'t start here. Press Link Discord again.'],
+      failed:      ['err',  'Discord didn\'t complete the link. Try again, and tell staff if it keeps failing.'],
+      unavailable: ['warn', 'Discord linking isn\'t switched on yet.']
+    };
+    var m = msgs[q];
+    if(m) flash(m[0], m[1]);
+    if(history.replaceState) history.replaceState(null, '', '/profile');
   })();
 
   reload();

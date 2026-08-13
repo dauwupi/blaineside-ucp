@@ -15,6 +15,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
 require_once __DIR__ . '/_sessions.php';
+require_once __DIR__ . '/_discord.php';
 
 $pdo = db();
 $acc = current_account($pdo);
@@ -111,7 +112,14 @@ ok([
     'id'       => $uid,
     'name'     => $acc['username'],
     'email'    => mask_email((string)$acc['email']),
-    'discord'  => $acc['discord'] ?: null,
+    // Two different things, deliberately kept apart: what they typed at
+    // sign-up, and what Discord itself confirmed.
+    'discord'  => [
+        'given'     => $acc['discord'] ?: null,
+        'linked'    => !empty($acc['discord_id']),
+        'username'  => $acc['discord_username'] ?: null,
+        'linked_at' => $acc['discord_linked_at'] !== null ? (int)$acc['discord_linked_at'] : null,
+    ],
     'rank'     => $rank,
     'role'     => rank_name($rank),
     'created_at'  => $acc['created_at'],
@@ -158,7 +166,7 @@ ok([
         'record'         => false,       // administrative record system not built
         'sessions'       => $tracking,   // ucp_sessions
         'activity_log'   => $tracking,   // ucp_security_log
-        'discord_link'   => false,       // no OAuth app for Discord yet
+        'discord_link'   => discord_configured(),
         'self_delete'    => (bool)($CONFIG['security']['allow_self_delete'] ?? false),
     ],
 ]);
