@@ -609,10 +609,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
             My Profile
           </div>
-          <div class="menu-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0 1.6 1.6 0 0 0-2.7-1.1 2 2 0 1 1-2.8-2.8A1.6 1.6 0 0 0 4.6 15a2 2 0 0 1 0-4 1.6 1.6 0 0 0 1.1-2.7 2 2 0 1 1 2.8-2.8A1.6 1.6 0 0 0 12 4.6a2 2 0 0 1 4 0 1.6 1.6 0 0 0 2.7 1.1"/></svg>
-            Settings
-          </div>
+          <a class="menu-item" href="/security" style="text-decoration:none;color:inherit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+            Account security
+          </a>
           <div class="menu-sep"></div>
           <div class="menu-item danger" id="logoutBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>
@@ -872,6 +872,10 @@
     fetch('/api/session.php',{credentials:'include'})
       .then(r=>r.json()).then(d=>{
         if(d && d.ok && d.authenticated){
+          // Two-factor is mandatory for this rank and isn't on yet. The API
+          // still answers normally — the gate is the UCP being unusable until
+          // it's set up, not a half-broken session.
+          if(d.twofa_setup_required){ window.location.replace('/security?setup=required'); return; }
           UCP_NAME = d.name || UCP_NAME;
           UCP_RANK = (typeof d.rank==='number') ? d.rank : 0;
           UCP_ROLE = d.role || 'Member';   // server maps rank→name (Member for rank 0)

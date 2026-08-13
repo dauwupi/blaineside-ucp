@@ -33,9 +33,44 @@ return [
     // Public base URL of the UCP (no trailing slash). Used to build the
     // verification link in emails.
     'base_url' => 'https://ucp.blaineside.com',
+
+    // Shown as the account issuer inside authenticator apps, so people can
+    // tell this entry apart from every other 6-digit code on their phone.
+    // Changing it later does NOT break existing setups — the app keeps the
+    // label it was given when the code was scanned.
+    'name' => 'BlaineSide UCP',
   ],
 
   // ---- Security ----
   // Allowed origin for the browser fetch() calls (CORS). Should match base_url.
   'allowed_origin' => 'https://ucp.blaineside.com',
+
+  'security' => [
+    // ---- 2FA secret encryption (recommended, optional) ----
+    //
+    // Encrypts every stored TOTP secret with AES-256-GCM. The key lives here,
+    // in the one file that is gitignored and never appears in a database
+    // dump — so a leaked dump yields no working second factors.
+    //
+    // Generate one and paste the whole line it prints:
+    //     php -r "echo 'base64:' . base64_encode(random_bytes(32)), PHP_EOL;"
+    //
+    // Leave it '' and secrets are stored as plain base32 — everything still
+    // works, you just lose that layer.
+    //
+    // WARNING: once accounts have 2FA enabled, changing or losing this key
+    // makes their secrets unreadable and locks them out. Back it up wherever
+    // you keep the database password.
+    'secret_key' => '',
+
+    // ---- Mandatory 2FA by rank (off by default) ----
+    //
+    // null  = optional for everyone (current behaviour)
+    // 1     = every staff member (Support Staff and above) must enable it
+    // 9     = Founders only
+    //
+    // Accounts at or above this rank are sent to /security on sign-in until
+    // 2FA is on, and cannot switch it back off. Members are never affected.
+    'totp_required_rank' => null,
+  ],
 ];

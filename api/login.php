@@ -3,9 +3,15 @@
  * POST /api/login.php
  * Body: { username, password, remember? }
  * Verifies credentials, blocks unverified accounts, starts a session.
+ *
+ * When the account has two-factor enabled this endpoint stops half way: it
+ * records a pending state and answers { requires_2fa: true }. The session is
+ * only established once /api/2fa-verify.php accepts a code.
  */
 require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
+require __DIR__ . '/_2fa.php';
+require __DIR__ . '/_login_finish.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -21,7 +27,8 @@ if ($username === '' || $password === '') {
 
 $pdo  = db();
 $stmt = $pdo->prepare(
-    'SELECT id, username, password_hash, admin_rank, status, session_epoch
+    'SELECT id, username, password_hash, admin_rank, status, session_epoch,
+            totp_enabled, totp_secret, totp_last_step
        FROM ucp_accounts WHERE username_lower = ? LIMIT 1'
 );
 $stmt->execute([strtolower($username)]);
@@ -73,145 +80,36 @@ if ($acc['status'] === 'suspended') {
     fail('This account is suspended. Contact staff on Discord.', 403);
 }
 
-// Success — establish the session.
-clear_failures($pdo, $accountId, $ip, '');
-$rank     = (int)$acc['admin_rank'];
-$remember = !empty($in['remember']);
-session_regenerate_id(true);
-$_SESSION['uid']      = (int)$acc['id'];
-$_SESSION['name']     = $acc['username'];
-$_SESSION['rank']     = $rank;
-$_SESSION['epoch']    = (int)($acc['session_epoch'] ?? 0);
-$_SESSION['remember'] = $remember;
+// ---- Two-factor gate ------------------------------------------------------
+//
+// The password was right, so its failure counter is cleared here rather than
+// after the code step — otherwise someone who genuinely has 2FA on but
+// fumbles codes would rack up a password lockout too. Code attempts get their
+// own bucket (probe '2fa') inside 2fa-verify.php.
+//
+// Note what is NOT set: 'uid' stays unset, so session.php, the OAuth
+// authorize page and the dashboard all continue to treat this browser as
+// signed out until the code lands. Half-authenticated means half — there is
+// no window where a correct password alone grants anything.
+if (!empty($acc['totp_enabled']) && !empty($acc['totp_secret'])) {
+    clear_failures($pdo, $accountId, $ip, '');
 
-// If "remember me" was checked, issue a persistent token stored in the DB.
-// The bootstrap picks this up on future requests even after the PHP session expires.
-if ($remember) {
-    // Remember-me must never be able to break a sign-in that has already
-    // succeeded. If the token can't be stored (missing column, DB hiccup),
-    // log it and continue — the user still gets their normal session.
-    try {
-        $rm_token   = bin2hex(random_bytes(32));
-        $rm_expires = time() + 30 * 24 * 3600;
-        $pdo->prepare(
-            'UPDATE ucp_accounts SET remember_token = ?, remember_expires = ? WHERE id = ?'
-        )->execute([token_hash($rm_token), $rm_expires, (int)$acc['id']]);
+    // Fresh session id before storing the pending state, so a session fixed by
+    // an attacker beforehand isn't the one that gets promoted on success.
+    session_regenerate_id(true);
 
-        $secure = is_https();
-        // Persistent remember-me cookie (read by _bootstrap.php to restore the session).
-        setcookie('bsucp_rm', $rm_token, [
-            'expires'  => $rm_expires,
-            'path'     => '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-            'secure'   => $secure,
-        ]);
-        // Also extend the session cookie so it survives beyond the browser session.
-        setcookie(session_name(), session_id(), [
-            'expires'  => $rm_expires,
-            'path'     => '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-            'secure'   => $secure,
-        ]);
-    } catch (Throwable $e) {
-        error_log('UCP remember-me could not be stored: ' . $e->getMessage());
-    }
+    $_SESSION['pending_2fa']       = (int)$acc['id'];
+    $_SESSION['pending_2fa_exp']   = time() + BS_PENDING_TTL;
+    $_SESSION['pending_2fa_tries'] = 0;
+    $_SESSION['pending_remember']  = !empty($in['remember']);
+    $_SESSION['pending_name']      = $acc['username'];
+
+    json_out([
+        'ok'           => false,
+        'requires_2fa' => true,
+        'expires_in'   => BS_PENDING_TTL,
+    ], 200);
 }
 
-// ---- "Last sign-in …" notice -------------------------------------------
-// Capture the PREVIOUS sign-in before we overwrite it, and remember this
-// device so the login page can say "from this device" next time.
-$prev = $pdo->prepare('SELECT last_login, last_device FROM ucp_accounts WHERE id = ? LIMIT 1');
-$prev->execute([(int)$acc['id']]);
-$prevRow    = $prev->fetch();
-$prevLogin  = $prevRow['last_login'] ?? null;
-$prevDevice = $prevRow['last_device'] ?? null;
-
-// A per-device token, kept in a long-lived cookie and hashed in the DB.
-$deviceRaw = $_COOKIE['bsucp_dev'] ?? '';
-if (!preg_match('/^[a-f0-9]{32}$/', $deviceRaw)) {
-    $deviceRaw = bin2hex(random_bytes(16));
-}
-$deviceHash = hash('sha256', $deviceRaw);
-$sameDevice = ($prevDevice !== null && hash_equals((string)$prevDevice, $deviceHash));
-
-$secureCookie = is_https();
-setcookie('bsucp_dev', $deviceRaw, [
-    'expires'  => time() + 90 * 24 * 3600,
-    'path'     => '/',
-    'httponly' => true,
-    'samesite' => 'Lax',
-    'secure'   => $secureCookie,
-]);
-// Readable by the login page (not httponly) purely to render the notice.
-// Contains only a timestamp + a flag — no account identifiers.
-// $sameDevice was computed above but thrown away here — the cookie always
-// claimed "same", so the login page's "from this device" line was shown to
-// everyone, including someone signing in from a machine they'd never used.
-setcookie('bsucp_last', json_encode([
-    'ts'   => time(),
-    'same' => $sameDevice,
-]), [
-    'expires'  => time() + 90 * 24 * 3600,
-    'path'     => '/',
-    'httponly' => false,
-    'samesite' => 'Lax',
-    'secure'   => $secureCookie,
-]);
-
-$pdo->prepare('UPDATE ucp_accounts SET last_login = NOW(), last_device = ? WHERE id = ?')
-    ->execute([$deviceHash, (int)$acc['id']]);
-
-// ── Lazy forum_member_id population ──────────────────────────────────────────
-// If the user has logged into the forum via OAuth at least once, IPS will have
-// created their forum account. Look it up by email and store it now.
-$fmRow = $pdo->prepare('SELECT forum_member_id, email FROM ucp_accounts WHERE id = ? LIMIT 1');
-$fmRow->execute([$acc['id']]);
-$fmData = $fmRow->fetch();
-
-if ($fmData && $fmData['forum_member_id'] === null) {
-    $ips_url = rtrim($CONFIG['ips']['url'] ?? '', '/');
-    $ips_key = $CONFIG['ips']['key'] ?? '';
-    if ($ips_url !== '' && $ips_key !== '') {
-        // '?' not '&' — the old URL put the query in the path, so this
-        // lookup could never succeed. Which meant it also never stopped
-        // retrying: forum_member_id stayed NULL, so EVERY subsequent login
-        // paid for the request again.
-        $lookup = $ips_url . '/core/members?' . http_build_query(['key' => $ips_key, 'email' => $fmData['email']]);
-        $ch = curl_init($lookup);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            // Sign-in blocks on this. 10s meant a slow or unreachable forum
-            // held the user on a spinner for ten seconds before letting them
-            // in; 3s is plenty for a same-provider API call and the lookup is
-            // optional anyway.
-            CURLOPT_TIMEOUT        => 3,
-            CURLOPT_CONNECTTIMEOUT => 2,
-            // The API key rides in the query string, so following a redirect
-            // would hand it to whatever host the redirect names.
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
-        ]);
-        $body = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ($code === 200 && $body) {
-            $data = json_decode($body, true);
-            if (isset($data['results'][0]['id'])) {
-                $pdo->prepare('UPDATE ucp_accounts SET forum_member_id = ? WHERE id = ?')
-                    ->execute([$data['results'][0]['id'], $acc['id']]);
-            }
-        }
-    }
-}
-
-ok([
-    'id'   => (int)$acc['id'],       // Account ID
-    'name' => $acc['username'],
-    'rank' => $rank,                 // 0–9
-    'role' => rank_name($rank),      // display name ('' for Members)
-    'redirect' => '/dashboard',
-    'last_login'  => $prevLogin,
-    'same_device' => $sameDevice,
-]);
+// ---- No second factor — sign in now ---------------------------------------
+login_finish($pdo, $acc, !empty($in['remember']));

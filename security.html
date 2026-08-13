@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<!-- BlaineSide — ACCOUNT SECURITY (two-step verification).
+     Standalone for now; the flows here are meant to be lifted into the
+     profile/settings design once that exists. Everything it needs is behind
+     /api/2fa-*.php, so moving it is a matter of markup, not logic. -->
+<html lang="en"><head><meta charset="utf-8">
+<title>Account security — BlaineSide UCP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="/assets/fa/fontawesome.css">
+<link rel="stylesheet" href="/assets/css/ucp.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--amber:#d4923a;--gold:#e2b65c;--parch:#f1efe9;--surface-2:#221f1c;--border:#3a342c;--line:#2b2620;--text-dim:#a89e90;--text-faint:#787064;--green:#57b26a;--red:#c9524a}
+.stage{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,#0e0d0b,#131009 60%,#0b0a08)}
+.scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;background-color:#0b0a08;background-position:center;background-size:cover;background-repeat:no-repeat}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none;background:
+  radial-gradient(98% 80% at 50% 42%,rgba(10,9,8,.42),rgba(10,9,8,.9)),
+  linear-gradient(180deg,rgba(10,9,8,.78) 0%,rgba(10,9,8,.24) 25%,rgba(10,9,8,.3) 56%,rgba(10,9,8,.92) 100%)}
+.top{position:relative;z-index:2;display:flex;align-items:center;padding:24px 40px}
+.center{position:relative;z-index:2;flex:1;display:grid;place-items:center;padding:20px 24px 40px}
+.panel{width:100%;max-width:520px;background:linear-gradient(180deg,rgba(31,28,25,.92),rgba(20,18,16,.94));border:1px solid rgba(255,255,255,.05);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.6);backdrop-filter:blur(16px);padding:38px 34px;animation:pop .6s cubic-bezier(.2,.85,.25,1) both}
+.badge{width:60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:22px;color:var(--gold);background:rgba(212,146,58,.1);border:1px solid rgba(212,146,58,.22);margin-bottom:20px}
+.badge.on{color:var(--green);background:rgba(87,178,106,.1);border-color:rgba(87,178,106,.24)}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--amber)}
+.panel h2{font-size:23px;font-weight:800;letter-spacing:-.02em;margin-top:9px}
+.panel .sub{font-size:13.5px;color:var(--text-dim);line-height:1.6;margin-top:9px}
+.panel .sub b{color:var(--parch);font-weight:700}
+.field{margin-top:18px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--parch);margin-bottom:8px}
+.field label .req{color:var(--amber);margin-left:3px}
+.inp{position:relative}
+.inp input{width:100%;background:rgba(14,13,11,.75);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--parch);font-family:inherit;font-size:14px;outline:none;transition:.15s}
+.inp input::placeholder{color:var(--text-faint)}
+.inp input:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.15);background:rgba(14,13,11,.9)}
+.inp:has(.show) input{padding-right:60px}
+.inp .show{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:600;color:var(--text-faint);cursor:pointer;background:linear-gradient(90deg,transparent,rgba(14,13,11,.95) 26%);padding-left:14px}
+.inp .show:hover{color:var(--gold)}
+.inp.invalid input{border-color:rgba(201,82,74,.78);box-shadow:0 0 0 3px rgba(201,82,74,.15);background:rgba(20,12,11,.85)}
+.inp.code input{text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:24px;font-weight:700;letter-spacing:.4em;text-indent:.4em;padding:15px 14px}
+.msg{display:none;align-items:center;gap:7px;font-size:11.5px;line-height:1.45;margin-top:8px;font-weight:500}
+.msg.show{display:flex}
+.msg.err{color:#dd7168}
+.msg.ok{color:var(--green)}
+.msg .fa{font-size:10.5px}
+.btn{display:block;text-align:center;text-decoration:none;width:100%;margin-top:20px;padding:15px;border:none;border-radius:11px;background:linear-gradient(180deg,var(--gold),var(--amber));color:#17140f;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 12px 26px rgba(212,146,58,.22);transition:.15s}
+.btn:hover{filter:brightness(1.05)}
+.btn[aria-disabled="true"]{opacity:.5;box-shadow:none;filter:none;pointer-events:none}
+.btn.ghost{background:none;border:1px solid var(--border);color:var(--parch);box-shadow:none;font-weight:700;margin-top:11px}
+.btn.ghost:hover{border-color:var(--gold);color:var(--gold);filter:none}
+.btn.danger{background:none;border:1px solid rgba(201,82,74,.4);color:#dd7168;box-shadow:none;font-weight:700;margin-top:11px}
+.btn.danger:hover{background:rgba(201,82,74,.09);border-color:rgba(201,82,74,.6);filter:none}
+.alt{margin-top:18px;font-size:12.5px;color:var(--text-dim);text-align:center}
+.alt a{color:var(--gold);text-decoration:none;font-weight:600;cursor:pointer}
+.alt a:hover{text-decoration:underline}
+
+/* status row */
+.state{display:flex;align-items:center;gap:12px;margin-top:22px;padding:14px 16px;border-radius:12px;
+  border:1px solid var(--line);background:rgba(14,13,11,.5)}
+.state .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--text-faint)}
+.state.on .dot{background:var(--green);box-shadow:0 0 0 4px rgba(87,178,106,.15)}
+.state .t{font-size:13px;font-weight:700;color:var(--parch)}
+.state .d{font-size:11.5px;color:var(--text-dim);margin-top:3px}
+.notice{margin-top:18px;padding:13px 15px;border-radius:11px;font-size:12.5px;line-height:1.55;
+  border:1px solid rgba(212,146,58,.28);background:rgba(212,146,58,.08);color:#e8c489}
+.notice.bad{border-color:rgba(201,82,74,.34);background:rgba(201,82,74,.08);color:#e79187}
+.notice b{color:var(--parch)}
+
+/* setup */
+.steps{counter-reset:s;margin-top:22px;padding:0;list-style:none}
+.steps li{position:relative;padding-left:34px;margin-bottom:16px;font-size:13px;color:var(--text-dim);line-height:1.6}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:-1px;width:23px;height:23px;
+  border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--gold);
+  background:rgba(212,146,58,.12);border:1px solid rgba(212,146,58,.26)}
+.steps li b{color:var(--parch);font-weight:700}
+.qrbox{margin:18px auto 0;width:214px;padding:11px;background:#fff;border-radius:12px;line-height:0}
+.qrbox svg{width:192px;height:192px;display:block}
+.qrfail{margin-top:18px;font-size:12.5px;color:var(--text-dim);text-align:center}
+.secret{margin-top:16px;text-align:center}
+.secret .lbl{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint)}
+.secret .val{margin-top:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;
+  font-weight:700;color:var(--gold);letter-spacing:.06em;word-break:break-all;line-height:1.7;
+  padding:11px 13px;border:1px dashed var(--border);border-radius:10px;background:rgba(14,13,11,.5);cursor:pointer}
+.secret .hint{font-size:11px;color:var(--text-faint);margin-top:7px}
+
+/* recovery codes */
+.codes{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:20px}
+.codes span{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;font-weight:700;
+  color:var(--parch);letter-spacing:.05em;text-align:center;padding:11px 6px;border:1px solid var(--line);
+  border-radius:9px;background:rgba(14,13,11,.55)}
+.codeacts{display:flex;gap:9px;margin-top:16px}
+.codeacts button{flex:1;padding:11px;border:1px solid var(--border);border-radius:10px;background:none;
+  color:var(--parch);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s}
+.codeacts button:hover{border-color:var(--gold);color:var(--gold)}
+.ack{display:flex;align-items:flex-start;gap:10px;margin-top:18px;font-size:12.5px;color:var(--text-dim);cursor:pointer;line-height:1.5}
+.ack .box{width:19px;height:19px;flex:none;border-radius:6px;border:1px solid var(--border);display:grid;place-items:center;font-size:10px;color:transparent;margin-top:1px}
+.ack.on .box{background:var(--amber);border-color:var(--amber);color:#17140f}
+
+.view{display:none}
+.view.on{display:block}
+.foot{position:relative;z-index:2;display:flex;align-items:center;gap:20px;padding:16px 40px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-faint);background:rgba(11,10,8,.5);backdrop-filter:blur(6px)}
+.spin{display:grid;place-items:center;padding:26px 0;color:var(--text-faint);font-size:13px}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel{animation:none}}
+@media (max-width:560px){.top{padding:20px 20px}.foot{flex-direction:column;gap:12px;text-align:center;padding:18px 24px}.foot .links{margin:0}.panel{padding:32px 24px}.brand .tag{display:none}.navbtn .nb{display:none}.navbtn{padding:9px 12px}.codes{grid-template-columns:1fr}}
+@media print{
+  .top,.foot,.scene,.scrim,.codeacts,.ack,.btn{display:none!important}
+  .stage{background:#fff;min-height:auto}
+  .panel{box-shadow:none;border:none;background:#fff;animation:none;max-width:none}
+  .panel h2,.secret .val,.codes span{color:#000}
+  .panel .sub,.eyebrow{color:#333}
+  .codes span{border:1px solid #999;background:#fff}
+}
+</style>
+<script src="/assets/js/ucp.js"></script>
+<script src="/assets/js/qrcode.js"></script>
+</head>
+<body>
+<div class="stage">
+  <div class="scene"></div>
+  <div class="tod"></div>
+  <div class="scrim"></div>
+
+  <div class="top">
+    <a class="brand" href="/dashboard"><span class="mark">BLAINE<em>SIDE</em></span><span class="tag">UCP</span></a>
+    <nav class="navbtns">
+      <a class="navbtn" href="/dashboard"><i class="fa fa-th-large"></i> <span class="nb">Dashboard</span></a>
+      <a class="navbtn" href="https://forum.blaineside.com"><i class="fa fa-comments-o"></i> <span class="nb">Forums</span></a>
+    </nav>
+  </div>
+
+  <div class="center">
+    <div class="panel">
+
+      <!-- ===== loading ===== -->
+      <div class="view on" id="vLoading">
+        <div class="spin"><i class="fa fa-circle-o-notch fa-spin" style="font-size:20px"></i></div>
+      </div>
+
+      <!-- ===== status ===== -->
+      <div class="view" id="vStatus">
+        <div class="badge" id="stBadge"><i class="fa fa-shield"></i></div>
+        <div class="eyebrow">Account security</div>
+        <h2>Two-step verification</h2>
+        <p class="sub">An extra code from your phone whenever you sign in. It protects your UCP <b>and your forum account</b> — the forums sign you in through the UCP, so a password on its own stops being enough anywhere.</p>
+
+        <div class="notice" id="stRequired" style="display:none">
+          Two-step verification is <b>required for your staff rank</b>. Set it up to carry on using your UCP.
+        </div>
+        <div class="notice bad" id="stBroken" style="display:none">
+          Two-step verification is switched on but the server can't read your stored secret, so no code will work.
+          <b>Contact a Founder</b> — this needs fixing on the server, not on your phone.
+        </div>
+        <div class="notice" id="stCodesLow" style="display:none"></div>
+
+        <div class="state" id="stState">
+          <span class="dot"></span>
+          <span>
+            <span class="t" id="stTitle">Off</span>
+            <span class="d" id="stDesc">Your account is protected by your password alone.</span>
+          </span>
+        </div>
+
+        <button class="btn" id="btnEnable">Turn on two-step verification</button>
+        <button class="btn ghost" id="btnRegen" style="display:none">Generate new recovery codes</button>
+        <button class="btn danger" id="btnDisable" style="display:none">Turn off two-step verification</button>
+        <div class="alt"><a href="/dashboard">← Back to your UCP</a></div>
+      </div>
+
+      <!-- ===== step 1: confirm password ===== -->
+      <div class="view" id="vPassword">
+        <div class="badge"><i class="fa fa-lock"></i></div>
+        <div class="eyebrow" id="pwEyebrow">Step 1 of 3</div>
+        <h2 id="pwTitle">Confirm your password</h2>
+        <p class="sub" id="pwSub">Before changing how your account is protected, confirm the password you sign in with.</p>
+
+        <div class="field">
+          <label for="pw">Password <span class="req">*</span></label>
+          <div class="inp" id="inpPw"><input type="password" id="pw" placeholder="Your UCP password" autocomplete="current-password"><span class="show" data-show="pw">Show</span></div>
+          <div class="msg" id="msgPw"></div>
+        </div>
+
+        <!-- Only shown for disable / regenerate, which need both factors. -->
+        <div class="field" id="pwCodeField" style="display:none">
+          <label for="pwCode">Authenticator or recovery code <span class="req">*</span></label>
+          <div class="inp" id="inpPwCode"><input type="text" id="pwCode" placeholder="000000" spellcheck="false" autocapitalize="off" autocomplete="off"></div>
+          <div class="msg" id="msgPwCode"></div>
+        </div>
+
+        <button class="btn" id="btnPwNext">Continue</button>
+        <div class="alt"><a id="pwCancel">Cancel</a></div>
+      </div>
+
+      <!-- ===== step 2: scan ===== -->
+      <div class="view" id="vScan">
+        <div class="badge"><i class="fa fa-qrcode"></i></div>
+        <div class="eyebrow">Step 2 of 3</div>
+        <h2>Scan this code</h2>
+        <p class="sub">Use any authenticator app — Google Authenticator, Authy, 1Password, Aegis, Ente. They all work the same way.</p>
+
+        <div class="qrbox" id="qrBox"></div>
+        <div class="qrfail" id="qrFail" style="display:none">Couldn't draw the QR code — enter the key below by hand instead.</div>
+
+        <div class="secret">
+          <div class="lbl">Or enter this key manually</div>
+          <div class="val" id="secretVal" title="Click to copy">—</div>
+          <div class="hint" id="secretHint">Click to copy. Type is “time-based”.</div>
+        </div>
+
+        <div class="field" style="margin-top:22px">
+          <label for="setCode">Enter the 6-digit code your app shows <span class="req">*</span></label>
+          <div class="inp code" id="inpSetCode"><input type="text" id="setCode" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" spellcheck="false"></div>
+          <div class="msg" id="msgSetCode"></div>
+        </div>
+
+        <button class="btn" id="btnConfirm">Turn on two-step verification</button>
+        <div class="alt"><a id="scanCancel">Cancel</a></div>
+      </div>
+
+      <!-- ===== step 3: recovery codes ===== -->
+      <div class="view" id="vCodes">
+        <div class="badge on"><i class="fa fa-life-ring"></i></div>
+        <div class="eyebrow" id="codesEyebrow">Step 3 of 3</div>
+        <h2 id="codesTitle">Save your recovery codes</h2>
+        <p class="sub">These are the only way back into your account if you lose your phone. Each one works <b>once</b>. Keep them somewhere you'll still have access to — a password manager, or printed and put away.</p>
+
+        <div class="notice"><b>This is the only time they are shown.</b> They cannot be looked up later; you can only replace the whole set.</div>
+
+        <div class="codes" id="codeList"></div>
+
+        <div class="codeacts">
+          <button id="btnCopy"><i class="fa fa-clone"></i> Copy</button>
+          <button id="btnDownload"><i class="fa fa-download"></i> Download</button>
+          <button id="btnPrint"><i class="fa fa-print"></i> Print</button>
+        </div>
+
+        <div class="ack" id="ackBox"><span class="box"><i class="fa fa-check"></i></span>
+          <span>I have saved these recovery codes somewhere safe.</span></div>
+
+        <button class="btn" id="btnDone" aria-disabled="true">Done</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>© 2026 BlaineSide · Not affiliated with Rockstar Games or Take-Two Interactive.</span>
+    <div class="links"><a href="/dashboard">Dashboard</a><a href="https://discord.gg/8GUuTBcEsD" target="_blank" rel="noopener">Support</a></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+
+  /* Which action the password step is gating. Set before switching to it. */
+  var intent=null;              // 'enable' | 'disable' | 'regen'
+  var busy=false, status=null;
+
+  /* ---- view switching -------------------------------------------------- */
+  var VIEWS=['vLoading','vStatus','vPassword','vScan','vCodes'];
+  function show(id){
+    VIEWS.forEach(function(v){ $(v).classList.toggle('on', v===id); });
+    window.scrollTo(0,0);
+  }
+
+  function setMsg(box,m,state,text){
+    box.classList.remove('invalid');
+    if(state==='err') box.classList.add('invalid');
+    if(!state){ m.className='msg'; m.textContent=''; return; }
+    m.className='msg show '+(state==='ok'?'ok':'err');
+    m.innerHTML='<i class="fa '+(state==='ok'?'fa-check-circle':'fa-exclamation-circle')+'"></i> '+text;
+  }
+  function busyBtn(btn,on,label){
+    busy=on;
+    btn.setAttribute('aria-disabled',on?'true':'false');
+    if(on){ btn.dataset.label=btn.innerHTML; btn.innerHTML=label||'Working…'; }
+    else if(btn.dataset.label){ btn.innerHTML=btn.dataset.label; }
+  }
+
+  /* Show/hide password toggles, shared with the other auth pages. */
+  document.addEventListener('click',function(e){
+    var s=e.target.closest('[data-show]'); if(!s) return;
+    var i=$(s.getAttribute('data-show')); var t=i.type==='password';
+    i.type=t?'text':'password'; s.textContent=t?'Hide':'Show';
+  });
+
+  /* ---- status ---------------------------------------------------------- */
+  function renderStatus(d){
+    status=d;
+    var on=!!d.enabled;
+
+    // Reset every notice first — this runs again after each change, and a
+    // stale warning left over from the previous state is worse than none.
+    $('stRequired').style.display='none';
+    $('stBroken').style.display='none';
+    $('stCodesLow').style.display='none';
+
+    $('stBadge').classList.toggle('on',on);
+    $('stState').classList.toggle('on',on);
+    $('stTitle').textContent = on ? 'On' : 'Off';
+
+    if(on){
+      var left=+d.backup_remaining, total=d.backup_total||10;
+      $('stDesc').textContent='A code from your authenticator app is required at every sign-in. '+
+                              left+' of '+total+' recovery codes left.';
+      // Quietly running out is the failure people actually hit, so it gets its
+      // own warning rather than a number buried in a sentence.
+      if(left<=2){
+        $('stCodesLow').style.display='block';
+        $('stCodesLow').innerHTML = left===0
+          ? 'You have <b>no recovery codes left</b>. If you lose your phone now, only a Founder can get you back in — generate a new set.'
+          : 'You have <b>'+left+' recovery code'+(left===1?'':'s')+' left</b>. Generate a new set while you still can.';
+      }
+    } else {
+      $('stDesc').textContent='Your account is protected by your password alone.';
+    }
+
+    $('btnEnable').style.display  = on ? 'none' : '';
+    $('btnRegen').style.display   = on ? '' : 'none';
+    // Staff who are required to have it can't switch it off from here — the
+    // server refuses too, so hiding the button just avoids a dead end.
+    $('btnDisable').style.display = (on && !d.required) ? '' : 'none';
+
+    if(d.required && !on)  $('stRequired').style.display='block';
+    if(d.misconfigured)    $('stBroken').style.display='block';
+
+    show('vStatus');
+  }
+
+  function loadStatus(){
+    UCP.get('2fa-status.php').then(function(d){
+      if(!d || d.ok!==true){
+        // Not signed in (or the session ended) — come back here afterwards.
+        window.location.replace('/login?return='+encodeURIComponent('/security'));
+        return;
+      }
+      renderStatus(d);
+    });
+  }
+
+  /* ---- step 1: password ------------------------------------------------ */
+  function askPassword(which){
+    intent=which;
+    var needsCode = (which!=='enable');
+    $('pwCodeField').style.display = needsCode ? '' : 'none';
+    $('pwEyebrow').textContent = which==='enable' ? 'Step 1 of 3' : 'Confirm it’s you';
+    $('pwTitle').textContent   = which==='disable' ? 'Turn off two-step verification'
+                               : which==='regen'   ? 'Generate new recovery codes'
+                               : 'Confirm your password';
+    $('pwSub').innerHTML = which==='disable'
+        ? 'Your account will go back to being protected by your password alone, and your current recovery codes will be deleted. Confirm both factors to continue.'
+      : which==='regen'
+        ? 'Your existing recovery codes will stop working immediately and be replaced with a new set of '+((status&&status.backup_total)||10)+'.'
+        : 'Before changing how your account is protected, confirm the password you sign in with.';
+    $('btnPwNext').innerHTML = which==='disable' ? 'Turn off two-step verification' : 'Continue';
+    $('btnPwNext').classList.toggle('danger', which==='disable');
+
+    $('pw').value=''; $('pwCode').value='';
+    setMsg($('inpPw'),$('msgPw'),null); setMsg($('inpPwCode'),$('msgPwCode'),null);
+    show('vPassword');
+    $('pw').focus();
+  }
+
+  function submitPassword(){
+    if(busy) return;
+    var pw=$('pw').value, code=$('pwCode').value.trim();
+    if(!pw){ setMsg($('inpPw'),$('msgPw'),'err','Enter your password.'); $('pw').focus(); return; }
+    if(intent!=='enable' && !code){
+      setMsg($('inpPwCode'),$('msgPwCode'),'err','Enter a code from your app, or a recovery code.');
+      $('pwCode').focus(); return;
+    }
+    setMsg($('inpPw'),$('msgPw'),null); setMsg($('inpPwCode'),$('msgPwCode'),null);
+
+    var btn=$('btnPwNext');
+    busyBtn(btn,true, intent==='enable'?'Preparing…':'Verifying…');
+
+    var endpoint = intent==='enable' ? '2fa-setup.php'
+                 : intent==='regen'  ? '2fa-codes.php'
+                 : '2fa-disable.php';
+    var body = intent==='enable' ? {password:pw} : {password:pw, code:code};
+
+    UCP.post(endpoint, body).then(function(res){
+      var d=res.data||{};
+      busyBtn(btn,false);
+      if(res.status===401 && d.authenticated===false){
+        window.location.replace('/login?return='+encodeURIComponent('/security'));
+        return;
+      }
+      if(!d.ok){
+        var target = d.field==='code' ? [$('inpPwCode'),$('msgPwCode'),$('pwCode')]
+                                      : [$('inpPw'),$('msgPw'),$('pw')];
+        var text=UCP.esc(d.error||'That did not work.');
+        if(d.locked && d.locked_for) text='Too many attempts. Try again in '+UCP.fmtSecs(d.locked_for)+'.';
+        setMsg(target[0],target[1],'err',text);
+        target[2].focus(); target[2].select && target[2].select();
+        return;
+      }
+
+      if(intent==='enable'){ showScan(d); return; }
+      if(intent==='regen') { showCodes(d.backup_codes, false); return; }
+      // disabled
+      setMsg($('inpPw'),$('msgPw'),null);
+      loadStatus();
+    }).catch(function(){
+      busyBtn(btn,false);
+      setMsg($('inpPw'),$('msgPw'),'err','Could not reach the server. Please try again.');
+    });
+  }
+
+  /* ---- step 2: scan ---------------------------------------------------- */
+  function showScan(d){
+    $('secretVal').textContent = d.secret_pretty || d.secret || '';
+    $('secretVal').dataset.raw = d.secret || '';
+
+    var box=$('qrBox');
+    box.innerHTML='';
+    try{
+      // Error correction M: enough to survive a phone camera at an angle
+      // without pushing the module count so high the code stops scanning on
+      // a small screen.
+      var qr=window.qrcode(0,'M');
+      qr.addData(d.uri);
+      qr.make();
+      box.innerHTML=qr.createSvgTag({cellSize:4,margin:2,scalable:true});
+      $('qrFail').style.display='none';
+    }catch(e){
+      // The manual key below is a complete fallback, so a QR failure is an
+      // inconvenience rather than a dead end.
+      box.style.display='none';
+      $('qrFail').style.display='block';
+    }
+
+    $('setCode').value='';
+    setMsg($('inpSetCode'),$('msgSetCode'),null);
+    show('vScan');
+    $('setCode').focus();
+  }
+
+  function submitConfirm(){
+    if(busy) return;
+    var code=$('setCode').value.replace(/\D/g,'');
+    if(code.length!==6){
+      setMsg($('inpSetCode'),$('msgSetCode'),'err','Enter the 6-digit code from your app.');
+      $('setCode').focus(); return;
+    }
+    var btn=$('btnConfirm');
+    busyBtn(btn,true,'Checking…');
+    UCP.post('2fa-confirm.php',{code:code}).then(function(res){
+      var d=res.data||{};
+      busyBtn(btn,false);
+      if(d.ok){ showCodes(d.backup_codes, true); return; }
+      if(d.restart){
+        setMsg($('inpSetCode'),$('msgSetCode'),'err',UCP.esc(d.error||'Setup expired.'));
+        setTimeout(loadStatus,2200);
+        return;
+      }
+      setMsg($('inpSetCode'),$('msgSetCode'),'err',UCP.esc(d.error||'That code did not match.'));
+      $('setCode').value=''; $('setCode').focus();
+    }).catch(function(){
+      busyBtn(btn,false);
+      setMsg($('inpSetCode'),$('msgSetCode'),'err','Could not reach the server. Please try again.');
+    });
+  }
+
+  /* ---- step 3: recovery codes ------------------------------------------ */
+  var currentCodes=[];
+  function showCodes(codes, firstTime){
+    currentCodes=codes||[];
+    $('codeList').innerHTML=currentCodes.map(function(c){
+      return '<span>'+UCP.esc(c)+'</span>';
+    }).join('');
+    $('codesEyebrow').textContent = firstTime ? 'Step 3 of 3' : 'New recovery codes';
+    $('codesTitle').textContent   = firstTime ? 'Save your recovery codes' : 'Your new recovery codes';
+    $('ackBox').classList.remove('on');
+    $('btnDone').setAttribute('aria-disabled','true');
+    show('vCodes');
+  }
+
+  function codesAsText(){
+    return 'BlaineSide UCP — recovery codes\r\n'+
+           'Account: '+((status&&status.name)||'')+'\r\n'+
+           'Issued: '+new Date().toISOString().slice(0,10)+'\r\n'+
+           'Each code can be used once, in place of your authenticator code.\r\n\r\n'+
+           currentCodes.join('\r\n')+'\r\n';
+  }
+
+  $('btnCopy').addEventListener('click',function(){
+    var btn=this, txt=codesAsText();
+    var done=function(){ btn.innerHTML='<i class="fa fa-check"></i> Copied';
+                         setTimeout(function(){btn.innerHTML='<i class="fa fa-clone"></i> Copy';},1800); };
+    if(navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(txt).then(done,fallback);
+    } else { fallback(); }
+    function fallback(){
+      // execCommand is deprecated but it is the only thing that works when the
+      // clipboard API is unavailable, and losing these codes is expensive.
+      var ta=document.createElement('textarea');
+      ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){}
+      document.body.removeChild(ta);
+    }
+  });
+
+  $('btnDownload').addEventListener('click',function(){
+    var blob=new Blob([codesAsText()],{type:'text/plain'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='blaineside-recovery-codes.txt';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },0);
+  });
+
+  $('btnPrint').addEventListener('click',function(){ window.print(); });
+
+  $('ackBox').addEventListener('click',function(){
+    this.classList.toggle('on');
+    $('btnDone').setAttribute('aria-disabled', this.classList.contains('on')?'false':'true');
+  });
+
+  $('btnDone').addEventListener('click',function(){
+    if(this.getAttribute('aria-disabled')==='true') return;
+    currentCodes=[]; $('codeList').innerHTML='';
+    loadStatus();
+  });
+
+  /* ---- wiring ---------------------------------------------------------- */
+  $('btnEnable').addEventListener('click',function(){ askPassword('enable'); });
+  $('btnRegen').addEventListener('click',function(){ askPassword('regen'); });
+  $('btnDisable').addEventListener('click',function(){ askPassword('disable'); });
+  $('btnPwNext').addEventListener('click',function(e){ e.preventDefault(); submitPassword(); });
+  $('pwCancel').addEventListener('click',function(e){ e.preventDefault(); loadStatus(); });
+  $('scanCancel').addEventListener('click',function(e){ e.preventDefault(); loadStatus(); });
+  $('btnConfirm').addEventListener('click',function(e){ e.preventDefault(); submitConfirm(); });
+
+  /* Six digits is a complete code — submit without making them find the
+     button, same as the sign-in prompt. */
+  $('setCode').addEventListener('input',function(){
+    var v=this.value.replace(/\D/g,'').slice(0,6);
+    this.value=v;
+    if(v.length===6 && !busy) submitConfirm();
+    else setMsg($('inpSetCode'),$('msgSetCode'),null);
+  });
+
+  /* The settings-side field takes either factor, so only strip formatting. */
+  $('pwCode').addEventListener('input',function(){
+    var v=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(/^\d*$/.test(v)) this.value=v.slice(0,6);
+    else this.value=v.slice(0,12).replace(/(.{4})(?=.)/g,'$1-');
+  });
+
+  ['pw','pwCode'].forEach(function(id){
+    $(id).addEventListener('keydown',function(e){ if(e.key==='Enter'){e.preventDefault();submitPassword();} });
+  });
+  $('setCode').addEventListener('keydown',function(e){ if(e.key==='Enter'){e.preventDefault();submitConfirm();} });
+
+  $('secretVal').addEventListener('click',function(){
+    var raw=this.dataset.raw||this.textContent.replace(/\s+/g,'');
+    var hint=$('secretHint');
+    var ok=function(){ hint.textContent='Copied to clipboard.';
+                       setTimeout(function(){hint.textContent='Click to copy. Type is “time-based”.';},1800); };
+    if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(raw).then(ok,function(){}); }
+  });
+
+  /* Arriving from a sign-in that demanded setup. */
+  if(new URLSearchParams(window.location.search).get('setup')==='required'){
+    $('stRequired').style.display='block';
+  }
+
+  loadStatus();
+})();
+</script>
+</body></html>

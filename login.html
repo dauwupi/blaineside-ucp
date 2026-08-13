@@ -170,6 +170,23 @@
   .foot{flex-direction:column;gap:12px;text-align:center;padding:18px 24px}.foot .links{margin:0}
 }
 @media (max-width:460px){.brand .tag{display:none}.back .bl{display:none}.back{padding:8px 13px}.navbtn .nb{display:none}.navbtn{padding:9px 12px}}
+
+/* ---- Two-factor code step ------------------------------------------------
+   The code field is deliberately oversized and letter-spaced: people read six
+   digits off a phone held in the other hand, and a normal 14px input turns
+   that into a transcription exercise. Monospace so digits don't shift width
+   as they are typed. */
+.tfa-code input{text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:26px;font-weight:700;letter-spacing:.42em;text-indent:.42em;padding:16px 14px}
+.tfa-code.recovery input{font-size:17px;letter-spacing:.16em;text-indent:.16em}
+.tfa-alt{margin-top:14px;font-size:12.5px;color:var(--text-dim)}
+.tfa-alt a{color:var(--gold);cursor:pointer;font-weight:600;text-decoration:none}
+.tfa-alt a:hover{text-decoration:underline}
+.tfa-expiry{margin-top:12px;font-size:11.5px;color:var(--text-faint);display:flex;align-items:center;gap:7px}
+.tfa-expiry .fa{font-size:10.5px}
+/* No "Create UCP" tab mid-verification — the account already exists and the
+   sign-in is half-finished; clicking it would silently abandon the flow. */
+.auth:has(#twofa.on) .tabs{display:none}
 </style><script src="/assets/js/ucp.js"></script>
 </head>
 <body>
@@ -240,6 +257,35 @@
           <button class="submit" id="signinBtn">Sign in <i class="fa fa-arrow-right" style="font-size:12px"></i></button>
           <div class="alt">New to Blaine County? <a href="/create">Create a UCP</a></div>
         </div>
+
+        <!-- ===== TWO-FACTOR CODE STEP =====================================
+             Shown only after api/login.php answers { requires_2fa: true }.
+             At this point the password has been accepted but NOTHING is
+             signed in — the server has no 'uid' in the session until a code
+             lands, so closing the tab here leaves the account untouched. -->
+        <div class="form pane" id="twofa">
+          <div class="eyebrow">Two-step verification</div>
+          <h2>Enter your code</h2>
+          <div class="lede" id="tfaLede">Open your authenticator app and enter the current 6-digit code for your account.</div>
+
+          <div class="field" style="margin-top:20px">
+            <label for="tfaCode" id="tfaLabel">Authentication code <span class="req">*</span></label>
+            <div class="inp tfa-code" id="inpTfa">
+              <input type="text" id="tfaCode" inputmode="numeric" autocomplete="one-time-code"
+                     maxlength="6" placeholder="000000" spellcheck="false" autocapitalize="off">
+            </div>
+            <div class="msg" id="msg-tfa"></div>
+          </div>
+
+          <div class="lockbar" id="tfaLockbar"><i class="fa fa-lock"></i> <span id="tfaLockmsg"></span></div>
+          <button class="submit" id="tfaBtn">Verify and sign in <i class="fa fa-arrow-right" style="font-size:12px"></i></button>
+
+          <div class="tfa-alt">
+            <a id="tfaToggle">Lost your phone? Use a recovery code</a>
+          </div>
+          <div class="tfa-expiry"><i class="fa fa-clock-o"></i> <span id="tfaExpiry"></span></div>
+          <div class="alt"><a id="tfaBack">← Back to sign in</a></div>
+        </div>
       </div>
       <div class="helpline">Need help getting in? <a href="https://discord.gg/8GUuTBcEsD" target="_blank" rel="noopener">Ask in our Discord</a></div>
     </div>
@@ -290,7 +336,11 @@
   fetch('/api/session.php', { credentials: 'include' })
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if (d && d.ok && d.authenticated) window.location.replace('/dashboard');
+      if (!d) return;
+      if (d.ok && d.authenticated) { window.location.replace('/dashboard'); return; }
+      // Password accepted, code still outstanding — a refresh mid-flow lands
+      // here. Reopen the code prompt rather than making them start over.
+      if (d.pending_2fa) window.dispatchEvent(new CustomEvent('bs:pending2fa'));
     })
     .catch(function(){ /* API down — leave the form usable */ });
 })();
@@ -348,8 +398,15 @@ document.addEventListener('click',function(e){
     var params=new URLSearchParams(window.location.search);
     var FORUM='https://forum.blaineside.com';
     var isForum=function(u){return typeof u==='string' && u.indexOf(FORUM)===0;};
+    /* A path on this site — "/security", not "//evil.com" (which a browser
+       reads as a protocol-relative URL to another host) and not "/\evil.com"
+       (which some browsers normalise the same way). */
+    var isLocal=function(u){
+      return typeof u==='string' && u.charAt(0)==='/' && u.charAt(1)!=='/' && u.charAt(1)!=='\\';
+    };
     if(params.get('next')==='oauth_resume') return '/api/oauth/authorize.php?resume=1';
     if(isForum(params.get('return')))       return params.get('return');
+    if(isLocal(params.get('return')))       return params.get('return');
     if(isForum(document.referrer))          return document.referrer;
     return fallback || '/dashboard';
   }
@@ -413,10 +470,20 @@ document.addEventListener('click',function(e){
         try{ localStorage.setItem('bs-last-user',u); }catch(e){}
         setMsg(msgUser,inpUser,'ok','UCP found.');
         setMsg(msgPw,inpPw,'ok','Signing you in…');
-        loadUCP(destination(d.redirect));
+        // A mandatory-2FA setup redirect outranks any ?return= — otherwise a
+        // staff member arriving from the forum would sail past the setup
+        // screen the server just told them to visit.
+        loadUCP(d.twofa_setup_required ? d.redirect : destination(d.redirect));
         return;
       }
       btn.setAttribute('aria-disabled','false');
+      /* Password was right, second factor outstanding. Nothing is signed in
+         yet — the server holds a short-lived pending state and no session. */
+      if(d.requires_2fa){
+        try{ localStorage.setItem('bs-last-user',u); }catch(e){}
+        enterTwoFactor(d.expires_in||300, u);
+        return;
+      }
       // Server says this account+IP is locked — mirror its countdown.
       if(d.locked && d.locked_for){ lockFor(d.locked_for); return; }
       // Unverified / suspended (403) — surface the reason, no attempt counting.
@@ -434,6 +501,202 @@ document.addEventListener('click',function(e){
       setMsg(msgPw,inpPw,'err','Could not reach the server. Please try again.');
     });
   }
+
+  /* =========================================================================
+     TWO-FACTOR CODE STEP
+
+     Reached only when api/login.php answers { requires_2fa: true }. The
+     password is already accepted at this point but the browser holds no
+     session — /api/session.php still reports authenticated:false — so a
+     half-finished flow grants nothing and simply times out server-side.
+
+     Both factor types share one field. Six digits is an authenticator code;
+     twelve characters is a recovery code. The server decides which it got, so
+     the toggle below is purely about the keyboard and the formatting the user
+     sees, never about which check runs.
+  ========================================================================= */
+  var paneSignin=document.getElementById('signin'), paneTfa=document.getElementById('twofa'),
+      tfaCode=document.getElementById('tfaCode'), inpTfa=document.getElementById('inpTfa'),
+      msgTfa=document.getElementById('msg-tfa'), tfaBtn=document.getElementById('tfaBtn'),
+      tfaToggle=document.getElementById('tfaToggle'), tfaBack=document.getElementById('tfaBack'),
+      tfaLabel=document.getElementById('tfaLabel'), tfaLede=document.getElementById('tfaLede'),
+      tfaExpiry=document.getElementById('tfaExpiry'),
+      tfaLockbar=document.getElementById('tfaLockbar'), tfaLockmsg=document.getElementById('tfaLockmsg');
+  var tfaRecovery=false, tfaBusy=false, tfaLocked=false, tfaTimer=null, tfaLockTimer=null, tfaDeadline=0;
+  /* Held as a string rather than read back out of the lede: switching to
+     recovery mode rewrites that whole line, destroying any element inside it. */
+  var tfaUser='your account';
+
+  function setTfaMsg(state,text){
+    inpTfa.classList.remove('invalid');
+    if(!state){ msgTfa.className='msg'; msgTfa.textContent=''; return; }
+    if(state==='err') inpTfa.classList.add('invalid');
+    msgTfa.className='msg show '+(state==='ok'?'ok':'err');
+    msgTfa.innerHTML='<i class="fa '+(state==='ok'?'fa-check-circle':'fa-exclamation-circle')+'"></i> '+text;
+  }
+
+  /* Swaps to the code step. `secs` is the server's pending-state lifetime;
+     0 means "unknown" (a refresh landed us here), so the countdown is hidden
+     rather than invented. */
+  function enterTwoFactor(secs, username){
+    paneSignin.classList.remove('on');
+    paneTfa.classList.add('on');
+    if(username) tfaUser=username;
+    setTfaMsg(null);
+    setRecoveryMode(false);
+    tfaCode.value=''; tfaCode.focus();
+
+    /* Counts against a wall-clock deadline rather than decrementing a
+       counter, so a backgrounded tab (where setInterval is throttled) shows
+       the real remaining time when it comes back rather than a stale one. */
+    clearInterval(tfaTimer);
+    if(secs>0){
+      tfaDeadline=Date.now()+secs*1000;
+      tfaExpiry.parentElement.style.display='';
+      var tick=function(){
+        var left=Math.max(0,Math.round((tfaDeadline-Date.now())/1000));
+        if(left<=0){
+          clearInterval(tfaTimer);
+          exitTwoFactor();
+          setMsg(msgPw,inpPw,'err','That took too long — enter your password again to get a new code prompt.');
+          return;
+        }
+        tfaExpiry.textContent='This prompt expires in '+UCP.fmtSecs(left)+'.';
+      };
+      tick();
+      tfaTimer=setInterval(tick,1000);
+    } else {
+      // Deadline unknown (a mid-flow refresh). The server still enforces the
+      // real one — better to show nothing than to invent a number.
+      tfaExpiry.parentElement.style.display='none';
+    }
+  }
+
+  function exitTwoFactor(){
+    clearInterval(tfaTimer); clearInterval(tfaLockTimer);
+    tfaLocked=false; tfaBusy=false;
+    tfaLockbar.classList.remove('show');
+    tfaBtn.setAttribute('aria-disabled','false');
+    paneTfa.classList.remove('on');
+    paneSignin.classList.add('on');
+    pw.value=''; pw.focus();
+  }
+
+  function setRecoveryMode(on){
+    tfaRecovery=on;
+    inpTfa.classList.toggle('recovery',on);
+    tfaCode.value='';
+    setTfaMsg(null);
+    if(on){
+      tfaCode.setAttribute('maxlength','14');           // 12 chars + 2 dashes
+      tfaCode.setAttribute('inputmode','text');
+      tfaCode.removeAttribute('autocomplete');
+      tfaCode.placeholder='XXXX-XXXX-XXXX';
+      tfaLabel.innerHTML='Recovery code <span class="req">*</span>';
+      tfaLede.innerHTML='Enter one of the recovery codes you saved when you switched on two-step verification. Each code works once.';
+      tfaToggle.textContent='Got your phone? Use an authenticator code';
+    } else {
+      tfaCode.setAttribute('maxlength','6');
+      tfaCode.setAttribute('inputmode','numeric');
+      tfaCode.setAttribute('autocomplete','one-time-code');
+      tfaCode.placeholder='000000';
+      tfaLabel.innerHTML='Authentication code <span class="req">*</span>';
+      tfaLede.innerHTML='Open your authenticator app and enter the current 6-digit code for <b>'+
+                        UCP.esc(tfaUser)+'</b>.';
+      tfaToggle.textContent='Lost your phone? Use a recovery code';
+    }
+    tfaCode.focus();
+  }
+
+  function tfaLockFor(seconds){
+    tfaLocked=true;
+    var left=seconds;
+    tfaBtn.setAttribute('aria-disabled','true'); tfaCode.disabled=true;
+    setTfaMsg(null); tfaLockbar.classList.add('show');
+    clearInterval(tfaLockTimer);
+    function tick(){
+      if(left<=0){
+        clearInterval(tfaLockTimer); tfaLocked=false;
+        tfaBtn.setAttribute('aria-disabled','false'); tfaCode.disabled=false;
+        tfaLockbar.classList.remove('show'); tfaCode.value=''; tfaCode.focus(); return;
+      }
+      tfaLockmsg.textContent='Too many codes tried. Locked — try again in '+UCP.fmtSecs(left)+'.';
+      left--;
+    }
+    tick(); tfaLockTimer=setInterval(tick,1000);
+  }
+
+  function tfaAttempt(){
+    if(tfaLocked||tfaBusy) return;
+    var v=tfaCode.value.trim();
+    if(!v){ setTfaMsg('err', tfaRecovery?'Enter one of your recovery codes.':'Enter the 6-digit code from your app.'); return; }
+
+    tfaBusy=true; tfaBtn.setAttribute('aria-disabled','true');
+    UCP.post('2fa-verify.php',{code:v}).then(function(res){
+      var d=res.data||{};
+      tfaBusy=false;
+      if(d.ok){
+        setTfaMsg('ok','Verified — signing you in…');
+        clearInterval(tfaTimer);
+        if(d.used_backup_code){
+          // Worth interrupting for: they have a finite supply and no other
+          // warning that it is running down.
+          try{ sessionStorage.setItem('bs-backup-used', String(d.backup_remaining)); }catch(e){}
+        }
+        // A mandatory-2FA setup redirect outranks any ?return= — otherwise a
+        // staff member arriving from the forum would sail past the setup
+        // screen the server just told them to visit.
+        loadUCP(d.twofa_setup_required ? d.redirect : destination(d.redirect));
+        return;
+      }
+      tfaBtn.setAttribute('aria-disabled','false');
+
+      /* The pending state is gone — expired, spent, or burned by too many
+         wrong codes. There is nothing left to retry against, so go back to
+         the password form rather than leaving a field that can only fail. */
+      if(d.restart){
+        exitTwoFactor();
+        setMsg(msgPw,inpPw,'err',UCP.esc(d.error||'Please sign in again.'));
+        if(d.locked&&d.locked_for) lockFor(d.locked_for);
+        return;
+      }
+      if(d.locked&&d.locked_for){ tfaLockFor(d.locked_for); return; }
+
+      var msg=UCP.esc(d.error||'That code is not right.');
+      if(typeof d.left==='number'&&d.left>0){
+        msg+=' '+d.left+' attempt'+(d.left===1?'':'s')+' left.';
+      }
+      setTfaMsg('err',msg);
+      tfaCode.value=''; tfaCode.focus();
+    }).catch(function(){
+      tfaBusy=false; tfaBtn.setAttribute('aria-disabled','false');
+      setTfaMsg('err','Could not reach the server. Please try again.');
+    });
+  }
+
+  /* Keep the field to the shape of whichever code type is selected, and
+     submit a 6-digit code the moment it is complete — nobody wants to reach
+     for a button after typing the last digit of a code that expires. */
+  tfaCode.addEventListener('input',function(){
+    if(tfaRecovery){
+      var raw=tfaCode.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);
+      tfaCode.value=raw.replace(/(.{4})(?=.)/g,'$1-');
+    } else {
+      var digits=tfaCode.value.replace(/\D/g,'').slice(0,6);
+      tfaCode.value=digits;
+      if(digits.length===6 && !tfaBusy && !tfaLocked){ tfaAttempt(); return; }
+    }
+    if(!tfaLocked) setTfaMsg(null);
+  });
+  tfaCode.addEventListener('keydown',function(e){ if(e.key==='Enter'){e.preventDefault();tfaAttempt();} });
+  tfaBtn.addEventListener('click',function(e){e.preventDefault();tfaAttempt();});
+  tfaToggle.addEventListener('click',function(e){e.preventDefault();setRecoveryMode(!tfaRecovery);});
+  tfaBack.addEventListener('click',function(e){e.preventDefault();exitTwoFactor();});
+
+  /* A refresh part-way through the flow — the session check at the top of the
+     page found a live pending state. No expiry is known here, so the
+     countdown stays hidden and the server enforces the real deadline. */
+  window.addEventListener('bs:pending2fa',function(){ enterTwoFactor(0,null); });
 
   btn.addEventListener('click',function(e){e.preventDefault();attempt();});
   [user,pw].forEach(function(el){el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();attempt();}});});
