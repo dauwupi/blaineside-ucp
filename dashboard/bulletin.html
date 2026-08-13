@@ -45,6 +45,7 @@
     border-radius:0 3px 3px 0;background:linear-gradient(180deg,var(--gold),var(--amber))}
   .nav-item.active svg.i{color:var(--gold)}
   .nav-item .lbl{flex:1}
+  a.nav-item{text-decoration:none}
   .nav-item .chev{width:15px;height:15px;opacity:.5;transition:transform .2s;flex:none;stroke-width:2}
   .nav-group.open > .nav-item .chev{transform:rotate(90deg)}
   .sub{max-height:0;overflow:hidden;transition:max-height .26s ease;margin-left:9px;border-left:1px solid var(--border);padding-left:8px}
@@ -85,7 +86,7 @@
     background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;min-width:170px}
   .account-btn:hover{background:var(--charcoal-3)}
   .account-meta{display:flex;flex-direction:column;line-height:1.3;flex:1;min-width:0}
-  .account-meta .u{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .account-meta .u{font-size:13.5px;font-weight:600;color:var(--parchment);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .account-meta .r{font-size:11px;color:var(--amber);font-weight:600}
   .account-btn .caret{width:15px;height:15px;color:var(--text-dim);stroke-width:2;flex:none}
   .account-btn .acct-ico{display:none}
@@ -460,7 +461,7 @@
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   const SIDEBAR=[
-    {label:'Dashboard',icon:'home',href:'#/dashboard'},
+    {label:'Dashboard',icon:'home',href:'/dashboard'},
     {label:'Characters',icon:'user',children:[{label:'Marcus Webb',href:'#'},{label:'Empty character slot',empty:true},{label:'Empty character slot',empty:true}]},
     {heading:'Community'},
     {label:'Forums',icon:'chat',children:[{label:'Forums',href:'#'},{label:'Community Rules',href:'#'},{label:'Development Changelog',href:'#'}]},
@@ -486,7 +487,8 @@
         const subs=it.children.map(c=>c.empty?`<a class="slot-empty">${escapeHtml(c.label)}</a>`:`<a href="${escapeHtml(c.href||'#')}">${escapeHtml(c.label)}</a>`).join('');
         return `<div class="nav-group" data-collapsible><div class="nav-item">${svgI(it.icon,'i')}<span class="lbl">${escapeHtml(it.label)}</span>${svgI('chev','chev')}</div><div class="sub">${subs}</div></div>`;
       }
-      return `<div class="nav-group"><div class="nav-item">${svgI(it.icon,'i')}<span class="lbl">${escapeHtml(it.label)}</span></div></div>`;
+      const tag = it.href ? 'a' : 'div', attr = it.href ? ` href="${escapeHtml(it.href)}"` : '';
+      return `<div class="nav-group"><${tag} class="nav-item"${attr}>${svgI(it.icon,'i')}<span class="lbl">${escapeHtml(it.label)}</span></${tag}></div>`;
     }).join('');
     document.querySelectorAll('.nav-group[data-collapsible] > .nav-item').forEach(item=>item.addEventListener('click',()=>item.parentElement.classList.toggle('open')));
   }

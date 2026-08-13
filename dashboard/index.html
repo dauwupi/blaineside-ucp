@@ -74,6 +74,7 @@
     border-radius:0 3px 3px 0;background:linear-gradient(180deg,var(--gold),var(--amber))}
   .nav-item.active svg.i{color:var(--gold)}
   .nav-item .lbl{flex:1}
+  a.nav-item{text-decoration:none}
   .nav-item .chev{width:15px;height:15px;opacity:.5;transition:transform .2s;flex:none;stroke-width:2}
   .nav-group.open > .nav-item .chev{transform:rotate(90deg)}
 
@@ -167,7 +168,7 @@
     background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;min-width:170px}
   .account-btn:hover{background:var(--charcoal-3)}
   .account-meta{display:flex;flex-direction:column;line-height:1.3;flex:1;min-width:0}
-  .account-meta .u{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .account-meta .u{font-size:13.5px;font-weight:600;color:var(--parchment);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .account-meta .r{font-size:11px;color:var(--amber);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .account-meta .r.player{color:var(--text-dim)}
   .account-btn .caret{width:15px;height:15px;color:var(--text-dim);stroke-width:2;flex:none}
@@ -982,10 +983,14 @@
           </div>`;
       }
 
+      // A leaf with an href has to be a real link, or the item renders as
+      // dead text — which is what "My Profile" was doing.
+      const tag = it.href ? 'a' : 'div';
+      const attr = it.href ? ` href="${esc(it.href)}"` : '';
       return `<div class="nav-group">
-          <div class="nav-item ${it.active?'active':''}">
+          <${tag} class="nav-item ${it.active?'active':''}"${attr}>
             ${svg(it.icon,'i')}<span class="lbl">${esc(it.label)}</span>
-          </div>
+          </${tag}>
         </div>`;
     }).join('');
 
