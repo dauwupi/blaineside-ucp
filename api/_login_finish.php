@@ -148,10 +148,9 @@ function login_finish(PDO $pdo, array $acc, bool $remember, array $extra = [],
     $fmData = $fmRow->fetch();
 
     if ($fmData && $fmData['forum_member_id'] === null) {
-        $ips_url = rtrim($CONFIG['ips']['url'] ?? '', '/');
-        $ips_key = $CONFIG['ips']['key'] ?? '';
-        if ($ips_url !== '' && $ips_key !== '') {
-            $lookup = $ips_url . '/core/members?' . http_build_query(['key' => $ips_key, 'email' => $fmData['email']]);
+        require_once __DIR__ . '/_ips.php';
+        $lookup = ips_endpoint('core/members', ['email' => $fmData['email']]);
+        if ($lookup !== null) {
             $ch = curl_init($lookup);
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,

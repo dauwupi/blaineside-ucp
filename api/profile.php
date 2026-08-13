@@ -16,6 +16,7 @@ require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
 require_once __DIR__ . '/_sessions.php';
 require_once __DIR__ . '/_discord.php';
+require_once __DIR__ . '/_ips.php';
 
 $pdo = db();
 $acc = current_account($pdo);
@@ -60,18 +61,19 @@ function forum_display_name(array $acc, array $CONFIG): array
         return ['name' => $cache['name'], 'profile_url' => $cache['url']];
     }
 
-    $url = rtrim((string)($CONFIG['ips']['url'] ?? $CONFIG['ips']['api_url'] ?? ''), '/');
-    $key = (string)($CONFIG['ips']['key'] ?? $CONFIG['ips']['api_key'] ?? '');
-    if ($url === '' || $key === '' || !function_exists('curl_init')) {
+    $url = ips_endpoint('core/members/' . $mid);
+    if ($url === null || !function_exists('curl_init')) {
         return $out;                    // no forum API configured — UCP name it is
     }
 
-    $ch = curl_init($url . '/core/members/' . $mid);
+    $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_USERPWD        => $key . ':',
+        CURLOPT_USERPWD        => ips_userpwd(),
         CURLOPT_TIMEOUT        => 3,
         CURLOPT_CONNECTTIMEOUT => 2,
+        // The key is in the query string, so following a redirect would hand
+        // it to whatever host the redirect names.
         CURLOPT_FOLLOWLOCATION => false,
     ]);
     $body = curl_exec($ch);

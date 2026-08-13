@@ -13,6 +13,7 @@
  */
 require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_2fa.php';
+require_once __DIR__ . '/_ips.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -94,15 +95,14 @@ $_SESSION['name'] = $username;
 // name has already changed and a forum outage must not roll that back. The
 // hourly sync is the fallback.
 if ($acc['forum_member_id'] !== null) {
-    $ipsUrl = rtrim((string)($CONFIG['ips']['url'] ?? $CONFIG['ips']['api_url'] ?? ''), '/');
-    $ipsKey = (string)($CONFIG['ips']['key'] ?? $CONFIG['ips']['api_key'] ?? '');
-    if ($ipsUrl !== '' && $ipsKey !== '') {
-        $ch = curl_init($ipsUrl . '/core/members/' . (int)$acc['forum_member_id']);
+    $renameUrl = ips_endpoint('core/members/' . (int)$acc['forum_member_id']);
+    if ($renameUrl !== null) {
+        $ch = curl_init($renameUrl);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => http_build_query(['name' => $username]),
-            CURLOPT_USERPWD        => $ipsKey . ':',
+            CURLOPT_USERPWD        => ips_userpwd(),
             CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
             CURLOPT_TIMEOUT        => 4,
             CURLOPT_CONNECTTIMEOUT => 2,

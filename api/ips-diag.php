@@ -17,6 +17,7 @@
  */
 require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_2fa.php';
+require_once __DIR__ . '/_ips.php';
 
 header('Content-Type: text/plain; charset=utf-8');
 
@@ -31,7 +32,9 @@ $syncKey = (string)($CONFIG['sync']['key'] ?? '');
 
 $redact = function (string $s) use ($ipsKey, $syncKey) {
     foreach ([$ipsKey, $syncKey] as $k) {
-        if ($k !== '') $s = str_replace($k, '«key»', $s);
+        // Only redact something long enough to actually BE a key. A short
+        // one would match ordinary text and shred the output.
+        if (strlen($k) >= 8) $s = str_replace($k, '«key»', $s);
     }
     return $s;
 };
@@ -85,22 +88,26 @@ function probe(string $label, string $url, ?array $post, array $headers, ?string
     echo "REPLY : ", $redact(substr((string)$body, 0, 600)), "\n\n";
 }
 
-// 1. Read.
+// 1. Read — key in the query string (what _ips.php now builds).
 probe('1. GET /core/members/{id}',
-    $ipsUrl . '/core/members/' . $mid,
-    null, ['Accept: application/json'], $ipsKey . ':', $redact);
+    ips_endpoint('core/members/' . $mid),
+    null, ['Accept: application/json'], ips_userpwd(), $redact);
 
 // 2. Write — same name in, so nothing actually changes.
 probe('2. POST /core/members/{id}  (name unchanged — write test only)',
-    $ipsUrl . '/core/members/' . $mid,
+    ips_endpoint('core/members/' . $mid),
     ['name' => (string)$acc['username']],
-    ['Content-Type: application/x-www-form-urlencoded'], $ipsKey . ':', $redact);
+    ['Content-Type: application/x-www-form-urlencoded'], ips_userpwd(), $redact);
 
-// 3. The profile-field sync.
+// 3. The profile-field sync, both ways round. The receiving script was
+//    changed to read a header; if it never was, it still wants ?key=.
 if ($syncUrl !== '') {
-    probe('3. GET sync.url  ("UCP Name" profile field)',
-        $syncUrl, null,
-        ['X-Sync-Key: ' . $syncKey], null, $redact);
+    probe('3a. GET sync.url  with X-Sync-Key header',
+        $syncUrl, null, ['X-Sync-Key: ' . $syncKey], null, $redact);
+
+    probe('3b. GET sync.url  with ?key= in the query string',
+        $syncUrl . (strpos($syncUrl, '?') === false ? '?' : '&') . http_build_query(['key' => $syncKey]),
+        null, [], null, $redact);
 }
 
 echo str_repeat('=', 62), "\n";

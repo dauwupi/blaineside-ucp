@@ -151,12 +151,14 @@ function ips_provision_member(string $username, string $email, array $config): ?
     // ips.api_url / ips.api_key, which don't exist — so it returned null on
     // the very first line and forum accounts were never provisioned. Accept
     // both spellings so neither side can drift again.
-    $ips    = $config['ips'] ?? [];
-    $apiUrl = $ips['url']  ?? $ips['api_url']  ?? '';
-    $apiKey = $ips['key']  ?? $ips['api_key']  ?? '';
-    if ($apiUrl === '' || $apiKey === '') return null;
-
-    $apiUrl = rtrim($apiUrl, '/') . '/core/members';
+    // The URL is built by _ips.php so provisioning, the lazy lookup, the
+    // rename and the profile read all address the forum the same way — and
+    // all carry the key in the query string, which is the only form that
+    // survives this server dropping the Authorization header.
+    require_once __DIR__ . '/_ips.php';
+    $apiKey = $ips_key = ips_key();
+    $apiUrl = ips_endpoint('core/members');
+    if ($apiUrl === null) return null;
 
     // IPS requires a password on account creation even for OAuth-only accounts.
     // We set a long random password — the player will never use it (OAuth is the gate).
@@ -175,7 +177,7 @@ function ips_provision_member(string $username, string $email, array $config): ?
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_USERPWD        => $apiKey . ':',   // Basic auth: key as username, empty pw
+        CURLOPT_USERPWD        => ips_userpwd(),   // belt and braces; the key is also in the URL
         CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_SSL_VERIFYPEER => true,
