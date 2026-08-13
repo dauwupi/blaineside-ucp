@@ -63,7 +63,38 @@
   .foot-line .st .d{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
 
   /* ===== MAIN + HEADER ===== */
-  .main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--content-bg)}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;background:transparent}
+
+  /* ============================================================
+     BACKDROP — the sign-in page's scene, carried through the UCP.
+
+     Four fixed layers: the Sandy Shores photo, the time-of-day tint,
+     a scrim that buys back the contrast the photo costs, and the
+     diagonal hairlines from the sign-in page.
+
+     The tint is driven by assets/js/ucp.js, which looks for `.stage`
+     and swaps a tod-* class onto it — the same code the sign-in page
+     runs, so the two can't drift apart.
+     ============================================================ */
+  .bg-stage{position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
+    overflow:hidden;background:#0b0a08}
+  .bg-stage .scene{position:absolute;inset:0;
+    background:url('/assets/img/bg-sandy.jpg') center/cover no-repeat;
+    opacity:.62;transform:scale(1.04)}
+  .bg-stage .tod{position:absolute;inset:0;transition:background 1s ease}
+  .bg-stage.tod-night .tod{background:rgba(20,28,56,.54)}
+  .bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
+  .bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
+  .bg-stage.tod-dusk  .tod{background:rgba(150,72,22,.42)}
+  .bg-stage .bg-scrim{position:absolute;inset:0;background:
+    radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.10), transparent 62%),
+    linear-gradient(90deg,rgba(10,9,8,.82) 0%,rgba(10,9,8,.62) 45%,rgba(10,9,8,.42) 100%),
+    linear-gradient(180deg,rgba(10,9,8,.55) 0%,rgba(10,9,8,.28) 34%,rgba(10,9,8,.5) 70%,rgba(10,9,8,.86) 100%)}
+  .bg-stage .bg-grain{position:absolute;inset:0;
+    background-image:repeating-linear-gradient(122deg,rgba(255,255,255,.012) 0 1px,transparent 1px 34px)}
+  @media (max-width:760px){ .bg-stage{left:0} }
+  .topbar,.content{position:relative;z-index:1}
+
   .topbar{height:var(--header-h);flex:none;display:flex;align-items:center;gap:16px;padding:0 26px;
     background:var(--charcoal-2);border-bottom:1px solid var(--border);
     box-shadow:0 1px 0 rgba(0,0,0,.4),0 6px 18px -12px rgba(0,0,0,.7);position:sticky;top:0;z-index:45}
@@ -306,6 +337,15 @@
 </style>
 </head>
 <body>
+
+<!-- Backdrop. `stage` is the hook assets/js/ucp.js uses for the time-of-day
+     tint; the sign-in page uses the same one. -->
+<div class="bg-stage stage" aria-hidden="true">
+  <div class="scene"></div>
+  <div class="tod"></div>
+  <div class="bg-scrim"></div>
+  <div class="bg-grain"></div>
+</div>
 
   <aside class="sidebar">
     <div class="side-inner">
@@ -859,5 +899,6 @@
     .catch(function(){});
 })();
 </script>
+<script src="/assets/js/ucp.js"></script>
 </body>
 </html>

@@ -105,34 +105,36 @@
      Base is a diagonal warm gradient (dark amber-brown → near-black),
      with layered glow zones and a faint contour-line texture. */
   .main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;
-    background:
-      /* amber bloom — top-right corner, like sunlight off the horizon */
-      radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.13), transparent 62%),
-      /* copper blush — top-left edge */
-      radial-gradient(700px 500px at -8%  4%,  rgba(165,72,22,.10),  transparent 58%),
-      /* mid warm glow — pulls the eye toward center */
-      radial-gradient(1400px 600px at 50% 0%,  rgba(28,20,10,.0),   transparent 55%),
-      /* bottom vignette — deepens toward footer */
-      radial-gradient(120% 45% at 50% 115%, rgba(6,4,2,.75), transparent 62%),
-      /* directional base: warm amber-brown top → cooler dark bottom */
-      linear-gradient(165deg, #1c1610 0%, #141109 35%, #0e0c09 65%, #0a0907 100%);}
+    background:transparent}
 
-  /* Faint desert contour lines — adds texture without images */
-  .main::before{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
-    background:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900' viewBox='0 0 1200 900'%3E%3Cg fill='none' stroke='%23e2b65c' stroke-opacity='0.04' stroke-width='1'%3E%3Cpath d='M-60 180 C 150 130 320 220 560 190 S 920 110 1300 175'/%3E%3Cpath d='M-60 260 C 160 210 330 300 570 270 S 930 195 1300 255'/%3E%3Cpath d='M-60 380 C 180 340 360 420 600 390 S 960 320 1300 375'/%3E%3Cpath d='M-60 480 C 190 445 370 515 610 488 S 970 422 1300 472'/%3E%3Cpath d='M-60 610 C 200 575 390 640 640 615 S 990 555 1300 608'/%3E%3Cpath d='M-60 720 C 210 690 400 750 650 728 S 1000 672 1300 718'/%3E%3Cpath d='M-60 830 C 220 804 410 860 660 840 S 1010 790 1300 828'/%3E%3C/g%3E%3C/svg%3E") repeat-y center top / 1200px auto;}
-  @media (max-width:760px){ .main::before{left:0} }
+  /* ============================================================
+     BACKDROP — the sign-in page's scene, carried through the UCP.
 
-  /* Second atmosphere layer — diagonal amber ray + edge darkening */
-  .main::after{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
-    background:
-      /* diagonal warm slash — like light cutting across high desert */
-      linear-gradient(128deg, rgba(212,146,58,.06) 0%, transparent 45%),
-      /* left-edge darkening so sidebar blend feels natural */
-      linear-gradient(90deg, rgba(0,0,0,.18) 0%, transparent 12%),
-      /* right-edge fade */
-      linear-gradient(270deg, rgba(0,0,0,.12) 0%, transparent 10%);}
-  @media (max-width:760px){ .main::after{left:0} }
+     Four fixed layers: the Sandy Shores photo, the time-of-day tint,
+     a scrim that buys back the contrast the photo costs, and the
+     diagonal hairlines from the sign-in page.
+
+     The tint is driven by assets/js/ucp.js, which looks for `.stage`
+     and swaps a tod-* class onto it — the same code the sign-in page
+     runs, so the two can't drift apart.
+     ============================================================ */
+  .bg-stage{position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
+    overflow:hidden;background:#0b0a08}
+  .bg-stage .scene{position:absolute;inset:0;
+    background:url('/assets/img/bg-sandy.jpg') center/cover no-repeat;
+    opacity:.62;transform:scale(1.04)}
+  .bg-stage .tod{position:absolute;inset:0;transition:background 1s ease}
+  .bg-stage.tod-night .tod{background:rgba(20,28,56,.54)}
+  .bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
+  .bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
+  .bg-stage.tod-dusk  .tod{background:rgba(150,72,22,.42)}
+  .bg-stage .bg-scrim{position:absolute;inset:0;background:
+    radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.10), transparent 62%),
+    linear-gradient(90deg,rgba(10,9,8,.82) 0%,rgba(10,9,8,.62) 45%,rgba(10,9,8,.42) 100%),
+    linear-gradient(180deg,rgba(10,9,8,.55) 0%,rgba(10,9,8,.28) 34%,rgba(10,9,8,.5) 70%,rgba(10,9,8,.86) 100%)}
+  .bg-stage .bg-grain{position:absolute;inset:0;
+    background-image:repeating-linear-gradient(122deg,rgba(255,255,255,.012) 0 1px,transparent 1px 34px)}
+  @media (max-width:760px){ .bg-stage{left:0} }
 
   .topbar, .content{position:relative;z-index:1}
 
@@ -539,6 +541,15 @@
 <script src="/assets/js/ucp.js"></script>
 </head>
 <body>
+
+<!-- Backdrop. `stage` is the hook assets/js/ucp.js uses for the time-of-day
+     tint; the sign-in page uses the same one. -->
+<div class="bg-stage stage" aria-hidden="true">
+  <div class="scene"></div>
+  <div class="tod"></div>
+  <div class="bg-scrim"></div>
+  <div class="bg-grain"></div>
+</div>
 
   <!-- ================= SIDEBAR (rendered from config below) ================= -->
   <aside class="sidebar">

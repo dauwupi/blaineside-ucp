@@ -114,19 +114,59 @@ button{font-family:inherit}
 
 /* ================= MAIN SHELL (matches dashboard) ================= */
 .main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;
-  background:
-    radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.13), transparent 62%),
-    radial-gradient(700px 500px at -8% 4%, rgba(165,72,22,.10), transparent 58%),
-    radial-gradient(120% 45% at 50% 115%, rgba(6,4,2,.75), transparent 62%),
-    linear-gradient(165deg,#1c1610 0%,#141109 35%,#0e0c09 65%,#0a0907 100%)}
-.main::before{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
-  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900' viewBox='0 0 1200 900'%3E%3Cg fill='none' stroke='%23e2b65c' stroke-opacity='0.04' stroke-width='1'%3E%3Cpath d='M-60 180 C 150 130 320 220 560 190 S 920 110 1300 175'/%3E%3Cpath d='M-60 260 C 160 210 330 300 570 270 S 930 195 1300 255'/%3E%3Cpath d='M-60 380 C 180 340 360 420 600 390 S 960 320 1300 375'/%3E%3Cpath d='M-60 480 C 190 445 370 515 610 488 S 970 422 1300 472'/%3E%3Cpath d='M-60 610 C 200 575 390 640 640 615 S 990 555 1300 608'/%3E%3Cpath d='M-60 720 C 210 690 400 750 650 728 S 1000 672 1300 718'/%3E%3Cpath d='M-60 830 C 220 804 410 860 660 840 S 1010 790 1300 828'/%3E%3C/g%3E%3C/svg%3E") repeat-y center top / 1200px auto}
-.main::after{content:"";position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
-  background:linear-gradient(128deg,rgba(212,146,58,.06) 0%,transparent 45%),
-    linear-gradient(90deg,rgba(0,0,0,.18) 0%,transparent 12%),
-    linear-gradient(270deg,rgba(0,0,0,.12) 0%,transparent 10%)}
-@media (max-width:760px){.main::before,.main::after{left:0}}
+  background:transparent}
+
+/* ============================================================
+   BACKDROP — the sign-in page's scene, carried through the UCP.
+
+   Four fixed layers behind everything: the Sandy Shores photo, the
+   time-of-day tint, a scrim that buys back the contrast the photo
+   costs, and the diagonal hairlines from the sign-in page.
+
+   The tint is driven by assets/js/ucp.js, which looks for `.stage`
+   and swaps a tod-* class on it — the same code the sign-in page
+   uses, so the two can never drift out of step.
+   ============================================================ */
+.bg-stage{position:fixed;inset:0;left:var(--sidebar-w);z-index:0;pointer-events:none;
+  overflow:hidden;background:#0b0a08}
+.bg-stage .scene{position:absolute;inset:0;
+  background:url('/assets/img/bg-sandy.jpg') center/cover no-repeat;
+  /* Present but never competing: this sits behind body copy all day, not
+     behind one sign-in card. */
+  opacity:.62;transform:scale(1.04)}
+.bg-stage .tod{position:absolute;inset:0;transition:background 1s ease}
+.bg-stage.tod-night .tod{background:rgba(20,28,56,.54)}
+.bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
+.bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
+.bg-stage.tod-dusk  .tod{background:rgba(150,72,22,.42)}
+/* The scrim is what buys the contrast back. Heaviest at the top left,
+   where the cards start, and easing off toward the empty right-hand
+   column so the scene is actually visible somewhere. */
+.bg-stage .bg-scrim{position:absolute;inset:0;background:
+  radial-gradient(900px 700px at 92% -10%, rgba(212,138,40,.10), transparent 62%),
+  linear-gradient(90deg,rgba(10,9,8,.82) 0%,rgba(10,9,8,.62) 45%,rgba(10,9,8,.42) 100%),
+  linear-gradient(180deg,rgba(10,9,8,.55) 0%,rgba(10,9,8,.28) 34%,rgba(10,9,8,.5) 70%,rgba(10,9,8,.86) 100%)}
+.bg-stage .bg-grain{position:absolute;inset:0;
+  background-image:repeating-linear-gradient(122deg,rgba(255,255,255,.012) 0 1px,transparent 1px 34px)}
+@media (max-width:760px){ .bg-stage{left:0} }
 .topbar,.content{position:relative;z-index:1}
+
+/* ---- First paint --------------------------------------------------
+   Every value on this page arrives from api/profile.php, so the markup
+   is empty for one frame and the browser paints the skeleton before it
+   paints the account. Holding the content back until the first render
+   turns that flash into one deliberate fade. `ready` is added whatever
+   the answer was, including a failure — the error message lives inside
+   .content and must not be hidden by the thing meant to hide the
+   flicker. */
+.content{opacity:0;transform:translateY(8px);
+  transition:opacity .34s ease,transform .34s cubic-bezier(.22,.61,.36,1)}
+.account-meta,.page-title h1{opacity:0;transition:opacity .34s ease .04s}
+body.ready .content{opacity:1;transform:none}
+body.ready .account-meta,body.ready .page-title h1{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  .content,.account-meta,.page-title h1{transition:none}
+}
 .topbar{height:var(--header-h);flex:none;display:flex;align-items:center;gap:16px;
   padding:0 26px;background:var(--charcoal-2);border-bottom:1px solid var(--border);
   box-shadow:0 1px 0 rgba(0,0,0,.4), 0 6px 18px -12px rgba(0,0,0,.7);
@@ -699,6 +739,15 @@ button{font-family:inherit}
 </style>
 </head>
 <body>
+
+<!-- Backdrop. `stage` is what assets/js/ucp.js looks for when it applies the
+     time-of-day tint; the sign-in page uses the same hook. -->
+<div class="bg-stage stage" aria-hidden="true">
+  <div class="scene"></div>
+  <div class="tod"></div>
+  <div class="bg-scrim"></div>
+  <div class="bg-grain"></div>
+</div>
 
 <aside class="sidebar">
   <div class="side-inner">
@@ -2808,8 +2857,16 @@ button{font-family:inherit}
         return;
       }
       render(d);
-    });
+    }).then(reveal, reveal);
   }
+
+  /* Reveals the page after the first answer from the server — see the
+     .content rule in the stylesheet. Safe to call repeatedly. */
+  function reveal(){ document.body.classList.add('ready'); }
+
+  /* If the server never answers, show the page anyway rather than leaving
+     someone staring at an empty frame with no way to tell it has failed. */
+  setTimeout(reveal, 4000);
 
   /* Link Discord — a full page navigation, not a fetch. The whole point is
      to leave the site and come back, which a background request can't do. */
