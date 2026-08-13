@@ -1859,7 +1859,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       { label:'Businesses', href:'#' },
       { label:'Listings', href:'#' },
     ]},
-    { heading:'Administration', admin:true },
+    { heading:'Administration', admins:true },
     { label:'Founder', icon:'crown', founder:true, children:[
       { label:'Group Management', href:'/dashboard/groups' },
     ]},
@@ -1867,6 +1867,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       { label:'County Bulletin', href:'/dashboard/bulletin' },
       { label:'Announcements',   href:'/dashboard/announcements' },
       { label:'Group Management', href:'/dashboard/groups', notFounder:true },
+    ]},
+    /* Trainee Admin and above — see BS_ADMIN_MIN_RANK in api/_admin.php. */
+    { label:'Administrators', icon:'search', admins:true, children:[
+      { label:'Administrative Search', href:'/dashboard/search' },
     ]},
     { heading:'Account' },
     { label:'My Profile',        icon:'user',  href:'/profile', active:true },
@@ -1886,15 +1890,17 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
     radio:'<path d="M8 6l10 6-10 6z"/><path d="M4 5v14"/>',
     chev:'<path d="M9 6l6 6-6 6"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
   };
   function svg(nm,c){ return '<svg class="'+c+'" viewBox="0 0 24 24" fill="none" stroke="currentColor">'+(ICONS[nm]||'')+'</svg>'; }
   /* Administration items appear only for Management and Founders. The pages
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
-  var IS_MANAGER = false, IS_FOUNDER = false;
+  var IS_MANAGER = false, IS_FOUNDER = false, IS_ADMINISTRATOR = false;
 
   function renderNav(){
-  $('nav').innerHTML = SIDEBAR.filter(function(it){ return (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER); }).map(function(it){
+  $('nav').innerHTML = SIDEBAR.filter(function(it){ return (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER)
+      && (!it.admins || IS_ADMINISTRATOR); }).map(function(it){
     if(it.heading) return '<div class="nav-heading">'+esc(it.heading)+'</div>';
     if(it.children){
       var subs = it.children.filter(function(c){ return !c.notFounder || !IS_FOUNDER; }).map(function(c){
@@ -2067,7 +2073,12 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('acctRole').textContent = d.role || 'Member';
     if(window.UCP && UCP.setTone) UCP.setTone(d.rank|0);   /* tier colour — guarded so an out-of-date ucp.js can't take the page down */
 
-    if(d.rank >= 8 && !IS_MANAGER){ IS_MANAGER = true; IS_FOUNDER = d.rank >= 9; renderNav(); }
+    if((d.rank >= 3) !== IS_ADMINISTRATOR || (d.rank >= 8) !== IS_MANAGER){
+      IS_ADMINISTRATOR = d.rank >= 3;
+      IS_MANAGER       = d.rank >= 8;
+      IS_FOUNDER       = d.rank >= 9;
+      renderNav();
+    }
 
     renderProfileTab(d);
     renderSettings(d);

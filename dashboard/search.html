@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BlaineSide — County Bulletin</title>
+<title>BlaineSide — Administrative Search</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='23' fill='%23121110'/%3E%3Ctext x='50' y='70' font-family='Oswald,sans-serif' font-size='60' font-weight='700' fill='%23e2b65c' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -395,101 +395,110 @@
   .switchrow.on .sw::after{left:19px;background:var(--gold)}
 
 
-  /* ---------- GROUP MANAGEMENT ---------- */
+  /* ---------- ADMINISTRATIVE SEARCH ---------- */
 
-  /* Tier colours live in assets/css/tones.css, loaded above — one palette
-     for the whole UCP rather than a copy per page. --tone fills, --tone-ink
-     reads on top of a fill, --tone-text reads on the dark background. */
+  /* Tier colours and the group chip live in assets/css/tones.css, loaded
+     above — one palette for the whole UCP. */
 
-  /* ---- The toolbar: pick a group, or search across all of them ---- */
-  .mtools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .mtools .msearch{display:flex;align-items:center;gap:10px;height:52px;padding:0 15px;
-    flex:1;min-width:230px;max-width:380px;border-radius:12px;
-    background:var(--charcoal-2);border:1px solid var(--border);transition:.15s}
-  .mtools .msearch:focus-within{border-color:var(--charcoal-4);background:var(--charcoal-3)}
-  .msearch svg{width:16px;height:16px;color:var(--text-faint);flex:none;stroke-width:2}
-  .msearch input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--parchment);
-    font-size:13.5px;font-family:inherit}
-  .msearch input::placeholder{color:var(--text-dim)}
-  .mcount{font-size:12px;color:var(--text-dim);font-weight:600;margin-left:auto;
-    font-variant-numeric:tabular-nums;text-align:right}
+  /* ---- The search bar -------------------------------------------------
+     Field picker, then the box, then Search. Reading order matches the
+     sentence an admin says to themselves: "find me, by Discord name, this".
+     -------------------------------------------------------------------- */
+  .sbar{display:flex;align-items:stretch;gap:11px;flex-wrap:wrap;margin-bottom:18px}
+  .sbox{display:flex;align-items:center;gap:11px;height:54px;padding:0 16px;flex:1;min-width:240px;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:12px;transition:.15s}
+  .sbox:focus-within{background:var(--charcoal-3);border-color:rgba(226,182,92,.45);
+    box-shadow:0 0 0 3px rgba(212,146,58,.12)}
+  .sbox svg{width:17px;height:17px;color:var(--text-faint);flex:none;stroke-width:2}
+  .sbox input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--parchment);
+    font-size:14.5px;font-family:inherit}
+  .sbox input::placeholder{color:var(--text-dim)}
+  .sbox input:disabled{cursor:not-allowed}
+  .sbar .btn{height:54px;padding:0 24px;font-size:14px}
+  .shint{font-size:12px;color:var(--text-dim);margin:-8px 0 18px;padding-left:2px}
 
-  /* The group picker. A native <select> can't carry the tier colours, and
-     the colours are the point — so this is a button and a listbox, with a
-     headcount on every rung. */
-  .gpick{position:relative;flex:none;width:308px;max-width:100%}
-  .gpick-btn{width:100%;display:flex;align-items:center;gap:13px;height:52px;padding:0 15px;
+  /* ---- The field picker ----
+     Same component as the group picker on the Group Management page, and for
+     the same reason: this list is going to grow to about thirty entries
+     across several categories, and a native <select> can neither group them
+     legibly nor show which ones aren't built yet. */
+  .fpick{position:relative;flex:none;width:250px;max-width:100%}
+  .fpick-btn{width:100%;height:54px;display:flex;align-items:center;gap:12px;padding:0 15px;
     background:var(--charcoal-2);border:1px solid var(--border);border-radius:12px;
     font-family:inherit;color:var(--parchment);cursor:pointer;text-align:left;transition:.15s}
-  .gpick-btn:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
-  .gpick.open .gpick-btn{background:var(--charcoal-3);
-    border-color:color-mix(in srgb, var(--tone) 55%, transparent)}
-  .gdot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--tone);
-    box-shadow:0 0 0 3px color-mix(in srgb, var(--tone) 24%, transparent)}
-  .gpick-lbl{flex:1;min-width:0}
-  .gpick-lbl .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.14em;
+  .fpick-btn:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .fpick.open .fpick-btn{background:var(--charcoal-3);border-color:rgba(226,182,92,.5)}
+  .fpick-lbl{flex:1;min-width:0}
+  .fpick-lbl .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.14em;
     text-transform:uppercase;color:var(--text-dim);line-height:1}
-  .gpick-lbl .v{display:block;font-size:14.5px;font-weight:700;letter-spacing:-.01em;margin-top:4px;
+  .fpick-lbl .v{display:block;font-size:14.5px;font-weight:700;letter-spacing:-.01em;margin-top:4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1}
-  .gpick-cnt{flex:none;font-size:11.5px;font-weight:700;color:var(--text-faint);
-    font-variant-numeric:tabular-nums;background:var(--charcoal);border:1px solid var(--border);
-    padding:4px 9px;border-radius:100px}
-  .gpick-chev{width:16px;height:16px;flex:none;color:var(--text-faint);stroke-width:2.2;transition:transform .18s}
-  .gpick.open .gpick-chev{transform:rotate(180deg)}
+  .fpick-chev{width:16px;height:16px;flex:none;color:var(--text-faint);stroke-width:2.2;transition:transform .18s}
+  .fpick.open .fpick-chev{transform:rotate(180deg)}
 
-  .gmenu{position:absolute;z-index:60;left:0;right:0;top:calc(100% + 7px);padding:6px;
+  .fmenu{position:absolute;z-index:60;left:0;min-width:100%;width:302px;top:calc(100% + 7px);padding:6px;
     background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
-    box-shadow:0 26px 54px -20px rgba(0,0,0,.85);max-height:min(62vh,420px);overflow-y:auto}
-  .gmenu[hidden]{display:none}
-  .gopt{display:flex;align-items:center;gap:12px;width:100%;padding:10px 11px;border-radius:9px;
-    background:none;border:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;
-    color:var(--text-faint);text-align:left;transition:.12s}
-  .gopt:hover{background:var(--charcoal-3);color:var(--parchment)}
-  .gopt.on{color:var(--parchment);background:color-mix(in srgb, var(--tone) 15%, transparent)}
-  .gopt .gn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .gopt .gc{flex:none;font-size:11.5px;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums}
-  .gopt.zero .gn,.gopt.zero .gc{color:var(--text-dim)}
-  .gopt.zero .gdot{opacity:.4;box-shadow:none}
-  .gmenu .gsep{height:1px;background:var(--border-soft);margin:5px 9px}
+    box-shadow:0 26px 54px -20px rgba(0,0,0,.85);max-height:min(64vh,440px);overflow-y:auto}
+  .fmenu[hidden]{display:none}
+  .fgroup{font-size:9.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--text-dim);padding:11px 11px 6px}
+  .fopt{display:flex;align-items:flex-start;gap:11px;width:100%;padding:9px 11px;border-radius:9px;
+    background:none;border:none;cursor:pointer;font-family:inherit;color:var(--text-faint);
+    text-align:left;transition:.12s}
+  .fopt:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .fopt.on{background:rgba(226,182,92,.11);color:var(--parchment)}
+  .fopt .fb{flex:1;min-width:0}
+  .fopt .fn{display:block;font-size:13.5px;font-weight:700}
+  .fopt .fd{display:block;font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.45}
+  .fopt .ftick{width:15px;height:15px;flex:none;color:var(--gold);stroke-width:2.6;margin-top:3px;opacity:0}
+  .fopt.on .ftick{opacity:1}
+  /* A field with nothing behind it stays on the list — the ladder of what is
+     coming is worth seeing — but it can't be mistaken for a live one. */
+  .fopt.soon{cursor:not-allowed}
+  .fopt.soon:hover{background:none;color:var(--text-faint)}
+  .fopt.soon .fn{color:var(--stone)}
+  .fsoon{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--stone);border:1px solid var(--border);border-radius:100px;padding:2px 7px;margin-left:8px;
+    vertical-align:1px}
 
-  /* Search scope bar — only shown when a search is spanning every group,
-     because the picker already says which group is open. */
-  .mscope{display:flex;align-items:center;gap:12px;padding:11px 15px;margin-bottom:12px;
-    border-radius:11px;background:var(--charcoal-2);border:1px solid var(--border-soft)}
-  .mscope .txt{flex:1;min-width:0;font-size:13px;color:var(--text-dim)}
-  .mscope .txt b{color:var(--parchment);font-weight:700}
+  /* ---- A note about the search itself, not its results ----
+     "Nothing found" and "couldn't ask the forum" look identical on screen
+     and mean opposite things. This is where the difference gets said. */
+  .snote{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;margin-bottom:14px;
+    border-radius:12px;font-size:13px;line-height:1.5;
+    color:#e6d3b2;background:rgba(212,146,58,.07);border:1px solid rgba(212,146,58,.3)}
+  .snote svg{width:16px;height:16px;flex:none;stroke-width:2;color:var(--gold);margin-top:1px}
 
-  /* ---- The member row ------------------------------------------------
-     Three zones: who they are, the two facts worth knowing about an
-     account before you move it, and the control. The tier reads from the
-     rail down the left and the chip under the name. Every value carries
-     its own small label, so the row is readable on its own and there is
-     no column header to keep in sync with it.
-     -------------------------------------------------------------------- */
+  .scount{font-size:12.5px;color:var(--text-faint);font-weight:600;margin-bottom:12px;
+    font-variant-numeric:tabular-nums}
+  .scount b{color:var(--parchment)}
+
+  /* ---- Result rows ----
+     Same anatomy as the Group Management row so the two pages read as one
+     system: tier rail, name, the facts, the action. The extra line is what
+     matched — when you searched by Discord and got back a UCP name you have
+     never seen, that handle is the whole answer. */
   .mrow{position:relative;display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) 252px;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) 168px;
     gap:18px;align-items:center;padding:15px 18px 15px 22px;margin-bottom:9px;
     border:1px solid var(--border-soft);border-radius:14px;background:var(--charcoal-2);
     overflow:hidden;transition:border-color .15s, background .15s}
   .mrow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tone)}
   .mrow:hover{background:var(--charcoal-3);border-color:var(--border)}
-  .mrow.is-you{border-color:rgba(226,182,92,.32)}
-
 
   .mid-block{min-width:0}
   .mname{display:flex;align-items:center;gap:8px;min-width:0}
   .mname .nm{font-size:15px;font-weight:700;letter-spacing:-.012em;color:var(--parchment);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .msub{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
-  /* .gchip lives in assets/css/tones.css — one chip for every page. */
   .muid{font-size:11.5px;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums}
   .mtag{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
     padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint);white-space:nowrap}
-  .mtag.you{color:var(--gold);border-color:rgba(226,182,92,.42);background:rgba(226,182,92,.09)}
   .mtag.bad{color:#e0a99b;border-color:rgba(193,85,63,.42);background:rgba(193,85,63,.1)}
+  .mmatch{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px;color:var(--text-faint)}
+  .mmatch svg{width:12px;height:12px;flex:none;stroke-width:2.2;color:var(--stone)}
+  .mmatch b{color:var(--gold);font-weight:700}
 
-  /* A grid, not a flex row: the labels have to line up down the page, and
-     with flex they slide left and right as the values change width. */
   .mstats{display:grid;grid-template-columns:118px 126px minmax(0,1fr);gap:18px;align-items:start;min-width:0}
   .mstat{min-width:0}
   .mstat .lab{display:block;font-size:9px;font-weight:800;letter-spacing:.14em;
@@ -504,28 +513,11 @@
   .flag.on{color:#9ec178;border-color:rgba(127,160,90,.32);background:rgba(127,160,90,.09)}
   .flag.off{color:var(--stone)}
 
-  .mact{display:flex;align-items:center;gap:9px;justify-content:flex-end;flex:none;min-width:0}
-  .mact .btn{flex:none}
-  .mrow select{height:36px;padding:0 32px 0 12px;border-radius:10px;background:var(--charcoal);
-    border:1px solid var(--border);color:var(--parchment);font-size:12.5px;font-family:inherit;
-    appearance:none;flex:1;min-width:0;max-width:160px;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7f70' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 10px center;cursor:pointer;transition:.14s}
-  .mrow select:hover{border-color:var(--charcoal-4)}
-  .mrow select:focus{outline:none;border-color:rgba(226,182,92,.5);box-shadow:0 0 0 3px rgba(212,146,58,.13)}
-  /* A disabled Apply has to look disabled — otherwise the row reads as
-     "press me" when the selection hasn't changed. */
-  .mrow .btn:disabled{opacity:.38;cursor:not-allowed;filter:saturate(.5)}
-  .mlock{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;
-    color:var(--text-faint);padding:8px 12px;border-radius:100px;
-    background:var(--charcoal);border:1px solid var(--border);white-space:nowrap}
-  .mlock svg{width:13px;height:13px;stroke-width:2;flex:none}
-
+  .mact{display:flex;align-items:center;justify-content:flex-end;flex:none}
+  .mact .btn{white-space:nowrap}
   .pcount{font-size:12.5px;color:var(--text-faint);font-weight:600;font-variant-numeric:tabular-nums}
 
-  /* The stats and the control drop below the name rather than squeezing:
-     a truncated date is worse than a taller row. */
-  @media (max-width:1180px){
+  @media (max-width:1080px){
     .mrow{grid-template-columns:minmax(0,1fr) auto;row-gap:14px}
     .mstats{grid-column:1/3;grid-template-columns:auto auto minmax(0,1fr);gap:26px}
     .mact{grid-column:1/3;justify-content:flex-start}
@@ -534,11 +526,9 @@
     .mrow{grid-template-columns:minmax(0,1fr);padding:15px 15px 15px 19px}
     .mstats{grid-column:1;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
     .mstat:nth-child(3){grid-column:1/-1}
-    .mact{grid-column:1;flex-wrap:wrap}
-    .mrow select{max-width:none}
-    .gpick{width:100%}
-    .mtools .msearch{max-width:none;width:100%}
-    .mcount{margin-left:0}
+    .mact{grid-column:1}
+    .fpick{width:100%}
+    .sbar .btn{width:100%}
   }
 
   /* toast */
@@ -616,7 +606,7 @@
       <button class="icon-btn hamburger" id="menuToggle" aria-label="Open menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <div class="page-title"><h1>Group Management</h1></div>
+      <div class="page-title"><h1>Administrative Search</h1></div>
       <div class="spacer"></div>
       <div class="searchbox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -634,28 +624,29 @@
 
     <main class="content">
 
-      <!-- ============ LISTING VIEW ============ -->
-      <!-- ============ LISTING ============ -->
       <div class="view active" id="view-list">
         <a class="page-back" href="/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>Back to dashboard</a>
 
         <div class="phead">
           <div>
-            <h2>Group Management</h2>
-            <p id="introLine">Promote and demote accounts. Every change is written to that account's security log.</p>
+            <h2>Administrative Search</h2>
+            <p id="introLine">Find a UCP account from whatever you have — a name, a handle, a
+              character. Opening an account is recorded against your own staff log.</p>
           </div>
         </div>
 
-        <div class="mtools">
-          <div class="gpick tone-0" id="gpick"></div>
-          <label class="msearch">
+        <div class="sbar">
+          <div class="fpick" id="fpick"></div>
+          <label class="sbox">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-            <input type="text" id="q" placeholder="Or search every group by UCP name…" autocomplete="off" spellcheck="false">
+            <input type="text" id="q" autocomplete="off" spellcheck="false" placeholder="Search…">
           </label>
-          <span class="mcount" id="mcount"></span>
+          <button class="btn primary" id="goBtn">Search</button>
         </div>
+        <div class="shint" id="shint"></div>
 
-        <div id="mscope"></div>
+        <div id="snote"></div>
+        <div id="scount"></div>
         <div id="mlist"></div>
         <div class="pager" id="pager"></div>
       </div>
@@ -725,49 +716,30 @@
   }
   renderSidebar(SIDEBAR);
 
-  /* ===================== BULLETIN DATA =====================
-     Each bulletin: {id, type, title, body, by, when, link (url|null),
-     image (dataURL|null), imgpos (0-100 vertical %), shown (on dashboard)}.
-     MAX_SHOWN caps how many rotate on the dashboard.
-     `by` is always the UCP name of whoever created it (locked). Wire to server later. */
-
-  function checkLink(raw){
-    const v=(raw||'').trim();
-    if(!v) return {url:null, ok:true, msg:''};
-    let url=v;
-    if(!/^https?:\/\//i.test(url)) url='https://'+url;  /* assume https if scheme omitted */
-    try{
-      const u=new URL(url);
-      if(!u.hostname.includes('.')) return {url:null, ok:false, msg:'That doesn\u2019t look like a valid web address.'};
-      return {url:u.href, ok:true, msg:'Players who click this bulletin will open '+u.hostname};
-    }catch(_){ return {url:null, ok:false, msg:'That doesn\u2019t look like a valid web address.'}; }
-  }
-
-
-
   /* =====================================================================
-     GROUP MANAGEMENT
+     ADMINISTRATIVE SEARCH
 
-     Resting state is the picker: ten groups, a headcount each. Nothing is
-     listed until a group is picked or a name is searched — page one of every
-     account in the UCP is not an answer to any question somebody came here
-     with.
-
-     The rules are the server's (api/_groups.php); this page asks what it is
-     allowed to offer and renders that. A row it can't touch says why rather
-     than being greyed out — "you can't" is not an explanation.
+     The field list is the server's (api/_admin.php), not this page's. That
+     matters more than it looks: the list is going to grow to around thirty
+     ways of searching, several of which — characters, properties, vehicles —
+     are designed long before they have tables behind them. A page that
+     hard-coded the list would offer those searches and quietly return
+     nothing, and "no results" reads as "this player has none", not as "this
+     feature doesn't exist". So the server says what can be searched and what
+     can't, and the picker draws exactly that.
      ===================================================================== */
-  let RANKS=[], ASSIGNABLE=[], YOU={id:0,rank:0};
-  let ITEMS=[], TOTAL_PAGES=1, curPage=1, QUERY='', GROUP=null, LOADING=false;
+  let FIELDS = [], FIELD = 'ucp', QUERY = '', LOADING = false;
+  let ITEMS = [], TOTAL_PAGES = 1, curPage = 1, LAST = null;
 
-  function rankName(r){ return (RANKS.find(x=>x.rank===r)||{}).name||('Group '+r); }
+  function toneOf(r){ return 'tone-' + (r >= 0 && r <= 9 ? r : 0); }
+  function fieldBy(k){ for(var i=0;i<FIELDS.length;i++) if(FIELDS[i].key===k) return FIELDS[i]; return null; }
 
-  /* Dates arrive as UTC SQL strings; times as relative, with the exact value
-     on hover — "3 days ago" is what you scan for, the timestamp is what you
-     quote in a report. */
+  /* Dates arrive as UTC SQL strings; times show as relative, with the exact
+     value on hover — "3 days ago" is what you scan for, the timestamp is what
+     you quote in a report. */
   function toTs(sql){
     if(!sql) return null;
-    const m=String(sql).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    const m = String(sql).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
     return m ? Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6])/1000 : null;
   }
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -778,8 +750,7 @@
   }
   function agoOf(sql){
     const t=toTs(sql); if(!t) return 'never';
-    if(window.UCP && UCP.relTime) return UCP.relTime(t);
-    return dateOf(sql);
+    return (window.UCP && UCP.relTime) ? UCP.relTime(t) : dateOf(sql);
   }
   function exactOf(sql){
     const t=toTs(sql); if(!t) return 'Never signed in';
@@ -787,87 +758,82 @@
     return dateOf(sql)+', '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC';
   }
 
-  /* ---- the group picker ----
-     RANKS arrives low-to-high; the menu shows it high-to-low, because the
-     groups people come here to hand out are at the top of the ladder. */
-  function toneOf(r){ return 'tone-' + (r >= 0 && r <= 9 ? r : 0); }
-
+  /* ---- the field picker ---- */
   let PICK_OPEN = false;
 
   function renderPicker(){
-    const host = document.getElementById('gpick');
-    const cur  = GROUP === null ? null : RANKS.find(r => r.rank === GROUP);
-    const all  = RANKS.reduce((a,r) => a + (r.count|0), 0);
+    const host = document.getElementById('fpick');
+    const cur  = fieldBy(FIELD);
 
-    host.className = 'gpick ' + (cur ? toneOf(cur.rank) : 'tone-0') + (PICK_OPEN ? ' open' : '');
+    let out = '', lastGroup = null;
+    FIELDS.forEach(function(f){
+      if(f.group !== lastGroup){ out += '<div class="fgroup">' + escapeHtml(f.group) + '</div>'; lastGroup = f.group; }
+      out += '<button type="button" role="option" class="fopt ' +
+             (f.available ? '' : 'soon ') + (f.key === FIELD ? 'on' : '') + '"' +
+             (f.available ? ' data-pick="' + f.key + '"' : ' disabled') + '>' +
+        '<svg class="ftick" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>' +
+        '<span class="fb"><span class="fn">' + escapeHtml(f.label) +
+          (f.available ? '' : '<span class="fsoon">Not yet</span>') + '</span>' +
+          '<span class="fd">' + escapeHtml(f.available ? f.hint : (f.why || '')) + '</span></span>' +
+      '</button>';
+    });
+
+    host.className = 'fpick' + (PICK_OPEN ? ' open' : '');
     host.innerHTML =
-      '<button class="gpick-btn" type="button" id="gpickBtn" aria-haspopup="listbox" aria-expanded="' + PICK_OPEN + '">' +
-        '<span class="gdot"></span>' +
-        '<span class="gpick-lbl"><span class="k">Group</span>' +
-          '<span class="v">' + (cur ? escapeHtml(cur.name) : 'All groups') + '</span></span>' +
-        '<span class="gpick-cnt">' + (cur ? cur.count : all).toLocaleString('en-GB') + '</span>' +
-        '<svg class="gpick-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>' +
+      '<button class="fpick-btn" type="button" id="fpickBtn" aria-haspopup="listbox" aria-expanded="' + PICK_OPEN + '">' +
+        '<span class="fpick-lbl"><span class="k">Search by</span>' +
+          '<span class="v">' + escapeHtml(cur ? cur.label : 'UCP name') + '</span></span>' +
+        '<svg class="fpick-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>' +
       '</button>' +
-      '<div class="gmenu" role="listbox" ' + (PICK_OPEN ? '' : 'hidden') + '>' +
-        '<button class="gopt tone-0 ' + (GROUP === null ? 'on' : '') + '" type="button" role="option" data-pick="all">' +
-          '<span class="gdot"></span><span class="gn">All groups</span>' +
-          '<span class="gc">' + all.toLocaleString('en-GB') + '</span></button>' +
-        '<div class="gsep"></div>' +
-        RANKS.slice().reverse().map(function(r){
-          return '<button class="gopt ' + toneOf(r.rank) + ' ' + (GROUP === r.rank ? 'on' : '') +
-                 (r.count ? '' : ' zero') + '" type="button" role="option" data-pick="' + r.rank + '">' +
-            '<span class="gdot"></span><span class="gn">' + escapeHtml(r.name) + '</span>' +
-            '<span class="gc">' + (r.count|0).toLocaleString('en-GB') + '</span></button>';
-        }).join('') +
-      '</div>';
+      '<div class="fmenu" role="listbox" ' + (PICK_OPEN ? '' : 'hidden') + '>' + out + '</div>';
+
+    const input = document.getElementById('q');
+    input.placeholder = cur ? cur.placeholder : 'Search…';
+    document.getElementById('shint').textContent = cur ? cur.hint : '';
   }
 
-  /* Opening and closing only touches classes — it does NOT re-render.
-     Re-rendering here detaches the very button that was clicked, and the
-     document-level "click outside" handler below then sees a node with no
-     parent, decides the click was outside, and shuts the menu again the
-     instant it opens. */
+  /* Opening and closing only touches classes — re-rendering here would detach
+     the button that was just clicked, and the click-outside handler would then
+     see an orphan node and close the menu the instant it opened. */
   function setPickOpen(v){
     PICK_OPEN = v;
-    const host = document.getElementById('gpick');
+    const host = document.getElementById('fpick');
     host.classList.toggle('open', v);
-    const menu = host.querySelector('.gmenu'), btn = host.querySelector('#gpickBtn');
+    const menu = host.querySelector('.fmenu'), btn = host.querySelector('#fpickBtn');
     if(menu) menu.hidden = !v;
     if(btn)  btn.setAttribute('aria-expanded', String(v));
   }
 
-  document.getElementById('gpick').addEventListener('click', function(e){
+  document.getElementById('fpick').addEventListener('click', function(e){
     const opt = e.target.closest('[data-pick]');
     if(opt){
-      const v = opt.dataset.pick;
-      GROUP = (v === 'all') ? null : +v;
-      QUERY = ''; document.getElementById('q').value = '';
+      FIELD = opt.dataset.pick;
       setPickOpen(false);
-      loadPage(1);
+      renderPicker();
+      const input = document.getElementById('q');
+      input.focus();
+      if(input.value.trim()) run(1);
       return;
     }
-    if(e.target.closest('#gpickBtn')) setPickOpen(!PICK_OPEN);
+    if(e.target.closest('#fpickBtn')) setPickOpen(!PICK_OPEN);
   });
-  /* Clicking anywhere else, or Escape, closes it. */
   document.addEventListener('click', function(e){
-    if(PICK_OPEN && !e.target.closest('#gpick')) setPickOpen(false);
+    if(PICK_OPEN && !e.target.closest('#fpick')) setPickOpen(false);
   });
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape' && PICK_OPEN) setPickOpen(false);
   });
 
+  /* ---- one result ---- */
   function rowHTML(m){
-    const opts = ASSIGNABLE.map(function(r){
-      return '<option value="' + r + '"' + (r === m.rank ? ' selected' : '') + '>' +
-             escapeHtml(rankName(r)) + '</option>';
-    }).join('');
-    /* Someone whose group is above what this actor may hand out still needs
-       their group SHOWN, so it goes in as a disabled option. */
-    const missing = !ASSIGNABLE.includes(m.rank)
-      ? '<option value="' + m.rank + '" selected disabled>' + escapeHtml(m.role) + '</option>' : '';
+    const bad = m.status !== 'active'
+      ? '<span class="mtag bad">' + escapeHtml(m.status) + '</span>' : '';
 
-    const tag = m.self ? '<span class="mtag you">You</span>' : '';
-    const bad = m.status !== 'active' ? '<span class="mtag bad">' + escapeHtml(m.status) + '</span>' : '';
+    /* Only shown when the thing that matched isn't the name already on the
+       row — repeating the UCP name back under itself says nothing. */
+    const match = m.matched_on
+      ? '<div class="mmatch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>' +
+        'Matched on <b>' + escapeHtml(m.matched_on) + '</b></div>' : '';
 
     const twofa = '<span class="flag ' + (m.twofa ? 'on' : 'off') + '" title="' +
       (m.twofa ? 'Two-step verification on' : 'No two-step verification') + '">' +
@@ -877,18 +843,11 @@
       ? '<span class="flag on" title="Forum account linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>Forum</span>'
       : '<span class="flag off" title="No forum account linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>No forum</span>';
 
-    const act = m.editable
-      ? '<select data-rank="' + m.id + '" aria-label="Group for ' + escapeHtml(m.name) + '">' + missing + opts + '</select>' +
-        '<button class="btn sm primary" data-apply="' + m.id + '" disabled>Apply</button>'
-      : '<span class="mlock" title="' + escapeHtml(m.blocked_by || '') + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' +
-          (m.self ? 'Your own group' : 'Founder only') + '</span>';
-
-    return '<div class="mrow ' + toneOf(m.rank) + (m.self ? ' is-you' : '') + '" data-id="' + m.id + '">' +
+    return '<div class="mrow ' + toneOf(m.rank) + '">' +
       '<div class="mid-block">' +
-        '<div class="mname"><span class="nm">' + escapeHtml(m.name) + '</span>' + tag + bad + '</div>' +
+        '<div class="mname"><span class="nm">' + escapeHtml(m.name) + '</span>' + bad + '</div>' +
         '<div class="msub"><span class="gchip">' + escapeHtml(m.role) + '</span>' +
-          '<span class="muid">#' + m.id + '</span></div>' +
+          '<span class="muid">#' + m.id + '</span></div>' + match +
       '</div>' +
       '<div class="mstats">' +
         '<div class="mstat"><span class="lab">Member since</span>' +
@@ -899,122 +858,118 @@
         '<div class="mstat"><span class="lab">Security</span>' +
           '<span class="chips">' + twofa + forum + '</span></div>' +
       '</div>' +
-      '<div class="mact">' + act + '</div>' +
+      '<div class="mact"><a class="btn sm" href="/dashboard/lookup?id=' + m.id + '">View account →</a></div>' +
     '</div>';
   }
 
-  /* The picker already names the open group, so the scope bar only earns
-     its place when a search is spanning all of them. */
-  function renderScope(d){
-    const host = document.getElementById('mscope');
-    if(!d.listed || !QUERY){ host.innerHTML = ''; return; }
-    host.innerHTML =
-      '<div class="mscope"><div class="txt">Searching every group for <b>' + escapeHtml(QUERY) + '</b>' +
-      ' \u2014 ' + d.total + ' ' + (d.total === 1 ? 'match' : 'matches') + '</div>' +
-      '<button class="btn sm ghost" data-clear>Clear</button></div>';
-    host.querySelector('[data-clear]').onclick = function(){
-      GROUP = null; QUERY = ''; document.getElementById('q').value = ''; loadPage(1);
-    };
+  function blank(icon, head, body){
+    return '<div class="empty"><span class="ei">' + icon + '</span><h4>' + head + '</h4><p>' + body + '</p></div>';
   }
+  const ICO_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+  const ICO_LOCK   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 
-  function renderList(d){
-    const host = document.getElementById('mlist');
+  function render(d){
+    const list  = document.getElementById('mlist');
+    const note  = document.getElementById('snote');
+    const count = document.getElementById('scount');
+    const cur   = fieldBy(FIELD);
 
-    if(!d.listed){
-      host.innerHTML = '<div class="empty">' +
-        '<span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span>' +
-        '<h4>Pick a group</h4>' +
-        '<p>Choose one from the list above to see who\u2019s in it, or search for someone by name across every group.</p>' +
-        '</div>';
+    note.innerHTML = d.note
+      ? '<div class="snote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>' +
+        escapeHtml(d.note) + '</div></div>' : '';
+
+    if(d.blocked){
+      count.innerHTML = '';
+      list.innerHTML = blank(ICO_LOCK, 'Not searchable yet', escapeHtml(d.blocked));
+      document.getElementById('pager').innerHTML = '';
+      return;
+    }
+    if(!d.searched){
+      count.innerHTML = '';
+      list.innerHTML = blank(ICO_SEARCH, 'Nothing searched yet',
+        'Pick what you\u2019re searching by, type at least two characters, and press Search.');
       document.getElementById('pager').innerHTML = '';
       return;
     }
     if(!ITEMS.length){
-      host.innerHTML = '<div class="empty">' +
-        '<span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>' +
-        '<h4>Nobody here</h4>' +
-        '<p>' + (QUERY ? 'Nothing matches \u201c' + escapeHtml(QUERY) + '\u201d.' : 'This group is empty.') + '</p>' +
-        '</div>';
+      count.innerHTML = '';
+      list.innerHTML = blank(ICO_SEARCH, 'No matches',
+        'No UCP account has a ' + escapeHtml((cur ? cur.label : 'name').toLowerCase()) +
+        ' matching \u201c' + escapeHtml(d.q || QUERY) + '\u201d.');
       document.getElementById('pager').innerHTML = '';
       return;
     }
-    host.innerHTML = ITEMS.map(rowHTML).join('');
+
+    count.innerHTML = '<b>' + d.total.toLocaleString('en-GB') + '</b> ' +
+      (d.total === 1 ? 'account matches' : 'accounts match') + ' ' +
+      escapeHtml((cur ? cur.label : 'that').toLowerCase()) + ' \u201c' + escapeHtml(d.q || QUERY) + '\u201d';
+    list.innerHTML = ITEMS.map(rowHTML).join('');
     renderPager(d);
   }
 
   function renderPager(d){
-    const pager=document.getElementById('pager');
-    if(TOTAL_PAGES<=1){
-      pager.innerHTML = d.total>0 ? `<span class="pcount">${d.total} ${d.total===1?'account':'accounts'}</span>` : '';
-      return;
-    }
-    let nums='';
+    const pager = document.getElementById('pager');
+    if(TOTAL_PAGES <= 1){ pager.innerHTML = ''; return; }
+    let nums = '';
     for(let i=1;i<=TOTAL_PAGES;i++){
-      if(i===1||i===TOTAL_PAGES||Math.abs(i-curPage)<=1) nums+=`<button class="pg ${i===curPage?'on':''}" data-pg="${i}">${i}</button>`;
-      else if(Math.abs(i-curPage)===2) nums+=`<span class="pg-gap">…</span>`;
+      if(i===1||i===TOTAL_PAGES||Math.abs(i-curPage)<=1) nums += '<button class="pg ' + (i===curPage?'on':'') + '" data-pg="' + i + '">' + i + '</button>';
+      else if(Math.abs(i-curPage)===2) nums += '<span class="pg-gap">…</span>';
     }
-    pager.innerHTML=
-      `<span class="pcount">${d.from}–${d.to} of ${d.total.toLocaleString('en-GB')}</span>`+
-      `<button class="pg" data-pg="${curPage-1}" ${curPage===1?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>`+
-      nums+
-      `<button class="pg" data-pg="${curPage+1}" ${curPage===TOTAL_PAGES?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>`;
+    pager.innerHTML =
+      '<span class="pcount">' + d.from + '–' + d.to + ' of ' + d.total.toLocaleString('en-GB') + '</span>' +
+      '<button class="pg" data-pg="' + (curPage-1) + '" ' + (curPage===1?'disabled':'') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+      nums +
+      '<button class="pg" data-pg="' + (curPage+1) + '" ' + (curPage===TOTAL_PAGES?'disabled':'') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>';
   }
-  document.getElementById('pager').addEventListener('click',e=>{
-    const b=e.target.closest('[data-pg]'); if(!b||b.disabled) return;
-    loadPage(parseInt(b.dataset.pg,10));
+  document.getElementById('pager').addEventListener('click', function(e){
+    const b = e.target.closest('[data-pg]'); if(!b || b.disabled) return;
+    run(parseInt(b.dataset.pg,10));
     document.querySelector('.content').scrollIntoView({behavior:'smooth',block:'start'});
   });
 
-  /* Apply lights up only once the selection differs — so the button always
-     means "make this change", never "save what's already true". */
-  document.getElementById('mlist').addEventListener('change',e=>{
-    const sel=e.target.closest('[data-rank]'); if(!sel) return;
-    const m=ITEMS.find(x=>x.id===+sel.dataset.rank);
-    const btn=document.querySelector(`[data-apply="${sel.dataset.rank}"]`);
-    if(btn) btn.disabled = (+sel.value === m.rank);
-  });
+  /* ---- run a search ----
+     Deliberately NOT debounced-on-keystroke like the group search. That one
+     scans a table of UCP names; this one can leave the server to ask the
+     forum, and firing that on every keypress would hammer somebody else's
+     software. You press Search, or Enter. */
+  function run(page){
+    if(LOADING) return;
+    QUERY = document.getElementById('q').value.trim();
+    curPage = page || 1;
+    LOADING = true;
+    document.getElementById('goBtn').textContent = 'Searching…';
 
-  document.getElementById('mlist').addEventListener('click',e=>{
-    const btn=e.target.closest('[data-apply]'); if(!btn||btn.disabled) return;
-    const id=+btn.dataset.apply;
-    const sel=document.querySelector(`[data-rank="${id}"]`); if(!sel) return;
-    btn.disabled=true; btn.textContent='Applying…';
-    UCP.post('member-rank.php',{id:id,rank:+sel.value}).then(function(res){
-      const d=res.data||{};
-      btn.textContent='Apply';
-      if(!d.ok){ toast(d.error||'That did not work'); loadPage(); return; }
-      toast(d.message); loadPage();
-    }).catch(function(){ btn.textContent='Apply'; toast('Could not reach the server'); });
-  });
+    const qs = 'field=' + encodeURIComponent(FIELD) +
+               '&q=' + encodeURIComponent(QUERY) + '&page=' + curPage;
 
-  function loadPage(n){
-    if(LOADING) return Promise.resolve();
-    LOADING=true; curPage=n||curPage;
-    const qs='page='+curPage+'&q='+encodeURIComponent(QUERY)+(GROUP===null?'':'&group='+GROUP);
-    return UCP.get('members.php?'+qs).then(function(d){
-      LOADING=false;
-      if(!d || d.ok!==true){
-        if(d && d.authenticated===false){ window.location.replace('/login?return='+encodeURIComponent('/dashboard/groups')); return; }
-        toast('Could not load accounts'); return;
+    UCP.get('admin-search.php?' + qs).then(function(d){
+      LOADING = false;
+      document.getElementById('goBtn').textContent = 'Search';
+      if(!d || d.ok !== true){
+        if(d && d.authenticated === false){
+          window.location.replace('/login?return=' + encodeURIComponent('/dashboard/search'));
+          return;
+        }
+        toast((d && d.error) || 'That search did not work'); return;
       }
-      ITEMS=d.members||[]; TOTAL_PAGES=d.pages||1; curPage=d.page||curPage;
-      RANKS=d.ranks||RANKS; ASSIGNABLE=d.assignable||ASSIGNABLE; YOU=d.you||YOU;
-      document.getElementById('mcount').textContent =
-        d.total_all.toLocaleString('en-GB')+' accounts in the UCP';
-      renderPicker(); renderScope(d); renderList(d);
+      FIELDS = d.fields || FIELDS;
+      ITEMS  = d.results || [];
+      TOTAL_PAGES = d.pages || 1;
+      curPage = d.page || curPage;
+      LAST = d;
+      renderPicker();
+      render(d);
     }).catch(function(err){
-      LOADING=false;
-      console.error('[groups] load failed', err);
+      LOADING = false;
+      document.getElementById('goBtn').textContent = 'Search';
+      console.error('[search] failed', err);
       toast(err && err.message ? 'Page error: ' + err.message : 'Could not reach the server');
     });
   }
 
-  /* Debounced search — one request when they stop typing, not one per key. */
-  let qTimer=null;
-  document.getElementById('q').addEventListener('input',function(){
-    const v=this.value.trim();
-    clearTimeout(qTimer);
-    qTimer=setTimeout(function(){ QUERY=v; if(v) GROUP=null; loadPage(1); },320);
+  document.getElementById('goBtn').addEventListener('click', function(){ run(1); });
+  document.getElementById('q').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); run(1); }
   });
 
   /* ===================== UTIL ===================== */
@@ -1043,43 +998,45 @@
 
 
   /* =====================================================================
-     BOOT — Management and above. The endpoints check it themselves too.
+     BOOT — Trainee Admin and above. The endpoints check it themselves too;
+     this only decides whether to draw the page or the locked state.
      ===================================================================== */
   function lockOut(){
-    document.querySelector('.content').innerHTML=`
-      <div class="empty" style="margin:60px auto;max-width:520px">
-        <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
-        <h4>Management only</h4>
-        <p>Groups are managed by Management and Founders. If you think you should have access, speak to a Founder.</p>
-        <a class="btn primary" href="/dashboard">Back to dashboard</a>
-      </div>`;
+    document.querySelector('.content').innerHTML =
+      '<div class="empty" style="margin:60px auto;max-width:520px">' +
+      '<span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
+      '<h4>Administrators only</h4>' +
+      '<p>Administrative Search is for Trainee Admin and above. If you think you should have ' +
+      'access, speak to a Manager.</p>' +
+      '<a class="btn primary" href="/dashboard">Back to dashboard</a></div>';
   }
 
   UCP.get('session.php').then(function(d){
-    if(!d || d.authenticated!==true){
-      window.location.replace('/login?return='+encodeURIComponent('/dashboard/groups'));
+    if(!d || d.authenticated !== true){
+      window.location.replace('/login?return=' + encodeURIComponent('/dashboard/search'));
       return;
     }
     const an=document.getElementById('acctName'), ar=document.getElementById('acctRole');
-    if(an) an.textContent=d.name||'';
-    if(ar) ar.textContent=d.role||'Member';
-    if(window.UCP && UCP.setTone) UCP.setTone(d.rank|0);   /* tier colour — guarded so an out-of-date ucp.js can't take the page down */
-    if((d.rank|0) < 8){ lockOut(); return; }
+    if(an) an.textContent = d.name || '';
+    if(ar) ar.textContent = d.role || 'Member';
+    if(window.UCP && UCP.setTone) UCP.setTone(d.rank|0);
 
-    IS_MANAGER=true; IS_FOUNDER=(d.rank|0) >= 9; IS_ADMINISTRATOR=true; renderSidebar(SIDEBAR);
+    const rank = d.rank | 0;
+    if(rank < 3){ lockOut(); return; }
 
-    /* Say the limits out loud rather than letting people discover them by
-       being refused. */
-    document.getElementById('introLine').textContent = IS_FOUNDER
-      ? 'Promote and demote any account. Every change is written to that account\'s security log.'
-      : 'Promote and demote up to Lead Admin. Management and Founders are Founder-only, and nobody changes their own group.';
+    IS_ADMINISTRATOR = true;
+    IS_MANAGER = rank >= 8;
+    IS_FOUNDER = rank >= 9;
+    renderSidebar(SIDEBAR);
 
-    loadPage(1);
+    /* Load with no query: the server hands back the field registry and
+       nothing else, which is what builds the picker. */
+    UCP.get('admin-search.php').then(function(r){
+      if(r && r.ok){ FIELDS = r.fields || []; renderPicker(); render(r); }
+    }).catch(function(err){ console.error('[search] fields failed', err); });
+
   }).catch(function(err){
-    /* A thrown error in the block above is NOT a network failure, and
-       saying so sends you to check the server for a bug that is in the
-       page. Say which it was, and put the detail in the console. */
-    console.error('[groups] boot failed', err);
+    console.error('[search] boot failed', err);
     toast(err && err.message ? 'Page error: ' + err.message : 'Could not reach the server');
   });
 

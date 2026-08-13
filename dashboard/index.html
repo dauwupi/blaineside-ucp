@@ -1075,6 +1075,10 @@
           UCP_NAME = d.name || UCP_NAME;
           UCP_RANK = (typeof d.rank==='number') ? d.rank : 0;
           UCP_ROLE = d.role || 'Member';   // server maps rank→name (Member for rank 0)
+          IS_ADMINISTRATOR = UCP_RANK >= 3;
+          IS_MANAGER       = UCP_RANK >= 8;
+          IS_FOUNDER       = UCP_RANK >= 9;
+          renderSidebar(SIDEBAR);
           applyIdentity();
         } else if(d && d.authenticated===false){
           window.location = '/login';
@@ -1138,7 +1142,7 @@
       { label:'Listings',      href:'#' },
     ]},
 
-    { heading:'Administration', admin:true },
+    { heading:'Administration', admins:true },
     /* Founder-only. Managers reach Group Management through the Management
        group below instead — same page, fewer powers, enforced server-side. */
     { label:'Founder', icon:'crown', founder:true, children:[
@@ -1148,6 +1152,11 @@
       { label:'County Bulletin', href:'/dashboard/bulletin' },
       { label:'Announcements',   href:'/dashboard/announcements' },
       { label:'Group Management', href:'/dashboard/groups', notFounder:true },
+    ]},
+    /* Trainee Admin and above. The whole admin ladder, not just Management —
+       see BS_ADMIN_MIN_RANK in api/_admin.php, which is what actually decides. */
+    { label:'Administrators', icon:'search', admins:true, children:[
+      { label:'Administrative Search', href:'/dashboard/search' },
     ]},
 
     { heading:'Account' },
@@ -1170,6 +1179,7 @@
     clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
     radio:'<path d="M8 6l10 6-10 6z"/><path d="M4 5v14"/>',
     chev:'<path d="M9 6l6 6-6 6"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
   };
 
   function svg(name, cls){
@@ -1179,10 +1189,11 @@
   /* Administration items appear only for Management and Founders. The pages
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
-  let IS_MANAGER=false, IS_FOUNDER=false;
+  let IS_MANAGER=false, IS_FOUNDER=false, IS_ADMINISTRATOR=false;
   function renderSidebar(items){
     const nav = document.getElementById('nav');
-    items = items.filter(it => (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER));
+    items = items.filter(it => (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER)
+                        && (!it.admins || IS_ADMINISTRATOR));
     nav.innerHTML = items.map(it=>{
       if(it.heading) return `<div class="nav-heading">${esc(it.heading)}</div>`;
 
@@ -1311,7 +1322,8 @@
       mountBulletin(d.bulletins||[]);
       const manage=document.getElementById('bulletinManage');
       if(manage) manage.hidden = !d.may_manage;
-      if(d.may_manage && !IS_MANAGER){ IS_MANAGER=true; renderSidebar(SIDEBAR); }
+      /* The sidebar is driven by the rank from session.php above; this
+         endpoint only decides whether the manage link on the carousel shows. */
     })
     .catch(()=>mountBulletin([]));
 
