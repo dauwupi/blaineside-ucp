@@ -193,7 +193,200 @@
   /* ---- CONTENT ---- */
   .content{padding:28px 30px 40px;max-width:1260px;width:100%;margin:0 auto}
   .page{display:flex;flex-direction:column;gap:22px}
-  .announce{margin-bottom:4px}
+  .ann{margin-bottom:4px}
+
+  .hello h2{font-size:23px;font-weight:700;letter-spacing:-.02em;margin-bottom:3px}
+  .hello h2 b{color:var(--gold);font-weight:700}
+  .hello p{font-size:14px;color:var(--text-faint)}
+
+  /* STAT STRIP — 5 metrics, no percentages */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .stat{padding:20px 22px;position:relative}
+  .stat + .stat{border-left:1px solid var(--border-soft)}
+  .stat .lab{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;
+    color:var(--text-faint);margin-bottom:12px}
+  .stat .lab svg{width:15px;height:15px;color:var(--stone);stroke-width:1.9;flex:none}
+  .stat .num{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1;
+    font-variant-numeric:tabular-nums;color:var(--parchment)}
+
+  /* THIN CAPACITY BAR under stats */
+  .capacity{display:flex;align-items:center;gap:18px;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:12px;padding:14px 20px}
+  .capacity .ct{display:flex;align-items:center;gap:9px;flex:none}
+  .capacity .ct .d{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+  .capacity .ct .t{font-size:12.5px;font-weight:600;color:var(--text-faint)}
+  .capacity .pv{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+  .capacity .pv small{color:var(--text-faint);font-weight:600}
+  .capacity .bar{flex:1;height:7px;border-radius:5px;background:var(--charcoal);overflow:hidden;border:1px solid var(--border-soft)}
+  .capacity .bar > i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--amber),var(--gold))}
+  .capacity .meta{font-size:12px;color:var(--text-dim);font-weight:500;flex:none;font-variant-numeric:tabular-nums}
+  .capacity .meta b{color:var(--gold);font-weight:700}
+
+  /* body grid — aligned columns, equal rhythm */
+  .body-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:22px;align-items:stretch}
+  .col{display:flex;flex-direction:column;gap:22px}
+
+  .panel{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    display:flex;flex-direction:column}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;
+    border-bottom:1px solid var(--border-soft);flex:none}
+  .panel-head h3{font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .panel-head .link{font-size:12.5px;font-weight:600;color:var(--text-faint);cursor:pointer}
+  .panel-head .link:hover{color:var(--gold)}
+  .panel-head .live{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text-faint)}
+  .panel-head .live .d{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+
+  /* NEWS */
+  .news-track{position:relative;flex:1;min-height:250px}
+  .slide{position:absolute;inset:0;opacity:0;transition:opacity .55s;display:flex;align-items:flex-end}
+  .slide.on{opacity:1}
+  .slide .bg{position:absolute;inset:0}
+  .slide .bg img{width:100%;height:100%;object-fit:cover;display:block}
+  .slide.s1 .bg{background:linear-gradient(120deg,#3a2a16,#191510)}
+  .slide.s2 .bg{background:linear-gradient(120deg,#2c2617,#181712)}
+  .slide.s3 .bg{background:linear-gradient(120deg,#33211a,#191310)}
+  .slide .bg::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(12,11,10,.1),rgba(12,11,10,.55) 55%,rgba(12,11,10,.95))}
+  /* Over a photograph the image is faded out behind the caption rather
+     than merely darkened. The fade lives on .cap, so it starts exactly
+     where the text does however tall the caption happens to be — a
+     two-line title pushes the fade up with it. */
+  .slide.has-img .bg::after{background:
+    linear-gradient(180deg,rgba(10,9,8,.30) 0%,rgba(10,9,8,.08) 38%,rgba(10,9,8,.30) 100%)}
+  .slide.has-img .cap{padding-top:54px;
+    background:linear-gradient(to top,
+      rgba(10,9,8,.97) 0%, rgba(10,9,8,.95) 48%, rgba(10,9,8,.78) 72%, rgba(10,9,8,0) 100%)}
+  .slide .cap{position:relative;padding:24px;width:100%}
+  .slide .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:#1a1206;background:var(--gold);padding:3px 9px;border-radius:100px;margin-bottom:12px}
+  .slide .tag.evt{background:var(--danger);color:#fff}
+  .slide .tag.upd{background:var(--stone);color:#141210}
+  .slide h4{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* Two lines, never more — a long description over a photo turns the slide
+     into wallpaper with words on it. */
+  .slide p{font-size:13px;line-height:1.55;color:#c9bea9;max-width:56ch;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .slide.has-img h4{text-shadow:0 1px 12px rgba(0,0,0,.55)}
+  .slide.has-img p{color:#ddd3c2;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+  .slide.has-img .meta{color:#b6ab99}
+  .slide .meta{font-size:11.5px;color:var(--text-faint);margin-top:10px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .slide.has-link{cursor:pointer}
+  .slide.has-link .cap{transition:transform .55s ease, opacity .55s ease}
+  .slide.has-link:hover h4{color:var(--gold)}
+  .slide-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#1a1206;
+    background:linear-gradient(145deg,var(--gold),var(--amber));padding:3px 9px;border-radius:100px}
+  .slide-link svg{width:11px;height:11px}
+  .slide.has-link:focus-visible{outline:2px solid var(--gold);outline-offset:-3px;border-radius:14px}
+  .news-nav{display:flex;align-items:center;justify-content:center;gap:14px;
+    padding:12px 20px;border-top:1px solid var(--border-soft);flex:none}
+  .news-arrow{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:8px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint);
+    cursor:pointer;transition:.14s}
+  .news-arrow:hover{color:var(--parchment);background:var(--charcoal-4);border-color:var(--charcoal-4)}
+  .news-arrow svg{width:16px;height:16px}
+  .news-dots{display:flex;gap:7px;align-items:center}
+  .news-dots .d{width:7px;height:7px;border-radius:50%;background:var(--charcoal-4);cursor:pointer;transition:.22s}
+  .news-dots .d.on{background:var(--gold);width:22px;border-radius:100px}
+
+  /* SERVICE STATUS */
+  .status-list{padding:7px}
+  .status-row{display:flex;align-items:center;gap:13px;padding:13px 12px}
+  .status-row + .status-row{border-top:1px solid var(--border-soft)}
+  .status-row .led{width:9px;height:9px;border-radius:50%;flex:none}
+  .status-row.up .led{background:var(--ok);box-shadow:0 0 7px var(--ok)}
+  .status-row.deg .led{background:var(--warn);box-shadow:0 0 7px var(--warn)}
+  .status-row.down .led{background:var(--danger);box-shadow:0 0 7px var(--danger)}
+  .status-row .nm{font-size:13.5px;font-weight:600;flex:1}
+  .status-row .val{font-size:12.5px;font-weight:600}
+  .status-row.up .val{color:var(--ok)}
+  .status-row.deg .val{color:var(--warn)}
+  .status-row.down .val{color:var(--danger)}
+  .status-row .sub{font-size:11px;color:var(--text-dim);min-width:70px;text-align:right;font-variant-numeric:tabular-nums}
+
+  /* DISCORD — muted slate-blue to sit calmly in the warm palette */
+  :root{--dc:#6b74a8;--dc-soft:#4c5379}
+  .discord{position:relative;overflow:hidden}
+  .discord::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,var(--dc-soft),var(--dc))}
+  .discord-body{padding:22px;display:flex;flex-direction:column;flex:1}
+  .discord-top{display:flex;align-items:center;gap:13px;margin-bottom:16px}
+  .discord-mark{width:44px;height:44px;border-radius:11px;flex:none;display:grid;place-items:center;
+    background:rgba(107,116,168,.16);border:1px solid rgba(107,116,168,.3)}
+  .discord-mark svg{width:24px;height:24px;color:#a8afd4}
+  .discord-top .nm{font-size:15px;font-weight:700}
+  .discord-top .sub{font-size:12px;color:var(--text-faint);display:flex;align-items:center;gap:6px;margin-top:2px}
+  .discord-top .sub .g{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .discord-stat{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+  .discord-stat .big{font-size:25px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .discord-stat .small{font-size:13px;color:var(--text-faint);font-weight:500}
+  .discord-line{font-size:12.5px;color:var(--text-dim);margin-bottom:auto;padding-bottom:16px}
+  .discord-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:12px;
+    border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none;
+    background:rgba(107,116,168,.14);color:#b9bfdd;border:1px solid rgba(107,116,168,.32);transition:.15s}
+  .discord-btn:hover{background:rgba(107,116,168,.22);color:#cdd2ea}
+  .discord-btn svg{width:18px;height:18px}
+
+  /* =====================================================================
+     ANNOUNCEMENT STRIP
+
+     Reads left to right like a filed notice: a colour stamp, then the
+     type and when it was posted, then the headline, then the detail.
+     Nothing is centred — centred text has no left edge to scan down, which
+     is why the old one turned into a paragraph floating in a box.
+
+     One --ann colour per type drives the rail, the stamp and the border,
+     so adding a type later is one variable, not six rules.
+     ===================================================================== */
+  .ann{--ann:var(--gold);--ann-ink:#1a1206;
+    display:flex;align-items:center;gap:15px;padding:13px 15px;position:relative;
+    border:1px solid color-mix(in srgb, var(--ann) 34%, transparent);
+    border-radius:13px;overflow:hidden;
+    background:linear-gradient(90deg,
+      color-mix(in srgb, var(--ann) 13%, transparent),
+      color-mix(in srgb, var(--ann) 4%, transparent) 42%,
+      transparent 78%), var(--charcoal-2)}
+  .ann::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ann)}
+  .ann-stamp{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:var(--ann);color:var(--ann-ink);box-shadow:0 6px 16px -8px var(--ann)}
+  .ann-stamp svg{width:18px;height:18px;stroke-width:2}
+  .ann-main{flex:1;min-width:0}
+  .ann-eyebrow{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--ann);margin-bottom:3px}
+  .ann-eyebrow .sep{opacity:.45}
+  .ann-eyebrow .ago{color:var(--text-faint);font-weight:700;letter-spacing:.08em}
+  .ann-head{font-size:14px;font-weight:700;color:var(--parchment);line-height:1.35;
+    letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* One line each, ellipsised. An announcement that needs a paragraph
+     needs a link to the paragraph. */
+  .ann-detail{font-size:12.5px;color:var(--text-dim);line-height:1.45;margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ann-acts{flex:none;display:flex;align-items:center;gap:8px}
+  .ann-link{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    padding:7px 12px;border-radius:100px;white-space:nowrap;
+    color:var(--ann);border:1px solid color-mix(in srgb, var(--ann) 40%, transparent);
+    background:color-mix(in srgb, var(--ann) 10%, transparent);transition:.16s}
+  .ann-link:hover{background:var(--ann);color:var(--ann-ink)}
+  .ann-link svg{width:12px;height:12px;stroke-width:2.4}
+  .ann-x{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;
+    background:transparent;border:none;color:var(--text-faint);cursor:pointer;transition:.14s}
+  .ann-x:hover{background:rgba(255,255,255,.06);color:var(--parchment)}
+  .ann-x svg{width:14px;height:14px;stroke-width:2.2}
+
+  .ann.t-notice     {--ann:var(--gold);--ann-ink:#1a1206}
+  .ann.t-maintenance{--ann:#7ea7d4;--ann-ink:#0b131d}
+  .ann.t-warning    {--ann:var(--amber);--ann-ink:#1a1206}
+  .ann.t-critical   {--ann:#d0644d;--ann-ink:#fff}
+  .ann.t-success    {--ann:#8fb463;--ann-ink:#0f1408}
+
+  @media (max-width:760px){
+    .ann{align-items:flex-start;gap:12px;padding:12px 13px}
+    .ann-head,.ann-detail{white-space:normal;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .ann-acts{flex-direction:column;align-items:flex-end;gap:6px}
+    .ann-link{padding:6px 10px}
+  }
 
   .hello h2{font-size:23px;font-weight:700;letter-spacing:-.02em;margin-bottom:3px}
   .hello h2 b{color:var(--gold);font-weight:700}
@@ -329,38 +522,6 @@
   .discord-btn svg{width:18px;height:18px}
 
   /* ANNOUNCEMENT BANNER — full-width, centered */
-  .announce{display:flex;align-items:center;gap:14px;padding:14px 18px;
-    background:linear-gradient(90deg,rgba(212,146,58,.14),rgba(212,146,58,.05));
-    border:1px solid rgba(212,146,58,.34);border-radius:12px;position:relative}
-  .announce-badge{display:inline-flex;align-items:center;gap:8px;flex:none;
-    font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1a1206;
-    background:linear-gradient(145deg,var(--gold),var(--amber));padding:6px 11px;border-radius:100px}
-  .announce-badge svg{width:14px;height:14px}
-  .announce-text{flex:1;font-size:13.5px;color:#e6d3b2;line-height:1.5;text-align:center;
-    padding:0 8px}
-  .announce-text b{color:var(--parchment);font-weight:700}
-  .announce-x{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;
-    background:transparent;border:none;color:var(--text-faint);cursor:pointer;transition:.14s}
-  .announce-x:hover{background:rgba(212,146,58,.14);color:var(--parchment)}
-  .announce-x svg{width:15px;height:15px}
-  /* One colour per type. Set by api/announcements.php, so the strip reads
-     the same everywhere it's rendered. */
-  .announce.t-maintenance{background:linear-gradient(90deg,rgba(78,116,160,.16),rgba(78,116,160,.05));
-    border-color:rgba(111,155,204,.38)}
-  .announce.t-maintenance .announce-badge{background:linear-gradient(145deg,#8fb6de,#5f87b4);color:#0d1520}
-  .announce.t-maintenance .announce-text{color:#cddcec}
-  .announce.t-warning{background:linear-gradient(90deg,rgba(212,146,58,.2),rgba(212,146,58,.06));
-    border-color:rgba(212,146,58,.5)}
-  .announce.t-critical{background:linear-gradient(90deg,rgba(193,85,63,.2),rgba(193,85,63,.06));
-    border-color:rgba(193,85,63,.5)}
-  .announce.t-critical .announce-badge{background:linear-gradient(145deg,#d8705c,var(--danger));color:#fff}
-  .announce.t-critical .announce-text{color:#eec4bb}
-  .announce.t-success{background:linear-gradient(90deg,rgba(127,160,90,.17),rgba(127,160,90,.05));
-    border-color:rgba(127,160,90,.42)}
-  .announce.t-success .announce-badge{background:linear-gradient(145deg,#a8c986,var(--ok));color:#0f1408}
-  .announce.t-success .announce-text{color:#cfdcbc}
-  .announce.linked{cursor:pointer}
-  .announce.linked:hover{filter:brightness(1.08)}
 
   /* NOTIFICATION BELL DROPDOWN */
   .notif{position:relative}
@@ -455,9 +616,6 @@
       background:var(--charcoal-2);max-height:calc(100dvh - 80px);display:flex;flex-direction:column}
     .notif-menu .notif-list{flex:1;max-height:none}
     .notif-menu .notif-foot{background:var(--charcoal-2)}
-    .announce{flex-wrap:wrap;gap:10px;padding:13px 14px 13px}
-    .announce-text{flex-basis:100%;order:3;font-size:13px}
-    .announce-x{position:absolute;top:11px;right:11px}
   }
 
   /* mobile-only controls — hidden on desktop */
@@ -1316,15 +1474,28 @@
      have not read THIS one. Some types can't be dismissed at all.
      ===================================================================== */
   const ANN_TYPES={
-    notice:      {label:'Announcement', cls:''},
+    notice:      {label:'Announcement', cls:'t-notice'},
     maintenance: {label:'Maintenance',  cls:'t-maintenance'},
     warning:     {label:'Warning',      cls:'t-warning'},
     critical:    {label:'Critical',     cls:'t-critical'},
     success:     {label:'Resolved',     cls:'t-success'}
   };
-  const ANN_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l14-5v12L3 15v-4zM17 8a3 3 0 0 1 0 8M6 15v3a1 1 0 0 0 1 1h2"/></svg>';
+  /* One glyph per type — a megaphone for news reads wrong on an outage. */
+  const ANN_ICONS={
+    notice:'<path d="M3 11l14-5v12L3 15v-4z"/><path d="M17 8a3 3 0 0 1 0 8M6 15v3a1 1 0 0 0 1 1h2"/>',
+    maintenance:'<path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.3-2.3z"/>',
+    warning:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>',
+    critical:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5h.01"/>',
+    success:'<path d="M20 6L9 17l-5-5"/>'
+  };
 
   function annDismissedKey(a){ return 'bs-ann-'+a.id+'-'+a.rev; }
+
+  function annWhen(ts){
+    if(window.UCP && UCP.relTime) return UCP.relTime(ts);
+    const d=Math.floor(Date.now()/1000)-ts;
+    return d<3600 ? Math.max(1,Math.floor(d/60))+' min ago' : Math.floor(d/3600)+'h ago';
+  }
 
   function renderAnnouncement(a){
     const el=document.getElementById('announce');
@@ -1334,22 +1505,22 @@
     try{ if(a.dismissable && localStorage.getItem(annDismissedKey(a))){ el.hidden=true; return; } }catch(e){}
 
     const t=ANN_TYPES[a.type]||ANN_TYPES.notice;
-    el.className='announce '+t.cls+(a.link?' linked':'');
+    el.className='ann '+t.cls;
     el.innerHTML=`
-      <span class="announce-badge">${ANN_ICON}${esc(t.label)}</span>
-      <div class="announce-text"><b>${esc(a.lead)}</b>${a.body?' '+esc(a.body):''}</div>
-      ${a.dismissable?`<button class="announce-x" aria-label="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:''}`;
+      <span class="ann-stamp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">${ANN_ICONS[a.type]||ANN_ICONS.notice}</svg></span>
+      <div class="ann-main">
+        <div class="ann-eyebrow">${esc(t.label)}<span class="sep">·</span><span class="ago">${esc(annWhen(a.at))}</span></div>
+        <div class="ann-head" title="${esc(a.lead)}">${esc(a.lead)}</div>
+        ${a.body?`<div class="ann-detail" title="${esc(a.body)}">${esc(a.body)}</div>`:''}
+      </div>
+      <div class="ann-acts">
+        ${a.link?`<a class="ann-link" href="${esc(a.link)}" target="_blank" rel="noopener">Read more<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>`:''}
+        ${a.dismissable?`<button class="ann-x" aria-label="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:''}
+      </div>`;
     el.hidden=false;
 
-    if(a.link){
-      el.addEventListener('click',e=>{
-        if(e.target.closest('.announce-x')) return;
-        window.open(a.link,'_blank','noopener');
-      });
-    }
-    const x=el.querySelector('.announce-x');
-    if(x) x.addEventListener('click',e=>{
-      e.stopPropagation();
+    const x=el.querySelector('.ann-x');
+    if(x) x.addEventListener('click',()=>{
       el.hidden=true;
       try{ localStorage.setItem(annDismissedKey(a),'1'); }catch(err){}
     });

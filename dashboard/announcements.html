@@ -309,34 +309,65 @@
 
 
   /* ---------- ANNOUNCEMENTS ---------- */
-  .astrip{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:13px;
-    border:1px solid var(--border);background:var(--charcoal-2);position:relative;overflow:hidden}
-  .astrip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
-  .astrip .chip{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;
-    letter-spacing:.12em;text-transform:uppercase;padding:5px 11px;border-radius:100px;flex:none;
-    background:var(--gold);color:#1a1206}
-  .astrip .chip svg{width:12px;height:12px;stroke-width:2.4}
-  .astrip .txt{flex:1;min-width:0;font-size:13px;color:var(--text-dim);line-height:1.5}
-  .astrip .txt b{color:var(--parchment);font-weight:700}
-  .astrip .x{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
-    color:var(--text-faint);border:1px solid transparent}
-  .astrip .x svg{width:13px;height:13px;stroke-width:2.2}
+  /* =====================================================================
+     ANNOUNCEMENT STRIP
 
-  /* One colour per type — the strip, the rail and the chip move together. */
-  .astrip.t-notice::before{background:var(--gold)}
-  .astrip.t-notice .chip{background:var(--gold);color:#1a1206}
-  .astrip.t-maintenance{background:rgba(78,116,160,.08);border-color:rgba(78,116,160,.32)}
-  .astrip.t-maintenance::before{background:#6f9bcc}
-  .astrip.t-maintenance .chip{background:#6f9bcc;color:#0d1520}
-  .astrip.t-warning{background:rgba(212,146,58,.08);border-color:rgba(212,146,58,.34)}
-  .astrip.t-warning::before{background:var(--amber)}
-  .astrip.t-warning .chip{background:var(--amber);color:#1a1206}
-  .astrip.t-critical{background:rgba(193,85,63,.10);border-color:rgba(193,85,63,.38)}
-  .astrip.t-critical::before{background:var(--danger)}
-  .astrip.t-critical .chip{background:var(--danger);color:#fff}
-  .astrip.t-success{background:rgba(127,160,90,.09);border-color:rgba(127,160,90,.34)}
-  .astrip.t-success::before{background:var(--ok)}
-  .astrip.t-success .chip{background:var(--ok);color:#0f1408}
+     Reads left to right like a filed notice: a colour stamp, then the
+     type and when it was posted, then the headline, then the detail.
+     Nothing is centred — centred text has no left edge to scan down, which
+     is why the old one turned into a paragraph floating in a box.
+
+     One --ann colour per type drives the rail, the stamp and the border,
+     so adding a type later is one variable, not six rules.
+     ===================================================================== */
+  .ann{--ann:var(--gold);--ann-ink:#1a1206;
+    display:flex;align-items:center;gap:15px;padding:13px 15px;position:relative;
+    border:1px solid color-mix(in srgb, var(--ann) 34%, transparent);
+    border-radius:13px;overflow:hidden;
+    background:linear-gradient(90deg,
+      color-mix(in srgb, var(--ann) 13%, transparent),
+      color-mix(in srgb, var(--ann) 4%, transparent) 42%,
+      transparent 78%), var(--charcoal-2)}
+  .ann::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ann)}
+  .ann-stamp{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:var(--ann);color:var(--ann-ink);box-shadow:0 6px 16px -8px var(--ann)}
+  .ann-stamp svg{width:18px;height:18px;stroke-width:2}
+  .ann-main{flex:1;min-width:0}
+  .ann-eyebrow{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--ann);margin-bottom:3px}
+  .ann-eyebrow .sep{opacity:.45}
+  .ann-eyebrow .ago{color:var(--text-faint);font-weight:700;letter-spacing:.08em}
+  .ann-head{font-size:14px;font-weight:700;color:var(--parchment);line-height:1.35;
+    letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* One line each, ellipsised. An announcement that needs a paragraph
+     needs a link to the paragraph. */
+  .ann-detail{font-size:12.5px;color:var(--text-dim);line-height:1.45;margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ann-acts{flex:none;display:flex;align-items:center;gap:8px}
+  .ann-link{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    padding:7px 12px;border-radius:100px;white-space:nowrap;
+    color:var(--ann);border:1px solid color-mix(in srgb, var(--ann) 40%, transparent);
+    background:color-mix(in srgb, var(--ann) 10%, transparent);transition:.16s}
+  .ann-link:hover{background:var(--ann);color:var(--ann-ink)}
+  .ann-link svg{width:12px;height:12px;stroke-width:2.4}
+  .ann-x{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;
+    background:transparent;border:none;color:var(--text-faint);cursor:pointer;transition:.14s}
+  .ann-x:hover{background:rgba(255,255,255,.06);color:var(--parchment)}
+  .ann-x svg{width:14px;height:14px;stroke-width:2.2}
+
+  .ann.t-notice     {--ann:var(--gold);--ann-ink:#1a1206}
+  .ann.t-maintenance{--ann:#7ea7d4;--ann-ink:#0b131d}
+  .ann.t-warning    {--ann:var(--amber);--ann-ink:#1a1206}
+  .ann.t-critical   {--ann:#d0644d;--ann-ink:#fff}
+  .ann.t-success    {--ann:#8fb463;--ann-ink:#0f1408}
+
+  @media (max-width:760px){
+    .ann{align-items:flex-start;gap:12px;padding:12px 13px}
+    .ann-head,.ann-detail{white-space:normal;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .ann-acts{flex-direction:column;align-items:flex-end;gap:6px}
+    .ann-link{padding:6px 10px}
+  }
 
   .arow{display:flex;align-items:center;gap:14px;padding:15px 16px;border:1px solid var(--border-soft);
     border-radius:13px;background:var(--charcoal-2);margin-bottom:11px}
@@ -615,6 +646,13 @@
   let UCP_NAME="";
   let ITEMS=[], TOTAL_PAGES=1, curPage=1, LOADING=false;
 
+  const ICONS_ANN={
+    notice:'<path d="M3 11l14-5v12L3 15v-4z"/><path d="M17 8a3 3 0 0 1 0 8M6 15v3a1 1 0 0 0 1 1h2"/>',
+    maintenance:'<path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.3-2.3z"/>',
+    warning:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>',
+    critical:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5h.01"/>',
+    success:'<path d="M20 6L9 17l-5-5"/>'
+  };
   const TYPES={
     notice:      {label:'Announcement', cls:'t-notice'},
     maintenance: {label:'Maintenance',  cls:'t-maintenance'},
@@ -622,7 +660,6 @@
     critical:    {label:'Critical',     cls:'t-critical'},
     success:     {label:'Resolved',     cls:'t-success'}
   };
-  const ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l14-5v12L3 15v-4z"/><path d="M17 8a3 3 0 0 1 0 8M6 15v3a1 1 0 0 0 1 1h2"/></svg>';
 
   function whenFrom(ts){
     if(window.UCP && UCP.relTime) return UCP.relTime(ts);
@@ -632,12 +669,22 @@
 
   /* The strip itself — used for the preview, the "live now" panel and the
      dashboard. One function, so the three can't drift apart. */
+  /* The strip itself — used for the preview and the "live now" panel, and
+     kept identical to the dashboard's own renderer so the preview can't
+     quietly become a lie. */
   function stripHTML(a){
     const t=TYPES[a.type]||TYPES.notice;
-    return `<div class="astrip ${t.cls}">
-      <span class="chip">${ICON}${escapeHtml(t.label)}</span>
-      <div class="txt"><b>${escapeHtml(a.lead)}</b>${a.body?' '+escapeHtml(a.body):''}</div>
-      ${a.dismissable?`<span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6L6 18"/></svg></span>`:''}
+    return `<div class="ann ${t.cls}">
+      <span class="ann-stamp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">${ICONS_ANN[a.type]||ICONS_ANN.notice}</svg></span>
+      <div class="ann-main">
+        <div class="ann-eyebrow">${escapeHtml(t.label)}<span class="sep">·</span><span class="ago">${escapeHtml(a.at?whenFrom(a.at):'just now')}</span></div>
+        <div class="ann-head">${escapeHtml(a.lead)}</div>
+        ${a.body?`<div class="ann-detail">${escapeHtml(a.body)}</div>`:''}
+      </div>
+      <div class="ann-acts">
+        ${a.link?`<span class="ann-link">Read more<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>`:''}
+        ${a.dismissable?`<button class="ann-x" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:''}
+      </div>
     </div>`;
   }
 
@@ -800,6 +847,7 @@
       type:draft.type,
       lead:draft.lead||'Your headline appears here',
       body:draft.body,
+      link:(lc.ok?lc.url:null),
       dismissable:draft.dismissable
     });
     document.getElementById('saveBtn').disabled = !(draft.lead.trim() && (!draft.link.trim() || lc.ok));
