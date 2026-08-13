@@ -74,3 +74,29 @@ function ips_userpwd(): string
 {
     return ips_key() . ':';
 }
+
+/**
+ * The "UCP Name" profile-field sync endpoint, with its key attached.
+ *
+ * The key goes in the query string. It used to, then was moved into an
+ * X-Sync-Key header to keep it out of the receiving server's access log —
+ * but blaineside.com answers the header form with a bare 403 before the
+ * script runs at all (a filter in front of it, not the script itself), so
+ * the field silently stopped updating.
+ *
+ * The query-string form works, and the log it lands in is our own. The
+ * header is still sent alongside, so if that filter is ever relaxed the
+ * script can go back to reading it without another change here.
+ *
+ * @return string|null null when no sync endpoint is configured
+ */
+function ips_sync_endpoint(): ?string
+{
+    global $CONFIG;
+
+    $url = (string)($CONFIG['sync']['url'] ?? '');
+    $key = (string)($CONFIG['sync']['key'] ?? '');
+    if ($url === '' || $key === '') return null;
+
+    return $url . (strpos($url, '?') === false ? '?' : '&') . http_build_query(['key' => $key]);
+}

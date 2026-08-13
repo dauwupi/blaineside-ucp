@@ -90,12 +90,13 @@ if ($forumMemberId) {
 
     // Push the UCP name into the forum profile ("UCP Name" field) immediately.
     // Fire-and-forget; the hourly cron + IPS webhook act as fallbacks.
-    // The sync key used to be hardcoded here AND passed in the query string,
-    // so it landed in the receiving server's access log and in any Referer.
-    // It now comes from config and travels in a header instead.
-    $syncUrl = $CONFIG['sync']['url'] ?? '';
+    // The key comes from config rather than being hardcoded here.
+    // The key rides in the query string: the X-Sync-Key header form is
+    // refused with a 403 by whatever sits in front of that script, which is
+    // why the profile field quietly stopped updating. See _ips.php.
+    $syncUrl = ips_sync_endpoint();
     $syncKey = $CONFIG['sync']['key'] ?? '';
-    if ($syncUrl !== '' && $syncKey !== '') {
+    if ($syncUrl !== null) {
         $sync = curl_init($syncUrl);
         curl_setopt_array($sync, [
             CURLOPT_RETURNTRANSFER => true,

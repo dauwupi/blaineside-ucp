@@ -120,12 +120,12 @@ if ($acc['forum_member_id'] !== null) {
     // The rename above changes the DISPLAY name. The custom field shown on
     // the forum's About tab is fed by this sync endpoint instead, so
     // without this call the two disagree until the hourly cron catches up.
-    // Same fire-and-forget contract, same header-carried key as
-    // register.php — never in the query string, where it would land in the
-    // receiving server's access log.
-    $syncUrl = (string)($CONFIG['sync']['url'] ?? '');
+    // Fire-and-forget, like every other forum call here. The key travels in
+    // the query string because the header form is refused with a 403 by
+    // whatever sits in front of that script — see ips_sync_endpoint().
+    $syncUrl = ips_sync_endpoint();
     $syncKey = (string)($CONFIG['sync']['key'] ?? '');
-    if ($syncUrl !== '' && $syncKey !== '') {
+    if ($syncUrl !== null) {
         $sync = curl_init($syncUrl);
         curl_setopt_array($sync, [
             CURLOPT_RETURNTRANSFER => true,
