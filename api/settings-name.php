@@ -115,6 +115,32 @@ if ($acc['forum_member_id'] !== null) {
             error_log('UCP name change: forum rename failed for #' . $uid . ' (HTTP ' . $code . ')');
         }
     }
+
+    // ---- Refresh the forum's "UCP Name" profile field ------------------
+    // The rename above changes the DISPLAY name. The custom field shown on
+    // the forum's About tab is fed by this sync endpoint instead, so
+    // without this call the two disagree until the hourly cron catches up.
+    // Same fire-and-forget contract, same header-carried key as
+    // register.php — never in the query string, where it would land in the
+    // receiving server's access log.
+    $syncUrl = (string)($CONFIG['sync']['url'] ?? '');
+    $syncKey = (string)($CONFIG['sync']['key'] ?? '');
+    if ($syncUrl !== '' && $syncKey !== '') {
+        $sync = curl_init($syncUrl);
+        curl_setopt_array($sync, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 5,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HTTPHEADER     => ['X-Sync-Key: ' . $syncKey],
+        ]);
+        curl_exec($sync);
+        $syncCode = curl_getinfo($sync, CURLINFO_HTTP_CODE);
+        curl_close($sync);
+        if ($syncCode < 200 || $syncCode >= 300) {
+            error_log('UCP name change: profile-field sync failed for #' . $uid . ' (HTTP ' . $syncCode . ')');
+        }
+    }
 }
 
 require_once __DIR__ . '/_sessions.php';
