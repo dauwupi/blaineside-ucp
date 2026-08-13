@@ -248,11 +248,15 @@
   .slide.s3 .bg{background:linear-gradient(120deg,#33211a,#191310)}
   .slide .bg::after{content:"";position:absolute;inset:0;
     background:linear-gradient(180deg,rgba(12,11,10,.1),rgba(12,11,10,.55) 55%,rgba(12,11,10,.95))}
-  /* A photograph needs far more protection than a flat gradient does: the
-     caption sits bottom-left, so that corner is weighted twice. */
+  /* Over a photograph the image is faded out behind the caption rather
+     than merely darkened. The fade lives on .cap, so it starts exactly
+     where the text does however tall the caption happens to be — a
+     two-line title pushes the fade up with it. */
   .slide.has-img .bg::after{background:
-    linear-gradient(180deg,rgba(10,9,8,.34) 0%,rgba(10,9,8,.12) 30%,rgba(10,9,8,.74) 66%,rgba(10,9,8,.96) 100%),
-    linear-gradient(90deg,rgba(10,9,8,.72) 0%,rgba(10,9,8,.28) 46%,rgba(10,9,8,0) 78%)}
+    linear-gradient(180deg,rgba(10,9,8,.30) 0%,rgba(10,9,8,.08) 38%,rgba(10,9,8,.30) 100%)}
+  .slide.has-img .cap{padding-top:54px;
+    background:linear-gradient(to top,
+      rgba(10,9,8,.97) 0%, rgba(10,9,8,.95) 48%, rgba(10,9,8,.78) 72%, rgba(10,9,8,0) 100%)}
   .slide .cap{position:relative;padding:24px;width:100%}
   .slide .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
     color:#1a1206;background:var(--gold);padding:3px 9px;border-radius:100px;margin-bottom:12px}
