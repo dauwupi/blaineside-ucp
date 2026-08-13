@@ -1994,14 +1994,14 @@ button{font-family:inherit}
       $('charsAside').textContent = '';
     }
 
-    /* Linked accounts */
-    var forum = d.forum.linked
-      ? 'Linked · forum member #'+d.forum.member_id
-      : 'Not linked yet — it links itself the first time you sign in to the forums';
+    /* Linked accounts. The member number means nothing to the person reading
+       it, so show the name they post under. */
     $('forumStatus').innerHTML = d.forum.linked
-      ? esc(forum)
-      : '<span class="none">'+esc(forum)+'</span>';
-    $('forumOpen').href = d.forum.url;
+      ? 'Linked as <b>'+esc(d.forum.name || DATA.name)+'</b>'
+      : '<span class="none">Not linked yet — it links itself the first time you ' +
+        'sign in to the forums</span>';
+    $('forumOpen').href = d.forum.profile_url || d.forum.url;
+    $('forumOpen').textContent = d.forum.profile_url ? 'Open forum profile' : 'Open the forums';
     $('forumOpen').hidden = !d.forum.linked;
     $('forumWait').hidden = d.forum.linked;
 

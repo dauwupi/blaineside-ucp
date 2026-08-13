@@ -36,6 +36,65 @@ if (!empty($acc['pending_email']) && (int)($acc['pending_email_expires'] ?? 0) >
     ];
 }
 
+/**
+ * The forum display name, for the "Linked accounts" row.
+ *
+ * A member number means nothing to the person reading it, so ask the forum
+ * what they are actually called there. The answer is cached in the session
+ * for ten minutes: this runs on every profile load, and a forum that has
+ * gone slow must not drag the UCP down with it.
+ *
+ * Falls back to the UCP name, which is what the two are kept in step as —
+ * register.php provisions the forum account with it and settings-name.php
+ * pushes every rename across. Never shows the bare member id.
+ */
+function forum_display_name(array $acc, array $CONFIG): array
+{
+    $mid = (int)$acc['forum_member_id'];
+    $out = ['name' => (string)$acc['username'], 'profile_url' => null];
+
+    $cache = $_SESSION['forum_name'] ?? null;
+    if (is_array($cache) && (int)($cache['id'] ?? 0) === $mid && (int)($cache['at'] ?? 0) > time() - 600) {
+        return ['name' => $cache['name'], 'profile_url' => $cache['url']];
+    }
+
+    $url = rtrim((string)($CONFIG['ips']['url'] ?? $CONFIG['ips']['api_url'] ?? ''), '/');
+    $key = (string)($CONFIG['ips']['key'] ?? $CONFIG['ips']['api_key'] ?? '');
+    if ($url === '' || $key === '' || !function_exists('curl_init')) {
+        return $out;                    // no forum API configured — UCP name it is
+    }
+
+    $ch = curl_init($url . '/core/members/' . $mid);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_USERPWD        => $key . ':',
+        CURLOPT_TIMEOUT        => 3,
+        CURLOPT_CONNECTTIMEOUT => 2,
+        CURLOPT_FOLLOWLOCATION => false,
+    ]);
+    $body = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($code >= 200 && $code < 300 && is_string($body)) {
+        $j = json_decode($body, true);
+        if (is_array($j)) {
+            if (!empty($j['name']))       $out['name']        = (string)$j['name'];
+            if (!empty($j['profileUrl'])) $out['profile_url'] = (string)$j['profileUrl'];
+        }
+    } else {
+        error_log('UCP profile: forum lookup failed for member #' . $mid . ' (HTTP ' . $code . ')');
+    }
+
+    $_SESSION['forum_name'] = ['id' => $mid, 'name' => $out['name'],
+                               'url' => $out['profile_url'], 'at' => time()];
+    return $out;
+}
+
+$forum = $acc['forum_member_id'] !== null
+    ? forum_display_name($acc, $CONFIG)
+    : ['name' => null, 'profile_url' => null];
+
 // ---- Account age -----------------------------------------------------------
 $createdTs  = $acc['created_at'] ? strtotime((string)$acc['created_at']) : null;
 $memberDays = $createdTs ? (int)floor((time() - $createdTs) / 86400) : null;
@@ -56,6 +115,8 @@ ok([
     'forum' => [
         'linked'    => $acc['forum_member_id'] !== null,
         'member_id' => $acc['forum_member_id'] !== null ? (int)$acc['forum_member_id'] : null,
+        'name'        => $forum['name'],
+        'profile_url' => $forum['profile_url'],
         'url'       => rtrim((string)($CONFIG['forum']['url'] ?? 'https://forum.blaineside.com'), '/'),
     ],
 
