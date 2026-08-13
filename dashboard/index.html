@@ -242,6 +242,7 @@
   .slide{position:absolute;inset:0;opacity:0;transition:opacity .55s;display:flex;align-items:flex-end}
   .slide.on{opacity:1}
   .slide .bg{position:absolute;inset:0}
+  .slide .bg img{width:100%;height:100%;object-fit:cover;display:block}
   .slide.s1 .bg{background:linear-gradient(120deg,#3a2a16,#191510)}
   .slide.s2 .bg{background:linear-gradient(120deg,#2c2617,#181712)}
   .slide.s3 .bg{background:linear-gradient(120deg,#33211a,#191310)}
@@ -696,7 +697,7 @@
           <div class="panel" style="flex:1">
             <div class="panel-head">
               <h3>County Bulletin</h3>
-              <a class="link" href="/dashboard/bulletin">All news →</a>
+              <a class="link" id="bulletinManage" href="/dashboard/bulletin" hidden>Administrative Actions →</a>
             </div>
             <div class="news-track" id="newsTrack"></div>
             <div class="news-nav">
@@ -1011,33 +1012,30 @@
   renderSidebar(SIDEBAR);
 
   /* =====================================================================
-     COUNTY BULLETIN  —  edit this array to add/remove bulletin posts.
-     Newest first. `type` sets the tag colour: 'event' | 'update' | 'notice'.
-     `theme` picks the background wash (1–3). `link` (optional) makes the whole
-     slide clickable — clicking opens that URL in a new tab. Managed on the
-     County Bulletin page; "All news →" links there.
+     COUNTY BULLETIN
+
+     Fed by api/bulletins.php — the bulletins Management has switched on,
+     newest first, up to five. Nothing is hardcoded here any more: what
+     staff publish on /dashboard/bulletin is what appears below.
+
+     The "Administrative Actions" link to that page is hidden unless the
+     server says this account may manage bulletins. That is a courtesy, not
+     the control: the page and every endpoint behind it check the rank
+     themselves.
      ===================================================================== */
-  /* This is the set of bulletins marked "show on dashboard" (up to 5).
-     On the live server this is fed by the County Bulletin page's shown:true items. */
-  const BULLETIN = [
-    { type:'event',  theme:1, title:"Sandy Shores Rodeo returns this weekend",
-      body:"Sign-ups are open for the county's biggest live event — prizes, property giveaways and a full arena build.",
-      by:"cody_barrett", when:"2 hours ago", link:"https://forums.blaineside.com/rodeo" },
-    { type:'update', theme:2, title:"Server 3.2 — economy rebalance is live",
-      body:"Paycheck tiers, fuel pricing and business payouts have been retuned from last month's feedback.",
-      by:"dev_marcus", when:"Yesterday", link:"https://forums.blaineside.com/changelog/3-2" },
-    { type:'notice', theme:3, title:"Whitelist applications reopen Monday",
-      body:"New illegal faction slots are opening. Read the updated guidelines before intake closes.",
-      by:"faction_lead", when:"3 days ago", link:null },
-    { type:'event',  theme:1, title:"Founders Day parade down Route 68",
-      body:"Join the whole county for a slow cruise and street party. Classic cars welcome — sign up in advance.",
-      by:"events_kara", when:"4 days ago", link:"https://forums.blaineside.com/foundersday" },
-    { type:'update', theme:2, title:"Property interior updates rolling out",
-      body:"A fresh batch of interiors is being added to existing properties across the map this week.",
-      by:"dev_marcus", when:"5 days ago", link:null },
-  ];
   const TAGCLASS = { event:'evt', update:'upd', notice:'' };
   const TAGLABEL = { event:'Event', update:'Update', notice:'Notice' };
+  const THEME_BY_TYPE = { event:1, update:2, notice:3 };
+
+  /* "2 hours ago" from a unix timestamp — ucp.js has this, with a fallback
+     for the moment it hasn't loaded. */
+  function whenFrom(ts){
+    if(window.UCP && UCP.relTime) return UCP.relTime(ts);
+    const s=Math.floor(Date.now()/1000)-ts;
+    if(s<3600) return Math.max(1,Math.floor(s/60))+' min ago';
+    if(s<86400) return Math.floor(s/3600)+'h ago';
+    return Math.floor(s/86400)+'d ago';
+  }
 
   function renderBulletin(posts){
     const track=document.getElementById('newsTrack'), dotsWrap=document.getElementById('newsDots');
@@ -1055,18 +1053,22 @@
     track.innerHTML = posts.map((p,i)=>{
       const linkAttr = p.link ? ` data-link="${p.link.replace(/"/g,'&quot;')}" role="link" tabindex="0"` : '';
       const linkChip = p.link ? `<span class="slide-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Read more</span>` : '';
+      /* The image is a data: URL written by the editor, and the server only
+         ever stores one that matches data:image/(png|jpeg|webp). */
+      const bg = p.image
+        ? `<div class="bg"><img src="${p.image}" alt="" style="object-position:center ${p.imgpos||50}%"></div>`
+        : `<div class="bg"></div>`;
       return `
-      <div class="slide s${p.theme||1} ${i===0?'on':''}${p.link?' has-link':''}"${linkAttr}>
-        <div class="bg"></div>
+      <div class="slide s${THEME_BY_TYPE[p.type]||1} ${i===0?'on':''}${p.link?' has-link':''}"${linkAttr}>
+        ${bg}
         <div class="cap">
           <span class="tag ${TAGCLASS[p.type]||''}">${esc(TAGLABEL[p.type]||'Notice')}</span>
           <h4>${esc(p.title)}</h4>
           <p>${esc(p.body)}</p>
-          <div class="meta">${esc(p.when)} · ${esc(p.by)}${linkChip}</div>
+          <div class="meta">${esc(whenFrom(p.at))} · ${esc(p.by)}${linkChip}</div>
         </div>
       </div>`;}).join('');
     dotsWrap.innerHTML = posts.map((_,i)=>`<span class="d ${i===0?'on':''}"></span>`).join('');
-    /* open link on click / Enter — only slides that actually have a link */
     track.querySelectorAll('.slide[data-link]').forEach(s=>{
       const url=s.dataset.link;
       if(!url) return;
@@ -1077,21 +1079,36 @@
     return { slides:[...track.querySelectorAll('.slide')], dots:[...dotsWrap.querySelectorAll('.d')] };
   }
 
-  /* bulletin rotation with manual arrows */
-  const { slides, dots } = renderBulletin(BULLETIN);
-  let idx=0, newsTimer=null;
+  /* rotation — rebuilt whenever the set is (re)loaded */
+  let slides=[], dots=[], idx=0, newsTimer=null;
   function go(n){
-    const len=slides.length; n=(n+len)%len;
+    const len=slides.length; if(!len) return;
+    n=(n+len)%len;
     slides.forEach((s,i)=>s.classList.toggle('on',i===n));
     dots.forEach((d,i)=>d.classList.toggle('on',i===n));
     idx=n;
   }
-  function startNews(){ if(slides.length>1){clearInterval(newsTimer);newsTimer=setInterval(()=>go(idx+1),10000);} }
-  function nudge(n){ go(idx+n); startNews(); } /* reset timer on manual move */
-  dots.forEach((d,i)=>d.addEventListener('click',()=>{go(i);startNews();}));
+  function startNews(){ clearInterval(newsTimer); if(slides.length>1){newsTimer=setInterval(()=>go(idx+1),10000);} }
+  function nudge(n){ go(idx+n); startNews(); }
   document.getElementById('newsPrev').addEventListener('click',()=>nudge(-1));
   document.getElementById('newsNext').addEventListener('click',()=>nudge(1));
-  startNews();
+
+  function mountBulletin(posts){
+    const built=renderBulletin(posts);
+    slides=built.slides; dots=built.dots; idx=0;
+    dots.forEach((d,i)=>d.addEventListener('click',()=>{go(i);startNews();}));
+    startNews();
+  }
+
+  fetch('/api/bulletins.php?scope=dashboard',{credentials:'include'})
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d || d.ok!==true){ mountBulletin([]); return; }
+      mountBulletin(d.bulletins||[]);
+      const manage=document.getElementById('bulletinManage');
+      if(manage) manage.hidden = !d.may_manage;
+    })
+    .catch(()=>mountBulletin([]));
 
   /* =====================================================================
      NOTIFICATIONS  —  edit this array. Shared by the header dropdown and
