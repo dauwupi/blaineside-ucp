@@ -605,11 +605,11 @@
             <div class="n" id="menuName">dustin_hale</div>
             <div class="rr" id="menuRole">Senior Admin</div>
           </div>
-          <div class="menu-item">
+          <a class="menu-item" href="/profile" style="text-decoration:none;color:inherit">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
             My Profile
-          </div>
-          <a class="menu-item" href="/security" style="text-decoration:none;color:inherit">
+          </a>
+          <a class="menu-item" href="/profile#security" style="text-decoration:none;color:inherit">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
             Account security
           </a>
@@ -943,6 +943,7 @@
 
     { heading:'Account' },
 
+    { label:'My Profile',        icon:'user',  href:'/profile' },
     { label:'Reports & Appeals', icon:'doc',   href:'#' },
     { label:'World Points',      icon:'clock', href:'#' },
     { label:'XM Radio',          icon:'radio', href:'#' },
