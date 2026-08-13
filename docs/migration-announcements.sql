@@ -25,7 +25,12 @@ CREATE TABLE IF NOT EXISTS ucp_announcements (
   -- with the fact and follow with the detail, which is how the design
   -- reads: "Scheduled maintenance this Sunday, 03:00 UTC." then the
   -- explanation.
-  lead        VARCHAR(120) NOT NULL,
+  --
+  -- Called `headline` because LEAD is a reserved word in MySQL 8 — it is
+  -- the LEAD() window function, and an unquoted column of that name is a
+  -- syntax error. The API still calls the field `lead`; the mapping lives
+  -- in api/_announcements.php.
+  headline    VARCHAR(120) NOT NULL,
   body        VARCHAR(240) DEFAULT NULL,
 
   -- Optional "read more" target for the strip.

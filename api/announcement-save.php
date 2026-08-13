@@ -49,7 +49,7 @@ if ($id !== null) {
 
     $pdo->prepare(
         'UPDATE ucp_announcements
-            SET type = ?, lead = ?, body = ?, link = ?, dismissable = ?, updated_at = ?
+            SET type = ?, headline = ?, body = ?, link = ?, dismissable = ?, updated_at = ?
           WHERE id = ?'
     )->execute([$type, $lead, ($body === '' ? null : $body), $link, $dismissable ? 1 : 0, time(), $id]);
 
@@ -58,7 +58,7 @@ if ($id !== null) {
 
 $pdo->prepare(
     'INSERT INTO ucp_announcements
-        (type, lead, body, link, dismissable, active, author_id, author_name, created_at)
+        (type, headline, body, link, dismissable, active, author_id, author_name, created_at)
      VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)'
 )->execute([$type, $lead, ($body === '' ? null : $body), $link, $dismissable ? 1 : 0,
             (int)$acc['id'], (string)$acc['username'], time()]);

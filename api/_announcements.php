@@ -24,7 +24,9 @@ function announcement_out(array $r): array
     return [
         'id'          => (int)$r['id'],
         'type'        => (string)$r['type'],
-        'lead'        => (string)$r['lead'],
+        // The column is `headline`: LEAD is reserved in MySQL 8 (the LEAD()
+        // window function). The API keeps the shorter name.
+        'lead'        => (string)$r['headline'],
         'body'        => $r['body'] !== null && $r['body'] !== '' ? (string)$r['body'] : null,
         'link'        => $r['link'] !== null && $r['link'] !== '' ? (string)$r['link'] : null,
         'dismissable' => (bool)$r['dismissable'],
