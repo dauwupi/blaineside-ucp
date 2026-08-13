@@ -2165,7 +2165,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       nameBtn.removeAttribute('disabled');
       nameBtn.textContent = 'Change';
       $('rowNameNote').innerHTML = 'The name you sign in with, and the name staff and other ' +
-        'players know you by. You can change it once every '+nc.cooldown_days+' days.';
+        'players know you by.' + (nc.cooldown_days > 0
+          ? ' You can change it once every '+nc.cooldown_days+' days.' : '');
     } else {
       nameBtn.setAttribute('disabled','disabled');
       nameBtn.textContent = 'Locked';
@@ -2173,9 +2174,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         'in <b>'+nc.days_left+' '+(nc.days_left===1?'day':'days')+'</b>.';
       $('exName').classList.remove('on');
     }
-    $('nameCooldownNote').innerHTML =
-      '<b>You can change this once every '+nc.cooldown_days+' days.</b> Your forum display name ' +
-      'changes with it, and your old name is released for someone else to take.';
+    $('nameCooldownNote').innerHTML = (nc.cooldown_days > 0
+        ? '<b>You can change this once every '+nc.cooldown_days+' days.</b> ' : '') +
+      '<b>Your forum display name changes with it</b>, and your old name is released for ' +
+      'someone else to take.';
 
     /* Email */
     $('rowEmailValue').innerHTML = '<b>'+esc(d.email)+'</b>';

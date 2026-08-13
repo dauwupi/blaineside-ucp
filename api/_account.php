@@ -169,5 +169,13 @@ const BS_RESERVED_NAMES = [
     'support','root','system','noreply',
 ];
 
-/** Days a player must wait between UCP name changes. */
-const BS_NAME_CHANGE_DAYS = 30;
+/**
+ * Days a player must wait between UCP name changes.
+ *
+ * 0 turns the cooldown off entirely: the endpoint stops checking, and the
+ * profile page drops every mention of a waiting period rather than offering
+ * to make someone wait nought days. name_changed_at is still recorded, so
+ * putting a number back here starts enforcing it again immediately — from
+ * the last change, not from the day you changed this line.
+ */
+const BS_NAME_CHANGE_DAYS = 0;

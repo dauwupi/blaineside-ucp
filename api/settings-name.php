@@ -29,7 +29,7 @@ $username = trim((string)($in['username'] ?? ''));
 // ---- Cooldown, before the password so a locked-out change doesn't cost an
 //      attempt against the lockout counter ------------------------------------
 $changedAt = $acc['name_changed_at'] !== null ? (int)$acc['name_changed_at'] : null;
-if ($changedAt !== null) {
+if (BS_NAME_CHANGE_DAYS > 0 && $changedAt !== null) {
     $nextAt = $changedAt + BS_NAME_CHANGE_DAYS * 86400;
     if ($nextAt > time()) {
         json_out([
