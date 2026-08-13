@@ -999,7 +999,11 @@
       document.getElementById('mcount').textContent =
         d.total_all.toLocaleString('en-GB')+' accounts in the UCP';
       renderPicker(); renderScope(d); renderList(d);
-    }).catch(function(){ LOADING=false; toast('Could not reach the server'); });
+    }).catch(function(err){
+      LOADING=false;
+      console.error('[groups] load failed', err);
+      toast(err && err.message ? 'Page error: ' + err.message : 'Could not reach the server');
+    });
   }
 
   /* Debounced search — one request when they stop typing, not one per key. */
@@ -1056,7 +1060,7 @@
     const an=document.getElementById('acctName'), ar=document.getElementById('acctRole');
     if(an) an.textContent=d.name||'';
     if(ar) ar.textContent=d.role||'Member';
-    UCP.setTone(d.rank|0);   /* tier colour for the account chip — assets/css/tones.css */
+    if(window.UCP && UCP.setTone) UCP.setTone(d.rank|0);   /* tier colour — guarded so an out-of-date ucp.js can't take the page down */
     if((d.rank|0) < 8){ lockOut(); return; }
 
     IS_MANAGER=true; IS_FOUNDER=(d.rank|0) >= 9; renderSidebar(SIDEBAR);
@@ -1068,7 +1072,13 @@
       : 'Promote and demote up to Lead Admin. Management and Founders are Founder-only, and nobody changes their own group.';
 
     loadPage(1);
-  }).catch(function(){ toast('Could not reach the server'); });
+  }).catch(function(err){
+    /* A thrown error in the block above is NOT a network failure, and
+       saying so sends you to check the server for a bug that is in the
+       page. Say which it was, and put the detail in the console. */
+    console.error('[groups] boot failed', err);
+    toast(err && err.message ? 'Page error: ' + err.message : 'Could not reach the server');
+  });
 
 </script>
 </body>

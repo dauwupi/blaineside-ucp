@@ -1089,7 +1089,7 @@
     set('menuName', UCP_NAME);
     // rank name always shows now (Member included)
     const roleName = UCP_ROLE || 'Member';
-    UCP.setTone(UCP_RANK|0);   /* tier colour for the account chip — assets/css/tones.css */
+    if(window.UCP && UCP.setTone) UCP.setTone(UCP_RANK|0);   /* tier colour — guarded so an out-of-date ucp.js can't take the page down */
     ['acctRole','menuRole'].forEach(id=>{
       const el=document.getElementById(id);
       if(!el) return;

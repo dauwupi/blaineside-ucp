@@ -2065,7 +2065,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('menuRole').textContent = d.role || 'Member';
     $('acctName').textContent = d.name;
     $('acctRole').textContent = d.role || 'Member';
-    UCP.setTone(d.rank|0);   /* tier colour for the account chip — assets/css/tones.css */
+    if(window.UCP && UCP.setTone) UCP.setTone(d.rank|0);   /* tier colour — guarded so an out-of-date ucp.js can't take the page down */
 
     if(d.rank >= 8 && !IS_MANAGER){ IS_MANAGER = true; IS_FOUNDER = d.rank >= 9; renderNav(); }
 

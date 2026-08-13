@@ -926,7 +926,7 @@
     const an=document.getElementById('acctName'), ar=document.getElementById('acctRole');
     if(an) an.textContent=UCP_NAME;
     if(ar) ar.textContent=d.role||'Member';
-    UCP.setTone(d.rank|0);   /* tier colour for the account chip — assets/css/tones.css */
+    if(window.UCP && UCP.setTone) UCP.setTone(d.rank|0);   /* tier colour — guarded so an out-of-date ucp.js can't take the page down */
     if((d.rank|0) < 8){ lockOut(); return; }
 
     IS_MANAGER=true; IS_FOUNDER=(d.rank|0) >= 9; renderSidebar(SIDEBAR);
