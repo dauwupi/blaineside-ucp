@@ -343,6 +343,24 @@
     background:transparent;border:none;color:var(--text-faint);cursor:pointer;transition:.14s}
   .announce-x:hover{background:rgba(212,146,58,.14);color:var(--parchment)}
   .announce-x svg{width:15px;height:15px}
+  /* One colour per type. Set by api/announcements.php, so the strip reads
+     the same everywhere it's rendered. */
+  .announce.t-maintenance{background:linear-gradient(90deg,rgba(78,116,160,.16),rgba(78,116,160,.05));
+    border-color:rgba(111,155,204,.38)}
+  .announce.t-maintenance .announce-badge{background:linear-gradient(145deg,#8fb6de,#5f87b4);color:#0d1520}
+  .announce.t-maintenance .announce-text{color:#cddcec}
+  .announce.t-warning{background:linear-gradient(90deg,rgba(212,146,58,.2),rgba(212,146,58,.06));
+    border-color:rgba(212,146,58,.5)}
+  .announce.t-critical{background:linear-gradient(90deg,rgba(193,85,63,.2),rgba(193,85,63,.06));
+    border-color:rgba(193,85,63,.5)}
+  .announce.t-critical .announce-badge{background:linear-gradient(145deg,#d8705c,var(--danger));color:#fff}
+  .announce.t-critical .announce-text{color:#eec4bb}
+  .announce.t-success{background:linear-gradient(90deg,rgba(127,160,90,.17),rgba(127,160,90,.05));
+    border-color:rgba(127,160,90,.42)}
+  .announce.t-success .announce-badge{background:linear-gradient(145deg,#a8c986,var(--ok));color:#0f1408}
+  .announce.t-success .announce-text{color:#cfdcbc}
+  .announce.linked{cursor:pointer}
+  .announce.linked:hover{filter:brightness(1.08)}
 
   /* NOTIFICATION BELL DROPDOWN */
   .notif{position:relative}
@@ -656,19 +674,9 @@
       <!-- ===== DASHBOARD PAGE ===== -->
       <div class="page" id="page-dashboard">
 
-      <!-- ANNOUNCEMENT BANNER — issued to players by staff. Design placeholder. -->
-      <div class="announce" id="announce">
-        <span class="announce-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l14-5v12L3 15v-4zM17 8a3 3 0 0 1 0 8M6 15v3a1 1 0 0 0 1 1h2"/></svg>
-          Announcement
-        </span>
-        <div class="announce-text">
-          <b>Scheduled maintenance this Sunday, 03:00 UTC.</b> The server and UCP will be offline for roughly two hours while we roll out the 3.2 update.
-        </div>
-        <button class="announce-x" aria-label="Dismiss">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
-        </button>
-      </div>
+      <!-- ANNOUNCEMENT BANNER — filled from api/announcements.php, hidden
+           until there is something live to say. -->
+      <div class="announce" id="announce" hidden></div>
 
       <div class="hello">
         <h2>Welcome back, <b id="welcomeName">dustin_hale</b></h2>
@@ -969,6 +977,12 @@
       { label:'Listings',      href:'#' },
     ]},
 
+    { heading:'Administration', admin:true },
+    { label:'Management', icon:'shield', admin:true, children:[
+      { label:'County Bulletin', href:'/dashboard/bulletin' },
+      { label:'Announcements',   href:'/dashboard/announcements' },
+    ]},
+
     { heading:'Account' },
 
     { label:'My Profile',        icon:'user',  href:'/profile' },
@@ -978,6 +992,7 @@
   ];
 
   const ICONS = {
+    shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>',
     home:'<path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
     user:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
     chat:'<path d="M4 5h16v11H8l-4 3z"/>',
@@ -993,8 +1008,13 @@
     return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor">${ICONS[name]||''}</svg>`;
   }
 
+  /* Administration items appear only for Management and Founders. The pages
+     behind them check the rank themselves; hiding the link is so nobody is
+     shown a door that won't open. */
+  let IS_MANAGER=false;
   function renderSidebar(items){
     const nav = document.getElementById('nav');
+    items = items.filter(it => !it.admin || IS_MANAGER);
     nav.innerHTML = items.map(it=>{
       if(it.heading) return `<div class="nav-heading">${esc(it.heading)}</div>`;
 
@@ -1123,6 +1143,7 @@
       mountBulletin(d.bulletins||[]);
       const manage=document.getElementById('bulletinManage');
       if(manage) manage.hidden = !d.may_manage;
+      if(d.may_manage && !IS_MANAGER){ IS_MANAGER=true; renderSidebar(SIDEBAR); }
     })
     .catch(()=>mountBulletin([]));
 
@@ -1286,9 +1307,58 @@
   bellBtn.addEventListener('click',e=>{e.stopPropagation();accMenu.style.display='none';notifMenu.style.display=notifMenu.style.display==='none'?'block':'none';});
   notifMenu.addEventListener('click',e=>e.stopPropagation());
 
-  /* announcement banner dismiss (design only) */
-  const announce=document.getElementById('announce');
-  announce&&announce.querySelector('.announce-x').addEventListener('click',()=>announce.style.display='none');
+  /* =====================================================================
+     ANNOUNCEMENT BANNER
+
+     One live announcement at a time, published from
+     /dashboard/announcements. A dismissal is remembered per announcement
+     revision, so editing the wording brings it back for everyone — they
+     have not read THIS one. Some types can't be dismissed at all.
+     ===================================================================== */
+  const ANN_TYPES={
+    notice:      {label:'Announcement', cls:''},
+    maintenance: {label:'Maintenance',  cls:'t-maintenance'},
+    warning:     {label:'Warning',      cls:'t-warning'},
+    critical:    {label:'Critical',     cls:'t-critical'},
+    success:     {label:'Resolved',     cls:'t-success'}
+  };
+  const ANN_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l14-5v12L3 15v-4zM17 8a3 3 0 0 1 0 8M6 15v3a1 1 0 0 0 1 1h2"/></svg>';
+
+  function annDismissedKey(a){ return 'bs-ann-'+a.id+'-'+a.rev; }
+
+  function renderAnnouncement(a){
+    const el=document.getElementById('announce');
+    if(!el) return;
+    if(!a){ el.hidden=true; el.innerHTML=''; return; }
+
+    try{ if(a.dismissable && localStorage.getItem(annDismissedKey(a))){ el.hidden=true; return; } }catch(e){}
+
+    const t=ANN_TYPES[a.type]||ANN_TYPES.notice;
+    el.className='announce '+t.cls+(a.link?' linked':'');
+    el.innerHTML=`
+      <span class="announce-badge">${ANN_ICON}${esc(t.label)}</span>
+      <div class="announce-text"><b>${esc(a.lead)}</b>${a.body?' '+esc(a.body):''}</div>
+      ${a.dismissable?`<button class="announce-x" aria-label="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:''}`;
+    el.hidden=false;
+
+    if(a.link){
+      el.addEventListener('click',e=>{
+        if(e.target.closest('.announce-x')) return;
+        window.open(a.link,'_blank','noopener');
+      });
+    }
+    const x=el.querySelector('.announce-x');
+    if(x) x.addEventListener('click',e=>{
+      e.stopPropagation();
+      el.hidden=true;
+      try{ localStorage.setItem(annDismissedKey(a),'1'); }catch(err){}
+    });
+  }
+
+  fetch('/api/announcements.php',{credentials:'include'})
+    .then(r=>r.json())
+    .then(d=>{ if(d && d.ok===true) renderAnnouncement(d.announcement); })
+    .catch(()=>{});
 
   /* mobile drawer */
   const scrim=document.getElementById('scrim'), menuToggle=document.getElementById('menuToggle');
