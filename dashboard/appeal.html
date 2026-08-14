@@ -658,6 +658,71 @@
   .blank p{font-size:13px;color:var(--text-faint);max-width:48ch;line-height:1.65;
     text-wrap:pretty}
 
+  /* ---- how an appeal works ----
+     The refusal state is the one most players see: the great majority have
+     nothing to appeal and arrive here to find out how it works, or because
+     something happened and they don't yet know what. A single red box
+     saying "you can't" answers a question they didn't ask and leaves them
+     going to Discord for the one they did.
+
+     So the page keeps the status line and then explains the process: the
+     four stages, what is and isn't appealable, and what an appeal has to
+     contain. All of it is true whether or not they can use it today. */
+  .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+  @media (max-width:1000px){ .flow{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:620px){ .flow{grid-template-columns:1fr} }
+
+  .stp{position:relative;padding:0 20px 4px 0}
+  .stp + .stp{padding-left:20px}
+  /* The rail runs behind the numbers and stops at the last one, so the
+     sequence reads as a track rather than four unrelated boxes. */
+  /* --rule is a divider inside a card and all but vanishes on this
+     background; the rail has to be readable as a track. */
+  .stp::before{content:'';position:absolute;left:0;right:0;top:15px;height:1px;
+    background:var(--charcoal-4);z-index:0}
+  .stp:first-child::before{left:15px}
+  .stp:last-child::before{right:auto;width:15px}
+  @media (max-width:1000px){
+    .stp:nth-child(2)::before{right:auto;width:15px}
+    .stp:nth-child(3)::before{left:15px}
+  }
+  @media (max-width:620px){ .stp::before{display:none} }
+
+  .stp .n{position:relative;z-index:1;width:30px;height:30px;display:grid;place-items:center;
+    border-radius:50%;background:var(--charcoal-2);border:1px solid var(--charcoal-4);
+    color:var(--text-faint);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stp.gold .n{background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.4);color:#e3bd72}
+  .stp h5{font-size:13.5px;font-weight:700;color:var(--parchment);margin-top:13px}
+  .stp p{font-size:12.5px;color:var(--text-faint);line-height:1.65;margin-top:7px;
+    text-wrap:pretty}
+
+  /* ---- what can and can't be appealed ---- */
+  .canlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px}
+  @media (max-width:760px){ .canlist{grid-template-columns:1fr} }
+  .canlist .col h5{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-dim);padding-bottom:11px}
+  .canrow{display:flex;align-items:flex-start;gap:11px;padding:11px 0;font-size:13px;
+    color:var(--parchment);line-height:1.5}
+  .canrow + .canrow{border-top:1px solid var(--rule)}
+  .canrow .m{flex:none;width:19px;height:19px;display:grid;place-items:center;border-radius:6px;
+    margin-top:1px}
+  .canrow .m svg{width:11px;height:11px;stroke-width:3}
+  .canrow.yes .m{background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.34);
+    color:#9fae8d}
+  .canrow.no .m{background:rgba(193,85,63,.11);border:1px solid rgba(193,85,63,.32);
+    color:#d29b8d}
+  .canrow.no{color:var(--text-faint)}
+  .canrow .s{display:block;font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.55;
+    font-weight:400}
+
+  .asks{display:flex;flex-direction:column}
+  .askrow{display:flex;gap:13px;padding:12px 0;font-size:13px;color:var(--text-faint);
+    line-height:1.6;text-wrap:pretty}
+  .askrow + .askrow{border-top:1px solid var(--rule)}
+  .askrow .qn{flex:none;width:22px;color:var(--text-dim);font-weight:800;font-size:12px;
+    font-variant-numeric:tabular-nums}
+  .askrow b{color:var(--parchment);font-weight:600}
+
   /* ---- one appeal ---- */
   .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
     color:var(--text-faint);text-decoration:none;transition:.14s}

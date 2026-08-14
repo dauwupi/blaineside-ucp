@@ -657,6 +657,71 @@
   .blank h4{font-size:15.5px;font-weight:700;color:var(--parchment)}
   .blank p{font-size:13px;color:var(--text-faint);max-width:48ch;line-height:1.65;
     text-wrap:pretty}
+
+  /* ---- how an appeal works ----
+     The refusal state is the one most players see: the great majority have
+     nothing to appeal and arrive here to find out how it works, or because
+     something happened and they don't yet know what. A single red box
+     saying "you can't" answers a question they didn't ask and leaves them
+     going to Discord for the one they did.
+
+     So the page keeps the status line and then explains the process: the
+     four stages, what is and isn't appealable, and what an appeal has to
+     contain. All of it is true whether or not they can use it today. */
+  .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+  @media (max-width:1000px){ .flow{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:620px){ .flow{grid-template-columns:1fr} }
+
+  .stp{position:relative;padding:0 20px 4px 0}
+  .stp + .stp{padding-left:20px}
+  /* The rail runs behind the numbers and stops at the last one, so the
+     sequence reads as a track rather than four unrelated boxes. */
+  /* --rule is a divider inside a card and all but vanishes on this
+     background; the rail has to be readable as a track. */
+  .stp::before{content:'';position:absolute;left:0;right:0;top:15px;height:1px;
+    background:var(--charcoal-4);z-index:0}
+  .stp:first-child::before{left:15px}
+  .stp:last-child::before{right:auto;width:15px}
+  @media (max-width:1000px){
+    .stp:nth-child(2)::before{right:auto;width:15px}
+    .stp:nth-child(3)::before{left:15px}
+  }
+  @media (max-width:620px){ .stp::before{display:none} }
+
+  .stp .n{position:relative;z-index:1;width:30px;height:30px;display:grid;place-items:center;
+    border-radius:50%;background:var(--charcoal-2);border:1px solid var(--charcoal-4);
+    color:var(--text-faint);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stp.gold .n{background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.4);color:#e3bd72}
+  .stp h5{font-size:13.5px;font-weight:700;color:var(--parchment);margin-top:13px}
+  .stp p{font-size:12.5px;color:var(--text-faint);line-height:1.65;margin-top:7px;
+    text-wrap:pretty}
+
+  /* ---- what can and can't be appealed ---- */
+  .canlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px}
+  @media (max-width:760px){ .canlist{grid-template-columns:1fr} }
+  .canlist .col h5{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-dim);padding-bottom:11px}
+  .canrow{display:flex;align-items:flex-start;gap:11px;padding:11px 0;font-size:13px;
+    color:var(--parchment);line-height:1.5}
+  .canrow + .canrow{border-top:1px solid var(--rule)}
+  .canrow .m{flex:none;width:19px;height:19px;display:grid;place-items:center;border-radius:6px;
+    margin-top:1px}
+  .canrow .m svg{width:11px;height:11px;stroke-width:3}
+  .canrow.yes .m{background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.34);
+    color:#9fae8d}
+  .canrow.no .m{background:rgba(193,85,63,.11);border:1px solid rgba(193,85,63,.32);
+    color:#d29b8d}
+  .canrow.no{color:var(--text-faint)}
+  .canrow .s{display:block;font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.55;
+    font-weight:400}
+
+  .asks{display:flex;flex-direction:column}
+  .askrow{display:flex;gap:13px;padding:12px 0;font-size:13px;color:var(--text-faint);
+    line-height:1.6;text-wrap:pretty}
+  .askrow + .askrow{border-top:1px solid var(--rule)}
+  .askrow .qn{flex:none;width:22px;color:var(--text-dim);font-weight:800;font-size:12px;
+    font-variant-numeric:tabular-nums}
+  .askrow b{color:var(--parchment);font-weight:600}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -951,25 +1016,140 @@
           'staff have said from the appeal itself.</p>'+
           '<div class="acts"><a class="btn primary" href="/dashboard/appeal?id='+ELIG.open+'">'+
           ai('open')+'Open your appeal</a></div>'+
-        '</div></div></div></div>';
+        '</div></div></div></div>' + processHTML({ can:false, asks:false });
       return;
     }
 
     if(!ELIG.may){
+      /* The most common state on this page by a distance: most players have
+         nothing to appeal, and they are here to find out how it works or
+         because something has happened and they don't yet know what. A red
+         box saying "you can't" answers a question they didn't ask.
+
+         So the refusal stays — it is the direct answer — and everything that
+         is true regardless follows it. */
       var extra = '';
       if(ELIG.cooldown){
-        extra = '<p>You can appeal again from <b>'+escapeHtml(stamp(ELIG.cooldown))+' UTC</b>.</p>';
+        extra = '<p>You can appeal again from <b>'+escapeHtml(stamp(ELIG.cooldown))+
+                ' UTC</b> — that is '+escapeHtml(untilWords(ELIG.cooldown))+' from now.</p>';
       }
+      var soft = ELIG.punishments && ELIG.punishments.length;
       host.innerHTML = '<div class="card"><div class="card-b">'+
-        '<div class="note-a bad"><span class="si">'+ai('warn')+'</span><div>'+
-          '<h4>You can’t appeal right now</h4>'+
+        '<div class="note-a'+(soft?' bad':'')+'"><span class="si">'+ai(soft?'warn':'info')+
+          '</span><div>'+
+          '<h4>'+(soft ? 'You can’t appeal right now'
+                       : 'There is nothing on your account to appeal')+'</h4>'+
           '<p>'+escapeHtml(ELIG.why||'')+'</p>'+extra+
-        '</div></div>'+ punishList() +'</div></div>';
+        '</div></div>'+ punishList() +'</div></div>' + processHTML();
       return;
     }
 
     host.innerHTML = AGREED ? formHTML() : gateHTML();
     if(AGREED) wireForm(); else wireGate();
+  }
+
+  /* =====================================================================
+     HOW AN APPEAL WORKS
+
+     Three blocks, each answering a question people ask staff every week:
+     what happens after I send it, what can I actually appeal, and what do
+     I have to write. All of it is true whether or not the person reading
+     it can appeal today, which is why it sits under the refusal rather
+     than instead of it.
+     ===================================================================== */
+  function untilWords(ts){
+    var days = Math.ceil((ts - Date.now()/1000) / 86400);
+    if(days <= 1) return 'about a day';
+    if(days < 31) return days + ' days';
+    var months = Math.round(days / 30);
+    return months + (months === 1 ? ' month' : ' months');
+  }
+
+  var STAGES = [
+    { t:'You write it',
+      p:'Where you were punished, what happened in your own words, and any evidence. You can '+
+        'only have one appeal open at a time, and it can’t be edited once it is sent.' },
+    { t:'It joins the queue',
+      p:'Appeals are worked oldest first by Support Staff and above. One of them takes it on as '+
+        'the handler, and their name appears on your appeal.' },
+    { t:'It gets read',
+      p:'The handler reads it beside the punishment it is about. They may reply on the appeal '+
+        'to ask you something — you can answer there for as long as it is open.' },
+    { t:'It is decided',
+      p:'Accepted or rejected, always with a reason written to you. Whoever issued the '+
+        'punishment can’t be the one who decides the appeal against it.' }
+  ];
+
+  function processHTML(opt){
+    opt = opt || {};
+    var want = function(k){ return opt[k] !== false; };
+
+    var stages = STAGES.map(function(s, i){
+      return '<div class="stp'+(i===0?' gold':'')+'"><div class="n">'+(i+1)+'</div>'+
+        '<h5>'+escapeHtml(s.t)+'</h5><p>'+escapeHtml(s.p)+'</p></div>';
+    }).join('');
+
+    var yes = [
+      ['In-game ban', 'Temporary or permanent.'],
+      ['User lock', 'You can appeal one while locked — the appeal is the one thing a locked '+
+                    'account can still reach.'],
+      ['Forum ban', 'Appealed here, not on the forum.'],
+      ['Discord ban', 'Appealed here, not in a ticket.']
+    ];
+    var no = [
+      ['A kick', 'A kick leaves nothing on your record, so there is nothing to lift.'],
+      ['A warning', 'A warning is a note, not a restriction. Take it up with the administrator '+
+                    'who left it.'],
+      ['An egregious violation', 'Doxxing, real-life threats, sexualising minors, or attacking '+
+                    'the service itself. These are never appealed.'],
+      ['One you already appealed', 'Not for three months after the verdict — unless you have '+
+                    'evidence nobody has seen.']
+    ];
+    function rows(list, cls, icon){
+      return list.map(function(r){
+        return '<div class="canrow '+cls+'"><span class="m">'+ai(icon)+'</span>'+
+          '<div><b style="font-weight:600">'+escapeHtml(r[0])+'</b>'+
+          '<span class="s">'+escapeHtml(r[1])+'</span></div></div>';
+      }).join('');
+    }
+
+    var asks = [
+      ['1', 'Which platform you were punished on. Tick every one that applies — the appeal is '+
+            'attached to what is on file for it.'],
+      ['2', 'The character it involved, once characters are linked to the UCP. Until then, name '+
+            'them in your answer.'],
+      ['3', 'What happened, in order, and why the punishment should be lifted. This is the '+
+            'appeal — everything else supports it.'],
+      ['4', 'Evidence, if you have any. Links to screenshots or clips, each with a line saying '+
+            'what it shows.']
+    ];
+
+    return (want('stages') ?
+      '<div class="card"><div class="card-h"><h3>How an appeal works</h3>'+
+        '<span class="aside">Four stages</span></div>'+
+      '<div class="card-b"><div class="flow">'+stages+'</div>'+
+        '<div class="fieldnote" style="margin-top:20px">There is no fixed handling time — it '+
+        'depends on how many appeals are waiting and how much yours needs checking. Chasing it '+
+        'elsewhere does not move it up the queue.</div>'+
+      '</div></div>' : '') +
+
+    (want('can') ?
+      '<div class="card"><div class="card-h"><h3>What can be appealed</h3></div>'+
+      '<div class="card-b"><div class="canlist">'+
+        '<div class="col"><h5>Open to appeal</h5>'+rows(yes,'yes','tick')+'</div>'+
+        '<div class="col"><h5>Not open to appeal</h5>'+rows(no,'no','x')+'</div>'+
+      '</div></div></div>' : '') +
+
+    (want('asks') ?
+      '<div class="card"><div class="card-h"><h3>What the form asks for</h3>'+
+        '<span class="aside">Four questions</span></div>'+
+      '<div class="card-b"><p class="card-lede" style="margin-bottom:8px">So you know what to '+
+        'have ready if you ever need it.</p><div class="asks">'+
+        asks.map(function(a){
+          return '<div class="askrow"><span class="qn">'+a[0]+'</span><span>'+
+                 escapeHtml(a[1])+'</span></div>';
+        }).join('')+
+      '</div></div></div>' : '');
   }
 
   /* What is actually on the account. Shown on every state of this view: a
