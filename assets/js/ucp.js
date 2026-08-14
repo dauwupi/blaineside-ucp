@@ -251,6 +251,7 @@
     var m = { name: d.name || '', role: d.role || 'Member', rank: d.rank | 0 };
     meWrite(m);
     paintMe(m);
+    initQuickSearch(m.rank);
   }
 
   /* The tone can go on before the document body exists, and should: it is
@@ -258,13 +259,172 @@
   var CACHED = meRead();
   if (CACHED) setTone(CACHED.rank);
 
+  /* =====================================================================
+     QUICK SEARCH  —  the box in the top bar
+
+     Self-contained on purpose: markup, styles and behaviour all live here,
+     so any page with a .searchbox gets a working quick search without
+     copying a line into it. That is the same reason the tier colours moved
+     to tones.css — five copies of a component is five things to forget when
+     one of them changes.
+
+     Trainee Admin and above. Below that the box is removed rather than
+     disabled: a search field you can type into that never answers is worse
+     than no search field, and everyone below that rank has nothing to search.
+     The endpoint checks the rank too — this only decides what is drawn.
+     ===================================================================== */
+  var QS_CSS = [
+    '.searchbox{position:relative}',
+    '.qs-menu{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:70;padding:6px;',
+      'background:var(--charcoal-2,#1a1815);border:1px solid var(--border,#26221e);border-radius:13px;',
+      'box-shadow:0 26px 54px -20px rgba(0,0,0,.85);max-height:min(60vh,420px);overflow-y:auto}',
+    '.qs-menu[hidden]{display:none}',
+    '.qs-item{display:flex;align-items:center;gap:11px;width:100%;padding:9px 11px;border-radius:9px;',
+      'background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;transition:.12s}',
+    '.qs-item:hover,.qs-item.on{background:var(--charcoal-3,#221f1b)}',
+    '.qs-item .qi{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;',
+      'background:var(--charcoal,#121110);border:1px solid var(--border,#26221e);color:var(--text-dim,#655e51)}',
+    '.qs-item .qi svg{width:14px;height:14px;stroke-width:2}',
+    '.qs-item .qb{flex:1;min-width:0}',
+    '.qs-item .qn{display:block;font-size:13.5px;font-weight:700;color:var(--parchment,#f1efe9);',
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.qs-item .qsub{display:block;font-size:11.5px;color:var(--text-dim,#655e51);margin-top:2px;',
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.qs-item .qid{flex:none;font-size:11px;font-weight:700;color:var(--stone,#8a7f70);font-variant-numeric:tabular-nums}',
+    '.qs-item.locked{cursor:not-allowed}',
+    '.qs-item.locked .qn{color:var(--text-faint,#968e7e)}',
+    '.qs-item.locked:hover{background:none}',
+    '.qs-note{padding:10px 12px;font-size:11.5px;color:var(--text-dim,#655e51);line-height:1.5}',
+    '.qs-note b{color:var(--text-faint,#968e7e);font-weight:700}',
+    '.qs-sep{height:1px;background:var(--border-soft,#1f1c18);margin:5px 8px}'
+  ].join('');
+
+  var QS_ICON = {
+    account: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>',
+    locked:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  };
+
+  function initQuickSearch(rank) {
+    var box = document.querySelector('.searchbox');
+    if (!box) return;
+
+    var input = box.querySelector('input');
+    if (!input) return;
+
+    // Below Trainee Admin there is nothing here for them.
+    if ((rank | 0) < 3) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    if (box.getAttribute('data-qs') === 'on') return;   // already wired
+    box.setAttribute('data-qs', 'on');
+
+    if (!document.getElementById('qs-style')) {
+      var st = document.createElement('style');
+      st.id = 'qs-style';
+      st.textContent = QS_CSS;
+      document.head.appendChild(st);
+    }
+
+    input.placeholder = 'Quick search…';
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('spellcheck', 'false');
+
+    var menu = document.createElement('div');
+    menu.className = 'qs-menu';
+    menu.hidden = true;
+    box.appendChild(menu);
+
+    var items = [], cursor = -1, timer = null, seq = 0;
+
+    function close() { menu.hidden = true; cursor = -1; }
+    function open()  { menu.hidden = false; }
+
+    function draw(d) {
+      items = (d.results || []).filter(function (r) { return r.viewable; });
+      var html = (d.results || []).map(function (r) {
+        var idx = items.indexOf(r);
+        return '<button type="button" class="qs-item' + (r.viewable ? '' : ' locked') + '"' +
+          (r.viewable ? ' data-go="' + r.id + '" data-i="' + idx + '"' : ' disabled') + '>' +
+          '<span class="qi">' + (r.viewable ? QS_ICON.account : QS_ICON.locked) + '</span>' +
+          '<span class="qb"><span class="qn">' + esc(r.name) + '</span>' +
+            '<span class="qsub">' + esc(r.sub || '') + '</span></span>' +
+          '<span class="qid">#' + r.id + '</span>' +
+        '</button>';
+      }).join('');
+
+      if (!html) {
+        html = '<div class="qs-note">Nothing matches <b>' + esc(d.q) + '</b>.</div>';
+      } else if (d.more > 0) {
+        html += '<div class="qs-sep"></div><div class="qs-note">' + d.more +
+                ' more match — open <b>Administrative Search</b> to narrow it down.</div>';
+      }
+
+      /* Says what this box cannot find yet. Somebody typing a plate and
+         getting nothing would otherwise conclude the vehicle isn't
+         registered, rather than that vehicles aren't in the UCP. */
+      if (d.pending && d.pending.length) {
+        html += '<div class="qs-sep"></div><div class="qs-note">' +
+                d.pending.join(', ') + ' will be searchable here once the game server is linked.</div>';
+      }
+
+      menu.innerHTML = html;
+      open();
+    }
+
+    function ask() {
+      var q = input.value.trim();
+      if (q.length < 2) { close(); return; }
+      var mine = ++seq;
+      get('admin-quick.php?q=' + encodeURIComponent(q)).then(function (d) {
+        if (mine !== seq) return;            // a later keystroke already won
+        if (!d || d.ok !== true) { close(); return; }
+        draw(d);
+      }).catch(function () { close(); });
+    }
+
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(ask, 220);
+    });
+    input.addEventListener('focus', function () {
+      if (menu.innerHTML && input.value.trim().length >= 2) open();
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { close(); input.blur(); return; }
+      if (menu.hidden || !items.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        cursor += (e.key === 'ArrowDown' ? 1 : -1);
+        if (cursor < 0) cursor = items.length - 1;
+        if (cursor >= items.length) cursor = 0;
+        var all = menu.querySelectorAll('.qs-item[data-i]');
+        for (var i = 0; i < all.length; i++) all[i].classList.toggle('on', +all[i].dataset.i === cursor);
+      } else if (e.key === 'Enter' && cursor > -1) {
+        e.preventDefault();
+        window.location.href = '/dashboard/lookup?id=' + items[cursor].id;
+      }
+    });
+
+    menu.addEventListener('mousedown', function (e) {
+      var b = e.target.closest('[data-go]');
+      if (!b) return;
+      e.preventDefault();                     // before the input loses focus
+      window.location.href = '/dashboard/lookup?id=' + b.dataset.go;
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.searchbox')) close();
+    });
+  }
+
   w.UCP = {
     post: post, get: get, loadCsrf: loadCsrf,
     esc: esc, relTime: relTime, readCookie: readCookie, fmtSecs: fmtSecs,
     setTone: setTone,
     me: CACHED,                 // {name, role, rank} or null — the LAST KNOWN
     rank: CACHED ? CACHED.rank : null,
-    rememberMe: rememberMe, forgetMe: forgetMe, paintMe: paintMe
+    rememberMe: rememberMe, forgetMe: forgetMe, paintMe: paintMe,
+    initQuickSearch: initQuickSearch
   };
 
   applyTod();
@@ -274,5 +434,8 @@
     initTabFade();
     loadCsrf();
     paintMe(CACHED);            // first paint, before session.php answers
+    // Drawn from the cached rank so the box doesn't flash in and out; the
+    // real rank corrects it a moment later via rememberMe() below.
+    initQuickSearch(CACHED ? CACHED.rank : 0);
   });
 })(window);

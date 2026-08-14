@@ -528,6 +528,22 @@
   .rmob{display:none}
 
   .rempty{padding:34px 18px;text-align:center;font-size:13px;color:var(--text-dim)}
+
+  /* The pager belongs to the results, so it sits inside them. It shows even
+     when there is one page — "1–6 of 6" is the answer to "is that all of
+     them?", which is not a question a missing control answers. */
+  .rfoot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px 18px;border-top:1px solid var(--border-soft);background:rgba(255,255,255,.012)}
+  .rfoot .grow{flex:1}
+  .rfoot .pg{min-width:34px;height:34px;padding:0 11px;display:inline-grid;place-items:center;
+    border-radius:9px;background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint);
+    font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.14s}
+  .rfoot .pg:hover:not(:disabled){color:var(--parchment);background:var(--charcoal-3)}
+  .rfoot .pg.on{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
+  .rfoot .pg:disabled{opacity:.35;cursor:not-allowed}
+  .rfoot .pg svg{width:14px;height:14px;stroke-width:2.2}
+  .rfoot .pg-gap{color:var(--text-dim);padding:0 2px}
+  .rfoot .pnum{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
   .rgrid{display:grid;grid-template-columns:1fr;gap:18px}
 
   .mtag{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
@@ -612,7 +628,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.3">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.4">
 </head>
 <body>
 
@@ -693,7 +709,6 @@
 
         <div id="snote"></div>
         <div class="rgrid" id="results"></div>
-        <div class="pager" id="pager"></div>
       </div>
 
     </main>
@@ -701,7 +716,7 @@
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<script src="/assets/js/ucp.js?v=2.4.3"></script>
+<script src="/assets/js/ucp.js?v=2.4.4"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   const SIDEBAR=[
@@ -820,16 +835,13 @@
 
   function renderTabs(){
     document.getElementById('ltabs').innerHTML = TABS.map(function(t){
-      const live = t.fields.filter(function(f){ return f.available; }).length;
-      const sub  = t.available
-        ? live + ' ' + (live === 1 ? 'field' : 'fields') + ' searchable'
-        : 'Not built yet';
+      const sub = t.available ? '' : 'Not built yet';
       return '<button class="ltab ' + (t.key===TAB?'on':'') + (t.available?'':' soon') +
              '" role="tab" aria-selected="' + (t.key===TAB) + '" data-tab="' + t.key + '">' +
         '<span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
           (TAB_ICON[t.key] || FI.hash) + '</svg></span>' +
         '<span class="tt"><span class="tn">' + escapeHtml(t.label) + '</span>' +
-          '<span class="ts">' + escapeHtml(sub) + '</span></span>' +
+          (sub ? '<span class="ts">' + escapeHtml(sub) + '</span>' : '') + '</span>' +
       '</button>';
     }).join('');
   }
@@ -838,7 +850,6 @@
     TAB = b.dataset.tab;
     ITEMS = []; LAST = null;
     document.getElementById('snote').innerHTML = '';
-    document.getElementById('pager').innerHTML = '';
     renderTabs(); renderForm(); renderResults(null);
   });
 
@@ -910,7 +921,6 @@
     });
     ITEMS = []; LAST = null;
     document.getElementById('snote').innerHTML = '';
-    document.getElementById('pager').innerHTML = '';
     document.getElementById('lhint').textContent = '';
     renderResults(null);
   }
@@ -1009,24 +1019,33 @@
     host.innerHTML = panel(ICO_USERS, 'Accounts', d.total.toLocaleString('en-GB'),
       '<div class="rwrap"><table class="rtable"><thead><tr>' +
         '<th>ID</th><th>UCP name</th><th>Group</th><th>Last sign-in</th><th></th>' +
-      '</tr></thead><tbody>' + ITEMS.map(rowHTML).join('') + '</tbody></table></div>');
+      '</tr></thead><tbody>' + ITEMS.map(rowHTML).join('') + '</tbody></table></div>' +
+      footHTML(d));
   }
 
-  function renderPager(d){
-    const pager = document.getElementById('pager');
-    if(!d || !d.searched || TOTAL_PAGES <= 1){ pager.innerHTML=''; return; }
+  /** The results footer: what you're looking at, and how to get to the rest. */
+  function footHTML(d){
     let nums = '';
     for(let i=1;i<=TOTAL_PAGES;i++){
-      if(i===1||i===TOTAL_PAGES||Math.abs(i-curPage)<=1) nums += '<button class="pg ' + (i===curPage?'on':'') + '" data-pg="' + i + '">' + i + '</button>';
-      else if(Math.abs(i-curPage)===2) nums += '<span class="pg-gap">…</span>';
+      if(i===1||i===TOTAL_PAGES||Math.abs(i-curPage)<=1){
+        nums += '<button class="pg ' + (i===curPage?'on':'') + '" data-pg="' + i + '">' + i + '</button>';
+      } else if(Math.abs(i-curPage)===2){
+        nums += '<span class="pg-gap">…</span>';
+      }
     }
-    pager.innerHTML =
-      '<span class="pcount">' + d.from + '–' + d.to + ' of ' + d.total.toLocaleString('en-GB') + '</span>' +
-      '<button class="pg" data-pg="' + (curPage-1) + '" ' + (curPage===1?'disabled':'') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>' +
-      nums +
-      '<button class="pg" data-pg="' + (curPage+1) + '" ' + (curPage===TOTAL_PAGES?'disabled':'') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>';
+    return '<div class="rfoot">' +
+      '<span class="pcount">Showing ' + d.from + '–' + d.to + ' of ' +
+        d.total.toLocaleString('en-GB') + '</span>' +
+      '<span class="grow"></span>' +
+      '<button class="pg" data-pg="' + (curPage-1) + '"' + (curPage===1?' disabled':'') + ' aria-label="Previous page">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+      '<span class="pnum">' + nums + '</span>' +
+      '<button class="pg" data-pg="' + (curPage+1) + '"' + (curPage===TOTAL_PAGES?' disabled':'') + ' aria-label="Next page">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>' +
+    '</div>';
   }
-  document.getElementById('pager').addEventListener('click', function(e){
+
+  document.getElementById('results').addEventListener('click', function(e){
     const b = e.target.closest('[data-pg]'); if(!b || b.disabled) return;
     run(parseInt(b.dataset.pg,10));
     document.querySelector('.content').scrollIntoView({behavior:'smooth',block:'start'});
@@ -1086,7 +1105,6 @@
       }).join('');
 
       renderResults(d);
-      renderPager(d);
     }).catch(function(err){
       LOADING = false;
       if(btn) btn.textContent = 'Search';

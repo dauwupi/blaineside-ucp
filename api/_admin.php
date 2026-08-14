@@ -239,6 +239,12 @@ function admin_like(string $q): string
     return '%' . str_replace(['|', '%', '_'], ['||', '|%', '|_'], mb_strtolower(trim($q))) . '%';
 }
 
+/** Same escaping, but anchored at the start — "starts with" rather than "contains". */
+function admin_like_prefix(string $q): string
+{
+    return str_replace(['|', '%', '_'], ['||', '|%', '|_'], mb_strtolower(trim($q))) . '%';
+}
+
 /** A yyyy-mm-dd from the form, or null. */
 function admin_date(?string $v): ?string
 {

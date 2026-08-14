@@ -739,12 +739,17 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.3">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.4">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
      an admin reading an account should be reading the same page the player
      sees, minus what they aren't allowed to touch. Only two things are new. */
+
+  /* The profile page caps notes at 88ch, which is right for a column of body
+     text and wrong here — this one sits above a full-width bar and looked
+     like it had been left half-drawn. */
+  #flash .note{max-width:none;margin-top:0;margin-bottom:18px}
 
   /* A standing reminder of what this page is. It sits above the account, not
      below it, because "whose account am I looking at, and is this recorded"
@@ -981,7 +986,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.3"></script>
+<script src="/assets/js/ucp.js?v=2.4.4"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
