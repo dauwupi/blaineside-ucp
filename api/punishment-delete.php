@@ -98,12 +98,16 @@ if ($wasInForce && (string)$p['kind'] === 'user_lock') {
     $unlocked = true;
 }
 
-/* Appeals against it lose their attachment rather than their existence. The
-   appeal was still made and still answered; it just no longer points at a
-   row that is gone. */
+/* Appeals against it lose the attachment, not their existence. The appeal was
+   still made and still answered; it just no longer points at a row that is
+   gone, and appeal_punishments() already draws an appeal with none.
+
+   The foreign key on that table is ON DELETE CASCADE, so MySQL would do this
+   on the next statement anyway. It is written out because relying on a
+   cascade to clear a join row is the kind of thing that is true until
+   somebody rebuilds the table without the constraint. */
 try {
-    $pdo->prepare('UPDATE ucp_appeal_punishments SET punishment_id = NULL WHERE punishment_id = ?')
-        ->execute([$id]);
+    $pdo->prepare('DELETE FROM ucp_appeal_punishments WHERE punishment_id = ?')->execute([$id]);
 } catch (Throwable $e) {
     // Appeals not migrated on this server. Nothing to detach.
 }
