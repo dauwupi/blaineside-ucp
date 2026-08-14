@@ -275,9 +275,21 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .tabpanel[hidden]{display:none}
 
-/* ---- profile two-column split ---- */
-.pgrid{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:20px;align-items:start}
+/* ---- profile three-column split ----
+   Actions on the far left, the read-only panels in the middle, the account
+   summary on the right. The actions are what an admin opened this page to
+   use, so they take the outside edge instead of sitting on top of
+   Characters and pushing it down the page.
+
+   Both outer columns stick; the middle column is the only one long enough
+   to scroll past them. If the actions card is hidden — a viewer with
+   nothing they may do, or a response that never arrived — the column
+   collapses rather than leaving a 300px hole. */
+.pgrid{display:grid;grid-template-columns:300px minmax(0,1fr) 336px;gap:20px;align-items:start}
+.pgrid > .col-a,
 .pgrid > .col-r{position:sticky;top:calc(var(--header-h) + 20px)}
+.pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 336px}
+.pgrid:has(> .col-a > .card[hidden]) > .col-a{display:none}
 
 /* ---- settings row: label + description left, control right ---- */
 .rows > .row:first-child,
@@ -675,10 +687,26 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+/* Three columns need roughly 1000px of content width before the middle one
+   starts squeezing. Below that the actions fold back on top of the reading
+   column — the layout this page had before — rather than becoming a strip
+   too narrow to read. */
+@media (max-width:1360px){
+  .pgrid,
+  .pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 336px}
+  .pgrid > .col-a{position:static;grid-column:1;grid-row:1}
+  .pgrid > .col-l{grid-column:1;grid-row:2}
+  .pgrid > .col-r{grid-column:2;grid-row:1 / span 2}
+  .pgrid > .col-a > .card{margin-bottom:20px}
+}
 @media (max-width:1140px){
   .rec-row{grid-template-columns:104px 104px minmax(0,1fr) 128px}
   .rec-row .st{grid-column:1 / -1;padding-top:2px}
-  .pgrid{grid-template-columns:1fr}
+  .pgrid,
+  .pgrid:has(> .col-a > .card[hidden]){grid-template-columns:1fr}
+  .pgrid > .col-a,
+  .pgrid > .col-l,
+  .pgrid > .col-r{grid-column:1;grid-row:auto}
   .pgrid > .col-r{position:static}
   .pgrid > .col-r > .card{margin-top:20px}
   .codes{grid-template-columns:repeat(3,1fr)}
@@ -776,23 +804,38 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
      and disabled rather than hidden, so the shape of the finished tool is
      visible — the same rule the search fields follow. */
   .actcard{border-color:rgba(193,85,63,.22)}
-  .actlist{display:flex;flex-direction:column;gap:8px}
-  .act{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:11px;
+  /* The card sits in a 300px column, so it gives back the page's usual 22px
+     of card padding — at this width that gutter is worth more as text. */
+  .actcard .card-h{padding-left:17px;padding-right:17px}
+  /* The Locked chip wraps onto its own line at this width; keep it on the
+     right where it sits when it doesn't. */
+  .actcard .card-h .aside{margin-left:auto}
+  .actcard .card-b{padding-left:15px;padding-right:15px}
+  .actlist{display:flex;flex-direction:column;gap:7px}
+
+  /* Two rows rather than one: icon and name on the first, the explanation
+     beneath it across the full width. In a narrow column a single flex line
+     squeezed the name into two words and the reason into four. */
+  .act{display:grid;grid-template-columns:28px minmax(0,1fr);gap:2px 10px;
+    padding:11px 12px;border-radius:11px;
     background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;
     font-family:inherit;font-size:13px;font-weight:600;color:var(--parchment);text-align:left;width:100%}
   .act:hover:not(:disabled){background:var(--charcoal-3);border-color:var(--charcoal-4)}
-  .act .ai{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
-    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint);transition:.14s}
+  .act .ai{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:8px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint);transition:.14s;
+    grid-row:1;align-self:center}
   .act .ai svg{width:15px;height:15px;stroke-width:1.9}
-  .act .at{flex:1;min-width:0}
-  .act .at .n{display:block;line-height:1.2}
-  .act .at .s{display:block;font-size:11px;font-weight:500;color:var(--text-dim);margin-top:3px;line-height:1.35}
+  .act .at{grid-column:2;grid-row:1;min-width:0;display:flex;align-items:center;gap:8px}
+  .act .at .n{line-height:1.25;min-width:0;text-wrap:pretty}
+  .act .s{grid-column:2;grid-row:2;font-size:11px;font-weight:500;color:var(--text-dim);
+    line-height:1.4;text-wrap:pretty}
   .act:disabled{cursor:not-allowed;opacity:.5}
   .act.danger:not(:disabled) .ai{color:#d29b8d;border-color:rgba(193,85,63,.3);background:rgba(193,85,63,.08)}
   .act.danger:not(:disabled):hover{border-color:rgba(193,85,63,.45);background:rgba(193,85,63,.07)}
   .act.on .ai{color:#9fae8d;border-color:rgba(127,160,90,.3);background:rgba(127,160,90,.08)}
   .act .soon{font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--text-dim);border:1px solid var(--border-soft);border-radius:100px;padding:2px 6px;flex:none}
+    color:var(--text-dim);border:1px solid var(--border-soft);border-radius:100px;padding:2px 6px;
+    flex:none;margin-left:auto}
 
   /* The locked banner. Loud on purpose — it is the single most important
      thing about an account that has one. */
@@ -944,12 +987,11 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     <section class="tabpanel" role="tabpanel" id="p-profile" aria-labelledby="t-profile">
       <div class="pgrid">
 
-        <div class="col-l">
-
-          <!-- Administrative actions sit at the top of the reading column,
-               not in a band across the bottom: they are the reason an admin
-               opened this page, and a full-width grid left a ragged row of
-               tiles with nothing to line up against. -->
+        <!-- Administrative actions get their own column on the outside edge.
+             They are the reason an admin opened this page, and stacking them
+             above Characters pushed the read-only panels off the first
+             screen for the sake of a card that never changes length. -->
+        <div class="col-a">
           <div class="card actcard" id="actCard" hidden>
             <div class="card-h">
               <h3>Administrative actions</h3>
@@ -969,6 +1011,9 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="col-l">
 
           <!-- FEATURE-GATED: no character tables yet. -->
           <div class="card">
@@ -1444,8 +1489,12 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         (a.why ? ' title="' + esc(a.why) + '"' : '') + '>' +
         '<span class="ai">' + ACT_ICONS[a.icon] + '</span>' +
         '<span class="at"><span class="n">' + esc(a.name) + '</span>' +
-          '<span class="s">' + esc(a.live ? a.sub : (a.why || a.sub)) + '</span></span>' +
-        (a.live ? '' : '<span class="soon">Soon</span>') +
+          /* "Soon" means the feature isn't built. An action that IS built but
+             this admin may not use — locking your own account — is disabled
+             for a different reason, and its own subtitle says which, so the
+             badge would be a plain lie. */
+          (a.live || a.go ? '' : '<span class="soon">Soon</span>') + '</span>' +
+        '<span class="s">' + esc(a.live ? a.sub : (a.why || a.sub)) + '</span>' +
       '</button>';
     }).join('');
 
