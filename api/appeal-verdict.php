@@ -44,9 +44,21 @@ $id        = (int)($in['id'] ?? 0);
 $verdict   = strtolower(trim((string)($in['verdict'] ?? '')));
 $comment   = trim((string)($in['comment'] ?? ''));
 $staffOnly = !empty($in['staff_only']);
+$wait      = (int)($in['wait'] ?? 0);      // days, rejections only
 
 if (!in_array($verdict, ['accepted', 'rejected'], true)) {
     fail('Choose whether the appeal is accepted or rejected.', 422);
+}
+
+/* A rejection carries a wait.
+ *
+ * Checked against the ladder rather than accepted as a number: a wait is a
+ * consequence, and a consequence somebody can type a number into is not a
+ * rule. It also stops "0 days", which would make a rejection meaningless,
+ * and "3650 days", which would make it a ban by another name. */
+if ($verdict === 'rejected' && !in_array($wait, BS_APPEAL_WAITS, true)) {
+    fail('Choose how long they wait before appealing again — '
+       . implode(', ', BS_APPEAL_WAITS) . ' days.', 422);
 }
 
 $st = $pdo->prepare('SELECT * FROM ucp_appeals WHERE id = ? LIMIT 1');
@@ -89,13 +101,15 @@ $pdo->prepare(
  * argue with the outcome in a thread nobody is reading any more, and the
  * reply that never comes reads as being ignored. Staff can still write here
  * — appeal-comment.php checks the status, not this flag, for them. */
+$reappeal = $verdict === 'rejected' ? $now + $wait * 86400 : null;
+
 $pdo->prepare(
     'UPDATE ucp_appeals
         SET status = ?, concluded_at = ?, concluded_by = ?, concluded_by_name = ?,
-            updated_at = ?, comments_enabled = 0,
+            updated_at = ?, comments_enabled = 0, reappeal_at = ?,
             handler_id = COALESCE(handler_id, ?), handler_name = COALESCE(handler_name, ?)
       WHERE id = ? AND status = \'pending\''
-)->execute([$verdict, $now, (int)$acc['id'], (string)$acc['username'], $now,
+)->execute([$verdict, $now, (int)$acc['id'], (string)$acc['username'], $now, $reappeal,
             (int)$acc['id'], (string)$acc['username'], $id]);
 
 /* Accepting lifts EVERY punishment the appeal covers.
@@ -145,11 +159,17 @@ if ($verdict === 'accepted' && $ps) {
 }
 
 appeal_log_add($pdo, $id, $acc, 'verdict',
-    'Concluded as ' . $verdict . ($lifted ? ' — ' . $lifted : ''));
+    'Concluded as ' . $verdict
+    . ($verdict === 'rejected' ? ' — can appeal again in ' . $wait . ' days' : '')
+    . ($lifted ? ' — ' . $lifted : ''));
 
 ok([
-    'id'      => $id,
-    'status'  => $verdict,
-    'lifted'  => $lifted,
-    'message' => 'Appeal ' . $verdict . '.' . ($lifted ? ' ' . $lifted : ''),
+    'id'       => $id,
+    'status'   => $verdict,
+    'lifted'   => $lifted,
+    'reappeal' => $reappeal,
+    'message'  => 'Appeal ' . $verdict . '.'
+                . ($verdict === 'rejected'
+                    ? ' They can appeal again in ' . $wait . ' days.' : '')
+                . ($lifted ? ' ' . $lifted : ''),
 ]);

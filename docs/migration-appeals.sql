@@ -40,10 +40,15 @@ CREATE TABLE IF NOT EXISTS ucp_appeals (
   concluded_at      INT UNSIGNED DEFAULT NULL,
   concluded_by      INT UNSIGNED DEFAULT NULL,
   concluded_by_name VARCHAR(20)  DEFAULT NULL,
+  reappeal_at       INT UNSIGNED DEFAULT NULL,
+  overruled_at      INT UNSIGNED DEFAULT NULL,
+  overruled_by      INT UNSIGNED DEFAULT NULL,
+  overruled_by_name VARCHAR(20)  DEFAULT NULL,
   PRIMARY KEY (id),
   KEY idx_app_account (account_id, status),
   KEY idx_app_status (status, created_at),
   KEY idx_app_handler (handler_id, status),
+  KEY idx_app_reappeal (account_id, reappeal_at),
   CONSTRAINT fk_app_account FOREIGN KEY (account_id)
     REFERENCES ucp_accounts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -44,7 +44,21 @@ const BS_APPEAL_STAFF_RANK = 1;
  */
 const BS_APPEAL_MANAGE_RANK = 6;
 
-/** How long a rejected appellant waits before appealing again. */
+/**
+ * How long a rejected appellant waits, in days.
+ *
+ * The rejecting administrator picks one. A fixed period was the wrong shape:
+ * an appeal denied because it was three lines long deserves a few days, and
+ * one denied for the fourth time on the same permanent ban does not deserve
+ * the same. Six rungs, and the page suggests the next one up from whatever
+ * they got last time.
+ *
+ * The list is closed and checked server-side — a wait is a consequence, and
+ * a consequence somebody can type a number into is not a rule.
+ */
+const BS_APPEAL_WAITS = [3, 7, 14, 21, 30, 60];
+
+/** Used only to backfill appeals decided before waits existed. */
 const BS_APPEAL_COOLDOWN = 7776000;      // 90 days
 
 /** Repeat views by one person inside this window are one log line. */
@@ -69,6 +83,49 @@ function appeals_missing_reason(): string
 {
     return 'Ban appeals aren\'t set up on this server yet — docs/migration-appeals.sql '
          . 'hasn\'t been run.';
+}
+
+/** The wait ladder, as the panel draws it. */
+function appeal_wait_options(): array
+{
+    $out = [];
+    foreach (BS_APPEAL_WAITS as $d) {
+        $out[] = ['days' => $d, 'label' => $d . ' days'];
+    }
+    return $out;
+}
+
+/**
+ * The rung this account has earned.
+ *
+ * One rejection puts them on 3 days, two on 7, and so on to 60 where it
+ * stops. Only a suggestion — the administrator can pick any rung, because
+ * the ladder cannot know that this particular appeal was written in good
+ * faith and simply wrong.
+ */
+function appeal_suggested_wait(PDO $pdo, int $accountId): int
+{
+    $st = $pdo->prepare(
+        'SELECT COUNT(*) FROM ucp_appeals WHERE account_id = ? AND status = \'rejected\''
+    );
+    $st->execute([$accountId]);
+    $n = (int)$st->fetchColumn();                    // rejections BEFORE this one
+    $i = min($n, count(BS_APPEAL_WAITS) - 1);
+    return BS_APPEAL_WAITS[$i];
+}
+
+/**
+ * May this account overrule a rejected appeal?
+ *
+ * Staff Management, Management and the Founder. The same people who can see
+ * staff accounts in Administrative Search, and for the same reason: this is
+ * the power to overturn another administrator's decision, and it belongs
+ * with the people whose job is the staff team rather than with rank alone.
+ */
+function appeal_may_overrule(PDO $pdo, array $acc): bool
+{
+    if ((int)($acc['admin_rank'] ?? 0) >= 8) return true;
+    return function_exists('has_team') && has_team($pdo, (int)$acc['id'], 'staff_management');
 }
 
 /** Support Staff and above. */
@@ -210,21 +267,31 @@ function appeal_eligibility(PDO $pdo, array $acc): array
         return $out;
     }
 
-    // Rejected recently. The three months run from the verdict, not from
-    // the ban, so a second rejection doesn't reset a punishment's clock.
+    /* Rejected, and still inside the wait the rejecting administrator set.
+     *
+     * reappeal_at is on the appeal rather than computed here, because the
+     * wait was a decision somebody made about that appeal — recomputing it
+     * from a constant would silently rewrite their decision the next time
+     * the constant changed. */
     $st = $pdo->prepare(
-        'SELECT concluded_at FROM ucp_appeals
+        'SELECT concluded_at, reappeal_at FROM ucp_appeals
           WHERE account_id = ? AND status = \'rejected\'
           ORDER BY concluded_at DESC LIMIT 1'
     );
     $st->execute([(int)$acc['id']]);
     $last = $st->fetch();
-    if ($last && $last['concluded_at'] !== null) {
-        $until = (int)$last['concluded_at'] + BS_APPEAL_COOLDOWN;
+    if ($last) {
+        $until = $last['reappeal_at'] !== null
+            ? (int)$last['reappeal_at']
+            // Decided before waits existed. Falls back to the old 90 days
+            // rather than letting those appellants straight back in.
+            : ($last['concluded_at'] !== null
+                ? (int)$last['concluded_at'] + BS_APPEAL_COOLDOWN : 0);
+
         if ($until > time()) {
             $out['cooldown'] = $until;
-            $out['why'] = 'Your last appeal was denied. You can appeal again three months after '
-                        . 'the verdict.';
+            $out['why'] = 'Your last appeal was denied, and the administrator who decided it set '
+                        . 'a wait before you can appeal again.';
             return $out;
         }
     }
@@ -516,6 +583,11 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
         'updated_at' => (int)$a['updated_at'],
         'concluded_at' => $a['concluded_at'] !== null ? (int)$a['concluded_at'] : null,
         'concluded_by' => $staff ? ($a['concluded_by_name'] ?: null) : null,
+        'reappeal_at'  => isset($a['reappeal_at']) && $a['reappeal_at'] !== null
+                          ? (int)$a['reappeal_at'] : null,
+        'overruled'    => isset($a['overruled_at']) && $a['overruled_at'] !== null
+            ? ['at' => (int)$a['overruled_at'], 'by' => $a['overruled_by_name'] ?: null]
+            : null,
 
         /* Every punishment under appeal, in the order they were issued.
            'punishment' stays as the first for anything that wants one. */
@@ -554,11 +626,17 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
             'may_manage'   => appeal_may_manage($acc),
             'is_handler'   => (int)($a['handler_id'] ?? 0) === (int)$acc['id'],
             'manage_rank'  => rank_name(BS_APPEAL_MANAGE_RANK),
+            /* Overruling is only ever offered on a rejected appeal — there is
+               nothing to overturn on one that was accepted. */
+            'may_overrule' => $a['status'] === 'rejected' && appeal_may_overrule($pdo, $acc)
+                              && (int)$acc['id'] !== (int)$a['account_id'],
+            'waits'        => appeal_wait_options(),
+            'wait_suggest' => appeal_suggested_wait($pdo, (int)$a['account_id']),
         ];
     } else {
         $out['viewer'] = ['staff' => false, 'may_conclude' => false, 'why' => null,
                           'may_comment' => $mine, 'may_manage' => false,
-                          'is_handler' => false];
+                          'may_overrule' => false, 'is_handler' => false];
     }
 
     return $out;

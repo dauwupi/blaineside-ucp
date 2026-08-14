@@ -1971,13 +1971,29 @@
 
   function verdictNote(){
     var d = DATA, good = d.status === 'accepted';
+    var extra = '';
+
+    /* Rejected: say exactly when they may come back. "Three months" was the
+       old fixed answer and is no longer true — the rejecting administrator
+       picks the wait, so this has to read the real date off the appeal. */
+    if(!good && d.reappeal_at){
+      extra = (d.mine ? ' You can appeal again from <b>' : ' They can appeal again from <b>')+
+              escapeHtml(stamp(d.reappeal_at))+' UTC</b>.';
+    }
+    /* Overturned: both facts, in order. The rejection happened and was then
+       reversed; hiding the first would make the record a lie. */
+    if(d.overruled){
+      extra += ' This was rejected first, then <b>overturned</b> '+
+               escapeHtml(ago(d.overruled.at))+
+               (d.overruled.by ? ' by <b>'+escapeHtml(d.overruled.by)+'</b>' : '')+'.';
+    }
+
     return '<div style="margin-top:6px"><div class="note-a '+(good?'good':'bad')+'">'+
       '<span class="si">'+ai(good?'tick':'warn')+'</span><div>'+
-      '<h4>Appeal '+d.status+'</h4>'+
+      '<h4>Appeal '+d.status+(d.overruled ? ' — decision overturned' : '')+'</h4>'+
       '<p>Decided '+escapeHtml(ago(d.concluded_at))+
       (d.concluded_by ? ' by <b>'+escapeHtml(d.concluded_by)+'</b>' : '')+
-      '. The reason is in the comments below.'+
-      (d.mine && !good ? ' You can appeal again three months after this date.' : '')+
+      '. The reason is in the comments below.'+ extra +
       '</p></div></div></div>';
   }
 
@@ -2070,6 +2086,25 @@
               '<option value="accepted">Accepted</option>'+
               '<option value="rejected">Rejected</option>'+
             '</select>'+
+
+            /* The wait. Hidden until Rejected is chosen — on an acceptance it
+               is meaningless, and a disabled control the handler has to look
+               past is worse than one that isn't there. The suggested rung is
+               preselected: the ladder knows how many appeals this player has
+               already had rejected, and the handler does not. */
+            '<div id="waitWrap" hidden style="margin-top:10px">'+
+              '<label for="vwait" style="margin-bottom:7px">They can appeal again in</label>'+
+              '<select class="sel" id="vwait">'+
+                (v.waits||[]).map(function(w){
+                  return '<option value="'+w.days+'"'+
+                    (w.days === v.wait_suggest ? ' selected' : '')+'>'+escapeHtml(w.label)+
+                    (w.days === v.wait_suggest ? ' · suggested' : '')+'</option>';
+                }).join('')+
+              '</select>'+
+              '<div class="hint">Suggested from how many appeals they have already had '+
+              'rejected. Pick a different rung if this one deserves it.</div>'+
+            '</div>'+
+
             '<textarea class="ta" id="vcomment" maxlength="4000" style="min-height:110px;'+
             'margin-top:10px" placeholder="Why. The appellant is shown this, so write it to them."'+
             (v.may_conclude?'':' disabled')+'></textarea>'+
@@ -2079,6 +2114,18 @@
             '<div class="go"><button class="btn primary" id="conclude"'+
             (v.may_conclude?'':' disabled')+'>Conclude</button></div>')+
       '</div>'+
+
+      (v.may_overrule ?
+      '<div class="panelfield">'+
+        '<label>Overturn this decision</label>'+
+        '<div class="hint" style="margin-top:0;margin-bottom:9px">The rejection stays on the '+
+        'record. The appeal becomes accepted, the punishments come off, and the wait is '+
+        'cleared.</div>'+
+        '<textarea class="ta" id="ovcomment" maxlength="4000" style="min-height:100px" '+
+        'placeholder="Why the decision is being overturned. The appellant and the administrator '+
+        'who made it both see this."></textarea>'+
+        '<div class="go"><button class="btn ok" id="overrule">Overturn</button></div>'+
+      '</div>' : '')+
 
       '<div class="panelfield">'+
         '<label for="hd">Handler</label>'+
@@ -2176,14 +2223,37 @@
       }).catch(function(){ hdSave.disabled = false; toast('Could not reach the server'); });
     });
 
+    /* The wait only exists for a rejection. */
+    var vd = document.getElementById('vd'), ww = document.getElementById('waitWrap');
+    if(vd && ww) vd.addEventListener('change', function(){
+      ww.hidden = vd.value !== 'rejected';
+    });
+
+    var ov = document.getElementById('overrule');
+    if(ov) ov.addEventListener('click', function(){
+      var c = document.getElementById('ovcomment').value.trim();
+      if(!c){ toast('Write why it is being overturned.'); return; }
+      ov.disabled = true; ov.textContent = 'Overturning…';
+      UCP.post('appeal-overrule.php', { id: ID, comment: c }).then(function(res){
+        var d = (res && res.data) || {};
+        ov.disabled = false; ov.textContent = 'Overturn';
+        if(!d.ok){ toast(d.error || 'That did not work'); return; }
+        toast(d.message); loadAppeal();
+      }).catch(function(){
+        ov.disabled = false; ov.textContent = 'Overturn';
+        toast('Could not reach the server');
+      });
+    });
+
     var conclude = document.getElementById('conclude');
     if(conclude) conclude.addEventListener('click', function(){
       var v = document.getElementById('vd').value;
       var c = document.getElementById('vcomment').value.trim();
       if(!v){ toast('Choose accepted or rejected.'); return; }
       if(!c){ toast('Write the reason. The appellant is shown it.'); return; }
+      var wait = v === 'rejected' ? parseInt(document.getElementById('vwait').value, 10) : 0;
       conclude.disabled = true; conclude.textContent = 'Concluding…';
-      UCP.post('appeal-verdict.php', { id: ID, verdict: v, comment: c })
+      UCP.post('appeal-verdict.php', { id: ID, verdict: v, comment: c, wait: wait })
         .then(function(res){
           var d = (res && res.data) || {};
           conclude.disabled = false; conclude.textContent = 'Conclude';
