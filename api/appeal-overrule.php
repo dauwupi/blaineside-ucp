@@ -48,6 +48,19 @@ $in      = read_input();
 $id      = (int)($in['id'] ?? 0);
 $comment = trim((string)($in['comment'] ?? ''));
 
+/* Whether the punishments actually come off.
+ *
+ * Overturning the DECISION and lifting the BAN are two different calls, and
+ * conflating them was wrong: a rejection can be overturned because it was
+ * handled badly — no reason given, the wrong administrator, a reply the
+ * appellant never got — while the ban itself was still correct. Forcing an
+ * unban in that case would punish the process failure by releasing somebody
+ * who should stay banned.
+ *
+ * Sent explicitly rather than defaulted, so the person pressing it has
+ * chosen. */
+$lift = !empty($in['lift']);
+
 $st = $pdo->prepare('SELECT * FROM ucp_appeals WHERE id = ? LIMIT 1');
 $st->execute([$id]);
 $a = $st->fetch();
@@ -91,13 +104,12 @@ $pdo->prepare(
       WHERE id = ? AND status = \'rejected\''
 )->execute([$now, $now, (int)$acc['id'], (string)$acc['username'], $id]);
 
-/* And the punishments come off, exactly as they would have done had the
-   appeal been accepted the first time. */
+/* And the punishments come off — if that is what was chosen. */
 $ps       = appeal_punishments($pdo, $a);
 $done     = [];
 $unlocked = false;
 
-foreach ($ps as $p) {
+foreach ($lift ? $ps : [] as $p) {
     punish_lift($pdo, (int)$p['id'], (int)$acc['id'], (string)$acc['username'],
                 'Appeal #' . $id . ' overturned');
 
@@ -123,16 +135,19 @@ if ($done) {
             . (count($done) > 1 ? 'have' : 'has') . ' to be removed where '
             . (count($done) > 1 ? 'they were' : 'it was') . ' issued.';
 }
+if (!$lift) {
+    $bits[] = 'The punishment stays in force — only the handling of the appeal was wrong.';
+}
 $lifted = $bits ? implode(' ', $bits) : null;
 
 appeal_log_add($pdo, $id, $acc, 'overruled',
     'Overturned the rejection by ' . ($a['concluded_by_name'] ?: 'an administrator')
+    . ($lift ? ' and lifted the punishment' : ' — punishment left in force')
     . ($lifted ? ' — ' . $lifted : ''));
 
 ok([
     'id'      => $id,
     'status'  => 'accepted',
     'lifted'  => $lifted,
-    'message' => 'Decision overturned — the appeal now stands as accepted.'
-               . ($lifted ? ' ' . $lifted : ''),
+    'message' => 'Decision overturned.' . ($lifted ? ' ' . $lifted : ''),
 ]);

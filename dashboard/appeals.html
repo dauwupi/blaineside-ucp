@@ -805,6 +805,21 @@
      narrows to match, or a wide header sits over a narrow body. */
   body.appeal-solo .lookbar{max-width:900px}
 
+  /* ---- the appeal is the widest view on this page ----
+     Two columns of dense fact beside a panel of controls. The site's usual
+     1180px left the staff column at 340, which is where "Concluded 21
+     minutes ago by testtest" broke onto three lines and the whole panel
+     read as squeezed. Only while an appeal is open — the queue and the
+     rules are prose and stay at the normal width. */
+  body.appeal-wide .content{max-width:1560px}
+  body.appeal-wide .apgrid{grid-template-columns:minmax(0,1fr) 400px}
+  @media (max-width:1320px){
+    body.appeal-wide .apgrid{grid-template-columns:1fr}
+  }
+  /* No staff column: back to a reading width, header included. */
+  body.appeal-solo .content{max-width:1180px}
+  body.appeal-solo .lookbar{max-width:900px}
+
   /* ---- one appeal ---- */
   .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
     color:var(--text-faint);text-decoration:none;transition:.14s}
@@ -1804,6 +1819,11 @@
     /* Solo (no staff column) narrows the grid, and the bar above it has to
        narrow with it or the page reads as a wide header over a narrow body. */
     document.body.classList.toggle('appeal-solo', !staff);
+    /* An appeal is the widest thing this page shows: two columns of dense
+       fact beside a panel of controls. The site's usual 1180 squeezed the
+       staff column to 340px, which is where "Concluded 21 minutes ago by
+       testtest" wrapped onto three lines. */
+    document.body.classList.add('appeal-wide');
     var head = document.querySelector('.ahead');
     if(head) head.style.display = 'none';
 
@@ -2057,94 +2077,134 @@
   }
 
   /* ---- the staff panel ----------------------------------------------- */
+  /* =====================================================================
+     THE HANDLING PANEL
+
+     One rule decides all of it: a control that cannot be used is not drawn
+     as a control. Once an appeal is decided, Verdict has nothing left to
+     offer and disappears entirely — it was repeating "already rejected"
+     directly under a banner that says the same thing three inches to the
+     left. Comments and Handler become plain values, because reassigning or
+     reopening a finished appeal changes nothing about it.
+
+     What is left live on a rejected appeal is one thing: Overturn. And once
+     that is used, it becomes a value too.
+     ===================================================================== */
   function adminCard(){
     var d = DATA, v = d.viewer;
     var done = d.status !== 'pending';
 
-    return '<div class="card"><div class="card-h"><h3>Handling</h3></div><div class="card-b">'+
+    function ro(label, value, hint){
+      return '<div class="panelfield"><label>'+label+'</label>'+
+        '<div class="ro">'+value+'</div>'+
+        (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div>';
+    }
 
-      (v.may_manage ?
-      '<div class="panelfield">'+
-        '<label for="cmEn">Comments</label>'+
-        '<select class="sel" id="cmEn">'+
-          '<option value="1"'+(d.comments_enabled?' selected':'')+'>Open to the player</option>'+
-          '<option value="0"'+(!d.comments_enabled?' selected':'')+'>Closed to the player</option>'+
-        '</select>'+
-        '<div class="hint">Closing stops the appellant replying. Staff can still write here.</div>'+
-        '<div class="go"><button class="btn sm" id="cmSave">Save</button></div>'+
-      '</div>' : '')+
+    var out = '';
 
-      '<div class="panelfield">'+
-        '<label for="vd">Verdict</label>'+
-        (done
-          ? '<div class="note-a '+(d.status==='accepted'?'good':'bad')+'" style="padding:13px 15px">'+
-              '<span class="si">'+ai(d.status==='accepted'?'tick':'warn')+'</span><div>'+
-              '<h4>Already '+d.status+'</h4><p>Concluded '+escapeHtml(ago(d.concluded_at))+
-              (d.concluded_by ? ' by '+escapeHtml(d.concluded_by) : '')+'.</p></div></div>'
-          : '<select class="sel" id="vd"'+(v.may_conclude?'':' disabled')+'>'+
-              '<option value="">Choose…</option>'+
-              '<option value="accepted">Accepted</option>'+
-              '<option value="rejected">Rejected</option>'+
+    /* ---- comments ---- */
+    out += done
+      ? ro('Comments', d.comments_enabled ? 'Open to the player' : 'Closed to the player',
+           'Closed automatically when the appeal was decided.')
+      : (v.may_manage ?
+        '<div class="panelfield">'+
+          '<label for="cmEn">Comments</label>'+
+          '<select class="sel" id="cmEn">'+
+            '<option value="1"'+(d.comments_enabled?' selected':'')+'>Open to the player</option>'+
+            '<option value="0"'+(!d.comments_enabled?' selected':'')+'>Closed to the player</option>'+
+          '</select>'+
+          '<div class="hint">Closing stops the appellant replying. Staff can still write here.</div>'+
+          '<div class="go"><button class="btn sm" id="cmSave">Save</button></div>'+
+        '</div>'
+        : ro('Comments', d.comments_enabled ? 'Open to the player' : 'Closed to the player',
+             'Only '+escapeHtml(v.manage_rank || 'Senior Admin')+' and above can change this.'));
+
+    /* ---- verdict — pending only ---- */
+    if(!done){
+      out +=
+        '<div class="panelfield">'+
+          '<label for="vd">Verdict</label>'+
+          '<select class="sel" id="vd"'+(v.may_conclude?'':' disabled')+'>'+
+            '<option value="">Choose…</option>'+
+            '<option value="accepted">Accepted</option>'+
+            '<option value="rejected">Rejected</option>'+
+          '</select>'+
+
+          /* The wait only exists for a rejection, so it only appears for one. */
+          '<div id="waitWrap" hidden style="margin-top:10px">'+
+            '<label for="vwait" style="margin-bottom:7px">They can appeal again in</label>'+
+            '<select class="sel" id="vwait">'+
+              (v.waits||[]).map(function(w){
+                return '<option value="'+w.days+'"'+
+                  (w.days === v.wait_suggest ? ' selected' : '')+'>'+escapeHtml(w.label)+
+                  (w.days === v.wait_suggest ? ' · suggested' : '')+'</option>';
+              }).join('')+
             '</select>'+
+            '<div class="hint">Suggested from how many appeals they have already had '+
+            'rejected. Pick a different rung if this one deserves it.</div>'+
+          '</div>'+
 
-            /* The wait. Hidden until Rejected is chosen — on an acceptance it
-               is meaningless, and a disabled control the handler has to look
-               past is worse than one that isn't there. The suggested rung is
-               preselected: the ladder knows how many appeals this player has
-               already had rejected, and the handler does not. */
-            '<div id="waitWrap" hidden style="margin-top:10px">'+
-              '<label for="vwait" style="margin-bottom:7px">They can appeal again in</label>'+
-              '<select class="sel" id="vwait">'+
-                (v.waits||[]).map(function(w){
-                  return '<option value="'+w.days+'"'+
-                    (w.days === v.wait_suggest ? ' selected' : '')+'>'+escapeHtml(w.label)+
-                    (w.days === v.wait_suggest ? ' · suggested' : '')+'</option>';
-                }).join('')+
-              '</select>'+
-              '<div class="hint">Suggested from how many appeals they have already had '+
-              'rejected. Pick a different rung if this one deserves it.</div>'+
-            '</div>'+
+          '<textarea class="ta" id="vcomment" maxlength="4000" style="min-height:110px;'+
+          'margin-top:10px" placeholder="Why. The appellant is shown this, so write it to them."'+
+          (v.may_conclude?'':' disabled')+'></textarea>'+
+          '<div class="hint">A reason is required either way. Accepting lifts a user lock '+
+          'straight away; other bans have to be lifted where they were issued.</div>'+
+          (v.why ? '<div class="hint warn">'+escapeHtml(v.why)+'</div>' : '')+
+          '<div class="go"><button class="btn primary" id="conclude"'+
+          (v.may_conclude?'':' disabled')+'>Conclude</button></div>'+
+        '</div>';
+    }
 
-            '<textarea class="ta" id="vcomment" maxlength="4000" style="min-height:110px;'+
-            'margin-top:10px" placeholder="Why. The appellant is shown this, so write it to them."'+
-            (v.may_conclude?'':' disabled')+'></textarea>'+
-            '<div class="hint">A reason is required either way. Accepting lifts a user lock '+
-            'straight away; other bans have to be lifted where they were issued.</div>'+
-            (v.why ? '<div class="hint warn">'+escapeHtml(v.why)+'</div>' : '')+
-            '<div class="go"><button class="btn primary" id="conclude"'+
-            (v.may_conclude?'':' disabled')+'>Conclude</button></div>')+
-      '</div>'+
+    /* ---- overturn ----
+       Live only on a rejected appeal, for the people who may. Already used?
+       Then it is history, and history is a value. */
+    if(d.overruled){
+      out += ro('Overturned',
+        escapeHtml(d.overruled.by || 'A manager')+' · '+escapeHtml(ago(d.overruled.at)),
+        'The rejection stays on the record above. The reason is in the comments.');
+    } else if(v.may_overrule){
+      out +=
+        '<div class="panelfield">'+
+          '<label>Overturn this decision</label>'+
+          '<div class="hint" style="margin-top:0;margin-bottom:9px">The rejection stays on the '+
+          'record and the appeal becomes accepted. Whether the punishment comes off is a '+
+          'separate call.</div>'+
+          '<select class="sel" id="ovlift">'+
+            '<option value="1">Overturn and unban the player</option>'+
+            '<option value="0">Overturn, but leave the punishment in force</option>'+
+          '</select>'+
+          '<div class="hint">Leave it in force when the rejection was handled badly but the ban '+
+          'itself was right.</div>'+
+          '<textarea class="ta" id="ovcomment" maxlength="4000" style="min-height:100px;'+
+          'margin-top:10px" placeholder="Why the decision is being overturned. The appellant and '+
+          'the administrator who made it both see this."></textarea>'+
+          '<div class="go"><button class="btn ok" id="overrule">Overturn</button></div>'+
+        '</div>';
+    }
 
-      (v.may_overrule ?
-      '<div class="panelfield">'+
-        '<label>Overturn this decision</label>'+
-        '<div class="hint" style="margin-top:0;margin-bottom:9px">The rejection stays on the '+
-        'record. The appeal becomes accepted, the punishments come off, and the wait is '+
-        'cleared.</div>'+
-        '<textarea class="ta" id="ovcomment" maxlength="4000" style="min-height:100px" '+
-        'placeholder="Why the decision is being overturned. The appellant and the administrator '+
-        'who made it both see this."></textarea>'+
-        '<div class="go"><button class="btn ok" id="overrule">Overturn</button></div>'+
-      '</div>' : '')+
+    /* ---- handler ---- */
+    out += done
+      ? ro('Handler', escapeHtml(d.handler || 'Not assigned'),
+           'Fixed once the appeal was decided.')
+      : (v.may_manage ?
+        '<div class="panelfield">'+
+          '<label for="hd">Handler</label>'+
+          '<select class="sel" id="hd"><option value="">Not assigned</option>'+
+            HANDLERS.map(function(h){
+              return '<option value="'+escapeHtml(h.name)+'"'+
+                (d.handler === h.name ? ' selected' : '')+'>'+escapeHtml(h.name)+
+                ' · '+escapeHtml(h.role)+'</option>';
+            }).join('')+'</select>'+
+          '<div class="hint">Assigned to whoever issued the punishment when it arrived. '+
+          'Reassigning hands the reply and the verdict to somebody else.</div>'+
+          '<div class="go"><button class="btn sm" id="hdSave">Change handler</button></div>'+
+        '</div>'
+        : ro('Handler', escapeHtml(d.handler || 'Not assigned'),
+             'Only '+escapeHtml(v.manage_rank || 'Senior Admin')+' and above can reassign.'));
 
-      '<div class="panelfield">'+
-        '<label for="hd">Handler</label>'+
-        (v.may_manage
-          ? '<select class="sel" id="hd"><option value="">Not assigned</option>'+
-              HANDLERS.map(function(h){
-                return '<option value="'+escapeHtml(h.name)+'"'+
-                  (d.handler === h.name ? ' selected' : '')+'>'+escapeHtml(h.name)+
-                  ' · '+escapeHtml(h.role)+'</option>';
-              }).join('')+'</select>'+
-            '<div class="hint">Assigned to whoever issued the punishment when it arrived. '+
-            'Reassigning hands the reply and the verdict to somebody else.</div>'+
-            '<div class="go"><button class="btn sm" id="hdSave">Change handler</button></div>'
-          : '<div class="ro">'+(d.handler ? escapeHtml(d.handler) : 'Not assigned')+'</div>'+
-            '<div class="hint">Only '+escapeHtml(v.manage_rank || 'Senior Admin')+
-            ' and above can reassign an appeal.</div>')+
-      '</div>'+
-
-      '</div></div>';
+    return '<div class="card"><div class="card-h"><h3>Handling</h3>'+
+      (done ? '<span class="aside"><span class="pill '+d.status+'">'+d.status+'</span></span>' : '')+
+      '</div><div class="card-b">'+ out +'</div></div>';
   }
 
   function logCard(){
@@ -2234,7 +2294,8 @@
       var c = document.getElementById('ovcomment').value.trim();
       if(!c){ toast('Write why it is being overturned.'); return; }
       ov.disabled = true; ov.textContent = 'Overturning…';
-      UCP.post('appeal-overrule.php', { id: ID, comment: c }).then(function(res){
+      var lift = document.getElementById('ovlift').value === '1';
+      UCP.post('appeal-overrule.php', { id: ID, comment: c, lift: lift }).then(function(res){
         var d = (res && res.data) || {};
         ov.disabled = false; ov.textContent = 'Overturn';
         if(!d.ok){ toast(d.error || 'That did not work'); return; }
@@ -2311,6 +2372,7 @@
     }
     if(key !== 'submit' && key !== 'panel') key = 'submit';
     VIEW = key;
+    document.body.classList.remove('appeal-wide', 'appeal-solo');
     if(push && history.replaceState) history.replaceState(null,'',location.pathname+'#'+key);
     renderTabs();
     document.querySelector('.page-title h1').textContent =
