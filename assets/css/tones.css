@@ -1,7 +1,7 @@
 /* =====================================================================
    BlaineSide UCP — group tier colours.
 
-   CACHE NOTE: every page loads this as tones.css?v=2.4.2. Browsers cache
+   CACHE NOTE: every page loads this as tones.css?v=2.4.3. Browsers cache
    a stylesheet for a long time and will happily keep serving yesterday's
    copy after an upload — which shows up as half a change landing (the
    colours arrive, the chip doesn't). When you edit this file, bump that

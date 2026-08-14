@@ -739,7 +739,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.2">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.3">
 </head>
 <body>
 
@@ -793,10 +793,6 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         <a class="menu-item on" href="/profile">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
           My Profile
-        </a>
-        <a class="menu-item" href="/profile#security">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
-          Account security
         </a>
         <div class="menu-sep"></div>
         <a class="menu-item danger" id="logoutBtn" href="/api/logout.php?next=/login">
@@ -1724,7 +1720,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.2"></script>
+<script src="/assets/js/ucp.js?v=2.4.3"></script>
 <script src="/assets/js/qrcode.js" defer></script>
 <script>
 /* =====================================================================
@@ -1897,6 +1893,18 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
   var IS_MANAGER = false, IS_FOUNDER = false, IS_ADMINISTRATOR = false;
+  /* Seed the menu gates from the last known session so the FIRST paint is
+     right. Without this every navigation drew the sidebar twice — once with
+     no Administration section, once with it — which is the flicker. The
+     server confirms it a moment later, and every page and endpoint checks
+     the rank with the server on every request regardless. */
+  (function(){
+    var me = window.UCP && UCP.me;
+    if(!me) return;
+    IS_ADMINISTRATOR = me.rank >= 3;
+    IS_MANAGER       = me.rank >= 8;
+    IS_FOUNDER       = me.rank >= 9;
+  })();
 
   function renderNav(){
   $('nav').innerHTML = SIDEBAR.filter(function(it){ return (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER)
@@ -1934,6 +1942,9 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     e.preventDefault();
     var a = this;
     a.style.pointerEvents = 'none';
+    /* Forget the cached identity — the next person at this computer starts
+       blank rather than briefly wearing the last one's name and menu. */
+    if(window.UCP && UCP.forgetMe) UCP.forgetMe();
     UCP.post('logout.php', {}).then(function(res){
       var d = res && res.data ? res.data : {};
       window.location.replace(d.redirect || '/login');
@@ -2071,7 +2082,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('menuRole').textContent = d.role || 'Member';
     $('acctName').textContent = d.name;
     $('acctRole').textContent = d.role || 'Member';
-    if(window.UCP && UCP.setTone) UCP.setTone(d.rank|0);   /* tier colour — guarded so an out-of-date ucp.js can't take the page down */
+    /* Keep it for the next page load — this is what stops the flicker. */
+    if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
 
     if((d.rank >= 3) !== IS_ADMINISTRATOR || (d.rank >= 8) !== IS_MANAGER){
       IS_ADMINISTRATOR = d.rank >= 3;

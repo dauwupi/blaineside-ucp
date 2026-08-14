@@ -739,7 +739,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.2">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.3">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
@@ -824,10 +824,6 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         <a class="menu-item on" href="/profile">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
           My Profile
-        </a>
-        <a class="menu-item" href="/profile#security">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
-          Account security
         </a>
         <div class="menu-sep"></div>
         <a class="menu-item danger" id="logoutBtn" href="/api/logout.php?next=/login">
@@ -985,7 +981,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.2"></script>
+<script src="/assets/js/ucp.js?v=2.4.3"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
@@ -1125,6 +1121,18 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
   };;
   var IS_MANAGER = false, IS_FOUNDER = false, IS_ADMINISTRATOR = false;
+  /* Seed the menu gates from the last known session so the FIRST paint is
+     right. Without this every navigation drew the sidebar twice — once with
+     no Administration section, once with it — which is the flicker. The
+     server confirms it a moment later, and every page and endpoint checks
+     the rank with the server on every request regardless. */
+  (function(){
+    var me = window.UCP && UCP.me;
+    if(!me) return;
+    IS_ADMINISTRATOR = me.rank >= 3;
+    IS_MANAGER       = me.rank >= 8;
+    IS_FOUNDER       = me.rank >= 9;
+  })();
   function svg(nm,c){ return '<svg class="'+c+'" viewBox="0 0 24 24" fill="none" stroke="currentColor">'+(ICONS[nm]||'')+'</svg>'; }
   function renderNav(){
     $('nav').innerHTML = SIDEBAR.filter(function(it){
@@ -1167,6 +1175,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   if($('logoutBtn')) $('logoutBtn').addEventListener('click', function(e){
     e.preventDefault();
     this.style.pointerEvents = 'none';
+    if(window.UCP && UCP.forgetMe) UCP.forgetMe();
     UCP.post('logout.php', {}).then(function(res){
       var d = res && res.data ? res.data : {};
       window.location.replace(d.redirect || '/login');
@@ -1359,17 +1368,17 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   UCP.get('session.php').then(function(s){
     if(!s || s.authenticated !== true){ window.location.replace(LOGIN); return; }
 
-    $('acctName').textContent = s.name || '';
-    $('acctRole').textContent = s.role || 'Member';
-    if($('menuName')) $('menuName').textContent = s.name || '';
-    if($('menuRole')) $('menuRole').textContent = s.role || 'Member';
-    if(window.UCP && UCP.setTone) UCP.setTone(s.rank|0);
+    /* Keep it for the next page load — this is what stops the flicker.
+       Note this is the VIEWER's identity; the account being looked at is
+       painted separately, by render(). */
+    if(window.UCP && UCP.rememberMe) UCP.rememberMe(s);
 
     var rank = s.rank | 0;
+    var was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join();
     IS_ADMINISTRATOR = rank >= 3;
     IS_MANAGER       = rank >= 8;
     IS_FOUNDER       = rank >= 9;
-    renderNav();
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join() !== was) renderNav();
 
     if(rank < 3){
       lockOut('Administrators only',

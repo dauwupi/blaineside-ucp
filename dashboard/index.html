@@ -732,8 +732,8 @@
     .stat:nth-child(1){border-top:none}
   }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.2">
-<script src="/assets/js/ucp.js?v=2.4.2"></script>
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.3">
+<script src="/assets/js/ucp.js?v=2.4.3"></script>
 </head>
 <body>
 
@@ -798,26 +798,22 @@
            4 Admin Lvl 1 · 5 Admin Lvl 2 · 6 Senior Admin · 7 Lead Admin ·
            8 Management · 9 Founder -->
       <div class="account">
-        <div class="account-btn">
+        <button class="account-btn" id="acctBtn">
           <svg class="acct-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
           <span class="account-meta">
-            <span class="u" id="acctName">dustin_hale</span>
-            <span class="r" id="acctRole">Senior Admin</span>
+            <span class="u" id="acctName">&nbsp;</span>
+            <span class="r" id="acctRole">&nbsp;</span>
           </span>
           <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>
-        </div>
-        <div class="account-menu">
+        </button>
+        <div class="account-menu" id="acctMenu">
           <div class="mhead">
-            <div class="n" id="menuName">dustin_hale</div>
-            <div class="rr" id="menuRole">Senior Admin</div>
+            <div class="n" id="menuName">&nbsp;</div>
+            <div class="rr" id="menuRole">&nbsp;</div>
           </div>
           <a class="menu-item" href="/profile" style="text-decoration:none;color:inherit">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
             My Profile
-          </a>
-          <a class="menu-item" href="/profile#security" style="text-decoration:none;color:inherit">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
-            Account security
           </a>
           <div class="menu-sep"></div>
           <div class="menu-item danger" id="logoutBtn">
@@ -839,7 +835,7 @@
       <div class="announce" id="announce" hidden></div>
 
       <div class="hello">
-        <h2>Welcome back, <b id="welcomeName">dustin_hale</b></h2>
+        <h2>Welcome back, <b id="welcomeName">&nbsp;</b></h2>
         <p>Blaine County is live. Here's the state of the server today.</p>
       </div>
 
@@ -968,9 +964,9 @@
      logged-in user's UCP name + staff rank). Players have no rank → leave
      UCP_ROLE empty ('') and the role line hides.
      ===================================================================== */
-  let UCP_NAME = 'dustin_hale';
-  let UCP_RANK = 6;                 // 0–9 (see ladder below); 6 = Senior Admin
-  let UCP_ROLE = 'Senior Admin';   // display name; '' for Members (rank 0)
+  let UCP_NAME = '';
+  let UCP_RANK = 0;    // 0–9 (see the ladder below); replaced by session.php
+  let UCP_ROLE = '';   // display name; blank until the server answers
 
   /* Staff rank ladder — admin_rank in the database (0–9):
        0 Member · 1 Support Staff · 2 Development Team · 3 Trainee Admin
@@ -993,6 +989,9 @@
     const lb=document.getElementById('logoutBtn');
     if(lb) lb.addEventListener('click',()=>{
       lb.style.pointerEvents='none';
+      /* Forget the cached identity — the next person at this computer starts
+         blank rather than briefly wearing the last one's name and menu. */
+      if(window.UCP && UCP.forgetMe) UCP.forgetMe();
       // Fetch this session's CSRF token, then send it with the logout POST.
       fetch('/api/csrf.php',{credentials:'include'})
         .then(r=>r.json()).catch(()=>({}))
@@ -1075,10 +1074,14 @@
           UCP_NAME = d.name || UCP_NAME;
           UCP_RANK = (typeof d.rank==='number') ? d.rank : 0;
           UCP_ROLE = d.role || 'Member';   // server maps rank→name (Member for rank 0)
+          if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
+          const was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join();
           IS_ADMINISTRATOR = UCP_RANK >= 3;
           IS_MANAGER       = UCP_RANK >= 8;
           IS_FOUNDER       = UCP_RANK >= 9;
-          renderSidebar(SIDEBAR);
+          /* Only redraw if the seed was wrong — redrawing identical HTML is
+             what the eye reads as a flash. */
+          if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join() !== was) renderSidebar(SIDEBAR);
           applyIdentity();
         } else if(d && d.authenticated===false){
           window.location = '/login';
@@ -1093,7 +1096,6 @@
     set('menuName', UCP_NAME);
     // rank name always shows now (Member included)
     const roleName = UCP_ROLE || 'Member';
-    if(window.UCP && UCP.setTone) UCP.setTone(UCP_RANK|0);   /* tier colour — guarded so an out-of-date ucp.js can't take the page down */
     ['acctRole','menuRole'].forEach(id=>{
       const el=document.getElementById(id);
       if(!el) return;
@@ -1190,6 +1192,21 @@
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
   let IS_MANAGER=false, IS_FOUNDER=false, IS_ADMINISTRATOR=false;
+  /* Seed from the last known session so the FIRST paint is right. Without
+     this every navigation drew the sidebar twice — once with no
+     Administration section, once with it — which is the flicker.
+     api/session.php confirms it below, and the pages and the endpoints check
+     the rank with the server on every request regardless. */
+  (function(){
+    var me = window.UCP && UCP.me;
+    if(!me) return;
+    IS_ADMINISTRATOR = me.rank >= 3;
+    IS_MANAGER       = me.rank >= 8;
+    IS_FOUNDER       = me.rank >= 9;
+    UCP_RANK = me.rank;
+    UCP_ROLE = me.role || 'Member';
+    UCP_NAME = me.name || UCP_NAME;
+  })();
   function renderSidebar(items){
     const nav = document.getElementById('nav');
     items = items.filter(it => (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER)

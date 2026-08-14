@@ -179,15 +179,49 @@
     return m ? (m + 'm ' + (r < 10 ? '0' : '') + r + 's') : (r + 's');
   }
 
+  /* =====================================================================
+     WHO IS SIGNED IN
+
+     Every page needs the same three facts before it can draw its own
+     chrome: the name, the group name, and the rank the menu is gated on.
+     They come from api/session.php, which is a round trip — so on every
+     navigation the sidebar first drew with no Administration section, the
+     account button drew blank, and both then jumped when the answer came
+     back. That double-draw is the flicker.
+
+     So the answer is kept. It is the player's own name and their own
+     group — not a secret, and not a permission: the pages and the
+     endpoints check the rank with the server on every request regardless.
+     All this does is let the FIRST paint be right instead of empty, and
+     session.php still corrects it a moment later if anything changed.
+
+     Cleared on sign-out, so the next person at the same computer starts
+     from nothing.
+     ===================================================================== */
+  var ME_KEY = 'bs_me';
+
+  function meRead() {
+    try {
+      var m = JSON.parse(w.localStorage.getItem(ME_KEY) || 'null');
+      return (m && typeof m.rank === 'number') ? m : null;
+    } catch (e) { return null; }
+  }
+  function meWrite(m) {
+    try {
+      w.localStorage.setItem(ME_KEY, JSON.stringify({
+        name: String(m.name || ''), role: String(m.role || 'Member'), rank: m.rank | 0
+      }));
+    } catch (e) { /* private mode, quota — the page still works, it just blinks */ }
+  }
+  function forgetMe() {
+    try { w.localStorage.removeItem(ME_KEY); } catch (e) {}
+  }
+
   /**
-   * Records the signed-in player's group on <html> as a me-* class.
+   * Records a group on <html> as a me-* class.
    *
    * assets/css/tones.css turns that into --me and --me-text, which is how
-   * the role line in the account button gets its tier colour. Call it from
-   * wherever the page already learns the rank — session.php, profile.php —
-   * and every page picks the colour up without repeating the ladder.
-   *
-   * Any new page only has to load tones.css and call this.
+   * the role line in the account button gets its tier colour.
    */
   function setTone(rank) {
     var r = (typeof rank === 'number' && rank >= 0 && rank <= 9) ? (rank | 0) : 0;
@@ -196,10 +230,41 @@
     el.classList.add('me-' + r);
   }
 
+  /** Paints a name/role/rank into the topbar and the account menu. */
+  function paintMe(m) {
+    if (!m) return;
+    setTone(m.rank | 0);
+    var ids = [['acctName', m.name], ['acctRole', m.role],
+               ['menuName', m.name], ['menuRole', m.role]];
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i][0]);
+      if (el && ids[i][1]) el.textContent = ids[i][1];
+    }
+  }
+
+  /**
+   * Call with whatever api/session.php (or profile.php) returned. Paints it
+   * and keeps it for the next page load.
+   */
+  function rememberMe(d) {
+    if (!d || typeof d.rank !== 'number') return;
+    var m = { name: d.name || '', role: d.role || 'Member', rank: d.rank | 0 };
+    meWrite(m);
+    paintMe(m);
+  }
+
+  /* The tone can go on before the document body exists, and should: it is
+     what stops the role line flashing amber before it turns green. */
+  var CACHED = meRead();
+  if (CACHED) setTone(CACHED.rank);
+
   w.UCP = {
     post: post, get: get, loadCsrf: loadCsrf,
     esc: esc, relTime: relTime, readCookie: readCookie, fmtSecs: fmtSecs,
-    setTone: setTone
+    setTone: setTone,
+    me: CACHED,                 // {name, role, rank} or null — the LAST KNOWN
+    rank: CACHED ? CACHED.rank : null,
+    rememberMe: rememberMe, forgetMe: forgetMe, paintMe: paintMe
   };
 
   applyTod();
@@ -208,5 +273,6 @@
     startClock();
     initTabFade();
     loadCsrf();
+    paintMe(CACHED);            // first paint, before session.php answers
   });
 })(window);

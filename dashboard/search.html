@@ -531,6 +531,28 @@
     .sbar .btn{width:100%}
   }
 
+  /* ===== ACCOUNT MENU =====
+     The same component as the profile page. It used to exist only there, so
+     the button in the corner of every other page looked interactive and did
+     nothing. */
+  .account{position:relative}
+  .account-menu{position:absolute;right:0;top:calc(100% + 10px);width:230px;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
+    box-shadow:0 24px 50px -18px rgba(0,0,0,.8);padding:8px;z-index:60}
+  .account-menu .mhead{padding:8px 10px 12px;border-bottom:1px solid var(--border-soft);margin-bottom:6px}
+  .account-menu .mhead .n{font-size:14px;font-weight:700;color:var(--parchment)}
+  .account-menu .mhead .rr{font-size:12px;color:var(--amber);font-weight:600;margin-top:1px}
+  .menu-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;
+    font-size:13.5px;font-weight:500;color:var(--text-faint);cursor:pointer;transition:.13s;text-decoration:none}
+  .menu-item svg{width:16px;height:16px;stroke-width:1.9;flex:none}
+  .menu-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .menu-item.on{background:var(--charcoal-3);color:var(--parchment)}
+  .menu-item.on svg{color:var(--gold)}
+  .menu-item.danger{color:#d98a78}
+  .menu-item.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6}
+  .menu-sep{height:1px;background:var(--border-soft);margin:6px 4px}
+  @media (max-width:760px){ .account-menu{width:220px;right:-4px} }
+
   /* toast */
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);z-index:200;
     display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:11px;background:var(--charcoal-3);
@@ -576,7 +598,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.2">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.3">
 </head>
 <body>
 
@@ -615,10 +637,27 @@
       <button class="icon-btn search-mini" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
       <button class="icon-btn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="dot"></span></button>
       <div class="divider"></div>
-      <div class="account-btn">
-        <svg class="acct-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
-        <span class="account-meta"><span class="u" id="acctName">&nbsp;</span><span class="r" id="acctRole">&nbsp;</span></span>
-        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>
+      <div class="account">
+        <button class="account-btn" id="acctBtn">
+          <svg class="acct-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
+          <span class="account-meta"><span class="u" id="acctName">&nbsp;</span><span class="r" id="acctRole">&nbsp;</span></span>
+          <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="account-menu" id="acctMenu">
+          <div class="mhead">
+            <div class="n" id="menuName">&nbsp;</div>
+            <div class="rr" id="menuRole">&nbsp;</div>
+          </div>
+          <a class="menu-item" href="/profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
+            My Profile
+          </a>
+          <div class="menu-sep"></div>
+          <a class="menu-item danger" id="logoutBtn" href="/api/logout.php?next=/login">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>
+            Log out
+          </a>
+        </div>
       </div>
     </header>
 
@@ -656,7 +695,7 @@
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<script src="/assets/js/ucp.js?v=2.4.2"></script>
+<script src="/assets/js/ucp.js?v=2.4.3"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   const SIDEBAR=[
@@ -714,6 +753,18 @@
     }).join('');
     document.querySelectorAll('.nav-group[data-collapsible] > .nav-item').forEach(item=>item.addEventListener('click',()=>item.parentElement.classList.toggle('open')));
   }
+  /* Seed the menu gates from the last known session so the FIRST paint is
+     right. Without this every navigation drew the sidebar twice — once with
+     no Administration section, once with it — which is the flicker.
+     api/session.php confirms it below, and both the pages and the endpoints
+     check the rank with the server on every request regardless. */
+  (function(){
+    var me = window.UCP && UCP.me;
+    if(!me) return;
+    IS_ADMINISTRATOR = me.rank >= 3;
+    IS_MANAGER       = me.rank >= 8;
+    IS_FOUNDER       = me.rank >= 9;
+  })();
   renderSidebar(SIDEBAR);
 
   /* =====================================================================
@@ -972,6 +1023,31 @@
     if(e.key === 'Enter'){ e.preventDefault(); run(1); }
   });
 
+
+  /* ===== ACCOUNT MENU ===== */
+  (function(){
+    var btn = document.getElementById('acctBtn'), menu = document.getElementById('acctMenu');
+    if(!btn || !menu) return;
+    menu.style.display = 'none';
+    btn.addEventListener('click', function(e){ e.stopPropagation();
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none'; });
+    menu.addEventListener('click', function(e){ e.stopPropagation(); });
+    document.addEventListener('click', function(){ menu.style.display = 'none'; });
+
+    /* Log out through fetch, so the browser never lands on the endpoint's raw
+       JSON. The href stays a working no-JS fallback. Forget the cached
+       identity first — the next person at this computer starts blank. */
+    document.getElementById('logoutBtn').addEventListener('click', function(e){
+      e.preventDefault();
+      this.style.pointerEvents = 'none';
+      if(window.UCP && UCP.forgetMe) UCP.forgetMe();
+      UCP.post('logout.php', {}).then(function(res){
+        var d = res && res.data ? res.data : {};
+        window.location.replace(d.redirect || '/login');
+      }).catch(function(){ window.location.href = '/api/logout.php?next=/login'; });
+    });
+  })();
+
   /* ===================== UTIL ===================== */
   function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   let toastTimer=null;
@@ -1019,15 +1095,19 @@
     const an=document.getElementById('acctName'), ar=document.getElementById('acctRole');
     if(an) an.textContent = d.name || '';
     if(ar) ar.textContent = d.role || 'Member';
-    if(window.UCP && UCP.setTone) UCP.setTone(d.rank|0);
+    /* Keep it for the next page load — this is what stops the flicker. */
+    if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
 
     const rank = d.rank | 0;
     if(rank < 3){ lockOut(); return; }
 
+    const was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join();
     IS_ADMINISTRATOR = true;
     IS_MANAGER = rank >= 8;
     IS_FOUNDER = rank >= 9;
-    renderSidebar(SIDEBAR);
+    /* Only redraw if the seed above was wrong — redrawing identical HTML is
+       what the eye reads as a flash. */
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join() !== was) renderSidebar(SIDEBAR);
 
     /* Load with no query: the server hands back the field registry and
        nothing else, which is what builds the picker. */
