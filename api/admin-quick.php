@@ -19,6 +19,7 @@ require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_sessions.php';
 require_once __DIR__ . '/_ips.php';
+require_once __DIR__ . '/_teams.php';
 require_once __DIR__ . '/_admin.php';
 
 /** How many suggestions. A dropdown you have to scroll isn't a quick search. */
@@ -37,8 +38,8 @@ if (mb_strlen($q) < 2) {
     ok(['q' => $q, 'results' => [], 'more' => 0, 'short' => true]);
 }
 
-$actorRank = (int)$acc['admin_rank'];
-$actorId   = (int)$acc['id'];
+$canSeeStaff = admin_can_see_staff($pdo, $acc);
+$actorId     = (int)$acc['id'];
 $like      = admin_like($q);
 
 /* Name first, then Discord.
@@ -82,7 +83,7 @@ if (count($rows) > BS_QUICK_LIMIT) {
  */
 $out = [];
 foreach ($rows as $r) {
-    $row = admin_result_out($r, $actorRank, $actorId);
+    $row = admin_result_out($r, $canSeeStaff, $actorId);
     $out[] = [
         'kind'     => 'account',
         'id'       => $row['id'],

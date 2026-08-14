@@ -20,6 +20,7 @@ require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_sessions.php';
 require_once __DIR__ . '/_ips.php';
+require_once __DIR__ . '/_teams.php';
 require_once __DIR__ . '/_admin.php';
 
 throttle('admin-account', 40);
@@ -53,7 +54,8 @@ if (!$t) {
  * the row is loaded but BEFORE anything about it is returned: the answer is
  * the same whether or not the account exists, so this can't be used to test
  * which ids belong to staff. */
-if (!admin_may_view((int)$acc['admin_rank'], (int)$t['admin_rank'], (int)$acc['id'] === (int)$t['id'])) {
+if (!admin_may_view(admin_can_see_staff($pdo, $acc), (int)$t['admin_rank'],
+                    (int)$acc['id'] === (int)$t['id'])) {
     json_out([
         'ok'    => false,
         'code'  => 'staff_only',
@@ -128,6 +130,8 @@ ok([
     'rank'        => $rank,
     'role'        => rank_name($rank),
     'status'      => (string)$t['status'],
+    'teams'       => array_map(function ($k) { return ['key' => $k, 'label' => team_label($k)]; },
+                               teams_for($pdo, (int)$t['id'])),
     'created_at'  => $t['created_at'],
     'member_days' => $createdTs ? (int)floor((time() - $createdTs) / 86400) : null,
     'last_login'  => $t['last_login'],

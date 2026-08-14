@@ -21,6 +21,7 @@ require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_sessions.php';
 require_once __DIR__ . '/_ips.php';
+require_once __DIR__ . '/_teams.php';
 require_once __DIR__ . '/_admin.php';
 
 throttle('admin-search', 40);
@@ -58,8 +59,8 @@ if (!$tab['available']) {
 }
 
 // ---- Nothing filled in -----------------------------------------------------
-$actorRank = (int)$acc['admin_rank'];
-list($where, $args, $used, $note) = admin_build_user_query($pdo, $in, $actorRank);
+$canSeeStaff = admin_can_see_staff($pdo, $acc);
+list($where, $args, $used, $note) = admin_build_user_query($pdo, $in);
 
 if (!$used) {
     ok($base + ['note' => $note]);
@@ -97,8 +98,8 @@ $st->execute($args);
    draws a lock on those; the count below includes them so nobody is left
    wondering why the total doesn't match what they can see. */
 $actorId = (int)$acc['id'];
-$rows = array_map(function ($r) use ($actorRank, $actorId) {
-    return admin_result_out($r, $actorRank, $actorId);
+$rows = array_map(function ($r) use ($canSeeStaff, $actorId) {
+    return admin_result_out($r, $canSeeStaff, $actorId);
 }, $st->fetchAll());
 
 $locked = 0;

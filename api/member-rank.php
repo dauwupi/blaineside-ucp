@@ -11,6 +11,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
 require_once __DIR__ . '/_groups.php';
+require_once __DIR__ . '/_teams.php';
 require_once __DIR__ . '/_sessions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
@@ -68,6 +69,21 @@ if ($was === 9 && $rank < 9) {
 
 $pdo->prepare('UPDATE ucp_accounts SET admin_rank = ? WHERE id = ?')->execute([$rank, $id]);
 
+/* Moving out of the admin band takes the sub-groups with it.
+ *
+ * Left behind, they would be rows nothing displays and nothing enforces —
+ * and they would quietly come back the day that person was demoted into the
+ * band again. A permission that reappears without anybody granting it is the
+ * kind of thing nobody finds until it matters. */
+$dropped = teams_clear_if_ineligible($pdo, $id, $rank, $acc);
+if ($dropped) {
+    security_log(
+        $pdo, $id, 'subgroups_changed',
+        'Lost ' . implode(', ', $dropped) . ' — no longer an administrator group',
+        'warn'
+    );
+}
+
 // Written to the TARGET's security log: it is their account that changed, and
 // it is their log that should answer "when did this happen, and who did it".
 security_log(
@@ -80,5 +96,7 @@ ok([
     'id'      => $id,
     'rank'    => $rank,
     'role'    => rank_name($rank),
-    'message' => $target['username'] . ' is now ' . rank_name($rank) . '.',
+    'dropped' => $dropped,
+    'message' => $target['username'] . ' is now ' . rank_name($rank) . '.' .
+                 ($dropped ? ' Sub-groups removed: ' . implode(', ', $dropped) . '.' : ''),
 ]);

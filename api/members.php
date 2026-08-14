@@ -19,6 +19,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
 require_once __DIR__ . '/_groups.php';
+require_once __DIR__ . '/_teams.php';
 
 $pdo = db();
 $acc = current_account($pdo);
@@ -47,6 +48,15 @@ $base = [
     'you'        => ['id' => (int)$acc['id'], 'rank' => $actorRank],
     'per_page'   => $perPage,
     'total_all'  => array_sum($counts),
+
+    // The sub-group registry, and whether the migration that stores them has
+    // been run. The page builds its toggles from this; a UCP that hasn't run
+    // docs/migration-subgroups.sql shows the section as unavailable rather
+    // than offering switches that would silently fail.
+    'teams'      => teams_registry(),
+    'teams_ok'   => teams_available($pdo),
+    'team_band'  => ['min' => BS_TEAM_MIN_RANK, 'max' => BS_TEAM_MAX_RANK,
+                     'label' => rank_name(BS_TEAM_MIN_RANK) . ' – ' . rank_name(BS_TEAM_MAX_RANK)],
 ];
 
 // ---- Nothing asked for, nothing listed -------------------------------------
@@ -80,9 +90,13 @@ $st = $pdo->prepare(
       LIMIT $perPage OFFSET " . (($page - 1) * $perPage)
 );
 $st->execute($params);
+$rows = $st->fetchAll();
+
+// One query for the page, not one per row.
+$teamsBy = teams_map($pdo, array_column($rows, 'id'));
 
 $out = [];
-foreach ($st->fetchAll() as $r) {
+foreach ($rows as $r) {
     $block = groups_block_reason($acc, ['id' => $r['id'], 'admin_rank' => $r['admin_rank']]);
     $out[] = [
         'id'         => (int)$r['id'],
@@ -97,6 +111,12 @@ foreach ($st->fetchAll() as $r) {
         'self'       => (int)$r['id'] === (int)$acc['id'],
         'editable'   => $block === null,
         'blocked_by' => $block,
+
+        // Sub-groups: what they hold, and whether their rank allows any.
+        'teams'          => $teamsBy[(int)$r['id']] ?? [],
+        'team_eligible'  => team_eligible((int)$r['admin_rank']),
+        'team_why'       => team_eligible((int)$r['admin_rank'])
+                            ? null : team_ineligible_reason((int)$r['admin_rank']),
     ];
 }
 

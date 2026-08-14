@@ -504,6 +504,31 @@
   .flag.on{color:#9ec178;border-color:rgba(127,160,90,.32);background:rgba(127,160,90,.09)}
   .flag.off{color:var(--stone)}
 
+  /* ---- Sub-groups ----
+     A row of toggles under the name, shown only for the ranks that can hold
+     them. They save on click: a second Apply button next to the group's one
+     would make it ambiguous which button owned which change. */
+  .mteams{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    margin-top:13px;padding-top:12px;border-top:1px solid var(--border-soft)}
+  .mteams .tlab{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--text-dim);margin-right:2px}
+  .tg{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:100px;
+    font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;transition:.14s;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint)}
+  .tg:hover:not(:disabled){border-color:var(--charcoal-4);color:var(--parchment)}
+  .tg .tdot{width:7px;height:7px;border-radius:50%;background:var(--charcoal-4);
+    flex:none;transition:.14s}
+  .tg.on{color:#e6d3b2;background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.42)}
+  .tg.on .tdot{background:var(--gold);box-shadow:0 0 0 3px rgba(226,182,92,.18)}
+  /* A sub-group that grants nothing yet still assigns, and says so on hover.
+     It is a real record, not a placeholder. */
+  .tg.soon .tdot{background:var(--stone)}
+  .tg.on.soon{color:var(--text-faint);background:rgba(255,255,255,.03);border-color:var(--charcoal-4)}
+  .tg.on.soon .tdot{background:var(--stone);box-shadow:0 0 0 3px rgba(138,127,112,.16)}
+  .tg:disabled{opacity:.4;cursor:not-allowed}
+  .tg.busy{opacity:.55;cursor:progress}
+  .tnote{font-size:11.5px;color:var(--text-dim);margin-left:2px}
+
   .mact{display:flex;align-items:center;gap:9px;justify-content:flex-end;flex:none;min-width:0}
   .mact .btn{flex:none}
   .mrow select{height:36px;padding:0 32px 0 12px;border-radius:10px;background:var(--charcoal);
@@ -809,6 +834,7 @@
      than being greyed out — "you can't" is not an explanation.
      ===================================================================== */
   let RANKS=[], ASSIGNABLE=[], YOU={id:0,rank:0};
+  let TEAMS=[], TEAMS_OK=false, TEAM_BAND=null;
   let ITEMS=[], TOTAL_PAGES=1, curPage=1, QUERY='', GROUP=null, LOADING=false;
 
   function rankName(r){ return (RANKS.find(x=>x.rank===r)||{}).name||('Group '+r); }
@@ -951,7 +977,37 @@
           '<span class="chips">' + twofa + forum + '</span></div>' +
       '</div>' +
       '<div class="mact">' + act + '</div>' +
+      teamsHTML(m) +
     '</div>';
+  }
+
+  /* ---- sub-groups, per row ----
+     Only drawn for accounts whose rank can hold them. For everyone else the
+     strip is absent rather than greyed: a Member's row showing three
+     disabled switches is three things to read that will never apply. */
+  function teamsHTML(m){
+    if(!TEAMS.length || !m.team_eligible) return '';
+
+    const held = m.teams || [];
+    const canEdit = m.editable && TEAMS_OK;
+
+    const toggles = TEAMS.map(function(t){
+      const on = held.indexOf(t.key) > -1;
+      const title = t.live
+        ? t.blurb + ' ' + (t.grants || []).join(' ')
+        : (t.why || t.blurb);
+      return '<button class="tg ' + (on ? 'on ' : '') + (t.live ? '' : 'soon') + '"' +
+        ' data-team="' + t.key + '" data-for="' + m.id + '"' +
+        ' aria-pressed="' + on + '" title="' + escapeHtml(title) + '"' +
+        (canEdit ? '' : ' disabled') + '>' +
+        '<span class="tdot"></span>' + escapeHtml(t.label) + '</button>';
+    }).join('');
+
+    const note = !TEAMS_OK
+      ? '<span class="tnote">Run docs/migration-subgroups.sql to switch these on.</span>'
+      : '';
+
+    return '<div class="mteams"><span class="tlab">Sub-groups</span>' + toggles + note + '</div>';
   }
 
   /* The picker already names the open group, so the scope bar only earns
@@ -1025,7 +1081,30 @@
     if(btn) btn.disabled = (+sel.value === m.rank);
   });
 
+  /* A sub-group toggle saves the moment it is clicked. The whole row's list
+     is sent, not the one that changed — the server sets exactly what it is
+     given, so two admins clicking at once can't interleave into a state
+     neither of them chose. */
   document.getElementById('mlist').addEventListener('click',e=>{
+    const tg=e.target.closest('[data-team]');
+    if(tg && !tg.disabled){
+      const id=+tg.dataset.for;
+      const row=document.querySelector('.mrow[data-id="'+id+'"]');
+      const want=[];
+      row.querySelectorAll('[data-team]').forEach(function(b){
+        const on = (b===tg) ? !b.classList.contains('on') : b.classList.contains('on');
+        if(on) want.push(b.dataset.team);
+      });
+      row.querySelectorAll('[data-team]').forEach(function(b){ b.classList.add('busy'); b.disabled=true; });
+
+      UCP.post('member-teams.php',{id:id,teams:want}).then(function(res){
+        const d=res.data||{};
+        if(!d.ok){ toast(d.error||'That did not work'); loadPage(); return; }
+        toast(d.message); loadPage();
+      }).catch(function(){ toast('Could not reach the server'); loadPage(); });
+      return;
+    }
+
     const btn=e.target.closest('[data-apply]'); if(!btn||btn.disabled) return;
     const id=+btn.dataset.apply;
     const sel=document.querySelector(`[data-rank="${id}"]`); if(!sel) return;
@@ -1050,6 +1129,7 @@
       }
       ITEMS=d.members||[]; TOTAL_PAGES=d.pages||1; curPage=d.page||curPage;
       RANKS=d.ranks||RANKS; ASSIGNABLE=d.assignable||ASSIGNABLE; YOU=d.you||YOU;
+      TEAMS=d.teams||TEAMS; TEAMS_OK=!!d.teams_ok; TEAM_BAND=d.team_band||TEAM_BAND;
       document.getElementById('mcount').textContent =
         d.total_all.toLocaleString('en-GB')+' accounts in the UCP';
       renderPicker(); renderScope(d); renderList(d);

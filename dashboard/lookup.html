@@ -1317,6 +1317,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 
     /* ---- Account ---- */
     var created = parseUTC(d.created_at), last = parseUTC(d.last_login);
+    var teams = (d.teams || []).map(function(t){ return t.label; });
     var rows = [
       ['Account ID',   '#'+d.id, null],
       ['Group',        d.role || 'Member', null],
@@ -1326,6 +1327,15 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       ['Last sign-in', last ? hhmm(last) : '—', last ? ago(last) : 'never signed in'],
       ['Two-step',     d.twofa.enabled ? 'On' : 'Off', null]
     ];
+
+    /* Sub-groups sit under the group because they modify it. Shown only for
+       the ranks that can hold them — on a Member's account the row would be
+       a permanent "None" answering a question nobody asked. */
+    if(d.rank >= 3 && d.rank <= 7){
+      rows.splice(2, 0, ['Sub-groups', teams.length ? teams.join(', ') : 'None', null]);
+    } else if(teams.length){
+      rows.splice(2, 0, ['Sub-groups', teams.join(', '), null]);
+    }
     $('acctRows').innerHTML = rows.map(function(r){
       return '<div class="row"><div class="row-l"><div class="k">'+esc(r[0])+'</div>'+
              '<div class="v">'+esc(r[1])+'</div></div>'+

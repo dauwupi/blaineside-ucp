@@ -73,12 +73,34 @@ function require_admin_searcher(array $acc): void
 }
 
 
-/** May an actor of this rank open an account in that group? */
-function admin_may_view(int $actorRank, int $targetRank, bool $self): bool
+/**
+ * May this actor open an account in that group?
+ *
+ * $canSeeStaff is worked out once per request by admin_can_see_staff() —
+ * rank OR the Staff Management sub-group. Passing the answer rather than the
+ * actor means every call site is looking at the same decision, and there is
+ * one place to change it.
+ */
+function admin_may_view(bool $canSeeStaff, int $targetRank, bool $self): bool
 {
     if ($self) return true;
-    if ($actorRank >= BS_ADMIN_STAFF_RANK) return true;   // Management, Founder
-    return $targetRank < 1;                               // players only
+    if ($canSeeStaff) return true;
+    return $targetRank < 1;      // players only
+}
+
+/**
+ * Who may look at staff accounts: Management and Founders by rank, and any
+ * administrator holding the Staff Management sub-group.
+ *
+ * That second half is the whole reason sub-groups exist. An Admin Lvl 2 on
+ * the staff team needs to open staff accounts to do the job; promoting them
+ * to Management to allow it would hand over group management, bulletins and
+ * announcements as well.
+ */
+function admin_can_see_staff(PDO $pdo, array $acc): bool
+{
+    if ((int)$acc['admin_rank'] >= BS_ADMIN_STAFF_RANK) return true;
+    return function_exists('has_team') && has_team($pdo, (int)$acc['id'], 'staff_management');
 }
 
 /**
@@ -261,7 +283,7 @@ function admin_date(?string $v): ?string
  *
  * @return array{0:string,1:array,2:array,3:?string}  where, args, used, note
  */
-function admin_build_user_query(PDO $pdo, array $in, int $actorRank = 9): array
+function admin_build_user_query(PDO $pdo, array $in): array
 {
     $where = [];
     $args  = [];
@@ -422,12 +444,12 @@ function admin_forum_ids(string $q): array
  * the email, not when they last signed in. The page draws a lock, but the
  * page isn't what's protecting them: those values never leave the server.
  */
-function admin_result_out(array $r, int $actorRank = 9, int $actorId = 0): array
+function admin_result_out(array $r, bool $canSeeStaff = true, int $actorId = 0): array
 {
     $rank = (int)$r['admin_rank'];
     $self = $actorId > 0 && (int)$r['id'] === $actorId;
 
-    if (!admin_may_view($actorRank, $rank, $self)) {
+    if (!admin_may_view($canSeeStaff, $rank, $self)) {
         return [
             'id'       => (int)$r['id'],
             'name'     => (string)$r['username'],
