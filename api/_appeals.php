@@ -555,6 +555,50 @@ function appeal_forum_name(PDO $pdo, int $memberId): array
     return $out;
 }
 
+/**
+ * Every appeal this account has made, newest first.
+ *
+ * Shown to the appellant so they can read back what they were told last
+ * time — a rejection three months ago whose reason they have forgotten is
+ * the single most common cause of the identical appeal arriving again. And
+ * shown to staff, because "has this person appealed before, and what
+ * happened" is the first question a handler asks and the one that used to
+ * need a database query to answer.
+ *
+ * Bodies and comments are not included. This is an index; opening one is a
+ * click away and goes through api/appeal.php, which applies the same rules
+ * it always does.
+ */
+function appeal_history(PDO $pdo, int $accountId, int $exceptId = 0, bool $staff = false): array
+{
+    $waits = appeals_has_waits($pdo);
+    $st = $pdo->prepare(
+        'SELECT id, status, platforms, created_at, concluded_at, concluded_by_name, handler_name'
+        . ($waits ? ', reappeal_at, overruled_at, overruled_by_name' : '') . '
+           FROM ucp_appeals
+          WHERE account_id = ? AND id <> ?
+          ORDER BY created_at DESC, id DESC
+          LIMIT 25'
+    );
+    $st->execute([$accountId, $exceptId]);
+
+    return array_map(function ($a) use ($staff) {
+        return [
+            'id'         => (int)$a['id'],
+            'status'     => (string)$a['status'],
+            'platforms'  => appeal_platforms_in($a['platforms']),
+            'created_at' => (int)$a['created_at'],
+            'concluded_at' => $a['concluded_at'] !== null ? (int)$a['concluded_at'] : null,
+            // Who decided it is a staff fact, the same as everywhere else.
+            'by'         => $staff ? ($a['concluded_by_name'] ?: null) : null,
+            'handler'    => $staff ? ($a['handler_name'] ?: null) : null,
+            'overruled'  => !empty($a['overruled_at']),
+            'reappeal_at'=> isset($a['reappeal_at']) && $a['reappeal_at'] !== null
+                            ? (int)$a['reappeal_at'] : null,
+        ];
+    }, $st->fetchAll());
+}
+
 /** One appeal row, resolved for whoever is looking at it. */
 function appeal_out(PDO $pdo, array $a, array $acc): array
 {
@@ -653,6 +697,9 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
         )),
         'evidence'   => appeal_evidence($pdo, (int)$a['id']),
         'comments'   => appeal_comments($pdo, (int)$a['id'], $staff, $a),
+        /* What else this person has appealed. The appellant sees their own
+           history; a handler sees the same list with who decided each. */
+        'history'    => appeal_history($pdo, (int)$a['account_id'], (int)$a['id'], $staff),
 
         /* Characters aren't linked to the UCP. The field is reported as
            unavailable rather than omitted, so the page can draw it

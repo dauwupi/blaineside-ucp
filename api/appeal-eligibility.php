@@ -31,6 +31,10 @@ ok([
     'punishments' => $e['punishments'],
     'platforms'   => array_map(function ($k, $v) { return ['key' => $k, 'label' => $v]; },
                                array_keys(punish_platforms()), array_values(punish_platforms())),
+    /* Their own past appeals, so the page can offer them a way back to what
+       they were told last time — including from the lock screen, which is
+       the only page a locked account can reach. */
+    'history'     => appeal_history($pdo, (int)$acc['id']),
     'features'    => ['characters' => false],
     'min_words'   => BS_APPEAL_BODY_MIN,
 ]);

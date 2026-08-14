@@ -988,6 +988,27 @@
   .cm.is-verdict .h{background:rgba(226,182,92,.07);border-bottom-color:rgba(226,182,92,.22)}
   .cm.is-overrule{border-color:rgba(127,160,90,.32)}
   .cm.is-overrule .h{background:rgba(127,160,90,.08);border-bottom-color:rgba(127,160,90,.24)}
+
+  /* Long unbroken strings — a pasted log line, a URL, or somebody leaning on
+     one key — have nothing to wrap at, so they ran straight out of the box.
+     pre-wrap keeps the author's line breaks; these let the browser break
+     mid-word when there is no other option. */
+  .ansq .a.text,
+  .cm .body{overflow-wrap:anywhere;word-break:break-word}
+
+  /* ---- past appeals ---- */
+  .hlist{display:flex;flex-direction:column;gap:8px}
+  .hrow{display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border);transition:.14s}
+  .hrow:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .hrow .hst{flex:none}
+  .hrow .hmain{flex:1;min-width:0}
+  .hrow .ht{display:block;font-size:13px;font-weight:600;color:var(--parchment)}
+  .hrow .hs{display:block;font-size:12px;color:var(--text-faint);margin-top:3px;
+    line-height:1.5;text-wrap:pretty}
+  .hrow .hgo{flex:none;color:var(--text-dim);display:grid;place-items:center}
+  .hrow .hgo svg{width:15px;height:15px;stroke-width:2.2}
+  .hrow:hover .hgo{color:var(--parchment)}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -1222,6 +1243,7 @@
     search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
     open:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     none:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
+    chev:'<path d="M9 6l6 6-6 6"/>',
     shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9.5 12l2 2 3.5-4"/>',
     hand:'<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 11V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6v-2.5a1.5 1.5 0 0 1 3 0"/>',
     msg:'<path d="M4 5h16v11H8l-4 3z"/>',
@@ -1292,7 +1314,8 @@
           'staff have said from the appeal itself.</p>'+
           '<div class="acts"><a class="btn primary" href="/dashboard/appeals?id='+ELIG.open+'">'+
           ai('open')+'Open your appeal</a></div>'+
-        '</div></div></div></div>' + processHTML({ can:false, asks:false });
+        '</div></div></div></div>' + historyCard(ELIG.history, false, {hideEmpty:true}) +
+        processHTML({ can:false, asks:false });
       return;
     }
 
@@ -1316,7 +1339,8 @@
           '<h4>'+(soft ? 'You can’t appeal right now'
                        : 'There is nothing on your account to appeal')+'</h4>'+
           '<p>'+escapeHtml(ELIG.why||'')+'</p>'+extra+
-        '</div></div>'+ punishList() +'</div></div>' + processHTML();
+        '</div></div>'+ punishList() +'</div></div>' +
+        historyCard(ELIG.history, false, {hideEmpty:true}) + processHTML();
       return;
     }
 
@@ -1531,7 +1555,8 @@
         '<button class="btn primary" id="goAppeal">Appeal your ban</button>'+
       '</div>'+
 
-      '</div>'+ punishList() +'</div></div>';
+      '</div>'+ punishList() +'</div></div>' +
+      historyCard(ELIG.history, false, {hideEmpty:true});
   }
 
   function wireGate(){
@@ -1850,8 +1875,10 @@
     document.getElementById('qbody').innerHTML =
       lookbarHTML(staff) +
       '<div class="apgrid'+(staff?'':' solo')+'">'+
-        '<div>'+ banCard() + appealCard() + commentsCard() +'</div>'+
-        (staff ? '<div>'+ adminCard() + logCard() +'</div>' : '')+
+        '<div>'+ banCard() + appealCard() + commentsCard() +
+          (staff ? '' : historyCard(d.history, false, {hideEmpty:true})) +'</div>'+
+        (staff ? '<div>'+ adminCard() + logCard() +
+          historyCard(d.history, true, {hideEmpty:true}) +'</div>' : '')+
       '</div>';
 
     wire();
@@ -2035,6 +2062,53 @@
       (d.concluded_by ? ' by <b>'+escapeHtml(d.concluded_by)+'</b>' : '')+
       '. The reason is in the comments below.'+ extra +
       '</p></div></div></div>';
+  }
+
+  /* =====================================================================
+     PAST APPEALS
+
+     The same list on both sides. For the appellant it is "what was I told
+     last time" — a rejection whose reason they have forgotten is the single
+     commonest cause of the identical appeal arriving again. For a handler it
+     is "has this person appealed before, and what happened", which is the
+     first question they ask and used to need a database query to answer.
+
+     An index, not a thread: status, when, and a link. Opening one goes
+     through api/appeal.php and gets the same rules it always does.
+     ===================================================================== */
+  function historyCard(list, staff, opts){
+    opts = opts || {};
+    if(!list || !list.length){
+      return opts.hideEmpty ? '' :
+        '<div class="card"><div class="card-h"><h3>Past appeals</h3></div>'+
+        '<div class="card-b"><div class="fieldnote" style="margin-top:0">'+
+        (staff ? 'This is the first appeal from this account.'
+               : 'You have not appealed anything before.')+'</div></div></div>';
+    }
+
+    var rows = list.map(function(h){
+      var plats = (h.platforms||[]).map(function(k){ return PLAT[k] || k; }).join(', ');
+      return '<a class="hrow" href="/dashboard/appeals?id='+h.id+'">'+
+        '<span class="hst"><span class="pill '+h.status+'">'+h.status+'</span></span>'+
+        '<span class="hmain">'+
+          '<span class="ht">Appeal #'+h.id+(plats ? ' · '+escapeHtml(plats) : '')+'</span>'+
+          '<span class="hs">Sent '+escapeHtml(stamp(h.created_at))+' UTC'+
+            (h.concluded_at ? ' · decided '+escapeHtml(ago(h.concluded_at)) : ' · still open')+
+            (staff && h.by ? ' by '+escapeHtml(h.by) : '')+
+            (h.overruled ? ' · overturned' : '')+
+          '</span>'+
+        '</span>'+
+        '<span class="hgo">'+ai('chev')+'</span>'+
+      '</a>';
+    }).join('');
+
+    return '<div class="card"><div class="card-h"><h3>Past appeals</h3>'+
+      '<span class="aside">'+list.length+(list.length===1?' appeal':' appeals')+'</span></div>'+
+      '<div class="card-b">'+
+        (staff ? '' : '<p class="card-lede" style="margin-bottom:10px">Everything you have '+
+          'appealed before, and what you were told. Open one to read the reason again.</p>')+
+        '<div class="hlist">'+rows+'</div>'+
+      '</div></div>';
   }
 
   /* ---- comments ------------------------------------------------------ */
