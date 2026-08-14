@@ -459,44 +459,45 @@
   .mscope .txt{flex:1;min-width:0;font-size:13px;color:var(--text-dim)}
   .mscope .txt b{color:var(--parchment);font-weight:700}
 
-  /* ---- The member row ------------------------------------------------
-     Three zones: who they are, the two facts worth knowing about an
-     account before you move it, and the control. The tier reads from the
-     rail down the left and the chip under the name. Every value carries
-     its own small label, so the row is readable on its own and there is
-     no column header to keep in sync with it.
+  /* ---- The member row -------------------------------------------------
+     Two sides, one rule: the left is what you READ, the right is what you
+     CHANGE. Group and sub-groups were two controls doing the same job in two
+     different places with two different interactions — a dropdown in the
+     corner and a strip of pills underneath. They are one panel now.
+
+     The left carries a read-only Sub-groups fact alongside the others. It is
+     not a duplicate of the switches opposite: scanning a list, you want to
+     see who holds what without reading the controls, and it is what keeps
+     the two columns the same height.
      -------------------------------------------------------------------- */
-  .mrow{position:relative;display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) 252px;
-    gap:18px;align-items:center;padding:15px 18px 15px 22px;margin-bottom:9px;
-    border:1px solid var(--border-soft);border-radius:14px;background:var(--charcoal-2);
-    overflow:hidden;transition:border-color .15s, background .15s}
-  .mrow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tone)}
-  .mrow:hover{background:var(--charcoal-3);border-color:var(--border)}
+  .mrow{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 318px;
+    margin-bottom:9px;border:1px solid var(--border-soft);border-radius:14px;
+    background:var(--charcoal-2);overflow:hidden;transition:border-color .15s, background .15s}
+  .mrow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tone);z-index:1}
+  .mrow:hover{border-color:var(--border)}
   .mrow.is-you{border-color:rgba(226,182,92,.32)}
 
-
+  .mleft{display:flex;flex-direction:column;justify-content:center;gap:15px;
+    padding:15px 20px 15px 22px;min-width:0}
   .mid-block{min-width:0}
   .mname{display:flex;align-items:center;gap:8px;min-width:0}
   .mname .nm{font-size:15px;font-weight:700;letter-spacing:-.012em;color:var(--parchment);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .msub{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
-  /* .gchip lives in assets/css/tones.css — one chip for every page. */
   .muid{font-size:11.5px;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums}
   .mtag{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
     padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint);white-space:nowrap}
   .mtag.you{color:var(--gold);border-color:rgba(226,182,92,.42);background:rgba(226,182,92,.09)}
   .mtag.bad{color:#e0a99b;border-color:rgba(193,85,63,.42);background:rgba(193,85,63,.1)}
 
-  /* A grid, not a flex row: the labels have to line up down the page, and
-     with flex they slide left and right as the values change width. */
-  .mstats{display:grid;grid-template-columns:118px 126px minmax(0,1fr);gap:18px;align-items:start;min-width:0}
+  .mstats{display:flex;gap:26px;flex-wrap:wrap;min-width:0}
   .mstat{min-width:0}
   .mstat .lab{display:block;font-size:9px;font-weight:800;letter-spacing:.14em;
     text-transform:uppercase;color:var(--text-dim);line-height:1}
   .mstat .val{display:block;font-size:12.5px;font-weight:600;color:var(--parchment);
     margin-top:6px;white-space:nowrap;line-height:1}
   .mstat .val.dim{color:var(--text-faint);font-weight:500}
+  .mstat .val.none{color:var(--text-dim);font-weight:500;font-style:italic}
   .mstat .chips{display:flex;align-items:center;gap:6px;margin-top:5px}
   .flag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
     padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint);white-space:nowrap}
@@ -504,89 +505,77 @@
   .flag.on{color:#9ec178;border-color:rgba(127,160,90,.32);background:rgba(127,160,90,.09)}
   .flag.off{color:var(--stone)}
 
-  /* ---- Sub-groups ----
-     A row of toggles under the name, shown only for the ranks that can hold
-     them. They save on click: a second Apply button next to the group's one
-     would make it ambiguous which button owned which change. */
-  .mteams{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-    margin-top:13px;padding-top:12px;border-top:1px solid var(--border-soft)}
-  .mteams .tlab{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--text-dim);margin-right:2px}
-  .tg{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:100px;
-    font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;transition:.14s;
-    background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint)}
-  .tg:hover:not(:disabled){border-color:var(--charcoal-4);color:var(--parchment)}
-  .tg .tdot{width:7px;height:7px;border-radius:50%;background:var(--charcoal-4);
-    flex:none;transition:.14s}
-  .tg.on{color:#e6d3b2;background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.42)}
-  .tg.on .tdot{background:var(--gold);box-shadow:0 0 0 3px rgba(226,182,92,.18)}
-  /* A sub-group that grants nothing yet still assigns, and says so on hover.
-     It is a real record, not a placeholder. */
-  .tg.soon .tdot{background:var(--stone)}
-  .tg.on.soon{color:var(--text-faint);background:rgba(255,255,255,.03);border-color:var(--charcoal-4)}
-  .tg.on.soon .tdot{background:var(--stone);box-shadow:0 0 0 3px rgba(138,127,112,.16)}
-  .tg:disabled{opacity:.4;cursor:not-allowed}
-  .tg.busy{opacity:.55;cursor:progress}
-  .tnote{font-size:11.5px;color:var(--text-dim);margin-left:2px}
-
-  .mact{display:flex;align-items:center;gap:9px;justify-content:flex-end;flex:none;min-width:0}
-  .mact .btn{flex:none}
-  .mrow select{height:36px;padding:0 32px 0 12px;border-radius:10px;background:var(--charcoal);
-    border:1px solid var(--border);color:var(--parchment);font-size:12.5px;font-family:inherit;
-    appearance:none;flex:1;min-width:0;max-width:160px;
+  /* ---- The Access panel ----
+     Recessed rather than raised: it is a well cut into the card, which is
+     what makes "everything in here changes the account" read without a
+     border shouting it. */
+  .maccess{display:flex;flex-direction:column;gap:9px;padding:15px 17px;
+    background:rgba(0,0,0,.22);border-left:1px solid var(--border-soft)}
+  .maccess .ahead{display:flex;align-items:center;gap:8px;font-size:9px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);line-height:1}
+  .maccess .ahead svg{width:13px;height:13px;stroke-width:2;color:var(--stone);flex:none}
+  .maccess .agrp{display:flex;gap:8px}
+  .maccess select{flex:1;min-width:0;height:36px;padding:0 32px 0 12px;border-radius:10px;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--parchment);
+    font-size:12.5px;font-family:inherit;appearance:none;cursor:pointer;transition:.14s;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7f70' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 10px center;cursor:pointer;transition:.14s}
-  .mrow select:hover{border-color:var(--charcoal-4)}
-  .mrow select:focus{outline:none;border-color:rgba(226,182,92,.5);box-shadow:0 0 0 3px rgba(212,146,58,.13)}
-  /* A disabled Apply has to look disabled — otherwise the row reads as
-     "press me" when the selection hasn't changed. */
-  .mrow .btn:disabled{opacity:.38;cursor:not-allowed;filter:saturate(.5)}
-  .mlock{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;
-    color:var(--text-faint);padding:8px 12px;border-radius:100px;
-    background:var(--charcoal);border:1px solid var(--border);white-space:nowrap}
-  .mlock svg{width:13px;height:13px;stroke-width:2;flex:none}
+    background-repeat:no-repeat;background-position:right 10px center}
+  .maccess select:hover{border-color:var(--charcoal-4)}
+  .maccess select:focus{outline:none;border-color:rgba(226,182,92,.5);box-shadow:0 0 0 3px rgba(212,146,58,.13)}
+  .maccess .btn{flex:none}
+  .maccess .btn:disabled{opacity:.38;cursor:not-allowed;filter:saturate(.5)}
+  .anote{font-size:11.5px;color:var(--text-dim);line-height:1.5}
+  .alock{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;
+    color:var(--text-faint);background:var(--charcoal);border:1px solid var(--border);
+    padding:9px 12px;border-radius:10px}
+  .alock svg{width:13px;height:13px;stroke-width:2;flex:none}
+
+  /* ---- Sub-group checkboxes ----
+     A checkbox, not a pill: it has an off state you can see, which is the
+     one thing the old strip couldn't do. */
+  .aticks{display:flex;flex-direction:column;gap:1px;margin:1px -4px 0}
+  .ck{display:flex;align-items:center;gap:10px;width:100%;padding:4px 8px;border-radius:8px;
+    background:transparent;border:1px solid transparent;cursor:pointer;transition:.13s;
+    font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text-faint);text-align:left;
+    white-space:nowrap}
+  .ck:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
+  .ck .box{width:16px;height:16px;border-radius:5px;flex:none;border:1.5px solid var(--charcoal-4);
+    display:grid;place-items:center;transition:.14s}
+  .ck .box svg{width:11px;height:11px;stroke-width:3;color:#1a1206;opacity:0;transition:.12s}
+  .ck.on{color:var(--parchment)}
+  .ck.on .box{background:linear-gradient(145deg,var(--gold),var(--amber));border-color:transparent}
+  .ck.on .box svg{opacity:1}
+  /* A sub-group that grants nothing yet still assigns — it is a real record,
+     so it gets a real tick, just not a gold one. */
+  .ck.soon.on .box{background:var(--stone);border-color:transparent}
+  .ck.soon.on .box svg{color:#16130f}
+  .ck .tail{margin-left:auto;font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-dim);border:1px solid var(--border-soft);border-radius:100px;padding:2px 6px;flex:none}
+  .ck:disabled{opacity:.42;cursor:not-allowed}
+  .ck.busy{opacity:.5;cursor:progress}
 
   .pcount{font-size:12.5px;color:var(--text-faint);font-weight:600;font-variant-numeric:tabular-nums}
 
-  /* The stats and the control drop below the name rather than squeezing:
-     a truncated date is worse than a taller row. */
-  @media (max-width:1180px){
-    .mrow{grid-template-columns:minmax(0,1fr) auto;row-gap:14px}
-    .mstats{grid-column:1/3;grid-template-columns:auto auto minmax(0,1fr);gap:26px}
-    .mact{grid-column:1/3;justify-content:flex-start}
+  /* The panel drops under the row rather than squeezing: a 296px column on a
+     laptop would take the dates with it. */
+  @media (max-width:1120px){
+    .mrow{grid-template-columns:minmax(0,1fr)}
+    .maccess{border-left:none;border-top:1px solid var(--border-soft);
+      flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px}
+    .maccess .ahead{width:100%}
+    .maccess .arow{flex:none;width:auto}
+    .maccess select{width:170px;flex:none}
+    .aticks{flex-direction:row;flex-wrap:wrap;gap:6px;margin:0}
+    .ck{width:auto;border:1px solid var(--border);background:var(--charcoal)}
+    .anote{width:100%}
   }
   @media (max-width:620px){
-    .mrow{grid-template-columns:minmax(0,1fr);padding:15px 15px 15px 19px}
-    .mstats{grid-column:1;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
-    .mstat:nth-child(3){grid-column:1/-1}
-    .mact{grid-column:1;flex-wrap:wrap}
-    .mrow select{max-width:none}
-    .gpick{width:100%}
-    .mtools .msearch{max-width:none;width:100%}
-    .mcount{margin-left:0}
+    .mleft{padding:15px 15px 15px 19px}
+    .mstats{gap:16px 22px}
+    .maccess{flex-direction:column;align-items:stretch}
+    .maccess select{width:auto;flex:1}
+    .ck{width:100%}
   }
-
-  /* ===== ACCOUNT MENU =====
-     The same component as the profile page. It used to exist only there, so
-     the button in the corner of every other page looked interactive and did
-     nothing. */
-  .account{position:relative}
-  .account-menu{position:absolute;right:0;top:calc(100% + 10px);width:230px;
-    background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
-    box-shadow:0 24px 50px -18px rgba(0,0,0,.8);padding:8px;z-index:60}
-  .account-menu .mhead{padding:8px 10px 12px;border-bottom:1px solid var(--border-soft);margin-bottom:6px}
-  .account-menu .mhead .n{font-size:14px;font-weight:700;color:var(--parchment)}
-  .account-menu .mhead .rr{font-size:12px;color:var(--amber);font-weight:600;margin-top:1px}
-  .menu-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;
-    font-size:13.5px;font-weight:500;color:var(--text-faint);cursor:pointer;transition:.13s;text-decoration:none}
-  .menu-item svg{width:16px;height:16px;stroke-width:1.9;flex:none}
-  .menu-item:hover{background:var(--charcoal-3);color:var(--parchment)}
-  .menu-item.on{background:var(--charcoal-3);color:var(--parchment)}
-  .menu-item.on svg{color:var(--gold)}
-  .menu-item.danger{color:#d98a78}
-  .menu-item.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6}
-  .menu-sep{height:1px;background:var(--border-soft);margin:6px 4px}
-  @media (max-width:760px){ .account-menu{width:220px;right:-4px} }
 
   /* toast */
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);z-index:200;
@@ -933,16 +922,10 @@
     if(e.key === 'Escape' && PICK_OPEN) setPickOpen(false);
   });
 
-  function rowHTML(m){
-    const opts = ASSIGNABLE.map(function(r){
-      return '<option value="' + r + '"' + (r === m.rank ? ' selected' : '') + '>' +
-             escapeHtml(rankName(r)) + '</option>';
-    }).join('');
-    /* Someone whose group is above what this actor may hand out still needs
-       their group SHOWN, so it goes in as a disabled option. */
-    const missing = !ASSIGNABLE.includes(m.rank)
-      ? '<option value="' + m.rank + '" selected disabled>' + escapeHtml(m.role) + '</option>' : '';
+  const ICO_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  const ICO_TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>';
 
+  function rowHTML(m){
     const tag = m.self ? '<span class="mtag you">You</span>' : '';
     const bad = m.status !== 'active' ? '<span class="mtag bad">' + escapeHtml(m.status) + '</span>' : '';
 
@@ -954,60 +937,95 @@
       ? '<span class="flag on" title="Forum account linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>Forum</span>'
       : '<span class="flag off" title="No forum account linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>No forum</span>';
 
-    const act = m.editable
-      ? '<select data-rank="' + m.id + '" aria-label="Group for ' + escapeHtml(m.name) + '">' + missing + opts + '</select>' +
-        '<button class="btn sm primary" data-apply="' + m.id + '" disabled>Apply</button>'
-      : '<span class="mlock" title="' + escapeHtml(m.blocked_by || '') + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' +
-          (m.self ? 'Your own group' : 'Founder only') + '</span>';
+    /* The read-only side of the sub-groups. Only for ranks that can hold them
+       — on a Member's row it would be a permanent "None" answering a question
+       nobody asked, and it is what balances the two columns. */
+    const held = m.teams || [];
+    const teamStat = (TEAMS.length && m.team_eligible)
+      ? '<div class="mstat"><span class="lab">Sub-groups</span>' +
+        (held.length
+          ? '<span class="val">' + escapeHtml(held.map(teamLabel).join(', ')) + '</span>'
+          : '<span class="val none">None</span>') + '</div>'
+      : '';
 
     return '<div class="mrow ' + toneOf(m.rank) + (m.self ? ' is-you' : '') + '" data-id="' + m.id + '">' +
-      '<div class="mid-block">' +
-        '<div class="mname"><span class="nm">' + escapeHtml(m.name) + '</span>' + tag + bad + '</div>' +
-        '<div class="msub"><span class="gchip">' + escapeHtml(m.role) + '</span>' +
-          '<span class="muid">#' + m.id + '</span></div>' +
+
+      '<div class="mleft">' +
+        '<div class="mid-block">' +
+          '<div class="mname"><span class="nm">' + escapeHtml(m.name) + '</span>' + tag + bad + '</div>' +
+          '<div class="msub"><span class="gchip">' + escapeHtml(m.role) + '</span>' +
+            '<span class="muid">#' + m.id + '</span></div>' +
+        '</div>' +
+        '<div class="mstats">' +
+          '<div class="mstat"><span class="lab">Member since</span>' +
+            '<span class="val">' + escapeHtml(dateOf(m.created_at)) + '</span></div>' +
+          '<div class="mstat"><span class="lab">Last sign-in</span>' +
+            '<span class="val ' + (m.last_login ? '' : 'dim') + '" title="' + escapeHtml(exactOf(m.last_login)) + '">' +
+            escapeHtml(agoOf(m.last_login)) + '</span></div>' +
+          '<div class="mstat"><span class="lab">Security</span>' +
+            '<span class="chips">' + twofa + forum + '</span></div>' +
+          teamStat +
+        '</div>' +
       '</div>' +
-      '<div class="mstats">' +
-        '<div class="mstat"><span class="lab">Member since</span>' +
-          '<span class="val">' + escapeHtml(dateOf(m.created_at)) + '</span></div>' +
-        '<div class="mstat"><span class="lab">Last sign-in</span>' +
-          '<span class="val ' + (m.last_login ? '' : 'dim') + '" title="' + escapeHtml(exactOf(m.last_login)) + '">' +
-          escapeHtml(agoOf(m.last_login)) + '</span></div>' +
-        '<div class="mstat"><span class="lab">Security</span>' +
-          '<span class="chips">' + twofa + forum + '</span></div>' +
-      '</div>' +
-      '<div class="mact">' + act + '</div>' +
-      teamsHTML(m) +
+
+      '<div class="maccess">' + accessHTML(m) + '</div>' +
     '</div>';
   }
 
-  /* ---- sub-groups, per row ----
-     Only drawn for accounts whose rank can hold them. For everyone else the
-     strip is absent rather than greyed: a Member's row showing three
-     disabled switches is three things to read that will never apply. */
-  function teamsHTML(m){
-    if(!TEAMS.length || !m.team_eligible) return '';
+  /** Everything that changes this account, in one panel. */
+  function accessHTML(m){
+    const head = '<span class="ahead">' + ICO_LOCK + 'Access</span>';
+
+    if(!m.editable){
+      return head +
+        '<span class="alock" title="' + escapeHtml(m.blocked_by || '') + '">' + ICO_LOCK +
+          (m.self ? 'Your own group' : 'Founder only') + '</span>' +
+        '<span class="anote">' + escapeHtml(m.blocked_by || '') + '</span>';
+    }
+
+    const opts = ASSIGNABLE.map(function(r){
+      return '<option value="' + r + '"' + (r === m.rank ? ' selected' : '') + '>' +
+             escapeHtml(rankName(r)) + '</option>';
+    }).join('');
+    /* Someone whose group is above what this actor may hand out still needs
+       their group SHOWN, so it goes in as a disabled option. */
+    const missing = !ASSIGNABLE.includes(m.rank)
+      ? '<option value="' + m.rank + '" selected disabled>' + escapeHtml(m.role) + '</option>' : '';
+
+    let out = head +
+      '<div class="agrp">' +
+        '<select data-rank="' + m.id + '" aria-label="Group for ' + escapeHtml(m.name) + '">' + missing + opts + '</select>' +
+        '<button class="btn sm primary" data-apply="' + m.id + '" disabled>Apply</button>' +
+      '</div>';
+
+    if(!TEAMS.length) return out;
+
+    if(!m.team_eligible){
+      return out + '<span class="anote">' + escapeHtml(m.team_why || '') + '</span>';
+    }
+    if(!TEAMS_OK){
+      return out + '<span class="anote">Sub-groups need docs/migration-subgroups.sql running first.</span>';
+    }
 
     const held = m.teams || [];
-    const canEdit = m.editable && TEAMS_OK;
-
-    const toggles = TEAMS.map(function(t){
+    out += '<div class="aticks">' + TEAMS.map(function(t){
       const on = held.indexOf(t.key) > -1;
-      const title = t.live
-        ? t.blurb + ' ' + (t.grants || []).join(' ')
-        : (t.why || t.blurb);
-      return '<button class="tg ' + (on ? 'on ' : '') + (t.live ? '' : 'soon') + '"' +
-        ' data-team="' + t.key + '" data-for="' + m.id + '"' +
-        ' aria-pressed="' + on + '" title="' + escapeHtml(title) + '"' +
-        (canEdit ? '' : ' disabled') + '>' +
-        '<span class="tdot"></span>' + escapeHtml(t.label) + '</button>';
-    }).join('');
+      const title = t.live ? (t.blurb + ' ' + (t.grants || []).join(' ')) : (t.why || t.blurb);
+      return '<button class="ck ' + (on ? 'on ' : '') + (t.live ? '' : 'soon') + '"' +
+        ' data-team="' + t.key + '" data-for="' + m.id + '" aria-pressed="' + on + '"' +
+        ' title="' + escapeHtml(title) + '">' +
+        '<span class="box">' + ICO_TICK + '</span>' + escapeHtml(t.label) +
+        (t.live ? '' : '<span class="tail">Soon</span>') +
+      '</button>';
+    }).join('') + '</div>';
 
-    const note = !TEAMS_OK
-      ? '<span class="tnote">Run docs/migration-subgroups.sql to switch these on.</span>'
-      : '';
+    return out;
+  }
 
-    return '<div class="mteams"><span class="tlab">Sub-groups</span>' + toggles + note + '</div>';
+  /** Label for a sub-group key, falling back to the key itself. */
+  function teamLabel(key){
+    for(var i=0;i<TEAMS.length;i++) if(TEAMS[i].key === key) return TEAMS[i].label;
+    return key;
   }
 
   /* The picker already names the open group, so the scope bar only earns
