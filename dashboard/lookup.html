@@ -275,20 +275,23 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .tabpanel[hidden]{display:none}
 
-/* ---- profile three-column split ----
-   Actions on the far left, the read-only panels in the middle, the account
-   summary on the right. The actions are what an admin opened this page to
-   use, so they take the outside edge instead of sitting on top of
-   Characters and pushing it down the page.
+/* ---- profile columns ----
+   The default is the two columns this page has always had, at the widths
+   it has always had them: reading column, then the account summary. The
+   Administrative actions card sits ABOVE the reading column here.
 
-   Both outer columns stick; the middle column is the only one long enough
-   to scroll past them. If the actions card is hidden — a viewer with
-   nothing they may do, or a response that never arrived — the column
-   collapses rather than leaving a 300px hole. */
-.pgrid{display:grid;grid-template-columns:300px minmax(0,1fr) 336px;gap:20px;align-items:start}
-.pgrid > .col-a,
-.pgrid > .col-r{position:sticky;top:calc(var(--header-h) + 20px)}
-.pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 336px}
+   On a wide screen the actions move out into their own column on the
+   outside edge — see the min-width rule further down. They are given room
+   the page didn't have rather than taken out of the middle: taking 300px
+   from Characters and Linked accounts to hold six short buttons is a bad
+   trade, and it is the whole reason this isn't a three-column layout by
+   default. */
+.pgrid{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:20px;align-items:start}
+.pgrid > .col-a{grid-column:1;grid-row:1}
+.pgrid > .col-l{grid-column:1;grid-row:2}
+.pgrid > .col-r{grid-column:2;grid-row:1 / span 2;
+  position:sticky;top:calc(var(--header-h) + 20px)}
+.pgrid > .col-a > .card{margin-bottom:20px}
 .pgrid:has(> .col-a > .card[hidden]) > .col-a{display:none}
 
 /* ---- settings row: label + description left, control right ---- */
@@ -687,23 +690,51 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-/* Three columns need roughly 1000px of content width before the middle one
-   starts squeezing. Below that the actions fold back on top of the reading
-   column — the layout this page had before — rather than becoming a strip
-   too narrow to read. */
-@media (max-width:1360px){
-  .pgrid,
+/* ---- the wide layout: actions outside the column ----
+   Past this width the page has room to spare on both sides of its 1180px
+   column, and the Administrative actions card moves out into it.
+
+   Everything above the tabs — the read-only bar, the lock banner, the
+   identity card, the tabs themselves — stays at its normal width and is
+   pulled to the RIGHT edge, so it lines up exactly with Characters and
+   Account. Only the actions card sticks out to the left. The reading
+   column and the account summary keep the widths they have at every other
+   size: the extra space comes from the page margin, not from them.
+
+   1780px is where the sums work out. Below it there isn't enough margin to
+   take a 300px column without stealing from the middle, so the actions
+   fold back above Characters rather than squeezing everything.
+
+   The head blocks are inset by exactly one actions column plus one gap,
+   rather than given a width of their own, so they stay flush with the
+   reading column at every width above the breakpoint. */
+@media (min-width:1780px){
+  .content{max-width:1600px}
+  .content > #flash,
+  .content > .lookbar,
+  .content > #lockBanner,
+  .content > .card,
+  .content > .tabbar,
+  .content > #p-record{margin-left:320px}
+
+  .pgrid{grid-template-columns:300px minmax(0,1fr) 336px}
+  .pgrid > .col-a{grid-column:1;grid-row:1;
+    position:sticky;top:calc(var(--header-h) + 20px)}
+  .pgrid > .col-l{grid-column:2;grid-row:1}
+  .pgrid > .col-r{grid-column:3;grid-row:1}
+  .pgrid > .col-a > .card{margin-bottom:0}
+  .actlist{grid-template-columns:1fr}
+
+  /* Nothing to show in it — close the column rather than leave a gap. */
   .pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 336px}
-  .pgrid > .col-a{position:static;grid-column:1;grid-row:1}
-  .pgrid > .col-l{grid-column:1;grid-row:2}
-  .pgrid > .col-r{grid-column:2;grid-row:1 / span 2}
-  .pgrid > .col-a > .card{margin-bottom:20px}
+  .pgrid:has(> .col-a > .card[hidden]) > .col-l{grid-column:1}
+  .pgrid:has(> .col-a > .card[hidden]) > .col-r{grid-column:2}
 }
+
 @media (max-width:1140px){
   .rec-row{grid-template-columns:104px 104px minmax(0,1fr) 128px}
   .rec-row .st{grid-column:1 / -1;padding-top:2px}
-  .pgrid,
-  .pgrid:has(> .col-a > .card[hidden]){grid-template-columns:1fr}
+  .pgrid{grid-template-columns:1fr}
   .pgrid > .col-a,
   .pgrid > .col-l,
   .pgrid > .col-r{grid-column:1;grid-row:auto}
@@ -807,11 +838,12 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   /* The card sits in a 300px column, so it gives back the page's usual 22px
      of card padding — at this width that gutter is worth more as text. */
   .actcard .card-h{padding-left:17px;padding-right:17px}
-  /* The Locked chip wraps onto its own line at this width; keep it on the
-     right where it sits when it doesn't. */
-  .actcard .card-h .aside{margin-left:auto}
   .actcard .card-b{padding-left:15px;padding-right:15px}
-  .actlist{display:flex;flex-direction:column;gap:7px}
+  /* Below the wide breakpoint this card spans the reading column, and a
+     single stack of six rows leaves the SOON badge stranded half a screen
+     from its label. It tiles instead, and goes back to one column when it
+     moves out to the side. */
+  .actlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:7px}
 
   /* Two rows rather than one: icon and name on the first, the explanation
      beneath it across the full width. In a narrow column a single flex line
@@ -1458,10 +1490,11 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
           '</p></div></div>'
       : '';
 
-    $('actAside').innerHTML = locked
-      ? '<span class="chip stop" style="font-size:10.5px;padding:3px 9px">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Locked</span>'
-      : '';
+    /* No status chip on this card. The banner above the page says the
+       account is locked, the identity card carries a Locked chip, and the
+       Account panel has a Status row — a fourth copy inside the actions
+       header was repetition, not reassurance. */
+    $('actAside').innerHTML = '';
 
     var acts = [];
 
