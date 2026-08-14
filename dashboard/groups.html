@@ -517,7 +517,10 @@
   .mk.on{color:#9fae8d;border-color:rgba(127,160,90,.24);background:rgba(127,160,90,.06)}
   .mk.on.forum{color:#b6a382;border-color:rgba(212,146,58,.24);background:rgba(212,146,58,.06)}
   .mk.on.dis{color:#9298b5;border-color:rgba(123,132,200,.26);background:rgba(123,132,200,.07)}
-  .mk.off{color:var(--text-dim);background:transparent;border-color:var(--border-soft)}
+  /* --border-soft is a divider colour: right for a hairline between rows,
+     invisible as the outline of a chip. An off mark still has to read as a
+     thing with an edge, or "No Discord" looks like stray text. */
+  .mk.off{color:var(--text-dim);background:var(--charcoal);border-color:var(--charcoal-4)}
   .mk.off svg{opacity:.55}
 
   /* ---- sub-groups ----
@@ -652,7 +655,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.5">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.6">
 </head>
 <body>
 
@@ -748,7 +751,7 @@
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<script src="/assets/js/ucp.js?v=2.4.5"></script>
+<script src="/assets/js/ucp.js?v=2.4.6"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   const SIDEBAR=[

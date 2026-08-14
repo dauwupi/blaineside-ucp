@@ -275,6 +275,12 @@
      ===================================================================== */
   var QS_CSS = [
     '.searchbox{position:relative}',
+    /* Every page styles `input:focus` with the amber ring meant for form
+       fields. The top-bar search is chrome, not a form — the ring drew an
+       orange box around the whole thing. Cancelled here, where the widget
+       lives, rather than in five page stylesheets. */
+    '.searchbox input:focus{outline:none!important;box-shadow:none!important;border-color:transparent!important}',
+    '.searchbox:focus-within{border-color:var(--charcoal-4,#2b2723)}',
     '.qs-menu{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:70;padding:6px;',
       'background:var(--charcoal-2,#1a1815);border:1px solid var(--border,#26221e);border-radius:13px;',
       'box-shadow:0 26px 54px -20px rgba(0,0,0,.85);max-height:min(60vh,420px);overflow-y:auto}',
