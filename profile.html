@@ -1879,10 +1879,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       { label:'My Requests',           href:'/dashboard/refunds#mine' },
       { label:'Refund Request Panel',  href:'/dashboard/refunds#panel', min:3 },
     ]},
-    { label:'Ban Appeals', icon:'gavel', children:[
-      { label:'Appeal your Punishment', href:'/dashboard/appeals#submit' },
-      { label:'Ban Appeal Panel',       href:'/dashboard/appeals#panel', min:1 },
-    ]},
+    /* No children. The rules, the form, the queue and one appeal are all
+       one page now, and which of them you get is decided there — so a
+       sub-menu would be two clicks to the same place. */
+    { label:'Ban Appeals', icon:'gavel', href:'/dashboard/appeals' },
     { label:'Staff Reports', icon:'flag', children:[
       { label:'Submit a Staff Report', href:'/dashboard/reports#submit' },
       { label:'Staff Report Panel',    href:'/dashboard/reports#panel',

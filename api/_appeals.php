@@ -382,6 +382,65 @@ function appeal_log_add(PDO $pdo, int $appealId, array $actor, string $action,
                 $action, $detail, time()]);
 }
 
+/**
+ * The forum display name and profile URL for a member id.
+ *
+ * A member number is not an identity. A handler deciding a forum ban needs
+ * the name they will search for and a link they can open, not a number they
+ * have to paste into a URL by hand.
+ *
+ * Cached in the session for ten minutes, and failure is silent: a slow or
+ * unreachable forum must not stop an appeal from rendering. The id is always
+ * shown, so the page degrades to what it had before rather than to nothing.
+ */
+function appeal_forum_name(PDO $pdo, int $memberId): array
+{
+    global $CONFIG;
+    $base = rtrim((string)($CONFIG['forum']['url'] ?? 'https://forum.blaineside.com'), '/');
+    $out  = ['name' => null, 'url' => null];
+
+    $cache = $_SESSION['appeal_forum_names'][$memberId] ?? null;
+    if (is_array($cache) && (int)($cache['at'] ?? 0) > time() - 600) {
+        return ['name' => $cache['name'], 'url' => $cache['url']];
+    }
+
+    require_once __DIR__ . '/_ips.php';
+    $url = function_exists('ips_endpoint') ? ips_endpoint('core/members/' . $memberId) : null;
+    if ($url !== null && function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 5,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+            CURLOPT_USERPWD        => ips_userpwd(),
+        ]);
+        $body = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($code === 200 && is_string($body)) {
+            $d = json_decode($body, true);
+            if (is_array($d) && !empty($d['name'])) {
+                $out['name'] = (string)$d['name'];
+                // Friendly URLs are off on this forum, so build the form that
+                // works either way rather than trusting profileUrl.
+                $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $out['name']));
+                $out['url'] = $base . '/index.php?/profile/' . $memberId . '-'
+                            . trim($slug, '-') . '/';
+            }
+        }
+    }
+    if ($out['url'] === null) {
+        // No name, but the profile is still reachable by id alone.
+        $out['url'] = $base . '/index.php?/profile/' . $memberId . '/';
+    }
+
+    $_SESSION['appeal_forum_names'][$memberId] =
+        ['name' => $out['name'], 'url' => $out['url'], 'at' => time()];
+    return $out;
+}
+
 /** One appeal row, resolved for whoever is looking at it. */
 function appeal_out(PDO $pdo, array $a, array $acc): array
 {
@@ -411,11 +470,18 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
          * on a page they may not have open, for a name the player may have
          * spelled differently — is the sort of small friction that turns a
          * two-minute decision into a ten-minute one. */
+        $fname = null; $furl = null;
+        if ($row['forum_member_id'] !== null) {
+            $f = appeal_forum_name($pdo, (int)$row['forum_member_id']);
+            $fname = $f['name']; $furl = $f['url'];
+        }
         $accounts = [
             'forum' => [
                 'linked'    => $row['forum_member_id'] !== null,
                 'member_id' => $row['forum_member_id'] !== null
                                ? (int)$row['forum_member_id'] : null,
+                'name'      => $fname,
+                'url'       => $furl,
             ],
             'discord' => [
                 'linked'    => !empty($row['discord_username']),

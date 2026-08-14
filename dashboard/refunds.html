@@ -667,10 +667,9 @@
       {label:'My Requests',href:'/dashboard/refunds#mine'},
       {label:'Refund Request Panel',href:'/dashboard/refunds#panel',min:3},
     ]},
-    {label:'Ban Appeals',icon:'gavel',children:[
-      {label:'Appeal your Punishment',href:'/dashboard/appeals#submit'},
-      {label:'Ban Appeal Panel',href:'/dashboard/appeals#panel',min:1},
-    ]},
+    /* One page decides which view you get — a sub-menu would be two clicks
+       to the same place. */
+    {label:'Ban Appeals',icon:'gavel',href:'/dashboard/appeals'},
     {label:'Staff Reports',icon:'flag',children:[
       {label:'Submit a Staff Report',href:'/dashboard/reports#submit'},
       {label:'Staff Report Panel',href:'/dashboard/reports#panel',min:8,team:'staff_management'},
