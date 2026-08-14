@@ -582,8 +582,11 @@
   .note-a h4{font-size:14px;font-weight:700;color:#e3bd72}
   .note-a.bad h4{color:#dfa294}
   .note-a.good h4{color:#a8bb92}
+  /* 64ch was a reading measure borrowed from body copy. These are one or
+     two sentences inside a full-width card, and capping them folds a line
+     that had room to sit flat. */
   .note-a p{font-size:13px;color:var(--text-faint);line-height:1.65;margin-top:5px;
-    max-width:64ch;text-wrap:pretty}
+    text-wrap:pretty}
   .note-a .acts{margin-top:13px;display:flex;gap:10px;flex-wrap:wrap}
 
   /* ---- status pills ---- */
@@ -722,6 +725,11 @@
   .askrow .qn{flex:none;width:22px;color:var(--text-dim);font-weight:800;font-size:12px;
     font-variant-numeric:tabular-nums}
   .askrow b{color:var(--parchment);font-weight:600}
+
+  /* One block per punishment inside the one card. */
+  .punb + .punb{margin-top:20px;padding-top:20px;border-top:1px solid var(--charcoal-4)}
+  .punh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;font-weight:700;
+    color:var(--parchment);padding-bottom:2px}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>

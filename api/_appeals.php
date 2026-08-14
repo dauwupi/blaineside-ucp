@@ -97,9 +97,16 @@ function appeal_conclude_block(PDO $pdo, array $acc, array $appeal, ?array $puni
     if ($appeal['status'] !== 'pending') {
         return 'This appeal was already ' . $appeal['status'] . '.';
     }
-    if ($punishment !== null && (int)($punishment['issued_by'] ?? 0) === (int)$acc['id']) {
-        return 'You issued this punishment, so you can\'t decide the appeal against it. '
-             . 'Hand it to another administrator.';
+    /* $punishment is really the whole list for this appeal — an appeal can
+       cover more than one. Issuing ANY of them bars you from deciding it;
+       "I only gave them the forum ban, somebody else gave the game ban" is
+       not a reason to sit in judgement on both. */
+    if ($punishment !== null) {
+        $list = isset($punishment[0]) && is_array($punishment[0]) ? $punishment : [$punishment];
+        if (appeal_issued_any($list, (int)$acc['id'])) {
+            return 'You issued one of the punishments under appeal, so you can\'t decide it. '
+                 . 'Hand it to another administrator.';
+        }
     }
     return null;
 }
@@ -144,8 +151,10 @@ function appeal_eligibility(PDO $pdo, array $acc): array
     }
 
     if (!$active) {
-        $out['why'] = 'There is nothing on your account to appeal. Kicks and warnings can\'t be '
-                    . 'appealed — only a ban or a user lock.';
+        /* The page puts this under a heading that already says there is
+           nothing to appeal. Repeating it there cost a line and said
+           nothing, so this is only the part the heading doesn't cover. */
+        $out['why'] = 'Kicks and warnings can\'t be appealed — only a ban or a user lock.';
         return $out;
     }
 
@@ -182,20 +191,60 @@ function appeal_eligibility(PDO $pdo, array $acc): array
 }
 
 /**
- * The punishment an appeal is really about.
+ * Every punishment an appeal is against.
  *
- * Normally the row it was submitted against. Falls back to whatever is in
- * force on the account, so an appeal whose punishment row was deleted
- * still renders rather than 500ing on a staff member mid-decision.
+ * An appeal can cover more than one: somebody banned in game AND on the
+ * forums writes one appeal and ticks two boxes, and it would be absurd to
+ * make them write the same account of the same evening twice and wait for
+ * two verdicts on it.
+ *
+ * ucp_appeal_punishments is the real answer. ucp_appeals.punishment_id is
+ * kept as the first of them, because a single id is what the queue and the
+ * "who issued this" check want, and because appeals written before the
+ * join table existed have nothing else.
+ *
+ * Falls back to what is in force on the account if the rows are gone, so an
+ * appeal whose punishment was deleted still renders rather than 500ing on a
+ * staff member mid-decision.
  */
-function appeal_punishment(PDO $pdo, array $appeal): ?array
+function appeal_punishments(PDO $pdo, array $appeal): array
 {
+    $out = [];
+    try {
+        $st = $pdo->prepare(
+            'SELECT p.* FROM ucp_appeal_punishments ap
+               JOIN ucp_punishments p ON p.id = ap.punishment_id
+              WHERE ap.appeal_id = ?
+              ORDER BY p.issued_at ASC, p.id ASC'
+        );
+        $st->execute([(int)$appeal['id']]);
+        $out = $st->fetchAll();
+    } catch (Throwable $e) {
+        // Join table not migrated yet — fall through to the single id.
+    }
+    if ($out) return $out;
+
     if ($appeal['punishment_id'] !== null) {
         $p = punish_by_id($pdo, (int)$appeal['punishment_id']);
-        if ($p) return $p;
+        if ($p) return [$p];
     }
-    $active = punish_active_for($pdo, (int)$appeal['account_id']);
-    return $active ? $active[0] : null;
+    return punish_active_for($pdo, (int)$appeal['account_id']);
+}
+
+/** The first of them — what a single-punishment check wants. */
+function appeal_punishment(PDO $pdo, array $appeal): ?array
+{
+    $all = appeal_punishments($pdo, $appeal);
+    return $all ? $all[0] : null;
+}
+
+/** Did this person issue ANY of the punishments under appeal? */
+function appeal_issued_any(array $punishments, int $accountId): bool
+{
+    foreach ($punishments as $p) {
+        if ((int)($p['issued_by'] ?? 0) === $accountId) return true;
+    }
+    return false;
 }
 
 /** Comma-separated platform keys -> a clean, ordered list. */
@@ -310,7 +359,7 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
     $row = $st->fetch();
     if ($row) $owner = (string)$row['username'];
 
-    $p = appeal_punishment($pdo, $a);
+    $ps = appeal_punishments($pdo, $a);
 
     /* Whether the appellant is told which administrator issued the
        punishment. Off by default, and there is no switch yet — the action
@@ -333,7 +382,20 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
         'concluded_at' => $a['concluded_at'] !== null ? (int)$a['concluded_at'] : null,
         'concluded_by' => $staff ? ($a['concluded_by_name'] ?: null) : null,
 
-        'punishment' => $p ? punish_out($p, $showIssuer) : null,
+        /* Every punishment under appeal, in the order they were issued.
+           'punishment' stays as the first for anything that wants one. */
+        'punishments' => array_map(function ($p) use ($showIssuer) {
+            return punish_out($p, $showIssuer);
+        }, $ps),
+        'punishment' => $ps ? punish_out($ps[0], $showIssuer) : null,
+
+        /* Platforms the appellant ticked that have nothing on file. Worth
+           saying out loud: it is usually a misread of the question, and a
+           handler who can't see the claim can't correct it. */
+        'unmatched' => array_values(array_diff(
+            appeal_platforms_in($a['platforms']),
+            array_map(function ($p) { return punish_platform_of((string)$p['kind']); }, $ps)
+        )),
         'evidence'   => appeal_evidence($pdo, (int)$a['id']),
         'comments'   => appeal_comments($pdo, (int)$a['id'], $staff),
 
@@ -346,11 +408,12 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
     ];
 
     if ($staff) {
+        $block = appeal_conclude_block($pdo, $acc, $a, $ps ?: null);
         $out['log']    = appeal_log($pdo, (int)$a['id']);
         $out['viewer'] = [
             'staff'        => true,
-            'may_conclude' => appeal_conclude_block($pdo, $acc, $a, $p) === null,
-            'why'          => appeal_conclude_block($pdo, $acc, $a, $p),
+            'may_conclude' => $block === null,
+            'why'          => $block,
             'is_handler'   => (int)($a['handler_id'] ?? 0) === (int)$acc['id'],
         ];
     } else {

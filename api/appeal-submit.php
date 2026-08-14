@@ -52,27 +52,33 @@ if (mb_strlen($body) > BS_APPEAL_BODY_MAX) {
        . number_format(BS_APPEAL_BODY_MAX) . ' characters.', 422);
 }
 
-/* Which punishment this is against.
+/* Which punishments this is against — plural.
  *
- * Chosen here rather than by the player: they tick a platform, and the
- * server matches it to a row that is actually in force. If they tick two,
- * the appeal attaches to the oldest still-active punishment among them —
- * the one that has been standing longest is the one being appealed, and
- * the others are visible on the record anyway. */
-$active = punish_active_for($pdo, (int)$acc['id']);
-$match  = null;
+ * Somebody banned in game AND on the forums writes ONE appeal and ticks two
+ * boxes. Making them write the same account of the same evening twice, and
+ * wait for two verdicts on it, would be absurd; so every in-force,
+ * appealable punishment on a ticked platform is attached.
+ *
+ * Chosen by the server rather than the player: they tick a platform, and it
+ * matches rows that are actually in force. A ticked platform with nothing
+ * on file is NOT an error — a player may well believe they were also banned
+ * on Discord — so it is recorded in `platforms` and shown to the handler as
+ * a claim with nothing behind it. Only ticking nothing that matches at all
+ * is refused, because then there is no punishment to appeal. */
+$active  = punish_active_for($pdo, (int)$acc['id']);
+$matched = [];
 foreach ($active as $p) {
     if (empty($p['appealable'])) continue;
     if (!in_array(punish_platform_of((string)$p['kind']), $platforms, true)) continue;
-    if ($match === null || (int)$p['issued_at'] < (int)$match['issued_at']) $match = $p;
+    $matched[] = $p;
 }
-if ($match === null) {
-    /* They ticked a platform they aren't punished on. Not a silent
-       fallback: it is usually a misread of the question, and attaching the
-       appeal to the wrong punishment wastes the handler's time. */
+usort($matched, function ($a, $b) { return (int)$a['issued_at'] <=> (int)$b['issued_at']; });
+
+if (!$matched) {
     fail('Nothing on your account matches where you say you were banned. Tick the platform the '
        . 'punishment is actually on.', 422);
 }
+$match = $matched[0];   // the oldest, kept on the appeal row itself
 
 $now = time();
 $pdo->prepare(
@@ -83,6 +89,13 @@ $pdo->prepare(
 )->execute([(int)$acc['id'], (int)$match['id'], implode(',', $platforms), $body, $now, $now]);
 
 $id = (int)$pdo->lastInsertId();
+
+/* The full set. ucp_appeals.punishment_id holds the first for anything that
+   wants a single id; this is what the appeal is actually against. */
+foreach ($matched as $p) {
+    $pdo->prepare('INSERT INTO ucp_appeal_punishments (appeal_id, punishment_id) VALUES (?, ?)')
+        ->execute([$id, (int)$p['id']]);
+}
 
 /* Evidence. Links only — the UCP has no file store. Anything that isn't a
    plausible http(s) URL is dropped rather than refusing the whole appeal:
@@ -104,7 +117,9 @@ foreach ($evidence as $ev) {
 }
 
 appeal_log_add($pdo, $id, $acc, 'submitted',
-    'Appeal submitted for ' . punish_kind_label((string)$match['kind']));
+    'Appeal submitted for ' . implode(' and ', array_map(function ($p) {
+        return punish_kind_label((string)$p['kind']);
+    }, $matched)));
 
 ok([
     'id'      => $id,

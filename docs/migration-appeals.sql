@@ -48,6 +48,17 @@ CREATE TABLE IF NOT EXISTS ucp_appeals (
     REFERENCES ucp_accounts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS ucp_appeal_punishments (
+  appeal_id     INT UNSIGNED NOT NULL,
+  punishment_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (appeal_id, punishment_id),
+  KEY idx_ap_pun (punishment_id),
+  CONSTRAINT fk_ap_appeal FOREIGN KEY (appeal_id)
+    REFERENCES ucp_appeals (id) ON DELETE CASCADE,
+  CONSTRAINT fk_ap_punishment FOREIGN KEY (punishment_id)
+    REFERENCES ucp_punishments (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS ucp_appeal_evidence (
   id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   appeal_id   INT UNSIGNED NOT NULL,

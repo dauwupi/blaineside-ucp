@@ -582,8 +582,11 @@
   .note-a h4{font-size:14px;font-weight:700;color:#e3bd72}
   .note-a.bad h4{color:#dfa294}
   .note-a.good h4{color:#a8bb92}
+  /* 64ch was a reading measure borrowed from body copy. These are one or
+     two sentences inside a full-width card, and capping them folds a line
+     that had room to sit flat. */
   .note-a p{font-size:13px;color:var(--text-faint);line-height:1.65;margin-top:5px;
-    max-width:64ch;text-wrap:pretty}
+    text-wrap:pretty}
   .note-a .acts{margin-top:13px;display:flex;gap:10px;flex-wrap:wrap}
 
   /* ---- status pills ---- */
@@ -722,6 +725,11 @@
   .askrow .qn{flex:none;width:22px;color:var(--text-dim);font-weight:800;font-size:12px;
     font-variant-numeric:tabular-nums}
   .askrow b{color:var(--parchment);font-weight:600}
+
+  /* One block per punishment inside the one card. */
+  .punb + .punb{margin-top:20px;padding-top:20px;border-top:1px solid var(--charcoal-4)}
+  .punh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;font-weight:700;
+    color:var(--parchment);padding-bottom:2px}
 
   /* ---- one appeal ---- */
   .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
@@ -1101,10 +1109,14 @@
     wire();
   }
 
-  /* ---- what is being appealed ---------------------------------------- */
+  /* ---- what is being appealed ----------------------------------------
+     Plural. An appeal can cover a game ban AND a forum ban, so this draws
+     one block per punishment inside one card rather than one card each —
+     they are one thing being decided, and stacking cards would suggest
+     otherwise. */
   function banCard(){
-    var p = DATA.punishment;
-    if(!p){
+    var ps = DATA.punishments || (DATA.punishment ? [DATA.punishment] : []);
+    if(!ps.length){
       return '<div class="card"><div class="card-h"><h3>Punishment</h3></div><div class="card-b">'+
         '<div class="note-a bad"><span class="si">'+ai('warn')+'</span><div>'+
         '<h4>The punishment record is gone</h4>'+
@@ -1113,26 +1125,42 @@
         '</div></div></div></div>';
     }
 
-    var rows = [
-      ['Type', cap(p.noun) + ' &nbsp;<span class="pill '+(p.permanent?'perm':'temp')+'">'+
-               (p.permanent ? 'Permanent' : 'Temporary')+'</span>'],
-      ['Issued', stampEsc(p.issued_at) + ' UTC &middot; ' + escapeHtml(ago(p.issued_at))],
-    ];
-    if(!p.permanent) rows.push(['Runs until', stampEsc(p.expires_at) + ' UTC']);
-    rows.push(['Reason', p.reason ? escapeHtml(p.reason)
-                                  : '<span class="v soft">No reason was recorded.</span>']);
-    if(DATA.viewer.staff && p.issued_by) rows.push(['Issued by', escapeHtml(p.issued_by)]);
-    rows.push(['In force', p.active ? 'Yes'
-      : '<span class="v soft">No — lifted ' + escapeHtml(ago(p.lifted_at)) +
-        (p.lifted_by ? ' by ' + escapeHtml(p.lifted_by) : '') + '</span>']);
+    var blocks = ps.map(function(p, i){
+      var rows = [
+        ['Issued', stampEsc(p.issued_at) + ' UTC &middot; ' + escapeHtml(ago(p.issued_at))]
+      ];
+      if(!p.permanent) rows.push(['Runs until', stampEsc(p.expires_at) + ' UTC']);
+      rows.push(['Reason', p.reason ? escapeHtml(p.reason)
+                                    : '<span class="v soft">No reason was recorded.</span>']);
+      if(DATA.viewer.staff && p.issued_by) rows.push(['Issued by', escapeHtml(p.issued_by)]);
+      rows.push(['In force', p.active ? 'Yes'
+        : '<span class="v soft">No — lifted ' + escapeHtml(ago(p.lifted_at)) +
+          (p.lifted_by ? ' by ' + escapeHtml(p.lifted_by) : '') + '</span>']);
 
-    return '<div class="card"><div class="card-h"><h3>Ban details</h3>'+
-      '<span class="aside">'+escapeHtml(DATA.user || '')+'</span></div>'+
-      '<div class="card-b"><div class="kv">'+
-        rows.map(function(r){
+      return '<div class="punb'+(i ? ' more' : '')+'">'+
+        '<div class="punh">'+escapeHtml(cap(p.noun))+
+          '<span class="pill '+(p.permanent?'perm':'temp')+'">'+
+          (p.permanent ? 'Permanent' : 'Temporary')+'</span></div>'+
+        '<div class="kv">'+ rows.map(function(r){
           return '<div class="r"><div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div></div>';
-        }).join('')+
-      '</div>'+
+        }).join('') +'</div></div>';
+    }).join('');
+
+    /* Ticked, but nothing on file for it. Said out loud rather than dropped:
+       it is usually a misread of question 1, and a handler who can't see the
+       claim can't correct it. */
+    var un = (DATA.unmatched || []).map(function(k){ return PLAT[k] || k; });
+    var unNote = un.length
+      ? '<div class="fieldnote" style="margin-top:14px">Also ticked <b style="color:'+
+        'var(--parchment)">'+escapeHtml(un.join(' and '))+'</b>, but there is no punishment '+
+        'on file for '+(un.length>1?'those':'that')+'.</div>'
+      : '';
+
+    return '<div class="card"><div class="card-h"><h3>'+
+      (ps.length > 1 ? 'Punishments under appeal' : 'Ban details')+'</h3>'+
+      '<span class="aside">'+escapeHtml(DATA.user || '')+
+      (ps.length > 1 ? ' · '+ps.length+' punishments' : '')+'</span></div>'+
+      '<div class="card-b">'+ blocks + unNote +
 
       /* Characters are listed on the reference design's ban details. There
          is no character table, so the row says that rather than being left
@@ -1141,19 +1169,21 @@
       '<div class="fieldnote" style="margin-top:14px">Characters aren’t linked to the UCP yet, '+
       'so none are listed here.</div>'+
 
-      (DATA.viewer.staff ? staffActions(p) : '') +
+      (DATA.viewer.staff ? staffActions(ps) : '') +
       '</div></div>';
   }
 
   /* The action row from the reference. Only one of these can be built
      today; the rest are drawn disabled with the reason, the same rule the
      lookup page's Administrative actions follow. */
-  function staffActions(p){
+  function staffActions(ps){
+    var anyLock = ps.some(function(p){ return p.kind === 'user_lock'; });
     var acts = [
       { t:'Show the banning admin to the player', why:'Needs the setting to exist first.' },
-      { t:'Unban the player', why: p.kind === 'user_lock'
+      { t:'Unban the player', why: anyLock
           ? 'Accepting the appeal removes the lock — use the verdict.'
-          : 'The UCP can’t reach where this ban was issued yet.' },
+          : 'The UCP can’t reach where '+(ps.length>1?'these bans were':'this ban was')+
+            ' issued yet.' },
       { t:'Admin record summary', why:'Needs the punishment history view.' }
     ];
     return '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--rule)">'+

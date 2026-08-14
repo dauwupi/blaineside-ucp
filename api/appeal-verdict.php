@@ -54,8 +54,8 @@ $st->execute([$id]);
 $a = $st->fetch();
 if (!$a) fail('There is no appeal with that number.', 404);
 
-$p     = appeal_punishment($pdo, $a);
-$block = appeal_conclude_block($pdo, $acc, $a, $p);
+$ps    = appeal_punishments($pdo, $a);
+$block = appeal_conclude_block($pdo, $acc, $a, $ps ?: null);
 if ($block !== null) {
     json_out(['ok' => false, 'error' => $block], 403);
 }
@@ -92,31 +92,50 @@ $pdo->prepare(
 )->execute([$verdict, $now, (int)$acc['id'], (string)$acc['username'], $now,
             (int)$acc['id'], (string)$acc['username'], $id]);
 
+/* Accepting lifts EVERY punishment the appeal covers.
+ *
+ * One appeal, one decision — an appeal against a game ban and a forum ban
+ * that accepted only one of them would be a verdict the appellant cannot
+ * read off the page. If a handler wants to lift one and keep the other,
+ * that is two appeals, and the reason to say so is the same reason this is
+ * one: it has to be legible to the person it happens to. */
 $lifted = null;
-if ($verdict === 'accepted' && $p !== null) {
-    if ((string)$p['kind'] === 'user_lock') {
-        /* The UCP owns this one, so accepting the appeal really does end it.
-         * Mirrors api/member-lock.php's unlock path exactly — one place would
-         * be better, and that is worth doing when a third caller appears. */
+if ($verdict === 'accepted' && $ps) {
+    $done = [];
+    $unlocked = false;
+
+    foreach ($ps as $p) {
         punish_lift($pdo, (int)$p['id'], (int)$acc['id'], (string)$acc['username'],
                     'Appeal #' . $id . ' accepted');
-        $pdo->prepare(
-            'UPDATE ucp_accounts
-                SET status = \'active\', locked_at = NULL, locked_by = NULL,
-                    locked_by_name = NULL, lock_reason = NULL
-              WHERE id = ? AND status = \'locked\''
-        )->execute([(int)$a['account_id']]);
-        security_log($pdo, (int)$a['account_id'], 'account_unlocked',
-            'Lock removed by ' . $acc['username'] . ' on appeal #' . $id, 'good');
-        $lifted = 'The user lock has been removed.';
-    } else {
-        /* Everything else is enforced somewhere the UCP cannot reach yet. The
-         * record says accepted; it does not claim to have unbanned anyone. */
-        punish_lift($pdo, (int)$p['id'], (int)$acc['id'], (string)$acc['username'],
-                    'Appeal #' . $id . ' accepted');
-        $lifted = 'Marked as lifted here — the ' . punish_kind_label((string)$p['kind'])
-                . ' still has to be removed where it was issued.';
+
+        if ((string)$p['kind'] === 'user_lock') {
+            /* The UCP owns this one, so accepting really does end it.
+             * Mirrors api/member-lock.php's unlock path. */
+            $pdo->prepare(
+                'UPDATE ucp_accounts
+                    SET status = \'active\', locked_at = NULL, locked_by = NULL,
+                        locked_by_name = NULL, lock_reason = NULL
+                  WHERE id = ? AND status = \'locked\''
+            )->execute([(int)$a['account_id']]);
+            security_log($pdo, (int)$a['account_id'], 'account_unlocked',
+                'Lock removed by ' . $acc['username'] . ' on appeal #' . $id, 'good');
+            $unlocked = true;
+        } else {
+            /* Enforced somewhere the UCP cannot reach yet. The record says
+             * accepted; it does not claim to have unbanned anyone. */
+            $done[] = punish_kind_label((string)$p['kind']);
+        }
     }
+
+    $bits = [];
+    if ($unlocked) $bits[] = 'The user lock has been removed.';
+    if ($done) {
+        $bits[] = 'Marked as lifted here — the ' . implode(' and ', $done)
+                . ' still ' . (count($done) > 1 ? 'have' : 'has')
+                . ' to be removed where ' . (count($done) > 1 ? 'they were' : 'it was')
+                . ' issued.';
+    }
+    $lifted = $bits ? implode(' ', $bits) : null;
 }
 
 appeal_log_add($pdo, $id, $acc, 'verdict',
