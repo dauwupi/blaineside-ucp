@@ -927,6 +927,27 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   .recgap b{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
     color:var(--text-dim);margin-bottom:2px}
   .recgap span{font-size:12.5px;color:var(--text-faint);line-height:1.55}
+
+  /* Status column: the punishment's state, then the appeal's, stacked. */
+  .recstate{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+  .recsub{font-size:12px;color:var(--text-dim);font-weight:500}
+  .rec .st + .recap{display:inline-block;margin-top:0}
+
+  .recempty{padding:20px 0 4px;font-size:13px;color:var(--text-faint);line-height:1.6;
+    max-width:62ch;text-wrap:pretty}
+
+  /* The filter strip, drawn in full. Only one kind can be counted today; the
+     others say why on hover rather than being left off, so the row is the
+     shape of the finished record rather than a thing that grows buttons. */
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .filters button{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;
+    border-radius:10px;border:1px solid var(--border);background:var(--charcoal);
+    color:var(--text-dim);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    transition:.14s}
+  .filters button:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
+  .filters button[aria-pressed="true"]{background:var(--charcoal-4);color:var(--parchment);
+    border-color:rgba(226,182,92,.32)}
+  .filters button:disabled{opacity:.45;cursor:not-allowed}
 </style>
 <body>
 
@@ -1774,22 +1795,22 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   /* The right-hand column: what happened to it, and what happened to any
      appeal against it. Two facts, and the second only when there is one. */
   function recState(e, staff){
-    var bits = [];
-    if(e.active){
-      bits.push('<span class="st live">In force</span>');
-    } else if(e.lifted_at){
-      bits.push('<span class="st done">Lifted'+(staff && e.lifted_by
-        ? ' by '+recEsc(e.lifted_by) : '')+'</span>');
-    } else {
-      bits.push('<span class="st done">Ended</span>');
-    }
-    if(e.appeal){
-      bits.push('<a class="recap '+e.appeal.status+'" href="/dashboard/appeals?id='+
-        e.appeal.id+'">Appeal '+e.appeal.status+'</a>');
-    } else if(e.appealable && e.active){
-      bits.push('<span class="st done">Not appealed</span>');
-    }
-    return bits.join('');
+    /* Two facts stacked, never run together: what the punishment is doing,
+       and what happened to any appeal against it. They were inline spans, so
+       "In force" and "Not appealed" printed as one word. */
+    var head = e.active
+      ? '<span class="st live">Active</span>'
+      : (e.lifted_at
+          ? '<span class="st done">Lifted'+(staff && e.lifted_by
+              ? ' by '+recEsc(e.lifted_by) : '')+'</span>'
+          : '<span class="st done">Ended</span>');
+
+    var sub = e.appeal
+      ? '<a class="recap '+e.appeal.status+'" href="/dashboard/appeals?id='+e.appeal.id+'">'+
+        'Appeal '+e.appeal.status+'</a>'
+      : (e.appealable && e.active ? '<span class="recsub">Not appealed</span>' : '');
+
+    return '<span class="recstate">'+head+sub+'</span>';
   }
 
   function recEsc(s){
@@ -1814,23 +1835,43 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       held:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
     };
 
+    /* The filter strip. Bans are the only kind that can be counted today,
+       so the other two carry a zero and say why on hover rather than being
+       left off — the row is the shape of the finished record, and a strip
+       that grows two new buttons later is harder to trust than one that
+       says what is coming. */
+    var counts = { ban: rec.entries.length, warn: 0, kick: 0 };
+    var filters = '<div class="filters" role="group" aria-label="Filter the record">'+
+      '<button aria-pressed="true">All <span class="fc">'+rec.entries.length+'</span></button>'+
+      '<button aria-pressed="false" disabled title="Warnings aren\u2019t recorded in the UCP yet">'+
+        'Warnings <span class="fc">0</span></button>'+
+      '<button aria-pressed="false" disabled title="Kicks aren\u2019t recorded in the UCP yet">'+
+        'Kicks <span class="fc">0</span></button>'+
+      '<button aria-pressed="false" disabled title="Filtering arrives with the second kind of '+
+        'entry">Bans &amp; locks <span class="fc">'+counts.ban+'</span></button>'+
+    '</div>';
+
     var head = '<div class="standing lvl-'+(st.level||'good')+'">'+
       '<span class="standing-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
       (ICO[st.level]||ICO.good)+'</svg></span>'+
       '<div class="t"><div class="h">'+recEsc(st.title||'')+'</div>'+
       '<div class="s">'+recEsc(st.note||'')+'</div></div></div>';
 
-    var body;
-    if(!rec.entries.length){
-      body = '<div class="recnone">Nothing has ever been issued against '+
-             (mine ? 'your account' : 'this account')+'.</div>';
-    } else {
-      body =
+    /* The table is drawn even when it is empty.
+       A one-line "nothing here" told you the answer and nothing about the
+       shape of the thing — you could not tell what would appear, in what
+       order, or what the columns would say. The headings cost four words
+       and answer all of it. */
+    var body =
         '<div class="rec">'+
           '<div class="rec-head"><div class="rec-row">'+
             '<span>Date</span><span>Type</span><span>Reason</span>'+
             '<span>'+(staff ? 'Issued by' : 'Length')+'</span><span>Status</span>'+
           '</div></div>'+
+          (rec.entries.length ? '' :
+            '<div class="recempty">Nothing has ever been issued against '+
+            (mine ? 'your account' : 'this account')+'. Bans, user locks and their appeals '+
+            'would appear here, newest first.</div>')+
           rec.entries.map(function(e){
             var k = RECKIND[e.kind] || { cls:'ban', label:e.noun };
             var w = recMon(e.issued_at);
@@ -1846,7 +1887,6 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
             '</div>';
           }).join('')+
         '</div>';
-    }
 
     /* What the record cannot show. Named, not omitted — a list of bans that
        looks complete is a claim about warnings too. */
@@ -1859,9 +1899,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         '</div>'
       : '';
 
-    return head + body + gaps;
+    return head + filters + body + gaps;
   }
-
   function renderRecord(d){
     var html = recordHTML(d.record, true, false);
     if(html === null){

@@ -52,33 +52,55 @@ if (mb_strlen($body) > BS_APPEAL_BODY_MAX) {
        . number_format(BS_APPEAL_BODY_MAX) . ' characters.', 422);
 }
 
-/* Which punishments this is against — plural.
+/* Which punishments this is against — plural, and possibly none.
  *
- * Somebody banned in game AND on the forums writes ONE appeal and ticks two
- * boxes. Making them write the same account of the same evening twice, and
- * wait for two verdicts on it, would be absurd; so every in-force,
- * appealable punishment on a ticked platform is attached.
+ * The three platforms are not equivalent, because the UCP only knows about
+ * one of them:
  *
- * Chosen by the server rather than the player: they tick a platform, and it
- * matches rows that are actually in force. A ticked platform with nothing
- * on file is NOT an error — a player may well believe they were also banned
- * on Discord — so it is recorded in `platforms` and shown to the handler as
- * a claim with nothing behind it. Only ticking nothing that matches at all
- * is refused, because then there is no punishment to appeal. */
-$active  = punish_active_for($pdo, (int)$acc['id']);
-$matched = [];
+ *   Game     the UCP records in-game bans and user locks, so it can check.
+ *            An appeal here MUST match something in force, or the handler is
+ *            deciding an appeal against a ban nobody can find.
+ *   Forums   the ban lives on the forum software.
+ *   Discord  the ban lives in Discord.
+ *
+ * For the last two there is nothing here to check against, and refusing the
+ * appeal because the UCP has no row told a genuinely banned player that
+ * nothing was wrong. Those go through with no punishment attached: the
+ * appeal itself is the record, and the handler confirms it where it lives.
+ *
+ * Somebody banned in game AND on the forums still writes ONE appeal and
+ * ticks two boxes — every matching in-force punishment is attached.
+ */
+$active   = punish_active_for($pdo, (int)$acc['id']);
+$matched  = [];
+$gameSeen = false;                     // any in-game punishment at all, appealable or not
 foreach ($active as $p) {
+    if (punish_platform_of((string)$p['kind']) === 'game') $gameSeen = true;
     if (empty($p['appealable'])) continue;
     if (!in_array(punish_platform_of((string)$p['kind']), $platforms, true)) continue;
     $matched[] = $p;
 }
 usort($matched, function ($a, $b) { return (int)$a['issued_at'] <=> (int)$b['issued_at']; });
 
-if (!$matched) {
-    fail('Nothing on your account matches where you say you were banned. Tick the platform the '
-       . 'punishment is actually on.', 422);
+if (in_array('game', $platforms, true)) {
+    $gameMatch = false;
+    foreach ($matched as $p) {
+        if (punish_platform_of((string)$p['kind']) === 'game') { $gameMatch = true; break; }
+    }
+    if (!$gameMatch) {
+        /* Two different failures, and telling them apart is the difference
+         * between "you ticked the wrong box" and "this is never open to
+         * appeal". */
+        fail($gameSeen
+            ? 'The in-game punishment on your account was issued for an egregious violation and '
+            . 'is not open to appeal.'
+            : 'There is no in-game ban or user lock on your account. If you were banned on the '
+            . 'forums or on Discord, tick those instead.', 422);
+    }
 }
-$match = $matched[0];   // the oldest, kept on the appeal row itself
+
+// The oldest match goes on the appeal row itself; null when nothing matched.
+$match = $matched ? $matched[0] : null;
 
 /* Assigned on arrival to whoever issued it.
  *
@@ -92,7 +114,7 @@ $match = $matched[0];   // the oldest, kept on the appeal row itself
  * account that can't open it is worse than an unassigned one, because it
  * looks handled. */
 $handlerId = null; $handlerName = null;
-if (!empty($match['issued_by'])) {
+if ($match && !empty($match['issued_by'])) {
     $h = $pdo->prepare(
         'SELECT id, username, admin_rank FROM ucp_accounts
           WHERE id = ? AND status = \'active\' LIMIT 1'
@@ -112,7 +134,8 @@ $pdo->prepare(
         (account_id, punishment_id, platforms, character_id, body, status,
          handler_id, handler_name, comments_enabled, created_at, updated_at)
      VALUES (?, ?, ?, NULL, ?, \'pending\', ?, ?, 1, ?, ?)'
-)->execute([(int)$acc['id'], (int)$match['id'], implode(',', $platforms), $body,
+)->execute([(int)$acc['id'], $match ? (int)$match['id'] : null,
+            implode(',', $platforms), $body,
             $handlerId, $handlerName, $now, $now]);
 
 $id = (int)$pdo->lastInsertId();
@@ -149,9 +172,13 @@ if ($handlerName !== null) {
 }
 
 appeal_log_add($pdo, $id, $acc, 'submitted',
-    'Appeal submitted for ' . implode(' and ', array_map(function ($p) {
-        return punish_kind_label((string)$p['kind']);
-    }, $matched)));
+    'Appeal submitted for ' . ($matched
+        ? implode(' and ', array_map(function ($p) {
+              return punish_kind_label((string)$p['kind']);
+          }, $matched))
+        : implode(' and ', array_map(function ($k) {
+              $l = punish_platforms(); return $l[$k] ?? $k;
+          }, $platforms)) . ' — nothing recorded in the UCP, so nothing is attached'));
 
 ok([
     'id'      => $id,

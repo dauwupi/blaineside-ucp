@@ -1476,8 +1476,13 @@
     var can = [
       'You have never appealed this punishment before.',
       'Your appeal was denied and you now have evidence nobody has seen.',
-      'Your appeal was denied and three months have passed since the verdict.',
-      'The punishment is a ban or a user lock — not a kick or a warning.'
+      /* No longer a fixed three months — the rejecting administrator picks
+         the wait, so this can only say that one was set. The date itself is
+         on the rejected appeal and on this page while you are inside it. */
+      'Your appeal was denied and the wait set with that decision has passed.',
+      'The punishment is a ban or a user lock — not a kick or a warning.',
+      'An in-game ban or user lock is on your account and still in force.',
+      'A forum or Discord ban can be appealed here whether or not the UCP has a record of it.'
     ];
     var rules = [
       ['msg', 'Language',
@@ -1580,8 +1585,9 @@
       '<div class="card-b">'+
 
       '<div class="q"><div class="qlab"><b>1.</b>What platform were you banned on?</div>'+
-        '<div class="qhint">Tick every one that applies. Your appeal is attached to the '+
-        'punishment on file for what you tick.</div>'+
+        '<div class="qhint">Tick every one that applies. An in-game ban or user lock has to be '+
+        'on your account and still in force; a forum or Discord ban is appealed here either '+
+        'way, because the UCP does not record those.</div>'+
         '<div class="qbody"><div class="checks" id="plats">'+plats+'</div></div></div>'+
 
       '<div class="q"><div class="qlab"><b>2.</b>If you were banned while playing a character, '+
@@ -1891,12 +1897,21 @@
      otherwise. */
   function banCard(){
     var ps = DATA.punishments || (DATA.punishment ? [DATA.punishment] : []);
+    /* Nothing attached is the NORMAL case for a forum or Discord appeal —
+       the UCP does not record those. "The record is gone" would be alarming
+       and wrong. */
     if(!ps.length){
-      return '<div class="card"><div class="card-h"><h3>Punishment</h3></div><div class="card-b">'+
-        '<div class="note-a bad"><span class="si">'+dai('warn')+'</span><div>'+
-        '<h4>The punishment record is gone</h4>'+
-        '<p>This appeal was submitted against a punishment that is no longer on file. The '+
-        'appeal itself is unaffected — but check what happened before deciding it.</p>'+
+      var only = (DATA.platforms||[]).map(function(k){ return PLAT[k] || k; }).join(' and ');
+      return '<div class="card"><div class="card-h"><h3>Ban details</h3>'+
+        '<span class="aside">'+escapeHtml(DATA.user||'')+'</span></div><div class="card-b">'+
+        '<div class="note-a"><span class="si">'+dai('info')+'</span><div>'+
+        '<h4>Nothing recorded in the UCP</h4>'+
+        '<p>This is a '+escapeHtml(only || 'forum or Discord')+' ban, and the UCP does not '+
+        'record those — it lives where it was issued. '+
+        (DATA.viewer.staff
+          ? 'Confirm it there before deciding. Accepting records the decision here; lifting the '+
+            'ban is done where it was issued.'
+          : 'Staff will check it where it was issued.')+'</p>'+
         '</div></div></div></div>';
     }
 

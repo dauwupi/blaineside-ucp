@@ -268,22 +268,18 @@ function appeal_eligibility(PDO $pdo, array $acc): array
         return $out;
     }
 
-    if (!$active) {
-        /* The page puts this under a heading that already says there is
-           nothing to appeal. Repeating it there cost a line and said
-           nothing, so this is only the part the heading doesn't cover. */
-        $out['why'] = 'Kicks and warnings can\'t be appealed — only a ban or a user lock.';
-        return $out;
-    }
-
-    $appealable = array_values(array_filter($active, function ($p) {
-        return !empty($p['appealable']);
-    }));
-    if (!$appealable) {
-        $out['why'] = 'This punishment was issued for an egregious violation and is not open to '
-                    . 'appeal.';
-        return $out;
-    }
+    /* No longer refused for having nothing on file.
+     *
+     * The UCP records in-game punishments and nothing else: a forum ban lives
+     * on the forum and a Discord ban lives in Discord, and neither writes a
+     * row here. Requiring one meant somebody banned on Discord was told there
+     * was nothing to appeal — false, and the opposite of why Discord is on
+     * the form.
+     *
+     * So eligibility is now about the APPELLANT: do they already have one
+     * open, and are they inside a wait. WHAT they may appeal is decided per
+     * platform on submit, where in-game still needs a punishment on file
+     * because that is the only one the UCP can check. */
 
     /* Rejected, and still inside the wait the rejecting administrator set.
      *
@@ -356,8 +352,15 @@ function appeal_punishments(PDO $pdo, array $appeal): array
     if ($appeal['punishment_id'] !== null) {
         $p = punish_by_id($pdo, (int)$appeal['punishment_id']);
         if ($p) return [$p];
+        // The row it pointed at is gone. Fall back to what is in force so a
+        // staff member mid-decision sees something rather than a 500.
+        return punish_active_for($pdo, (int)$appeal['account_id']);
     }
-    return punish_active_for($pdo, (int)$appeal['account_id']);
+
+    /* Nothing attached, on purpose: a forum or Discord ban the UCP does not
+     * record. Returning "whatever is in force" here would staple an unrelated
+     * game lock to a Discord appeal and invite somebody to lift it. */
+    return [];
 }
 
 /** The first of them — what a single-punishment check wants. */
