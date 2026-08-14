@@ -816,9 +816,18 @@
   @media (max-width:1320px){
     body.appeal-wide .apgrid{grid-template-columns:1fr}
   }
-  /* No staff column: back to a reading width, header included. */
+  /* No staff column.
+     `body.appeal-wide .apgrid` is one specificity point heavier than
+     `.apgrid.solo`, so the wide rule was winning on the appellant's own
+     appeal too: a 400px staff column that has nothing in it, and their
+     appeal squeezed into whatever was left. Stated at the same weight as
+     the wide rule, and after it, so it wins.
+
+     Centred rather than left-aligned — one column of text hard against the
+     left edge of a wide page reads as a layout that failed to load. */
   body.appeal-solo .content{max-width:1180px}
-  body.appeal-solo .lookbar{max-width:900px}
+  body.appeal-solo .apgrid{grid-template-columns:minmax(0,1fr);max-width:940px;margin:0 auto}
+  body.appeal-solo .lookbar{max-width:940px;margin-left:auto;margin-right:auto}
 
   /* ---- one appeal ---- */
   .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
@@ -968,6 +977,17 @@
   .panelfield .ro{font-size:13.5px;font-weight:600;color:var(--parchment);
     padding:11px 14px;border-radius:11px;background:var(--charcoal);
     border:1px solid var(--border)}
+
+  /* The two comments that settled the appeal: the verdict, and the overrule
+     that reversed it. Bordered rather than merely badged — on a long thread
+     the badge is the thing you're scanning for, and a tinted edge finds it
+     from the scrollbar. */
+  .ctag.verdict {color:#e3bd72;background:rgba(226,182,92,.11);border:1px solid rgba(226,182,92,.34)}
+  .ctag.overrule{color:#9fae8d;background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.36)}
+  .cm.is-verdict {border-color:rgba(226,182,92,.3)}
+  .cm.is-verdict .h{background:rgba(226,182,92,.07);border-bottom-color:rgba(226,182,92,.22)}
+  .cm.is-overrule{border-color:rgba(127,160,90,.32)}
+  .cm.is-overrule .h{background:rgba(127,160,90,.08);border-bottom-color:rgba(127,160,90,.24)}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -2021,11 +2041,21 @@
   function commentsCard(){
     var d = DATA, staff = d.viewer.staff;
 
+    /* The verdict and the overrule are marked. "The ban stands" halfway down
+       a thread is an opinion; the same words badged as the decision are the
+       decision, and somebody scrolling a long appeal should be able to find
+       the two that actually settled it without reading all of them. */
+    var MARK = {
+      verdict:  { cls:'verdict',  txt: d.overruled ? 'Original verdict' : 'Verdict' },
+      overrule: { cls:'overrule', txt:'Decision overturned' }
+    };
     var list = d.comments.length ? d.comments.map(function(c){
-      return '<div class="cm'+(c.staff_only?' staffonly':'')+'">'+
+      var mk = c.mark ? MARK[c.mark] : null;
+      return '<div class="cm'+(c.staff_only?' staffonly':'')+(mk?' is-'+mk.cls:'')+'">'+
         '<div class="h"><b>'+escapeHtml(c.author)+'</b>'+
           (c.staff ? '<span class="ctag staff">Staff</span>' : '')+
           (c.staff_only ? '<span class="ctag only">Staff only</span>' : '')+
+          (mk ? '<span class="ctag '+mk.cls+'">'+mk.txt+'</span>' : '')+
           '<span class="when">'+stampEsc(c.at)+' UTC</span></div>'+
         '<div class="body">'+escapeHtml(c.body)+'</div></div>';
     }).join('') : '<div class="a none" style="font-size:13px;color:var(--text-dim);'+

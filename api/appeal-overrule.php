@@ -36,6 +36,11 @@ $acc = current_account($pdo);
 if (!appeals_available($pdo)) {
     json_out(['ok' => false, 'error' => appeals_missing_reason()], 409);
 }
+if (!appeals_has_waits($pdo)) {
+    json_out(['ok' => false,
+              'error' => 'Overturning needs docs/migration-appeal-cooldown.sql to have been '
+                       . 'run — there is nowhere to record who overturned it.'], 409);
+}
 if (!appeal_may_overrule($pdo, $acc)) {
     json_out([
         'ok'    => false,

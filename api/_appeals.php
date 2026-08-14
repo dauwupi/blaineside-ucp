@@ -79,6 +79,24 @@ function appeals_available(PDO $pdo): bool
     return $ok;
 }
 
+/**
+ * Has docs/migration-appeal-cooldown.sql been run?
+ *
+ * Four columns arrived after the appeal system did: the wait a rejection
+ * sets, and who overturned it. Every read and write of them is guarded by
+ * this, so a server one migration behind loses those two features and keeps
+ * everything else — rather than answering "Something went wrong" on the one
+ * page a banned player can still reach.
+ */
+function appeals_has_waits(PDO $pdo): bool
+{
+    static $ok = null;
+    if ($ok !== null) return $ok;
+    try { $pdo->query('SELECT reappeal_at, overruled_at FROM ucp_appeals LIMIT 1'); $ok = true; }
+    catch (Throwable $e) { $ok = false; }
+    return $ok;
+}
+
 function appeals_missing_reason(): string
 {
     return 'Ban appeals aren\'t set up on this server yet — docs/migration-appeals.sql '
@@ -274,14 +292,15 @@ function appeal_eligibility(PDO $pdo, array $acc): array
      * from a constant would silently rewrite their decision the next time
      * the constant changed. */
     $st = $pdo->prepare(
-        'SELECT concluded_at, reappeal_at FROM ucp_appeals
+        'SELECT concluded_at' . (appeals_has_waits($pdo) ? ', reappeal_at' : '') . '
+           FROM ucp_appeals
           WHERE account_id = ? AND status = \'rejected\'
           ORDER BY concluded_at DESC LIMIT 1'
     );
     $st->execute([(int)$acc['id']]);
     $last = $st->fetch();
     if ($last) {
-        $until = $last['reappeal_at'] !== null
+        $until = isset($last['reappeal_at']) && $last['reappeal_at'] !== null
             ? (int)$last['reappeal_at']
             // Decided before waits existed. Falls back to the old 90 days
             // rather than letting those appellants straight back in.
@@ -378,7 +397,7 @@ function appeal_platforms_in($raw): array
  * are not fetched at all — the filter is in the WHERE clause, so there is
  * no version of this where a front-end mistake shows one.
  */
-function appeal_comments(PDO $pdo, int $appealId, bool $staff): array
+function appeal_comments(PDO $pdo, int $appealId, bool $staff, ?array $appeal = null): array
 {
     $sql = 'SELECT * FROM ucp_appeal_comments WHERE appeal_id = ?'
          . ($staff ? '' : ' AND staff_only = 0')
@@ -386,14 +405,42 @@ function appeal_comments(PDO $pdo, int $appealId, bool $staff): array
     $st = $pdo->prepare($sql);
     $st->execute([$appealId]);
 
-    return array_map(function ($c) {
+    /* Which comment IS the verdict, and which IS the overrule.
+     *
+     * Not a column: both are written in the same request that stamps the
+     * appeal, with the same timestamp and the same author, so the appeal row
+     * already identifies them exactly. A `kind` column would be a second
+     * copy of that fact and a migration to add it.
+     *
+     * It matters because these two read differently from an ordinary reply.
+     * "The ban stands" in the middle of a thread is an opinion; the same
+     * words marked as the verdict are the decision. */
+    $vAt = $appeal && $appeal['concluded_at'] !== null ? (int)$appeal['concluded_at'] : null;
+    $vBy = $appeal && $appeal['concluded_by'] !== null ? (int)$appeal['concluded_by'] : null;
+    $oAt = $appeal && isset($appeal['overruled_at']) && $appeal['overruled_at'] !== null
+         ? (int)$appeal['overruled_at'] : null;
+    $oBy = $appeal && isset($appeal['overruled_by']) && $appeal['overruled_by'] !== null
+         ? (int)$appeal['overruled_by'] : null;
+    $status = $appeal ? (string)$appeal['status'] : '';
+
+    return array_map(function ($c) use ($vAt, $vBy, $oAt, $oBy, $status) {
+        $at  = (int)$c['created_at'];
+        $by  = $c['author_id'] !== null ? (int)$c['author_id'] : null;
+        $mark = null;
+        if ($oAt !== null && $at === $oAt && $by === $oBy) {
+            $mark = 'overrule';
+        } elseif ($vAt !== null && $at === $vAt && $by === $vBy) {
+            // If it was later overturned, the original verdict was a rejection.
+            $mark = 'verdict';
+        }
         return [
             'id'         => (int)$c['id'],
             'author'     => (string)$c['author_name'],
             'staff'      => !empty($c['author_is_staff']),
             'staff_only' => !empty($c['staff_only']),
             'body'       => (string)$c['body'],
-            'at'         => (int)$c['created_at'],
+            'at'         => $at,
+            'mark'       => $mark,
         ];
     }, $st->fetchAll());
 }
@@ -605,7 +652,7 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
             array_map(function ($p) { return punish_platform_of((string)$p['kind']); }, $ps)
         )),
         'evidence'   => appeal_evidence($pdo, (int)$a['id']),
-        'comments'   => appeal_comments($pdo, (int)$a['id'], $staff),
+        'comments'   => appeal_comments($pdo, (int)$a['id'], $staff, $a),
 
         /* Characters aren't linked to the UCP. The field is reported as
            unavailable rather than omitted, so the page can draw it
@@ -628,9 +675,10 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
             'manage_rank'  => rank_name(BS_APPEAL_MANAGE_RANK),
             /* Overruling is only ever offered on a rejected appeal — there is
                nothing to overturn on one that was accepted. */
-            'may_overrule' => $a['status'] === 'rejected' && appeal_may_overrule($pdo, $acc)
+            'may_overrule' => $a['status'] === 'rejected' && appeals_has_waits($pdo)
+                              && appeal_may_overrule($pdo, $acc)
                               && (int)$acc['id'] !== (int)$a['account_id'],
-            'waits'        => appeal_wait_options(),
+            'waits'        => appeals_has_waits($pdo) ? appeal_wait_options() : [],
             'wait_suggest' => appeal_suggested_wait($pdo, (int)$a['account_id']),
         ];
     } else {

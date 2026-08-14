@@ -56,7 +56,8 @@ if (!in_array($verdict, ['accepted', 'rejected'], true)) {
  * consequence, and a consequence somebody can type a number into is not a
  * rule. It also stops "0 days", which would make a rejection meaningless,
  * and "3650 days", which would make it a ban by another name. */
-if ($verdict === 'rejected' && !in_array($wait, BS_APPEAL_WAITS, true)) {
+$waits = appeals_has_waits($pdo);
+if ($verdict === 'rejected' && $waits && !in_array($wait, BS_APPEAL_WAITS, true)) {
     fail('Choose how long they wait before appealing again — '
        . implode(', ', BS_APPEAL_WAITS) . ' days.', 422);
 }
@@ -101,15 +102,18 @@ $pdo->prepare(
  * argue with the outcome in a thread nobody is reading any more, and the
  * reply that never comes reads as being ignored. Staff can still write here
  * — appeal-comment.php checks the status, not this flag, for them. */
-$reappeal = $verdict === 'rejected' ? $now + $wait * 86400 : null;
+$reappeal = ($verdict === 'rejected' && $waits) ? $now + $wait * 86400 : null;
 
+/* reappeal_at only exists after docs/migration-appeal-cooldown.sql. One
+   migration behind, the verdict still lands and simply carries no wait. */
 $pdo->prepare(
     'UPDATE ucp_appeals
         SET status = ?, concluded_at = ?, concluded_by = ?, concluded_by_name = ?,
-            updated_at = ?, comments_enabled = 0, reappeal_at = ?,
+            updated_at = ?, comments_enabled = 0'
+        . ($waits ? ', reappeal_at = ' . ($reappeal === null ? 'NULL' : (int)$reappeal) : '') . ',
             handler_id = COALESCE(handler_id, ?), handler_name = COALESCE(handler_name, ?)
       WHERE id = ? AND status = \'pending\''
-)->execute([$verdict, $now, (int)$acc['id'], (string)$acc['username'], $now, $reappeal,
+)->execute([$verdict, $now, (int)$acc['id'], (string)$acc['username'], $now,
             (int)$acc['id'], (string)$acc['username'], $id]);
 
 /* Accepting lifts EVERY punishment the appeal covers.
@@ -160,7 +164,7 @@ if ($verdict === 'accepted' && $ps) {
 
 appeal_log_add($pdo, $id, $acc, 'verdict',
     'Concluded as ' . $verdict
-    . ($verdict === 'rejected' ? ' — can appeal again in ' . $wait . ' days' : '')
+    . ($verdict === 'rejected' && $waits ? ' — can appeal again in ' . $wait . ' days' : '')
     . ($lifted ? ' — ' . $lifted : ''));
 
 ok([
@@ -169,7 +173,7 @@ ok([
     'lifted'   => $lifted,
     'reappeal' => $reappeal,
     'message'  => 'Appeal ' . $verdict . '.'
-                . ($verdict === 'rejected'
+                . ($verdict === 'rejected' && $waits
                     ? ' They can appeal again in ' . $wait . ' days.' : '')
                 . ($lifted ? ' ' . $lifted : ''),
 ]);
