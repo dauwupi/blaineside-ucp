@@ -15,7 +15,10 @@ require_once __DIR__ . '/_appeals.php';
 throttle('appeal_elig', 60);
 
 $pdo = db();
-$acc = current_account($pdo);
+/* A locked account must be able to ask this: the lock screen puts an appeal
+   link on the one page they can reach, and it needs to know whether they
+   already have one open before deciding what that link says. */
+$acc = current_account_or_locked($pdo);
 
 $e = appeal_eligibility($pdo, $acc);
 

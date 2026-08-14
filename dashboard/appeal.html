@@ -1476,7 +1476,64 @@
     });
   }
 
+
+  /* =====================================================================
+     A LOCKED SESSION
+
+     A locked account is not signed in — api/session.php reports
+     authenticated:false and every ordinary endpoint refuses it. But a user
+     lock is appealable, so this page has to work for exactly the person who
+     cannot use any other one.
+
+     What that means here is stripping the shell down to what a locked
+     account actually has: no navigation, no search, no profile link. Not
+     because leaving them would be dangerous — every one of them leads
+     somewhere that refuses a locked session anyway — but because a menu
+     full of links that all bounce you back is a worse experience than no
+     menu at all.
+     ===================================================================== */
+  var LOCKED = false;
+
+  function stripForLock(){
+    LOCKED = true;
+    document.body.classList.add('is-locked');
+
+    var nav = document.getElementById('nav');
+    if(nav) nav.innerHTML =
+      '<a class="nav-item" href="/dashboard" style="margin:0 12px">'+
+      '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+      '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'+
+      '</svg><span class="lbl">Account locked</span></a>';
+
+    // The topbar keeps the account button (it says who you are) and loses
+    // everything that goes anywhere.
+    var bar = document.querySelector('.topbar');
+    if(bar){
+      Array.prototype.forEach.call(
+        bar.querySelectorAll('.searchbox, .search-mini, .divider, .icon-btn:not(.hamburger)'),
+        function(el){ el.remove(); });
+    }
+    var menu = document.getElementById('acctMenu');
+    if(menu){
+      Array.prototype.forEach.call(menu.querySelectorAll('.menu-item:not(.danger)'),
+        function(el){ el.remove(); });
+    }
+    var ham = document.getElementById('menuToggle');
+    if(ham) ham.style.display = 'none';
+  }
+
   UCP.get('session.php').then(function(d){
+    /* Locked: reading their own appeal is one of the two things this session
+       can do. api/appeal.php accepts it; everything else on the shell does
+       not, so the shell goes. */
+    if(d && d.locked === true){
+      stripForLock();
+      var an0 = document.getElementById('acctName'), ar0 = document.getElementById('acctRole');
+      if(an0) an0.textContent = d.name || '';
+      if(ar0) ar0.textContent = 'Account locked';
+      return load();
+    }
+
     if(!d || d.authenticated !== true){
       window.location.replace('/login?return='+
         encodeURIComponent('/dashboard/appeal' + (ID ? '?id='+ID : '')));

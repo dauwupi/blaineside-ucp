@@ -1175,20 +1175,50 @@
           '<h3>What happens now</h3>' +
           '<div class="lockstep"><span class="n">1</span><span>Staff review whatever prompted the ' +
             'lock. Most are resolved without any further action.</span></div>' +
-          '<div class="lockstep"><span class="n">2</span><span>You will be able to <b>appeal it ' +
-            'from this page</b> once appeals are switched on. Until then, speak to staff on ' +
-            'Discord.</span></div>' +
+          '<div class="lockstep"><span class="n">2</span><span>You can <b>appeal the lock</b> ' +
+            'from here. A member of staff who did not issue it reads the appeal and decides it, ' +
+            'and you are told the outcome with a reason either way.</span></div>' +
           '<div class="lockstep"><span class="n">3</span><span>If the lock is lifted, everything ' +
             'comes back exactly as you left it. <b>Nothing has been deleted.</b></span></div>' +
         '</div>' +
 
+        /* The appeal is the one thing a locked account can still reach, so it
+           is the primary action here and Log out is the quiet one. Which
+           label it carries depends on whether they already have an appeal
+           open — filled in by the eligibility call below, because a locked
+           player clicking "Appeal" only to be told they already have one is
+           a dead end from a page that has no other exits. */
         '<div class="lockacts">' +
-          '<button class="btn" id="lockAppeal" disabled>Appeal this lock · coming soon</button>' +
-          '<button class="btn primary" id="lockOut">Log out</button>' +
+          '<a class="btn primary" id="lockAppeal" href="/dashboard/appeals#submit">' +
+            'Appeal this lock</a>' +
+          '<button class="btn" id="lockOut">Log out</button>' +
         '</div>' +
       '</div>' +
       '<p class="lockfoot">Your characters, money and property are untouched. A lock only stops ' +
         'access to the UCP.</p></div>';
+
+    /* Do they already have one open? Asked after the page is drawn, so the
+       hero never waits on it — the link works either way, and this only
+       sharpens the label. appeal-eligibility.php accepts a locked session
+       (see current_account_or_locked in api/_account.php). */
+    fetch('/api/appeal-eligibility.php', { credentials:'include' })
+      .then(function(r){ return r.json(); })
+      .then(function(e){
+        var a = document.getElementById('lockAppeal');
+        if(!a || !e || e.ok !== true) return;
+        if(e.open){
+          a.textContent = 'View your appeal';
+          a.setAttribute('href', '/dashboard/appeal?id=' + e.open);
+        } else if(!e.may && e.why){
+          /* Can't appeal — a cooldown, or the tables aren't migrated. Say so
+             rather than sending them to a page that will refuse them. */
+          a.textContent = 'Appeals unavailable';
+          a.removeAttribute('href');
+          a.classList.remove('primary');
+          a.setAttribute('title', e.why);
+          document.getElementById('lockOut').classList.add('primary');
+        }
+      }).catch(function(){});
 
     document.getElementById('lockOut').addEventListener('click', function(){
       this.disabled = true;
