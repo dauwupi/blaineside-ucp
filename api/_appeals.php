@@ -1,0 +1,362 @@
+<?php
+/**
+ * BlaineSide UCP — ban appeals.
+ *
+ * The rules, in one place, because they are the whole feature. An appeal
+ * form is easy; deciding who may open which appeal, what may be said in
+ * front of the appellant, and when somebody may appeal again is the part
+ * that has to be right.
+ *
+ * The rules:
+ *
+ *   - You can only appeal something that is IN FORCE and marked
+ *     appealable. Kicks and warnings are not punishments in this system
+ *     at all (see _punish.php), so there is nothing to exclude.
+ *   - One open appeal at a time. Not one per punishment — one, full stop.
+ *     Somebody with a game ban and a Discord ban writes one appeal and
+ *     ticks two boxes.
+ *   - A rejected appeal cannot be re-submitted for three months.
+ *   - An accepted appeal ends the matter. If the punishment is still in
+ *     force after that, it is a new punishment and a new appeal.
+ *
+ * And the two that matter most:
+ *
+ *   - A staff-only comment is never returned to the appellant. Not hidden
+ *     by the page — absent from the response.
+ *   - The running log is staff-only for the same reason, and by the same
+ *     mechanism.
+ */
+
+require_once __DIR__ . '/_ranks.php';
+require_once __DIR__ . '/_punish.php';
+require_once __DIR__ . '/_teams.php';
+
+/** Support Staff and above work the appeal queue — see api/_queues.php. */
+const BS_APPEAL_STAFF_RANK = 1;
+
+/** How long a rejected appellant waits before appealing again. */
+const BS_APPEAL_COOLDOWN = 7776000;      // 90 days
+
+/** Repeat views by one person inside this window are one log line. */
+const BS_APPEAL_VIEW_COLLAPSE = 3600;
+
+const BS_APPEAL_BODY_MIN   = 40;
+const BS_APPEAL_BODY_MAX   = 8000;
+const BS_APPEAL_COMMENT_MAX = 4000;
+const BS_APPEAL_EVIDENCE_MAX = 8;
+
+/** Do the appeal tables exist? False until migration-appeals.sql runs. */
+function appeals_available(PDO $pdo): bool
+{
+    static $ok = null;
+    if ($ok !== null) return $ok;
+    try { $pdo->query('SELECT 1 FROM ucp_appeals LIMIT 1'); $ok = true; }
+    catch (Throwable $e) { $ok = false; }
+    return $ok;
+}
+
+function appeals_missing_reason(): string
+{
+    return 'Ban appeals aren\'t set up on this server yet — docs/migration-appeals.sql '
+         . 'hasn\'t been run.';
+}
+
+/** Support Staff and above. */
+function appeal_is_staff(array $acc): bool
+{
+    return (int)($acc['admin_rank'] ?? 0) >= BS_APPEAL_STAFF_RANK;
+}
+
+/**
+ * May this account read this appeal?
+ *
+ * Its author always may. Staff may. Nobody else — an appeal is about one
+ * person's punishment and is nobody else's business.
+ */
+function appeal_may_view(array $acc, array $appeal): bool
+{
+    if ((int)$acc['id'] === (int)$appeal['account_id']) return true;
+    return appeal_is_staff($acc);
+}
+
+/**
+ * May this account CONCLUDE this appeal?
+ *
+ * Not the person who issued the punishment, and not the appellant. The
+ * first is the rule the page states out loud: whoever banned you does not
+ * get to decide whether the ban stands.
+ */
+function appeal_conclude_block(PDO $pdo, array $acc, array $appeal, ?array $punishment): ?string
+{
+    if (!appeal_is_staff($acc)) {
+        return 'Concluding an appeal is for ' . rank_name(BS_APPEAL_STAFF_RANK) . ' and above.';
+    }
+    if ((int)$acc['id'] === (int)$appeal['account_id']) {
+        return 'You can\'t decide your own appeal.';
+    }
+    if ($appeal['status'] !== 'pending') {
+        return 'This appeal was already ' . $appeal['status'] . '.';
+    }
+    if ($punishment !== null && (int)($punishment['issued_by'] ?? 0) === (int)$acc['id']) {
+        return 'You issued this punishment, so you can\'t decide the appeal against it. '
+             . 'Hand it to another administrator.';
+    }
+    return null;
+}
+
+/**
+ * What can this account appeal right now, and may they?
+ *
+ * Returns everything the submit page needs to explain itself, including
+ * the reasons it is saying no. A page that can only render "you may not"
+ * sends people to Discord to ask why.
+ */
+function appeal_eligibility(PDO $pdo, array $acc): array
+{
+    $out = [
+        'may'        => false,
+        'why'        => null,
+        'open'       => null,     // id of an appeal already in progress
+        'cooldown'   => null,     // unix time they may appeal again
+        'punishments'=> [],
+    ];
+
+    if (!appeals_available($pdo)) {
+        $out['why'] = appeals_missing_reason();
+        return $out;
+    }
+
+    $active = punish_active_for($pdo, (int)$acc['id']);
+    foreach ($active as $p) $out['punishments'][] = punish_out($p);
+
+    // An appeal already in progress. Sent back rather than refused: the
+    // page links straight to it, which is what they actually wanted.
+    $st = $pdo->prepare(
+        'SELECT id FROM ucp_appeals WHERE account_id = ? AND status = \'pending\'
+          ORDER BY id DESC LIMIT 1'
+    );
+    $st->execute([(int)$acc['id']]);
+    $open = $st->fetch();
+    if ($open) {
+        $out['open'] = (int)$open['id'];
+        $out['why']  = 'You already have an appeal open. You can only have one at a time.';
+        return $out;
+    }
+
+    if (!$active) {
+        $out['why'] = 'There is nothing on your account to appeal. Kicks and warnings can\'t be '
+                    . 'appealed — only a ban or a user lock.';
+        return $out;
+    }
+
+    $appealable = array_values(array_filter($active, function ($p) {
+        return !empty($p['appealable']);
+    }));
+    if (!$appealable) {
+        $out['why'] = 'This punishment was issued for an egregious violation and is not open to '
+                    . 'appeal.';
+        return $out;
+    }
+
+    // Rejected recently. The three months run from the verdict, not from
+    // the ban, so a second rejection doesn't reset a punishment's clock.
+    $st = $pdo->prepare(
+        'SELECT concluded_at FROM ucp_appeals
+          WHERE account_id = ? AND status = \'rejected\'
+          ORDER BY concluded_at DESC LIMIT 1'
+    );
+    $st->execute([(int)$acc['id']]);
+    $last = $st->fetch();
+    if ($last && $last['concluded_at'] !== null) {
+        $until = (int)$last['concluded_at'] + BS_APPEAL_COOLDOWN;
+        if ($until > time()) {
+            $out['cooldown'] = $until;
+            $out['why'] = 'Your last appeal was denied. You can appeal again three months after '
+                        . 'the verdict.';
+            return $out;
+        }
+    }
+
+    $out['may'] = true;
+    return $out;
+}
+
+/**
+ * The punishment an appeal is really about.
+ *
+ * Normally the row it was submitted against. Falls back to whatever is in
+ * force on the account, so an appeal whose punishment row was deleted
+ * still renders rather than 500ing on a staff member mid-decision.
+ */
+function appeal_punishment(PDO $pdo, array $appeal): ?array
+{
+    if ($appeal['punishment_id'] !== null) {
+        $p = punish_by_id($pdo, (int)$appeal['punishment_id']);
+        if ($p) return $p;
+    }
+    $active = punish_active_for($pdo, (int)$appeal['account_id']);
+    return $active ? $active[0] : null;
+}
+
+/** Comma-separated platform keys -> a clean, ordered list. */
+function appeal_platforms_in($raw): array
+{
+    $valid = array_keys(punish_platforms());
+    $in    = is_array($raw) ? $raw : explode(',', (string)$raw);
+    $out   = [];
+    foreach ($valid as $v) {                       // registry order, not input order
+        foreach ($in as $x) {
+            if (strtolower(trim((string)$x)) === $v) { $out[] = $v; break; }
+        }
+    }
+    return $out;
+}
+
+/**
+ * Comments on an appeal.
+ *
+ * $staff decides what comes back. For the appellant the staff-only rows
+ * are not fetched at all — the filter is in the WHERE clause, so there is
+ * no version of this where a front-end mistake shows one.
+ */
+function appeal_comments(PDO $pdo, int $appealId, bool $staff): array
+{
+    $sql = 'SELECT * FROM ucp_appeal_comments WHERE appeal_id = ?'
+         . ($staff ? '' : ' AND staff_only = 0')
+         . ' ORDER BY created_at ASC, id ASC';
+    $st = $pdo->prepare($sql);
+    $st->execute([$appealId]);
+
+    return array_map(function ($c) {
+        return [
+            'id'         => (int)$c['id'],
+            'author'     => (string)$c['author_name'],
+            'staff'      => !empty($c['author_is_staff']),
+            'staff_only' => !empty($c['staff_only']),
+            'body'       => (string)$c['body'],
+            'at'         => (int)$c['created_at'],
+        ];
+    }, $st->fetchAll());
+}
+
+function appeal_evidence(PDO $pdo, int $appealId): array
+{
+    $st = $pdo->prepare('SELECT * FROM ucp_appeal_evidence WHERE appeal_id = ? ORDER BY id ASC');
+    $st->execute([$appealId]);
+    return array_map(function ($e) {
+        return ['id' => (int)$e['id'], 'url' => (string)$e['url'],
+                'note' => $e['note'] !== null && $e['note'] !== '' ? (string)$e['note'] : null];
+    }, $st->fetchAll());
+}
+
+/** The running log. Staff only — callers must check before asking. */
+function appeal_log(PDO $pdo, int $appealId, int $limit = 200): array
+{
+    $st = $pdo->prepare(
+        'SELECT * FROM ucp_appeal_log WHERE appeal_id = ?
+          ORDER BY created_at DESC, id DESC LIMIT ' . (int)$limit
+    );
+    $st->execute([$appealId]);
+    return array_map(function ($l) {
+        return ['actor' => (string)$l['actor_name'], 'action' => (string)$l['action'],
+                'detail' => $l['detail'], 'at' => (int)$l['created_at']];
+    }, $st->fetchAll());
+}
+
+/**
+ * Write a line to the running log.
+ *
+ * Views collapse: the same person viewing twice inside an hour extends
+ * nothing and adds nothing. Without this the log of a long-running appeal
+ * is one handler's refreshes and the actual decisions are ten pages down.
+ */
+function appeal_log_add(PDO $pdo, int $appealId, array $actor, string $action,
+                        ?string $detail = null): void
+{
+    if ($action === 'viewed') {
+        $st = $pdo->prepare(
+            'SELECT id FROM ucp_appeal_log
+              WHERE appeal_id = ? AND actor_id = ? AND action = \'viewed\' AND created_at > ?
+              LIMIT 1'
+        );
+        $st->execute([$appealId, (int)$actor['id'], time() - BS_APPEAL_VIEW_COLLAPSE]);
+        if ($st->fetch()) return;
+    }
+
+    $pdo->prepare(
+        'INSERT INTO ucp_appeal_log (appeal_id, actor_id, actor_name, action, detail, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)'
+    )->execute([$appealId, (int)$actor['id'], (string)$actor['username'],
+                $action, $detail, time()]);
+}
+
+/** One appeal row, resolved for whoever is looking at it. */
+function appeal_out(PDO $pdo, array $a, array $acc): array
+{
+    $mine = (int)$acc['id'] === (int)$a['account_id'];
+
+    /* Staff ON THIS APPEAL — not staff in general.
+     *
+     * A Support Staff member can be banned and appeal it like anyone else,
+     * and on that appeal they are the appellant. Reading it as "is staff"
+     * would hand them the staff-only comments about their own case and the
+     * log of who has been looking at it, which is the exact conversation
+     * they must not see. Rank is not a reason to see your own file. */
+    $staff = appeal_is_staff($acc) && !$mine;
+
+    $owner = null;
+    $st = $pdo->prepare('SELECT username FROM ucp_accounts WHERE id = ? LIMIT 1');
+    $st->execute([(int)$a['account_id']]);
+    $row = $st->fetch();
+    if ($row) $owner = (string)$row['username'];
+
+    $p = appeal_punishment($pdo, $a);
+
+    /* Whether the appellant is told which administrator issued the
+       punishment. Off by default, and there is no switch yet — the action
+       exists on the page, disabled, so the shape is visible. Staff always
+       see it. */
+    $showIssuer = $staff;
+
+    $out = [
+        'id'       => (int)$a['id'],
+        'mine'     => $mine,
+        'user'     => $owner,
+        'user_id'  => (int)$a['account_id'],
+        'platforms'=> appeal_platforms_in($a['platforms']),
+        'body'     => (string)$a['body'],
+        'status'   => (string)$a['status'],
+        'handler'  => $a['handler_name'] ?: null,
+        'comments_enabled' => !empty($a['comments_enabled']),
+        'created_at' => (int)$a['created_at'],
+        'updated_at' => (int)$a['updated_at'],
+        'concluded_at' => $a['concluded_at'] !== null ? (int)$a['concluded_at'] : null,
+        'concluded_by' => $staff ? ($a['concluded_by_name'] ?: null) : null,
+
+        'punishment' => $p ? punish_out($p, $showIssuer) : null,
+        'evidence'   => appeal_evidence($pdo, (int)$a['id']),
+        'comments'   => appeal_comments($pdo, (int)$a['id'], $staff),
+
+        /* Characters aren't linked to the UCP. The field is reported as
+           unavailable rather than omitted, so the page can draw it
+           disabled with the reason instead of silently renumbering the
+           form when it arrives. */
+        'character'  => null,
+        'features'   => ['characters' => false],
+    ];
+
+    if ($staff) {
+        $out['log']    = appeal_log($pdo, (int)$a['id']);
+        $out['viewer'] = [
+            'staff'        => true,
+            'may_conclude' => appeal_conclude_block($pdo, $acc, $a, $p) === null,
+            'why'          => appeal_conclude_block($pdo, $acc, $a, $p),
+            'is_handler'   => (int)($a['handler_id'] ?? 0) === (int)$acc['id'],
+        ];
+    } else {
+        $out['viewer'] = ['staff' => false, 'may_conclude' => false, 'why' => null,
+                          'is_handler' => false];
+    }
+
+    return $out;
+}

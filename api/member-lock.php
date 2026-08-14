@@ -15,6 +15,7 @@ require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
 require_once __DIR__ . '/_lock.php';
 require_once __DIR__ . '/_sessions.php';
+require_once __DIR__ . '/_punish.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -104,6 +105,26 @@ if ($want) {
                   ->execute([time(), $id]); } catch (Throwable $e) {}
     }
 
+    /* The punishment record.
+     *
+     * The columns on ucp_accounts are what the sign-in page reads to explain
+     * the lock; this row is what an APPEAL attaches to. They are the same
+     * fact written twice on purpose — the account carries the current state,
+     * the punishments table carries the history, and an appeal has to point
+     * at something that doesn't disappear the moment the lock is lifted.
+     *
+     * Guarded: the table arrives with docs/migration-appeals.sql. One
+     * migration behind, the lock still works and simply isn't appealable
+     * yet — which is exactly what the appeal page will then say. */
+    if (punish_available($pdo)) {
+        punish_add($pdo, $id, 'user_lock', [
+            'permanent'      => true,
+            'reason'         => $reason !== '' ? $reason : null,
+            'issued_by'      => (int)$acc['id'],
+            'issued_by_name' => (string)$acc['username'],
+        ]);
+    }
+
     security_log($pdo, $id, 'account_locked',
         'Locked by ' . $acc['username'] . ($reason !== '' ? ' — ' . $reason : ''), 'warn');
 
@@ -121,6 +142,10 @@ $pdo->prepare(
             locked_by_name = NULL, lock_reason = NULL
       WHERE id = ?'
 )->execute([$id]);
+
+// The lock is over, so the punishment it recorded is too.
+punish_lift_kind($pdo, $id, 'user_lock', (int)$acc['id'], (string)$acc['username'],
+                 'Unlocked by ' . $acc['username']);
 
 security_log($pdo, $id, 'account_unlocked', 'Unlocked by ' . $acc['username'], 'good');
 

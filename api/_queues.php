@@ -10,11 +10,11 @@
  *   Staff Reports      submit        / panel
  *   Asset Transfers    submit / mine / panel
  *
- * NONE of them are built yet. This file exists first, on purpose: it is the
- * one place that says who may open what, so the sidebar, the pages and the
- * endpoints that eventually do the work all read the same answer instead of
- * each re-deciding it. When a queue is built, the only change here is
- * 'live' => true.
+ * Ban Appeals is built (see _appeals.php). The other three are not yet, and
+ * that is why this file exists first: it is the one place that says who may
+ * open what, so the sidebar, the pages and the endpoints that eventually do
+ * the work all read the same answer instead of each re-deciding it. When a
+ * queue is built, the only change here is 'live' => true.
  *
  * Everyone can submit. What varies is who may open the staff panel:
  *
@@ -48,9 +48,8 @@ const BS_QUEUE_REPORT_RANK   = 8;  // Management (or the Staff Management team)
  * The four areas, in sidebar order.
  *
  * Each view carries its own gate so a page can ask about one view rather
- * than about the area. 'live' is false for every one of them today; the
- * pages read it and say so rather than drawing an empty table that would
- * read as "you have no requests".
+ * than about the area. Where 'live' is false, the page says so rather than
+ * drawing an empty table that would read as "you have no requests".
  */
 function queues_registry(): array
 {
@@ -69,8 +68,9 @@ function queues_registry(): array
         'appeals' => [
             'label' => 'Ban Appeals',
             'path'  => '/dashboard/appeals',
-            'live'  => false,
-            'why'   => 'Ban appeals aren\'t switched on yet.',
+            // Built. See _appeals.php, and dashboard/appeals.html + appeal.html.
+            'live'  => true,
+            'why'   => null,
             'views' => [
                 'submit' => ['label' => 'Appeal your Punishment', 'min' => 0],
                 'panel'  => ['label' => 'Ban Appeal Panel',       'min' => BS_QUEUE_APPEAL_RANK],

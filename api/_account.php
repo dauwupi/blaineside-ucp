@@ -53,6 +53,60 @@ function current_account(PDO $pdo): array
 }
 
 /**
+ * Like current_account(), but a locked account counts as signed in.
+ *
+ * A user lock is appealable, which means the locked player has to be able to
+ * reach exactly two things: the notice telling them they are locked, and the
+ * appeal. current_account() cannot serve those — it requires 'active', which
+ * is the whole enforcement mechanism for the lock and must stay that way.
+ *
+ * So this is a SECOND door, opened only for the endpoints that belong behind
+ * it. It reads $_SESSION['locked_uid'], the partial session login.php issues
+ * for a locked sign-in, and it verifies the account is still locked before
+ * accepting it — a lock lifted while they sat on the page ends this session
+ * rather than silently upgrading it.
+ *
+ * A suspended (banned) account gets nothing here. Bans are appealed from
+ * outside the UCP until there is somewhere safe to let a banned account in.
+ */
+function current_account_or_locked(PDO $pdo): array
+{
+    if (!empty($_SESSION['uid'])) return current_account($pdo);
+
+    if (empty($_SESSION['locked_uid'])) {
+        json_out(['ok' => false, 'authenticated' => false,
+                  'error' => 'Please sign in first.'], 401);
+    }
+
+    $st = $pdo->prepare(
+        'SELECT id, username, username_lower, email, email_lower, discord,
+                discord_id, discord_username, discord_linked_at,
+                password_hash, admin_rank, status, session_epoch, created_at,
+                last_login, forum_member_id,
+                name_changed_at, password_changed_at,
+                pending_email, pending_email_expires,
+                totp_enabled, totp_secret, totp_last_step
+           FROM ucp_accounts WHERE id = ? LIMIT 1'
+    );
+    $st->execute([(int)$_SESSION['locked_uid']]);
+    $acc = $st->fetch();
+
+    if (!$acc || $acc['status'] !== 'locked') {
+        $_SESSION = [];
+        session_destroy();
+        json_out(['ok' => false, 'authenticated' => false,
+                  'error' => 'Your session has ended. Please sign in again.'], 401);
+    }
+
+    /* A locked account has no rank as far as these endpoints are concerned.
+     * An administrator who gets locked must not keep the appeal queue open on
+     * their own appeal — and this is the only place that could hand it to
+     * them, because every staff gate reads admin_rank off this row. */
+    $acc['admin_rank'] = 0;
+    return $acc;
+}
+
+/**
  * Re-checks the account password before a setting is changed, and ends the
  * request with 401/429 if it doesn't match.
  *
