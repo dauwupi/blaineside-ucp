@@ -1356,12 +1356,14 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   function reveal(){ document.body.classList.add('ready'); }
   setTimeout(reveal, 4000);
 
-  function lockOut(head, body){
+  function lockOut(head, body, extra){
     document.querySelector('.content').innerHTML =
-      '<div class="blank soon" style="margin:60px auto;max-width:540px">' +
+      '<div class="blank soon" style="margin:60px auto;max-width:560px">' +
       '<span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
       '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
-      '<h4>'+esc(head)+'</h4><p>'+esc(body)+'</p></div>';
+      '<h4>'+esc(head)+'</h4><p>'+esc(body)+'</p>' +
+      (extra || '') +
+      '</div>';
     reveal();
   }
 
@@ -1395,6 +1397,13 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     return UCP.get('admin-account.php?id=' + TARGET).then(function(d){
       if(!d || d.ok !== true){
         if(d && d.authenticated === false){ window.location.replace(LOGIN); return; }
+        /* The staff rule has its own wording, and a way back — a refusal with
+           no route forward just produces a message to whoever is nearest. */
+        if(d && d.code === 'staff_only'){
+          lockOut('That\u2019s a staff account', d.error,
+            '<a class="btn" style="margin-top:16px" href="/dashboard/search">Back to Administrative Search</a>');
+          return;
+        }
         lockOut('Couldn\u2019t open that account', (d && d.error) || 'Try again from Administrative Search.');
         return;
       }

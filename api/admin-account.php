@@ -46,6 +46,21 @@ if (!$t) {
     json_out(['ok' => false, 'error' => 'There is no UCP account with that number.'], 404);
 }
 
+/* Below Management, staff accounts are off limits — see BS_ADMIN_STAFF_RANK.
+ *
+ * Checked here rather than only on the page. The page can be edited by anyone
+ * who can open the developer tools; this cannot. Note the refusal comes AFTER
+ * the row is loaded but BEFORE anything about it is returned: the answer is
+ * the same whether or not the account exists, so this can't be used to test
+ * which ids belong to staff. */
+if (!admin_may_view((int)$acc['admin_rank'], (int)$t['admin_rank'], (int)$acc['id'] === (int)$t['id'])) {
+    json_out([
+        'ok'    => false,
+        'code'  => 'staff_only',
+        'error' => admin_view_block_reason(),
+    ], 403);
+}
+
 /**
  * The forum display name for somebody else's member id.
  *

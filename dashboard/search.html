@@ -400,20 +400,38 @@
   /* Tier colours and the group chip live in assets/css/tones.css, loaded
      above — one palette for the whole UCP. */
 
-  /* ---- Lookup tabs ----
-     Three lookups, not one search box. The fields differ completely between
-     them, so they are separate forms rather than one form that changes
-     shape under you. */
-  .ltabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px;overflow-x:auto}
-  .ltab{position:relative;padding:14px 20px;background:none;border:none;cursor:pointer;
-    font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
-    color:var(--text-dim);white-space:nowrap;transition:color .14s}
-  .ltab:hover{color:var(--text-faint)}
-  .ltab.on{color:var(--parchment)}
-  .ltab.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;
-    border-radius:2px 2px 0 0;background:linear-gradient(90deg,var(--gold),var(--amber))}
-  .ltab .soonmark{display:inline-block;margin-left:8px;font-size:9px;font-weight:800;letter-spacing:.1em;
-    color:var(--stone);border:1px solid var(--border);border-radius:100px;padding:2px 7px;vertical-align:1px}
+  /* ---- Lookup switcher ----
+     A raised control that sits ON the page rather than a row of text with a
+     line under it. The old version was underlined labels on the page's own
+     background: nothing to tell you it was a control at all, and the two
+     disabled ones read as grey text rather than as switches you can't throw.
+
+     Each lookup gets an icon and a count of what it can search, so the
+     difference between "built" and "designed" is visible before you click. */
+  .ltabs{display:inline-flex;align-self:flex-start;gap:6px;padding:6px;margin-bottom:22px;max-width:100%;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:15px;
+    box-shadow:0 10px 26px -18px rgba(0,0,0,.9);overflow-x:auto}
+  .ltab{flex:none;display:inline-flex;align-items:center;gap:10px;padding:11px 16px;
+    border-radius:11px;border:1px solid transparent;background:transparent;cursor:pointer;
+    font-family:inherit;text-align:left;color:var(--text-faint);transition:.15s;white-space:nowrap}
+  .ltab .ti{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--text-dim);transition:.15s}
+  .ltab .ti svg{width:15px;height:15px;stroke-width:1.9}
+  .ltab .tt{display:flex;flex-direction:column;gap:3px;line-height:1}
+  .ltab .tn{font-size:13px;font-weight:700;letter-spacing:-.01em}
+  .ltab .ts{font-size:10.5px;font-weight:600;color:var(--text-dim)}
+  .ltab:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .ltab:hover .ti{color:var(--text-faint);border-color:var(--charcoal-4)}
+  .ltab.on{color:var(--parchment);background:var(--charcoal-3);border-color:var(--charcoal-4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .ltab.on .ti{color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));
+    border-color:transparent;box-shadow:0 5px 14px -6px rgba(212,146,58,.6)}
+  .ltab.on .ts{color:var(--amber)}
+  .ltab.on.soon .ts{color:var(--text-dim)}
+  /* A lookup with no data behind it is dimmed but still legible — it is a
+     preview of what is coming, not an error. */
+  .ltab.soon{opacity:.55}
+  .ltab.soon:hover{opacity:.8}
 
   /* ---- The form ----
      Two columns on desktop, one on a phone. Every criterion is visible at
@@ -493,6 +511,22 @@
     color:var(--gold);white-space:nowrap}
   .rtable .rview:hover{text-decoration:underline}
   .rtable td.right{text-align:right}
+  /* A staff row somebody can't open. Legible, not hidden — the point is that
+     they can see the account exists — but visibly closed. */
+  .rtable tr.locked td{color:var(--text-dim)}
+  .rtable tr.locked .rname{color:var(--text-faint)}
+  .rlock{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;
+    color:var(--text-faint);background:var(--charcoal);border:1px solid var(--border);
+    padding:6px 12px;border-radius:100px;white-space:nowrap;cursor:default}
+  .rlock svg{width:12px;height:12px;stroke-width:2.2;flex:none}
+  .schip{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;
+    letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:100px;
+    white-space:nowrap;color:var(--stone);background:rgba(255,255,255,.03);
+    border:1px solid var(--border)}
+  .schip svg{width:11px;height:11px;stroke-width:2.4}
+  .rdash{color:var(--text-dim)}
+  .rmob{display:none}
+
   .rempty{padding:34px 18px;text-align:center;font-size:13px;color:var(--text-dim)}
   .rgrid{display:grid;grid-template-columns:1fr;gap:18px}
 
@@ -508,6 +542,7 @@
     .rtable{min-width:0}
     .rtable th,.rtable td{padding-left:12px;padding-right:12px}
     .rvlong{display:none}
+    .rmob{display:block}
   }
 
   /* ===== ACCOUNT MENU =====
@@ -780,11 +815,22 @@
   };
   function ficon(n){ return '<span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' + (FI[n]||FI.hash) + '</svg></span>'; }
 
-  /* ---- the tab strip ---- */
+  /* ---- the lookup switcher ---- */
+  const TAB_ICON = { user: FI.user, property: FI.house, vehicle: FI.car };
+
   function renderTabs(){
     document.getElementById('ltabs').innerHTML = TABS.map(function(t){
-      return '<button class="ltab ' + (t.key===TAB?'on':'') + '" role="tab" data-tab="' + t.key + '">' +
-             escapeHtml(t.label) + (t.available ? '' : '<span class="soonmark">Not yet</span>') + '</button>';
+      const live = t.fields.filter(function(f){ return f.available; }).length;
+      const sub  = t.available
+        ? live + ' ' + (live === 1 ? 'field' : 'fields') + ' searchable'
+        : 'Not built yet';
+      return '<button class="ltab ' + (t.key===TAB?'on':'') + (t.available?'':' soon') +
+             '" role="tab" aria-selected="' + (t.key===TAB) + '" data-tab="' + t.key + '">' +
+        '<span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+          (TAB_ICON[t.key] || FI.hash) + '</svg></span>' +
+        '<span class="tt"><span class="tn">' + escapeHtml(t.label) + '</span>' +
+          '<span class="ts">' + escapeHtml(sub) + '</span></span>' +
+      '</button>';
     }).join('');
   }
   document.getElementById('ltabs').addEventListener('click', function(e){
@@ -901,7 +947,24 @@
   }
 
   /* ---- results ---- */
+  const ICO_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
   function rowHTML(m){
+    /* A staff account somebody below Staff Management found. They get to see
+       that it exists and who it belongs to — that is the whole question a
+       search answers — and nothing else. The server sent nothing else. */
+    if(m.viewable === false){
+      return '<tr class="locked">' +
+        '<td class="rid">#' + m.id + '</td>' +
+        '<td><span class="rname">' + escapeHtml(m.name) + '</span>' +
+          '<span class="rsub rmob">Staff account</span></td>' +
+        '<td><span class="schip">' + ICO_LOCK + 'Staff account</span></td>' +
+        '<td class="rdash">—</td>' +
+        '<td class="right"><span class="rlock" title="Staff accounts are only visible to Staff Management">' +
+          ICO_LOCK + 'Locked</span></td>' +
+      '</tr>';
+    }
+
     const bad = m.status !== 'active' ? ' <span class="mtag bad">' + escapeHtml(m.status) + '</span>' : '';
     return '<tr>' +
       '<td class="rid">#' + m.id + '</td>' +
@@ -1008,10 +1071,19 @@
       LAST = d;
 
       const note = document.getElementById('snote');
-      const msg  = d.blocked || d.note;
-      note.innerHTML = msg
-        ? '<div class="snote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>' +
-          escapeHtml(msg) + '</div></div>' : '';
+      const msgs = [];
+      if(d.blocked) msgs.push(d.blocked);
+      if(d.note)    msgs.push(d.note);
+      /* One explanation for however many locked rows are on screen. */
+      if(d.locked_staff > 0){
+        msgs.push(d.locked_staff + (d.locked_staff === 1 ? ' result is a staff account' : ' results are staff accounts') +
+          ' and can\u2019t be opened. Staff accounts are only visible to Staff Management ' +
+          '\u2014 contact them with any queries.');
+      }
+      note.innerHTML = msgs.map(function(m){
+        return '<div class="snote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>' +
+               escapeHtml(m) + '</div></div>';
+      }).join('');
 
       renderResults(d);
       renderPager(d);

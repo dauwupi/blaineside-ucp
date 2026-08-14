@@ -22,6 +22,21 @@ declare(strict_types=1);
  */
 const BS_ADMIN_MIN_RANK = 3;
 
+/**
+ * Rank from which an administrator may look at STAFF accounts: 8 = Management.
+ *
+ * Everyone below that can look up players and nobody else. An admin reading
+ * another admin's account — their linked Discord, their sign-in history and,
+ * once it exists, their punishment record — is a different thing from an
+ * admin reading a player's, and it is Staff Management's business.
+ *
+ * "Staff" means any group above Member, so Support Staff and Development Team
+ * are covered by it too even though neither can use this tool.
+ *
+ * Looking at your OWN account is never blocked, whatever your rank.
+ */
+const BS_ADMIN_STAFF_RANK = 8;
+
 /** Results per page. */
 const BS_ADMIN_PER_PAGE = 15;
 
@@ -55,6 +70,26 @@ function require_admin_searcher(array $acc): void
             'error' => 'Administrative Search is for Trainee Admin and above.',
         ], 403);
     }
+}
+
+
+/** May an actor of this rank open an account in that group? */
+function admin_may_view(int $actorRank, int $targetRank, bool $self): bool
+{
+    if ($self) return true;
+    if ($actorRank >= BS_ADMIN_STAFF_RANK) return true;   // Management, Founder
+    return $targetRank < 1;                               // players only
+}
+
+/**
+ * The one sentence somebody sees when they try. Deliberately says what to do
+ * next: "no" without a route forward just generates a message to whoever is
+ * nearest, which is usually the wrong person.
+ */
+function admin_view_block_reason(): string
+{
+    return 'You\'re trying to open another staff member\'s account. Staff accounts are '
+         . 'only visible to Staff Management — please contact them with any queries.';
 }
 
 
@@ -220,12 +255,20 @@ function admin_date(?string $v): ?string
  *
  * @return array{0:string,1:array,2:array,3:?string}  where, args, used, note
  */
-function admin_build_user_query(PDO $pdo, array $in): array
+function admin_build_user_query(PDO $pdo, array $in, int $actorRank = 9): array
 {
     $where = [];
     $args  = [];
     $used  = [];
     $note  = null;
+
+    /* Staff are NOT filtered out here.
+     *
+     * They were, briefly, and it was the wrong call: somebody searching a
+     * name needs to know the account exists, otherwise they go on looking
+     * for it or conclude it was deleted. What they can't do is open it — so
+     * the row comes back stripped by admin_result_out() and the profile
+     * endpoint refuses. Existence is the answer; the contents aren't. */
 
     $has = function (string $k) use ($in): ?string {
         $v = isset($in[$k]) ? trim((string)$in[$k]) : '';
@@ -361,18 +404,39 @@ function admin_forum_ids(string $q): array
 /**
  * One account row as a result.
  *
- * The email is masked. An admin who already has the address can search on
- * it and see the match confirmed; the results table can't be used to
- * collect addresses it wasn't given, which is the same line api/check.php
- * and api/reset.php already hold.
+ * Two shapes, decided here rather than by the page.
+ *
+ * A row the caller may open carries the usual detail, with the email masked
+ * — an admin who already has the address can confirm the match, but the
+ * table can't be used to collect addresses it wasn't given, which is the
+ * same line api/check.php and api/reset.php already hold.
+ *
+ * A staff row seen by anyone below Staff Management carries the id, the
+ * name, and the single fact that it belongs to staff. Not the group, not
+ * the email, not when they last signed in. The page draws a lock, but the
+ * page isn't what's protecting them: those values never leave the server.
  */
-function admin_result_out(array $r): array
+function admin_result_out(array $r, int $actorRank = 9, int $actorId = 0): array
 {
+    $rank = (int)$r['admin_rank'];
+    $self = $actorId > 0 && (int)$r['id'] === $actorId;
+
+    if (!admin_may_view($actorRank, $rank, $self)) {
+        return [
+            'id'       => (int)$r['id'],
+            'name'     => (string)$r['username'],
+            'viewable' => false,
+            'staff'    => true,
+        ];
+    }
+
     return [
         'id'         => (int)$r['id'],
         'name'       => (string)$r['username'],
-        'rank'       => (int)$r['admin_rank'],
-        'role'       => rank_name((int)$r['admin_rank']),
+        'viewable'   => true,
+        'staff'      => $rank >= 1,
+        'rank'       => $rank,
+        'role'       => rank_name($rank),
         'status'     => (string)$r['status'],
         'email'      => mask_email((string)$r['email']),
         'created_at' => $r['created_at'],

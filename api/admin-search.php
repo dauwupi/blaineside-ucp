@@ -58,7 +58,8 @@ if (!$tab['available']) {
 }
 
 // ---- Nothing filled in -----------------------------------------------------
-list($where, $args, $used, $note) = admin_build_user_query($pdo, $in);
+$actorRank = (int)$acc['admin_rank'];
+list($where, $args, $used, $note) = admin_build_user_query($pdo, $in, $actorRank);
 
 if (!$used) {
     ok($base + ['note' => $note]);
@@ -92,12 +93,23 @@ $st = $pdo->prepare(
 );
 $st->execute($args);
 
+/* Rows come back stripped, not removed — see admin_result_out(). The page
+   draws a lock on those; the count below includes them so nobody is left
+   wondering why the total doesn't match what they can see. */
+$actorId = (int)$acc['id'];
+$rows = array_map(function ($r) use ($actorRank, $actorId) {
+    return admin_result_out($r, $actorRank, $actorId);
+}, $st->fetchAll());
+
+$locked = 0;
+foreach ($rows as $r) if (empty($r['viewable'])) $locked++;
+
 ok([
     'tabs'     => $tabs,
     'tab'      => $key,
     'searched' => true,
     'used'     => $used,
-    'results'  => array_map('admin_result_out', $st->fetchAll()),
+    'results'  => $rows,
     'total'    => $total,
     'page'     => $page,
     'pages'    => $pages,
@@ -105,6 +117,10 @@ ok([
     'to'       => $total ? min($total, $offset + $per) : 0,
     'per_page' => $per,
     'note'     => $note,
+
+    // How many of the rows above are staff the caller can't open. Drives one
+    // explanation of the locks rather than a tooltip nobody hovers.
+    'locked_staff' => $locked,
 
     // Characters have no table yet, so the second results panel says so
     // rather than sitting empty and reading as "this player has none".
