@@ -71,16 +71,32 @@ if ($row === false) {
 }
 
 // ── Load user ────────────────────────────────────────────────────────────────
+// The 2FA columns are selected so the forum can mirror the real state of this
+// account's second factor. If they are missing — a server that has not had
+// docs/migration-2fa.sql applied — fall back to the base columns rather than
+// 500ing, which would break sign-in for everyone.
+$user     = null;
+$mfaKnown = false;
+
 try {
     $stmt = db()->prepare(
-        'SELECT id, username, email FROM ucp_accounts WHERE id = ? AND status = "active" LIMIT 1'
+        'SELECT id, username, email, totp_enabled, totp_secret FROM ucp_accounts WHERE id = ? AND status = "active" LIMIT 1'
     );
     $stmt->execute([$row['user_id']]);
-    $user = $stmt->fetch();
+    $user     = $stmt->fetch();
+    $mfaKnown = true;
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'server_error']);
-    exit;
+    try {
+        $stmt = db()->prepare(
+            'SELECT id, username, email FROM ucp_accounts WHERE id = ? AND status = "active" LIMIT 1'
+        );
+        $stmt->execute([$row['user_id']]);
+        $user = $stmt->fetch();
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'server_error']);
+        exit;
+    }
 }
 
 if (!$user) {
@@ -90,10 +106,21 @@ if (!$user) {
 }
 
 // ── Return OpenID Connect claims ─────────────────────────────────────────────
-echo json_encode([
+// mfa_enabled is a non-standard claim consumed by forum.blaineside.com so its
+// Security & Privacy page can show this account's true second-factor state
+// instead of the forum's own (always empty) 2FA tables. It is null — not false
+// — when the UCP cannot determine the answer, so the forum can render "unknown"
+// rather than confidently telling someone their 2FA is off when it is on.
+// Definition matches api/2fa-status.php: enabled AND a secret on file.
+$claims = [
     'sub'                => (string) $user['id'],
     'name'               => $user['username'],
     'preferred_username' => $user['username'],
     'email'              => $user['email'],
     'email_verified'     => true,
-]);
+    'mfa_enabled'        => $mfaKnown
+        ? ( !empty($user['totp_enabled']) && !empty($user['totp_secret']) )
+        : null,
+];
+
+echo json_encode($claims);

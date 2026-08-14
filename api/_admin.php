@@ -1,10 +1,11 @@
 <?php
 /**
- * BlaineSide UCP — Administrative Search: shared rules and the field registry.
+ * BlaineSide UCP — Administrative Search: rules, the field registry, and the
+ * query builder.
  *
- * Who may look accounts up, what may be searched, and how a lookup is
- * recorded. The endpoints are thin; the decisions live here so the page and
- * the API can't disagree about them.
+ * Who may look accounts up, what may be searched, how the criteria combine,
+ * and how a lookup is recorded. The endpoints are thin; the decisions live
+ * here so the page and the API can't disagree about them.
  *
  * Include AFTER _bootstrap.php and _ranks.php.
  */
@@ -21,11 +22,8 @@ declare(strict_types=1);
  */
 const BS_ADMIN_MIN_RANK = 3;
 
-/** Shortest query we will run. One letter matches most of the database. */
-const BS_ADMIN_MIN_QUERY = 2;
-
 /** Results per page. */
-const BS_ADMIN_PER_PAGE = 12;
+const BS_ADMIN_PER_PAGE = 15;
 
 /**
  * How long before the same admin viewing the same account is logged again.
@@ -61,221 +59,268 @@ function require_admin_searcher(array $acc): void
 
 
 /* =====================================================================
-   THE FIELD REGISTRY
+   THE REGISTRY
 
-   One entry per way of searching. This is the extension point: the page
-   builds its picker from whatever this returns, so adding a search means
-   adding an entry here and a case in admin_search_run() — no page edits.
+   Three lookups, each a form of many fields that combine with AND — fill
+   in two boxes and you get the accounts matching both. That is the shape
+   this has to be: a single "search by…" dropdown works for four options
+   and falls apart at thirty, and it can't express "cash over 50k AND in
+   this faction" at all.
 
-   `available` is the honest bit. Characters, properties, businesses and
-   vehicles are designed but have no tables behind them, and a search box
-   that silently returns nothing for them is worse than one that says so:
-   an admin would conclude the player has no characters rather than that
-   the feature doesn't exist. Unavailable fields are still LISTED, so the
-   ladder of what is coming is visible, and they refuse politely.
+   Every field carries `available`. Most of what an admin will eventually
+   want to search — characters, phone numbers, balances, playing hours,
+   factions, properties, vehicles — has no table behind it yet, because it
+   lives on a game server that isn't connected. Those fields are still
+   LISTED and still labelled, so the shape of the finished tool is visible
+   and nobody has to guess what is coming; they are just disabled, and the
+   server ignores them even if a request arrives carrying one.
+
+   That last part matters more than it looks. A search box that silently
+   returns nothing reads as "this player has no characters", not as "this
+   feature does not exist" — which is exactly the wrong thing for someone
+   to conclude while they are deciding whether to ban somebody.
+
+   Field types: text, number, select, date.
    ===================================================================== */
 
-/**
- * Every searchable field, in the order the picker shows them.
- *
- * @return array<int,array{key:string,label:string,group:string,placeholder:string,hint:string,available:bool,why:?string}>
- */
-function admin_search_fields(): array
+function admin_search_tabs(): array
 {
     $forumReady = function_exists('ips_endpoint') && ips_endpoint('core/members') !== null;
 
+    $SOON_GAME = 'Waiting on the game server link — there is no data behind this yet.';
+
+    // Group options for the ladder, high to low.
+    $groups = [['', 'Any group']];
+    for ($i = 9; $i >= 0; $i--) $groups[] = [(string)$i, rank_name($i)];
+
     return [
+        // =============================================================
         [
-            'key'         => 'ucp',
-            'label'       => 'UCP name',
-            'group'       => 'Account',
-            'placeholder' => 'Part of a UCP name…',
-            'hint'        => 'The name they sign in with. Partial matches are fine.',
-            'available'   => true,
-            'why'         => null,
+            'key'   => 'user',
+            'label' => 'User Lookup',
+            'available' => true,
+            'why'   => null,
+            'fields' => [
+                ['key'=>'ucp',      'label'=>'UCP name',        'type'=>'text',   'icon'=>'user',    'available'=>true],
+                ['key'=>'id',       'label'=>'UCP account ID',  'type'=>'number', 'icon'=>'hash',    'available'=>true],
+                ['key'=>'email',    'label'=>'Email address',   'type'=>'text',   'icon'=>'mail',    'available'=>true],
+                ['key'=>'discord',  'label'=>'Discord username','type'=>'text',   'icon'=>'discord', 'available'=>true],
+                ['key'=>'forum',    'label'=>'Forum name',      'type'=>'text',   'icon'=>'chat',
+                 'available'=>$forumReady,
+                 'why'=>'The forum API isn\'t configured on this server.'],
+                ['key'=>'group',    'label'=>'Group',           'type'=>'select', 'icon'=>'shield',
+                 'available'=>true, 'options'=>$groups],
+                ['key'=>'status',   'label'=>'Account status',  'type'=>'select', 'icon'=>'flag', 'available'=>true,
+                 'options'=>[['','Any status'],['active','Active'],['suspended','Suspended'],['pending','Pending email']]],
+                ['key'=>'twofa',    'label'=>'Two-step',        'type'=>'select', 'icon'=>'lock', 'available'=>true,
+                 'options'=>[['','Either'],['1','On'],['0','Off']]],
+                ['key'=>'joined_after',  'label'=>'Registered after',  'type'=>'date', 'icon'=>'cal', 'available'=>true],
+                ['key'=>'joined_before', 'label'=>'Registered before', 'type'=>'date', 'icon'=>'cal', 'available'=>true],
+                ['key'=>'seen_after',    'label'=>'Last seen after',   'type'=>'date', 'icon'=>'clock','available'=>true],
+                ['key'=>'seen_before',   'label'=>'Last seen before',  'type'=>'date', 'icon'=>'clock','available'=>true],
+
+                // --- designed, no data yet ---
+                ['key'=>'firstname', 'label'=>'First name',              'type'=>'text',  'icon'=>'card',  'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'lastname',  'label'=>'Last name',               'type'=>'text',  'icon'=>'card',  'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'charid',    'label'=>'Character ID',            'type'=>'number','icon'=>'user',  'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'phone',     'label'=>'Phone number',            'type'=>'text',  'icon'=>'phone', 'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'cash_min',  'label'=>'Cash is more than',       'type'=>'number','icon'=>'cash',  'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'cash_max',  'label'=>'Cash is less than',       'type'=>'number','icon'=>'cash',  'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'bank_min',  'label'=>'Bank is more than',       'type'=>'number','icon'=>'bank',  'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'bank_max',  'label'=>'Bank is less than',       'type'=>'number','icon'=>'bank',  'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'hours_min', 'label'=>'Playing hours more than', 'type'=>'number','icon'=>'clock', 'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'hours_max', 'label'=>'Playing hours less than', 'type'=>'number','icon'=>'clock', 'available'=>false,'why'=>$SOON_GAME],
+                ['key'=>'faction',   'label'=>'Faction name or ID',      'type'=>'text',  'icon'=>'flag',  'available'=>false,'why'=>$SOON_GAME],
+            ],
         ],
+
+        // =============================================================
         [
-            'key'         => 'character',
-            'label'       => 'Character name',
-            'group'       => 'Account',
-            'placeholder' => 'Firstname Lastname…',
-            'hint'        => 'The name a character goes by in the city.',
-            'available'   => false,
-            'why'         => 'Characters aren\'t in the UCP yet — there is nothing to search '
-                           . 'until the game server is linked.',
+            'key'   => 'property',
+            'label' => 'Property / Shop Lookup',
+            'available' => false,
+            'why'   => 'Properties and businesses aren\'t in the UCP yet. The fields below are '
+                     . 'the ones this lookup will have once the game server is linked.',
+            'fields' => [
+                ['key'=>'owner',      'label'=>'Owner name',            'type'=>'text',  'icon'=>'card',  'available'=>false],
+                ['key'=>'name',       'label'=>'Property / business',   'type'=>'text',  'icon'=>'house', 'available'=>false],
+                ['key'=>'type',       'label'=>'Property type',         'type'=>'text',  'icon'=>'sort',  'available'=>false],
+                ['key'=>'pid',        'label'=>'Property ID',           'type'=>'number','icon'=>'hash',  'available'=>false],
+                ['key'=>'cash_min',   'label'=>'Cashbox more than',     'type'=>'number','icon'=>'cash',  'available'=>false],
+                ['key'=>'cash_max',   'label'=>'Cashbox less than',     'type'=>'number','icon'=>'cash',  'available'=>false],
+                ['key'=>'price_min',  'label'=>'Market price more than','type'=>'number','icon'=>'cash',  'available'=>false],
+                ['key'=>'price_max',  'label'=>'Market price less than','type'=>'number','icon'=>'cash',  'available'=>false],
+                ['key'=>'rent_min',   'label'=>'Rent more than',        'type'=>'number','icon'=>'cash',  'available'=>false],
+                ['key'=>'rent_max',   'label'=>'Rent less than',        'type'=>'number','icon'=>'cash',  'available'=>false],
+                ['key'=>'entry_min',  'label'=>'Entrance fee more than','type'=>'number','icon'=>'cash',  'available'=>false],
+                ['key'=>'entry_max',  'label'=>'Entrance fee less than','type'=>'number','icon'=>'cash',  'available'=>false],
+                ['key'=>'faction',    'label'=>'Faction name or ID',    'type'=>'text',  'icon'=>'flag',  'available'=>false],
+                ['key'=>'interior',   'label'=>'Interior ID',           'type'=>'number','icon'=>'hash',  'available'=>false],
+            ],
         ],
+
+        // =============================================================
         [
-            'key'         => 'forum',
-            'label'       => 'Forum name',
-            'group'       => 'Linked accounts',
-            'placeholder' => 'Part of a forum display name…',
-            'hint'        => 'Asks the forum who matches, then finds the UCP account behind it.',
-            'available'   => $forumReady,
-            'why'         => $forumReady ? null
-                           : 'The forum API isn\'t configured on this server, so forum names '
-                           . 'can\'t be looked up.',
-        ],
-        [
-            'key'         => 'discord',
-            'label'       => 'Discord name',
-            'group'       => 'Linked accounts',
-            'placeholder' => 'Part of a Discord username…',
-            'hint'        => 'Searches both the confirmed Discord account and what they typed at sign-up.',
-            'available'   => true,
-            'why'         => null,
+            'key'   => 'vehicle',
+            'label' => 'Vehicle Lookup',
+            'available' => false,
+            'why'   => 'Vehicles aren\'t in the UCP yet. The fields below are the ones this '
+                     . 'lookup will have once the game server is linked.',
+            'fields' => [
+                ['key'=>'owner',   'label'=>'Owner name',         'type'=>'text',  'icon'=>'card',  'available'=>false],
+                ['key'=>'vid',     'label'=>'Vehicle ID',         'type'=>'number','icon'=>'hash',  'available'=>false],
+                ['key'=>'plate',   'label'=>'Vehicle plate',      'type'=>'text',  'icon'=>'plate', 'available'=>false],
+                ['key'=>'model',   'label'=>'Vehicle model',      'type'=>'text',  'icon'=>'car',   'available'=>false],
+                ['key'=>'faction', 'label'=>'Faction name or ID', 'type'=>'text',  'icon'=>'flag',  'available'=>false],
+            ],
         ],
     ];
 }
 
-/** One field by key, or null. */
-function admin_search_field(string $key): ?array
+/** One tab by key, or null. */
+function admin_search_tab(string $key): ?array
 {
-    foreach (admin_search_fields() as $f) {
-        if ($f['key'] === $key) return $f;
-    }
+    foreach (admin_search_tabs() as $t) if ($t['key'] === $key) return $t;
     return null;
 }
 
 
 /* =====================================================================
-   RUNNING A SEARCH
+   BUILDING THE QUERY
    ===================================================================== */
 
 /**
- * The columns every result row is built from. One list, so a new search
- * can't accidentally return a different shape from the others.
+ * Escapes LIKE wildcards and wraps in %…%.
+ *
+ * `_` and `%` are wildcards, and UCP names are full of underscores
+ * (mgr_one), so they have to be escaped or a search for "mgr_one" quietly
+ * matches "mgrXone" too. The escape character is a pipe rather than the
+ * usual backslash: '\\' is one character to MySQL and two to SQLite, so an
+ * ESCAPE clause written with a backslash works on one and errors on the
+ * other. A pipe means the same thing to both.
  */
-function admin_search_columns(): string
+function admin_like(string $q): string
 {
-    return 'id, username, admin_rank, status, created_at, last_login,
-            forum_member_id, discord, discord_username, totp_enabled';
+    return '%' . str_replace(['|', '%', '_'], ['||', '|%', '|_'], mb_strtolower(trim($q))) . '%';
+}
+
+/** A yyyy-mm-dd from the form, or null. */
+function admin_date(?string $v): ?string
+{
+    $v = trim((string)$v);
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : null;
 }
 
 /**
- * Turns one account row into a result.
+ * Turns the submitted criteria into a WHERE clause.
  *
- * `matched_on` is what the row shows underneath the name. When you searched
- * Discord and got back a UCP name you don't recognise, the thing you need to
- * see is the Discord handle that matched — not the name.
+ * Everything ANDs. Only fields the registry marks `available` are read —
+ * a request carrying cash_min is ignored rather than erroring, because the
+ * column it would filter on does not exist.
+ *
+ * @return array{0:string,1:array,2:array,3:?string}  where, args, used, note
  */
-function admin_result_out(array $r, string $field, ?string $matched): array
+function admin_build_user_query(PDO $pdo, array $in): array
 {
-    return [
-        'id'         => (int)$r['id'],
-        'name'       => (string)$r['username'],
-        'rank'       => (int)$r['admin_rank'],
-        'role'       => rank_name((int)$r['admin_rank']),
-        'status'     => (string)$r['status'],
-        'created_at' => $r['created_at'],
-        'last_login' => $r['last_login'],
-        'twofa'      => !empty($r['totp_enabled']),
-        'forum'      => $r['forum_member_id'] !== null,
-        'field'      => $field,
-        'matched_on' => $matched,
-    ];
-}
+    $where = [];
+    $args  = [];
+    $used  = [];
+    $note  = null;
 
-/**
- * Runs one search and returns [rows, total, note].
- *
- * `note` is a line the page shows above the results when there is something
- * about the search itself worth saying — a forum lookup that couldn't reach
- * the forum, for instance. Silence there would read as "no such player".
- *
- * @return array{0:array,1:int,2:?string}
- */
-function admin_search_run(PDO $pdo, string $field, string $q, int $page): array
-{
-    $per    = BS_ADMIN_PER_PAGE;
-    $offset = max(0, ($page - 1) * $per);
-    // `_` and `%` are wildcards, and UCP names are full of underscores
-    // (mgr_one), so they have to be escaped. The escape character is a pipe,
-    // not the usual backslash: '\\' is one character to MySQL and two to
-    // SQLite, so an ESCAPE clause written with it works on one and errors on
-    // the other. A pipe means the same thing to both.
-    $like   = '%' . str_replace(['|', '%', '_'], ['||', '|%', '|_'], mb_strtolower($q)) . '%';
-    $cols   = admin_search_columns();
+    $has = function (string $k) use ($in): ?string {
+        $v = isset($in[$k]) ? trim((string)$in[$k]) : '';
+        return $v === '' ? null : $v;
+    };
 
-    switch ($field) {
-
-        // -------------------------------------------------------------
-        case 'ucp':
-            $where = "username_lower LIKE ? ESCAPE '|'";
-            $args  = [$like];
-            $total = admin_count($pdo, $where, $args);
-            $rows  = admin_page($pdo, $cols, $where, $args, $per, $offset);
-            return [array_map(function ($r) use ($field) {
-                return admin_result_out($r, $field, null);
-            }, $rows), $total, null];
-
-        // -------------------------------------------------------------
-        case 'discord':
-            // Two columns, deliberately: `discord_username` is what Discord
-            // itself confirmed when they linked, `discord` is whatever they
-            // typed into the sign-up form. An admin chasing a handle from a
-            // report has no idea which of the two it came from.
-            $where = "(LOWER(discord_username) LIKE ? ESCAPE '|'"
-                    . " OR LOWER(discord) LIKE ? ESCAPE '|')";
-            $args  = [$like, $like];
-            $total = admin_count($pdo, $where, $args);
-            $rows  = admin_page($pdo, $cols, $where, $args, $per, $offset);
-            return [array_map(function ($r) use ($field) {
-                $m = $r['discord_username'] ?: ($r['discord'] ?: null);
-                return admin_result_out($r, $field, $m !== null ? (string)$m : null);
-            }, $rows), $total, null];
-
-        // -------------------------------------------------------------
-        case 'forum':
-            return admin_search_forum($pdo, $q, $page, $per, $cols);
+    if (($v = $has('ucp')) !== null) {
+        $where[] = "username_lower LIKE ? ESCAPE '|'";
+        $args[]  = admin_like($v);
+        $used[]  = 'ucp';
+    }
+    if (($v = $has('id')) !== null && ctype_digit($v)) {
+        $where[] = 'id = ?';
+        $args[]  = (int)$v;
+        $used[]  = 'id';
+    }
+    if (($v = $has('email')) !== null) {
+        $where[] = "email_lower LIKE ? ESCAPE '|'";
+        $args[]  = admin_like($v);
+        $used[]  = 'email';
+    }
+    if (($v = $has('discord')) !== null) {
+        // Two columns, deliberately: `discord_username` is what Discord
+        // itself confirmed when they linked, `discord` is whatever they
+        // typed into the sign-up form. An admin chasing a handle from a
+        // report has no idea which of the two it came from.
+        $where[] = "(LOWER(discord_username) LIKE ? ESCAPE '|' OR LOWER(discord) LIKE ? ESCAPE '|')";
+        $args[]  = admin_like($v);
+        $args[]  = admin_like($v);
+        $used[]  = 'discord';
+    }
+    if (($v = $has('group')) !== null && ctype_digit($v)) {
+        $where[] = 'admin_rank = ?';
+        $args[]  = (int)$v;
+        $used[]  = 'group';
+    }
+    if (($v = $has('status')) !== null && in_array($v, ['active','suspended','pending'], true)) {
+        $where[] = 'status = ?';
+        $args[]  = $v;
+        $used[]  = 'status';
+    }
+    if (($v = $has('twofa')) !== null && ($v === '0' || $v === '1')) {
+        $where[] = $v === '1' ? 'totp_enabled = 1' : '(totp_enabled IS NULL OR totp_enabled = 0)';
+        $used[]  = 'twofa';
+    }
+    if (($v = admin_date($has('joined_after'))) !== null) {
+        $where[] = 'created_at >= ?'; $args[] = $v . ' 00:00:00'; $used[] = 'joined_after';
+    }
+    if (($v = admin_date($has('joined_before'))) !== null) {
+        $where[] = 'created_at <= ?'; $args[] = $v . ' 23:59:59'; $used[] = 'joined_before';
+    }
+    if (($v = admin_date($has('seen_after'))) !== null) {
+        $where[] = 'last_login >= ?'; $args[] = $v . ' 00:00:00'; $used[] = 'seen_after';
+    }
+    if (($v = admin_date($has('seen_before'))) !== null) {
+        $where[] = 'last_login <= ?'; $args[] = $v . ' 23:59:59'; $used[] = 'seen_before';
     }
 
-    return [[], 0, null];
-}
+    // The one criterion that leaves this server.
+    if (($v = $has('forum')) !== null) {
+        $used[] = 'forum';
+        list($ids, $note) = admin_forum_ids($v);
+        if ($ids === null) {
+            // Couldn't ask. Refuse the whole search rather than returning
+            // the other criteria's matches as though the forum filter had
+            // been applied — that would be a wrong answer, not a partial one.
+            return ['', [], $used, $note];
+        }
+        if (!$ids) {
+            $where[] = '1 = 0';   // nobody matched on the forum side
+        } else {
+            $where[] = 'forum_member_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')';
+            foreach ($ids as $id) $args[] = $id;
+        }
+    }
 
-/** COUNT(*) for a where clause. */
-function admin_count(PDO $pdo, string $where, array $args): int
-{
-    $st = $pdo->prepare("SELECT COUNT(*) FROM ucp_accounts WHERE $where");
-    $st->execute($args);
-    return (int)$st->fetchColumn();
+    return [$where ? implode(' AND ', $where) : '', $args, $used, $note];
 }
-
-/** One page of accounts for a where clause, newest sign-in first. */
-function admin_page(PDO $pdo, string $cols, string $where, array $args, int $per, int $offset): array
-{
-    $st = $pdo->prepare(
-        "SELECT $cols FROM ucp_accounts
-          WHERE $where
-          ORDER BY username_lower ASC
-          LIMIT $per OFFSET $offset"
-    );
-    $st->execute($args);
-    return $st->fetchAll();
-}
-
 
 /**
- * Forum-name search: ask the forum, then match what it says back to us.
+ * Asks the forum which members match a name, and returns their ids.
  *
- * The forum owns those names, so this is the one search that leaves the
- * server. Two things are worth knowing about it:
+ * Every name IPS returns is checked against the query here as well. If a
+ * future IPS release stops honouring the `name` filter it would hand back
+ * the whole member list, and without this check that would silently turn
+ * into "every account matches" — the worst possible failure for a tool
+ * somebody uses before issuing a ban.
  *
- * 1. Every name IPS returns is checked against the query here as well.
- *    If a future IPS release stops honouring the `name` filter it would
- *    hand back the whole member list, and without this check that would
- *    silently turn into "every account matches".
- *
- * 2. A forum that is down produces a note, not an empty result. "No
- *    matches" and "couldn't ask" look identical on screen and mean
- *    completely different things to whoever is running the search.
- *
- * @return array{0:array,1:int,2:?string}
+ * @return array{0:?array,1:?string}  ids (null = couldn't ask), note
  */
-function admin_search_forum(PDO $pdo, string $q, int $page, int $per, string $cols): array
+function admin_forum_ids(string $q): array
 {
-    $url = ips_endpoint('core/members', ['name' => $q, 'perPage' => 50]);
+    $url = function_exists('ips_endpoint') ? ips_endpoint('core/members', ['name' => $q, 'perPage' => 50]) : null;
     if ($url === null || !function_exists('curl_init')) {
-        return [[], 0, 'The forum API isn\'t reachable from here, so forum names can\'t be searched right now.'];
+        return [null, 'The forum API isn\'t reachable from here, so forum names can\'t be searched.'];
     }
 
     $ch = curl_init($url);
@@ -291,55 +336,51 @@ function admin_search_forum(PDO $pdo, string $q, int $page, int $per, string $co
     curl_close($ch);
 
     if ($code !== 200 || !is_string($body)) {
-        return [[], 0, 'The forum didn\'t answer, so these results would be incomplete. Try again shortly.'];
+        return [null, 'The forum didn\'t answer, so these results would be incomplete. Try again shortly.'];
     }
 
     $data = json_decode($body, true);
-    $list = is_array($data) && isset($data['results']) && is_array($data['results'])
-          ? $data['results'] : [];
+    $list = (is_array($data) && isset($data['results']) && is_array($data['results'])) ? $data['results'] : [];
 
-    // Verify the match ourselves — see note 1 above.
     $needle = mb_strtolower($q);
-    $byId   = [];
+    $ids = [];
     foreach ($list as $m) {
         $mid  = (int)($m['id'] ?? 0);
         $name = (string)($m['name'] ?? '');
-        if ($mid > 0 && $name !== '' && mb_strpos(mb_strtolower($name), $needle) !== false) {
-            $byId[$mid] = $name;
-        }
+        if ($mid > 0 && $name !== '' && mb_strpos(mb_strtolower($name), $needle) !== false) $ids[] = $mid;
     }
-    if (!$byId) return [[], 0, null];
 
-    $ids = array_keys($byId);
-    $in  = implode(',', array_fill(0, count($ids), '?'));
-
-    $st = $pdo->prepare("SELECT COUNT(*) FROM ucp_accounts WHERE forum_member_id IN ($in)");
-    $st->execute($ids);
-    $total = (int)$st->fetchColumn();
-
-    $offset = max(0, ($page - 1) * $per);
-    $st = $pdo->prepare(
-        "SELECT $cols FROM ucp_accounts
-          WHERE forum_member_id IN ($in)
-          ORDER BY username_lower ASC
-          LIMIT $per OFFSET $offset"
-    );
-    $st->execute($ids);
-
-    $rows = array_map(function ($r) use ($byId) {
-        $mid = (int)$r['forum_member_id'];
-        return admin_result_out($r, 'forum', $byId[$mid] ?? null);
-    }, $st->fetchAll());
-
-    // Names the forum knows that the UCP doesn't. Worth saying: it usually
-    // means a forum account that never finished creating a UCP.
     $note = null;
-    if ($total === 0 && $byId) {
-        $note = 'The forum has ' . count($byId) . ' ' . (count($byId) === 1 ? 'member' : 'members')
-              . ' matching that name, but none of them has a UCP account.';
+    if (!$ids && $list) {
+        $note = 'The forum answered, but nothing there matches that name.';
     }
+    return [$ids, $note];
+}
 
-    return [$rows, $total, $note];
+
+/**
+ * One account row as a result.
+ *
+ * The email is masked. An admin who already has the address can search on
+ * it and see the match confirmed; the results table can't be used to
+ * collect addresses it wasn't given, which is the same line api/check.php
+ * and api/reset.php already hold.
+ */
+function admin_result_out(array $r): array
+{
+    return [
+        'id'         => (int)$r['id'],
+        'name'       => (string)$r['username'],
+        'rank'       => (int)$r['admin_rank'],
+        'role'       => rank_name((int)$r['admin_rank']),
+        'status'     => (string)$r['status'],
+        'email'      => mask_email((string)$r['email']),
+        'created_at' => $r['created_at'],
+        'last_login' => $r['last_login'],
+        'twofa'      => !empty($r['totp_enabled']),
+        'forum'      => $r['forum_member_id'] !== null,
+        'discord'    => $r['discord_username'] ?: ($r['discord'] ?: null),
+    ];
 }
 
 
@@ -369,7 +410,6 @@ function admin_log_view(PDO $pdo, array $actor, array $target): void
     $tid = (int)$target['id'];
     if ($aid === $tid) return;   // reading your own profile isn't a lookup
 
-    // One line per sitting — see BS_ADMIN_VIEW_COOLDOWN.
     try {
         $st = $pdo->prepare(
             "SELECT created_at FROM ucp_security_log

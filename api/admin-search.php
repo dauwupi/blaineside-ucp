@@ -2,16 +2,17 @@
 /**
  * GET /api/admin-search.php
  *
- * Administrative Search. Finds UCP accounts by whatever the admin has to
- * hand — a UCP name, a Discord handle, a forum name.
+ * Administrative Search. Every criterion the form offers arrives as its own
+ * parameter and they combine with AND:
  *
- *   ?field=ucp|character|forum|discord   which way to search
- *   ?q=                                  what to look for
- *   ?page=                               1-based
+ *   ?tab=user&ucp=jon&group=3&twofa=0&seen_before=2026-01-01
  *
- * With no `q` it returns the field registry and nothing else, which is what
- * the page loads with: the picker is built from the server's list, so a
- * search that has no backend yet cannot be offered as though it does.
+ *   ?tab=      user | property | vehicle   (default user)
+ *   ?page=     1-based
+ *
+ * With no criteria it returns the registry and nothing else, which is what
+ * the page loads with: the form is built from the server's list, so a field
+ * with no backend behind it can't be offered as though it works.
  *
  * Trainee Admin and above. The rank is checked here, not just in the menu.
  */
@@ -28,66 +29,84 @@ $pdo = db();
 $acc = current_account($pdo);
 require_admin_searcher($acc);
 
-$fields = admin_search_fields();
-$key    = trim((string)($_GET['field'] ?? 'ucp'));
-$q      = trim((string)($_GET['q'] ?? ''));
-$page   = max(1, (int)($_GET['page'] ?? 1));
+$tabs = admin_search_tabs();
+$key  = trim((string)($_GET['tab'] ?? 'user'));
+$page = max(1, (int)($_GET['page'] ?? 1));
 
-$field = admin_search_field($key);
-if ($field === null) {
-    json_out(['ok' => false, 'error' => 'That isn\'t something you can search by.'], 400);
+$tab = admin_search_tab($key);
+if ($tab === null) {
+    json_out(['ok' => false, 'error' => 'That isn\'t a lookup that exists.'], 400);
 }
 
-// ---- No query: just hand back the registry ---------------------------------
-if ($q === '') {
-    ok([
-        'fields'   => $fields,
-        'field'    => $key,
-        'searched' => false,
-        'results'  => [],
-        'total'    => 0,
-    ]);
+/** Everything the form could have sent, as a plain map. */
+$in = [];
+foreach ($tab['fields'] as $f) {
+    if (isset($_GET[$f['key']])) $in[$f['key']] = (string)$_GET[$f['key']];
 }
 
-// ---- A field with nothing behind it refuses, and says why -------------------
-if (!$field['available']) {
-    ok([
-        'fields'   => $fields,
-        'field'    => $key,
-        'searched' => false,
-        'results'  => [],
-        'total'    => 0,
-        'blocked'  => $field['why'],
-    ]);
+$base = [
+    'tabs' => $tabs,
+    'tab'  => $key,
+    'searched' => false,
+    'results'  => [],
+    'total'    => 0,
+];
+
+// ---- A lookup with nothing behind it explains itself ------------------------
+if (!$tab['available']) {
+    ok($base + ['blocked' => $tab['why']]);
 }
 
-if (mb_strlen($q) < BS_ADMIN_MIN_QUERY) {
-    ok([
-        'fields'   => $fields,
-        'field'    => $key,
-        'searched' => false,
-        'results'  => [],
-        'total'    => 0,
-        'blocked'  => 'Type at least ' . BS_ADMIN_MIN_QUERY . ' characters.',
-    ]);
+// ---- Nothing filled in -----------------------------------------------------
+list($where, $args, $used, $note) = admin_build_user_query($pdo, $in);
+
+if (!$used) {
+    ok($base + ['note' => $note]);
 }
 
-list($rows, $total, $note) = admin_search_run($pdo, $key, $q, $page);
+// A criterion we couldn't evaluate (the forum was unreachable) means the
+// answer would be wrong rather than empty. Say so and return nothing.
+if ($where === '' && $note !== null) {
+    ok($base + ['blocked' => $note, 'used' => $used]);
+}
 
-$pages = max(1, (int)ceil($total / BS_ADMIN_PER_PAGE));
-$page  = min($page, $pages);
+// ---- Run it ----------------------------------------------------------------
+$sqlWhere = $where !== '' ? "WHERE $where" : '';
+
+$st = $pdo->prepare("SELECT COUNT(*) FROM ucp_accounts $sqlWhere");
+$st->execute($args);
+$total = (int)$st->fetchColumn();
+
+$pages  = max(1, (int)ceil($total / BS_ADMIN_PER_PAGE));
+$page   = min($page, $pages);
+$offset = ($page - 1) * BS_ADMIN_PER_PAGE;
+$per    = BS_ADMIN_PER_PAGE;
+
+$st = $pdo->prepare(
+    "SELECT id, username, email, admin_rank, status, created_at, last_login,
+            forum_member_id, discord, discord_username, totp_enabled
+       FROM ucp_accounts
+       $sqlWhere
+       ORDER BY username_lower ASC
+       LIMIT $per OFFSET $offset"
+);
+$st->execute($args);
 
 ok([
-    'fields'   => $fields,
-    'field'    => $key,
-    'q'        => $q,
+    'tabs'     => $tabs,
+    'tab'      => $key,
     'searched' => true,
-    'results'  => $rows,
+    'used'     => $used,
+    'results'  => array_map('admin_result_out', $st->fetchAll()),
     'total'    => $total,
     'page'     => $page,
     'pages'    => $pages,
-    'from'     => $total ? (($page - 1) * BS_ADMIN_PER_PAGE) + 1 : 0,
-    'to'       => $total ? min($total, $page * BS_ADMIN_PER_PAGE) : 0,
-    'per_page' => BS_ADMIN_PER_PAGE,
+    'from'     => $total ? $offset + 1 : 0,
+    'to'       => $total ? min($total, $offset + $per) : 0,
+    'per_page' => $per,
     'note'     => $note,
+
+    // Characters have no table yet, so the second results panel says so
+    // rather than sitting empty and reading as "this player has none".
+    'characters' => ['available' => false, 'results' => []],
 ]);
