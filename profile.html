@@ -739,7 +739,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.4">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.5">
 </head>
 <body>
 
@@ -1720,7 +1720,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.4"></script>
+<script src="/assets/js/ucp.js?v=2.4.5"></script>
 <script src="/assets/js/qrcode.js" defer></script>
 <script>
 /* =====================================================================
@@ -2058,7 +2058,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('idMeta').innerHTML =
       '<span>Account <b>#'+d.id+'</b></span>' +
       (created ? '<span class="sep">·</span><span>Joined <b>'+longDate(created)+'</b></span>' : '') +
-      (last ? '<span class="sep">·</span><span>Last sign-in <b>'+ago(last)+'</b></span>' : '');
+      (last ? '<span class="sep">·</span><span>Last log in <b>'+ago(last)+'</b></span>' : '');
 
     var chips = [];
     chips.push(d.twofa.enabled
@@ -2151,7 +2151,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       ['Group', d.role || 'Member', null],
       ['Member since', created ? shortDate(created) : '—',
         d.member_days != null ? n(d.member_days)+' days' : null],
-      ['Last sign-in', last ? hhmm(last) : '—', last ? ago(last) : null]
+      ['Last log in', last ? hhmm(last) : '—', last ? ago(last) : null]
     ];
 
     if(d.forum.linked){

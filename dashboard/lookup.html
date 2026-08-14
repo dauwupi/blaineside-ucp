@@ -739,7 +739,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.4">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.5">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
@@ -986,7 +986,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.4"></script>
+<script src="/assets/js/ucp.js?v=2.4.5"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
@@ -1250,7 +1250,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('idMeta').innerHTML =
       '<span>Account <b>#'+d.id+'</b></span>' +
       (created ? '<span class="sep">·</span><span>Joined <b>'+longDate(created)+'</b></span>' : '') +
-      (last ? '<span class="sep">·</span><span>Last sign-in <b>'+ago(last)+'</b></span>' : '');
+      (last ? '<span class="sep">·</span><span>Last log in <b>'+ago(last)+'</b></span>' : '');
 
     var chips = [];
     if(d.status !== 'active'){
@@ -1324,7 +1324,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       ['Status',       d.status.charAt(0).toUpperCase()+d.status.slice(1), null],
       ['Member since', created ? shortDate(created) : '—',
         d.member_days != null ? n(d.member_days)+' days' : null],
-      ['Last sign-in', last ? hhmm(last) : '—', last ? ago(last) : 'never signed in'],
+      ['Last log in', last ? hhmm(last) : '—', last ? ago(last) : 'never logged in'],
       ['Two-step',     d.twofa.enabled ? 'On' : 'Off', null]
     ];
 

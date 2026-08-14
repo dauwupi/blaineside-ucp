@@ -628,7 +628,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.4">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.5">
 </head>
 <body>
 
@@ -716,7 +716,7 @@
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<script src="/assets/js/ucp.js?v=2.4.4"></script>
+<script src="/assets/js/ucp.js?v=2.4.5"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   const SIDEBAR=[
@@ -1018,7 +1018,7 @@
 
     host.innerHTML = panel(ICO_USERS, 'Accounts', d.total.toLocaleString('en-GB'),
       '<div class="rwrap"><table class="rtable"><thead><tr>' +
-        '<th>ID</th><th>UCP name</th><th>Group</th><th>Last sign-in</th><th></th>' +
+        '<th>ID</th><th>UCP name</th><th>Group</th><th>Last log in</th><th></th>' +
       '</tr></thead><tbody>' + ITEMS.map(rowHTML).join('') + '</tbody></table></div>' +
       footHTML(d));
   }

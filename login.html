@@ -9,7 +9,7 @@
 <title>Sign in — BlaineSide UCP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="/assets/fa/fontawesome.css">
-<link rel="stylesheet" href="/assets/css/ucp.css?v=2.4.4">
+<link rel="stylesheet" href="/assets/css/ucp.css?v=2.4.5">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -187,7 +187,7 @@
 /* No "Create UCP" tab mid-verification — the account already exists and the
    sign-in is half-finished; clicking it would silently abandon the flow. */
 .auth:has(#twofa.on) .tabs{display:none}
-</style><script src="/assets/js/ucp.js?v=2.4.4"></script>
+</style><script src="/assets/js/ucp.js?v=2.4.5"></script>
 </head>
 <body>
 <div class="stage">
@@ -241,7 +241,7 @@
           <div class="eyebrow">Welcome back</div>
           <h2>Sign in to your UCP</h2>
           <div class="lede">Enter your account details to reach the game and forums.</div>
-          <div class="signnote"><i class="fa fa-clock-o"></i> Last sign-in 2 days ago · from this device</div>
+          <div class="signnote"><i class="fa fa-clock-o"></i> Last log in 2 days ago · from this device</div>
           <div class="field">
             <label for="user">UCP account name <span class="req">*</span></label>
             <div class="inp" id="inpUser"><input type="text" id="user" placeholder="Your UCP name" autocomplete="off"></div>
@@ -718,7 +718,7 @@ document.addEventListener('click',function(e){
     var data=null;
     if(raw){ try{ data=JSON.parse(raw); }catch(e){ data=null; } }
     if(!data || !data.ts){ note.remove(); return; }
-    note.innerHTML='<i class="fa fa-clock-o"></i> Last sign-in '+UCP.relTime(data.ts)+
+    note.innerHTML='<i class="fa fa-clock-o"></i> Last log in '+UCP.relTime(data.ts)+
                    (data.same ? ' · from this device' : ' · new device');
   })();
 

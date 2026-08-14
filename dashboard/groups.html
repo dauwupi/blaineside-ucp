@@ -490,7 +490,7 @@
   .mtag.you{color:var(--gold);border-color:rgba(226,182,92,.42);background:rgba(226,182,92,.09)}
   .mtag.bad{color:#e0a99b;border-color:rgba(193,85,63,.42);background:rgba(193,85,63,.1)}
 
-  .mstats{display:flex;gap:26px;flex-wrap:wrap;min-width:0}
+  .mstats{display:flex;align-items:flex-start;gap:26px;flex-wrap:wrap;min-width:0}
   .mstat{min-width:0}
   .mstat .lab{display:block;font-size:9px;font-weight:800;letter-spacing:.14em;
     text-transform:uppercase;color:var(--text-dim);line-height:1}
@@ -498,6 +498,13 @@
     margin-top:6px;white-space:nowrap;line-height:1}
   .mstat .val.dim{color:var(--text-faint);font-weight:500}
   .mstat .val.none{color:var(--text-dim);font-weight:500;font-style:italic}
+  /* Sub-groups stack rather than running along the line. Comma-separated,
+     three of them are wider than the other four stats put together, so the
+     whole stat wrapped onto its own row and made the card taller. Stacked,
+     they use the height the Access panel has already claimed. */
+  .mstat .vlist{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+  .mstat .vitem{font-size:12.5px;font-weight:600;color:var(--parchment);
+    white-space:nowrap;line-height:1}
   .mstat .chips{display:flex;align-items:center;gap:6px;margin-top:5px}
   .flag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
     padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint);white-space:nowrap}
@@ -622,7 +629,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.4">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.5">
 </head>
 <body>
 
@@ -718,7 +725,7 @@
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<script src="/assets/js/ucp.js?v=2.4.4"></script>
+<script src="/assets/js/ucp.js?v=2.4.5"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   const SIDEBAR=[
@@ -848,7 +855,7 @@
     return dateOf(sql);
   }
   function exactOf(sql){
-    const t=toTs(sql); if(!t) return 'Never signed in';
+    const t=toTs(sql); if(!t) return 'Never logged in';
     const d=new Date(t*1000), p=n=>String(n).padStart(2,'0');
     return dateOf(sql)+', '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC';
   }
@@ -944,7 +951,9 @@
     const teamStat = (TEAMS.length && m.team_eligible)
       ? '<div class="mstat"><span class="lab">Sub-groups</span>' +
         (held.length
-          ? '<span class="val">' + escapeHtml(held.map(teamLabel).join(', ')) + '</span>'
+          ? '<span class="vlist">' + teamOrder(held).map(function(k){
+              return '<span class="vitem">' + escapeHtml(teamLabel(k)) + '</span>';
+            }).join('') + '</span>'
           : '<span class="val none">None</span>') + '</div>'
       : '';
 
@@ -959,7 +968,7 @@
         '<div class="mstats">' +
           '<div class="mstat"><span class="lab">Member since</span>' +
             '<span class="val">' + escapeHtml(dateOf(m.created_at)) + '</span></div>' +
-          '<div class="mstat"><span class="lab">Last sign-in</span>' +
+          '<div class="mstat"><span class="lab">Last log in</span>' +
             '<span class="val ' + (m.last_login ? '' : 'dim') + '" title="' + escapeHtml(exactOf(m.last_login)) + '">' +
             escapeHtml(agoOf(m.last_login)) + '</span></div>' +
           '<div class="mstat"><span class="lab">Security</span>' +
@@ -1020,6 +1029,12 @@
     }).join('') + '</div>';
 
     return out;
+  }
+
+  /* Registry order, not whatever order the database handed them back in —
+     the same person's sub-groups should read the same way every time. */
+  function teamOrder(keys){
+    return TEAMS.map(function(t){ return t.key; }).filter(function(k){ return keys.indexOf(k) > -1; });
   }
 
   /** Label for a sub-group key, falling back to the key itself. */
