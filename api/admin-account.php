@@ -174,7 +174,10 @@ ok([
     ],
     'characters'  => [],
     // Staff see the same record the player does, plus who issued each entry.
-    'record'      => record_for($pdo, $id, true),
+    /* $acc is passed so the entries carry can_edit / can_delete worked out
+       here. The page draws the two buttons from those flags and both
+       endpoints ask again — see record_may_edit() in _punish.php. */
+    'record'      => record_for($pdo, $id, true, $acc),
 
     /* What the person looking at this page is allowed to DO to it.
      *

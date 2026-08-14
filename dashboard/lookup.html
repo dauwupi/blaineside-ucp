@@ -621,24 +621,32 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .tally .n.hit{color:#e3bd72}
 .tally .p{font-size:11.5px;color:var(--text-faint);margin-top:6px}
 
-/* Segmented bar: spans the card, equal segments, gold wash and a solid
-   underline on the active one. Loud enough that nobody misses it, and the
-   table below reads as belonging to whichever segment is lit. */
-.filters{display:grid;grid-template-columns:repeat(4,1fr);margin-top:16px;
-  border:1px solid var(--rule);border-radius:11px;overflow:hidden;background:var(--charcoal)}
-.filters button{display:flex;align-items:center;justify-content:center;gap:9px;
-  padding:13px 8px;border:none;background:none;cursor:pointer;
-  font-family:inherit;font-size:13px;font-weight:700;color:var(--text-faint);
-  transition:background .15s,color .15s}
-.filters button + button{border-left:1px solid var(--rule)}
+/* The filter row.
+
+   Was a full-width four-segment slab with a gold wash on the live one. It
+   read as the loudest thing on the card, which put a filter control above
+   the record it filters. This hugs its own content, sits left with the
+   table, and the count is a numeral rather than a badge — the record is
+   what should be read first. */
+.filters{display:inline-flex;flex-wrap:wrap;gap:2px;margin-top:16px;padding:3px;
+  border:1px solid var(--rule);border-radius:11px;background:var(--charcoal)}
+.filters button{display:inline-flex;align-items:center;gap:7px;
+  padding:8px 15px;border:none;border-radius:8px;background:none;cursor:pointer;
+  font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text-faint);
+  white-space:nowrap;transition:background .15s,color .15s}
 .filters button:hover{background:var(--charcoal-3);color:var(--parchment)}
-.filters button[aria-pressed="true"]{color:var(--parchment);
-  background:linear-gradient(180deg,rgba(226,182,92,.19),rgba(212,146,58,.09))}
-.filters button:focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
-.fc{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
-  padding:2px 7px;border-radius:100px;background:var(--charcoal-3);color:var(--text-faint);
-  transition:background .15s,color .15s}
-.filters button[aria-pressed="true"] .fc{background:rgba(226,182,92,.2);color:var(--gold)}
+.filters button[aria-pressed="true"]{color:var(--parchment);background:var(--charcoal-4);
+  box-shadow:inset 0 0 0 1px rgba(226,182,92,.22)}
+.filters button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.fc{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--stone)}
+.filters button[aria-pressed="true"] .fc{color:var(--gold)}
+
+/* Nothing on this card is a paragraph somebody settles in to read — they are
+   captions above a table. An 80ch measure on them left a third of every row
+   empty and cost a line each, so they run the full width of the card. */
+#recordHost .card-lede,
+#standingHost .card-lede{max-width:none}
+.standing .t .s{max-width:none}
 
 .rec{margin-top:16px}
 .rec-row{display:grid;grid-template-columns:94px 108px minmax(0,1fr) 132px 152px;gap:16px;
@@ -650,6 +658,26 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .rec .date{color:var(--parchment);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
 .rec .date .tm{display:block;font-weight:500;color:var(--text-faint);font-size:12px;margin-top:3px}
 .rec .why{color:var(--parchment);line-height:1.55}
+/* Row actions live under the reason rather than in a column of their own.
+   A sixth column would cost every row width on a table that is already tight
+   and would be empty on most of them — only Management sees a delete, and
+   only the issuing administrator sees an edit on their own entries. */
+.rec .why .whytext{display:block}
+.recedit{display:block;font-size:11.5px;color:var(--text-dim);margin-top:5px;font-style:italic}
+.recact{display:flex;flex-wrap:wrap;gap:14px;margin-top:7px}
+.recact button{background:none;border:none;padding:0;font-family:inherit;font-size:11.5px;
+  font-weight:700;letter-spacing:.02em;color:var(--text-dim);cursor:pointer;transition:color .14s}
+.recact button:hover{color:var(--gold)}
+.recact button.dg:hover{color:#e08d7c}
+.recact button.go{color:var(--gold)}
+.recact button.go.dg{color:#e08d7c}
+.recact button:disabled{opacity:.5;cursor:default}
+.recact button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:3px}
+.recwarn{display:block;font-size:12px;color:#dfa294;line-height:1.55;margin-top:7px}
+.recinput{display:block;width:100%;margin-top:8px;padding:9px 11px;border-radius:9px;
+  border:1px solid var(--border);background:var(--charcoal);color:var(--parchment);
+  font-family:inherit;font-size:12.5px;line-height:1.55;resize:vertical}
+.recinput:focus{outline:none;border-color:rgba(226,182,92,.45)}
 .rec .by{color:var(--text-faint)}
 .rec .by b{color:var(--parchment);font-weight:600;display:block;font-size:12.5px}
 .rec .len{color:var(--text-faint);font-variant-numeric:tabular-nums}
@@ -749,9 +777,11 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   .tab{padding:10px 13px;font-size:13px}
   .tally{grid-template-columns:1fr}
   .tally > div + div{border-left:none;padding-left:0;border-top:1px solid var(--rule);padding-top:16px}
-  .filters{grid-template-columns:repeat(2,1fr)}
-  .filters button:nth-child(odd){border-left:none}
-  .filters button:nth-child(n+3){border-top:1px solid var(--rule)}
+  /* Left over from the four-across segmented bar. The row hugs its content
+     and wraps on its own now; on a phone it should fill the width rather
+     than sit in a short box beside empty space. */
+  .filters{display:flex;width:100%}
+  .filters button{flex:1 1 auto;justify-content:center;padding:9px 10px}
   .rec-head{display:none}
   .rec-row{grid-template-columns:1fr;gap:6px;padding:16px 0}
   .rec-row .date{order:-1}
@@ -888,70 +918,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     color:var(--tone-text);border:1px solid color-mix(in srgb, var(--tone) 44%, transparent)}
 
 .standing{display:flex;align-items:center;gap:16px;padding:16px 0 18px}
-.standing-ico{width:48px;height:48px;border-radius:13px;flex:none;display:grid;place-items:center;
-  background:rgba(127,160,90,.11);border:1px solid rgba(127,160,90,.3);color:var(--ok)}
-.standing-ico svg{width:24px;height:24px;stroke-width:1.8}
-.standing.bad .standing-ico{background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.3);color:var(--warn)}
-.standing .t{flex:1;min-width:0}
-.standing .t .h{font-size:19px;font-weight:700;letter-spacing:-.02em;color:#9ec178}
-.standing.bad .t .h{color:#e3bd72}
-.standing .t .s{font-size:13px;color:var(--text-faint);margin-top:4px;line-height:1.6;
-  max-width:78ch;text-wrap:pretty}
-
-/* counters — labelled and period-qualified, so they read as a record summary
-   rather than four decorative numbers */
-.tally{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rule)}
-.tally > div{padding:16px 0 6px;text-align:left}
-.tally > div + div{border-left:1px solid var(--rule);padding-left:18px}
-.tally .k{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint)}
-.tally .n{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:8px;line-height:1;
-  font-variant-numeric:tabular-nums}
-.tally .n.zero{color:var(--stone)}
-.tally .n.hit{color:#e3bd72}
-.tally .p{font-size:11.5px;color:var(--text-faint);margin-top:6px}
-
-/* Segmented bar: spans the card, equal segments, gold wash and a solid
-   underline on the active one. Loud enough that nobody misses it, and the
-   table below reads as belonging to whichever segment is lit. */
-.filters{display:grid;grid-template-columns:repeat(4,1fr);margin-top:16px;
-  border:1px solid var(--rule);border-radius:11px;overflow:hidden;background:var(--charcoal)}
-.filters button{display:flex;align-items:center;justify-content:center;gap:9px;
-  padding:13px 8px;border:none;background:none;cursor:pointer;
-  font-family:inherit;font-size:13px;font-weight:700;color:var(--text-faint);
-  transition:background .15s,color .15s}
-.filters button + button{border-left:1px solid var(--rule)}
-.filters button:hover{background:var(--charcoal-3);color:var(--parchment)}
-.filters button[aria-pressed="true"]{color:var(--parchment);
-  background:linear-gradient(180deg,rgba(226,182,92,.19),rgba(212,146,58,.09))}
-.filters button:focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
-.fc{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
-  padding:2px 7px;border-radius:100px;background:var(--charcoal-3);color:var(--text-faint);
-  transition:background .15s,color .15s}
-.filters button[aria-pressed="true"] .fc{background:rgba(226,182,92,.2);color:var(--gold)}
-
-.rec{margin-top:16px}
-.rec-row{display:grid;grid-template-columns:94px 108px minmax(0,1fr) 132px 152px;gap:16px;
-  align-items:baseline;padding:14px 0;font-size:13px}
-.rec-row + .rec-row{border-top:1px solid var(--rule)}
-.rec-head{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--text-faint);padding-bottom:10px;border-bottom:1px solid var(--rule)}
-.rec-head .rec-row{padding:0;border:none}
-.rec .date{color:var(--parchment);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
-.rec .date .tm{display:block;font-weight:500;color:var(--text-faint);font-size:12px;margin-top:3px}
-.rec .why{color:var(--parchment);line-height:1.55}
-.rec .by{color:var(--text-faint)}
-.rec .by b{color:var(--parchment);font-weight:600;display:block;font-size:12.5px}
-.rec .len{color:var(--text-faint);font-variant-numeric:tabular-nums}
-.kind{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
-  padding:4px 10px;border-radius:100px;white-space:nowrap;
-  border:1px solid var(--rule);background:var(--charcoal);color:var(--text-faint)}
-.kind::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
-.kind.warn{color:#e3bd72;border-color:rgba(226,182,92,.3);background:rgba(226,182,92,.08)}
-.kind.kick{color:#a8afd4;border-color:rgba(107,116,168,.32);background:rgba(107,116,168,.1)}
-.kind.ban{color:#d98a78;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
-.rec .st{font-size:12px;font-weight:600;color:var(--text-faint);line-height:1.5}
-.rec .st.live{color:#e79187}
-.rec .st.done{color:var(--stone)}
+  /* The record's shared styles live once, above the media queries. A second
+     verbatim copy used to sit down here — after them — so every mobile rule
+     for the table was silently overridden and the five columns collided at
+     phone width. */
 
 
   /* Two lines in the status cell, never run together. */
@@ -1227,7 +1197,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
               <div class="p" data-p="kick">not recorded yet</div>
             </div>
             <div>
-              <div class="k">Bans &amp; locks</div>
+              <div class="k">Bans &amp; User Locks</div>
               <div class="n zero" data-t="ban">0</div>
               <div class="p" data-p="ban">none on record</div>
             </div>
@@ -1249,7 +1219,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
             <button aria-pressed="true"  data-f="all">All Record<span class="fc" data-c="all">0</span></button>
             <button aria-pressed="false" data-f="warn">Warnings<span class="fc" data-c="warn">0</span></button>
             <button aria-pressed="false" data-f="kick">Kicks<span class="fc" data-c="kick">0</span></button>
-            <button aria-pressed="false" data-f="ban">Bans &amp; locks<span class="fc" data-c="ban">0</span></button>
+            <button aria-pressed="false" data-f="ban">Bans &amp; User Locks<span class="fc" data-c="ban">0</span></button>
           </div>
 
           <div class="blank" id="recEmpty">
@@ -1263,7 +1233,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
           <div class="rec" id="recList" hidden>
             <div class="rec-head">
               <div class="rec-row">
-                <span>Date &amp; time (UTC)</span><span>Type</span><span>Reason</span><span>Issued by</span><span>Status</span>
+                <span>Date (UTC)</span><span>Type</span><span>Reason</span><span>Issued by</span><span>Status</span>
               </div>
             </div>
             <div id="recRows"></div>
@@ -1921,6 +1891,123 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     return REC.all.filter(function(e){ return recGroupOf(e) === REC.filter; });
   }
 
+  /* An entry whose wording was corrected says so, and by whom. The alternative
+     is a record that can be changed and gives no sign it was — which is the
+     one thing that would make the rest of it not worth reading. */
+  function recEdited(e){
+    if(!e.edited_at) return '';
+    var w = recWhen(e.edited_at);
+    return '<span class="recedit">Reason edited by '+recEsc(e.edited_by || 'an administrator')+
+           ' · '+w.d+', '+w.t+' UTC</span>';
+  }
+
+  /* Two powers, and a row can carry either, both or neither.
+     Correcting a reason is for whoever issued it (and Management above them);
+     removing the entry outright is Management and the Founder only. The
+     server decides both — these flags come down with the entry, and
+     punishment-edit.php / punishment-delete.php ask again on the way in. */
+  function recActions(e){
+    if(!e.can_edit && !e.can_delete) return '';
+    return '<span class="recact">'+
+      (e.can_edit   ? '<button type="button" data-redit="'+e.id+'">Edit reason</button>' : '')+
+      (e.can_delete ? '<button type="button" class="dg" data-rdel="'+e.id+'">Delete entry</button>' : '')+
+    '</span>';
+  }
+
+  function recById(id){
+    for(var i=0;i<REC.all.length;i++){ if(+REC.all[i].id === +id) return REC.all[i]; }
+    return null;
+  }
+  function recCell(id){
+    var row = document.querySelector('#recRows .rec-row[data-rid="'+id+'"]');
+    return row ? row.querySelector('.why') : null;
+  }
+
+  /* ---- correcting a reason ---- */
+  document.addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-redit]'); if(!b) return;
+    ev.preventDefault();
+    var id = b.getAttribute('data-redit'), e = recById(id), cell = recCell(id);
+    if(!e || !cell) return;
+    cell.innerHTML =
+      '<textarea class="recinput" id="rein'+id+'" rows="2" maxlength="400"></textarea>'+
+      '<span class="recact"><button type="button" class="go" data-resave="'+id+'">Save</button>'+
+      '<button type="button" data-recancel="'+id+'">Cancel</button></span>';
+    var ta = document.getElementById('rein'+id);
+    ta.value = e.reason || '';
+    ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  });
+
+  document.addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-recancel]'); if(!b) return;
+    ev.preventDefault(); recPaint();
+  });
+
+  document.addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-resave]'); if(!b) return;
+    ev.preventDefault();
+    var id = b.getAttribute('data-resave');
+    var ta = document.getElementById('rein'+id); if(!ta) return;
+    var val = ta.value.trim();
+    if(!val){ flash('err', 'Write the reason. An entry with no reason on it is worse than a badly worded one.'); return; }
+    b.disabled = true; b.textContent = 'Saving…';
+    UCP.post('punishment-edit.php', {id: +id, reason: val}).then(function(res){
+      var r = res.data || {};
+      if(!r.ok){ b.disabled = false; b.textContent = 'Save';
+                 flash('err', esc(r.error || 'That could not be saved.')); return; }
+      var e = recById(id);
+      if(e){ e.reason = r.reason; e.edited_at = r.edited_at || null; e.edited_by = r.edited_by || null; }
+      recPaint();
+      flash('ok', esc(r.message || 'Reason updated.'));
+    }).catch(function(){
+      b.disabled = false; b.textContent = 'Save';
+      flash('err', 'Could not reach the server. Try again.');
+    });
+  });
+
+  /* ---- deleting an entry ----
+     Two steps, in place. Deleting is not undoable and the button sits inside
+     a table row, which is exactly where a mis-click happens; the second step
+     also asks why, because a Founder reading the log in six months needs
+     more than the fact that somebody pressed it. */
+  document.addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-rdel]'); if(!b) return;
+    ev.preventDefault();
+    var id = b.getAttribute('data-rdel'), e = recById(id), cell = recCell(id);
+    if(!e || !cell) return;
+    cell.innerHTML =
+      '<span class="whytext">'+(e.reason ? recEsc(e.reason)
+        : '<span style="color:var(--text-dim)">No reason was recorded.</span>')+'</span>'+
+      '<span class="recwarn">Delete this from the record permanently. It stops counting '+
+        'towards standing, disappears from the player\'s own view, and'+
+        (e.active && e.kind === 'user_lock' ? ' the user lock comes off with it.' :
+                                              ' cannot be put back.')+'</span>'+
+      '<input class="recinput" id="rewhy'+id+'" maxlength="200" placeholder="Why is it being removed?">'+
+      '<span class="recact"><button type="button" class="dg go" data-rdelgo="'+id+'">Yes, delete it</button>'+
+      '<button type="button" data-recancel="'+id+'">Cancel</button></span>';
+    var w = document.getElementById('rewhy'+id); if(w) w.focus();
+  });
+
+  document.addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-rdelgo]'); if(!b) return;
+    ev.preventDefault();
+    var id = b.getAttribute('data-rdelgo');
+    var w  = document.getElementById('rewhy'+id);
+    b.disabled = true; b.textContent = 'Deleting…';
+    UCP.post('punishment-delete.php', {id: +id, why: w ? w.value.trim() : ''}).then(function(res){
+      var r = res.data || {};
+      if(!r.ok){ b.disabled = false; b.textContent = 'Yes, delete it';
+                 flash('err', esc(r.error || 'That could not be deleted.')); return; }
+      flash('ok', esc(r.message || 'Entry deleted.'));
+      /* Standing, the tally and the counts all move when an entry goes, so
+         the card is rebuilt from the server rather than patched here. */
+      reload();
+    }).catch(function(){
+      b.disabled = false; b.textContent = 'Yes, delete it';
+      flash('err', 'Could not reach the server. Try again.');
+    });
+  });
+
   function recPaint(){
     var list  = recFiltered();
     var pages = Math.max(1, Math.ceil(list.length / REC_PER_PAGE));
@@ -1950,11 +2037,14 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     rows.innerHTML = slice.map(function(e){
       var k = RECKIND[e.kind] || { cls:'ban', label:e.noun };
       var w = recWhen(e.issued_at);
-      return '<div class="rec-row">'+
+      return '<div class="rec-row" data-rid="'+e.id+'">'+
         '<span class="date">'+w.d+'<span class="tm">'+w.t+'</span></span>'+
         '<span><span class="kind '+k.cls+'">'+recEsc(k.label)+'</span></span>'+
-        '<span class="why">'+(e.reason ? recEsc(e.reason)
-          : '<span style="color:var(--text-dim)">No reason was recorded.</span>')+'</span>'+
+        '<span class="why">'+
+          '<span class="whytext">'+(e.reason ? recEsc(e.reason)
+            : '<span style="color:var(--text-dim)">No reason was recorded.</span>')+'</span>'+
+          recEdited(e) + recActions(e) +
+        '</span>'+
         '<span class="by"><b>'+recEsc(REC.staff ? (e.issued_by || 'Unknown') : recLen(e))+'</b>'+
           (REC.staff ? recLen(e) : (e.active ? 'In force now' : 'Ended'))+'</span>'+
         '<span>'+recStatus(e, REC.staff)+'</span>'+

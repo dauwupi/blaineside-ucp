@@ -541,6 +541,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .sess-body{flex:1;min-width:0}
 .sess-body .n{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .sess-body .s{font-size:12.5px;color:var(--text-faint);margin-top:3px}
+.sess-body .stamp-utc{color:var(--text-dim);font-variant-numeric:tabular-nums;margin-top:2px}
 .tagnow{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   padding:3px 8px;border-radius:100px;background:rgba(127,160,90,.16);color:#9ec178}
 
@@ -601,24 +602,32 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .tally .n.hit{color:#e3bd72}
 .tally .p{font-size:11.5px;color:var(--text-faint);margin-top:6px}
 
-/* Segmented bar: spans the card, equal segments, gold wash and a solid
-   underline on the active one. Loud enough that nobody misses it, and the
-   table below reads as belonging to whichever segment is lit. */
-.filters{display:grid;grid-template-columns:repeat(4,1fr);margin-top:16px;
-  border:1px solid var(--rule);border-radius:11px;overflow:hidden;background:var(--charcoal)}
-.filters button{display:flex;align-items:center;justify-content:center;gap:9px;
-  padding:13px 8px;border:none;background:none;cursor:pointer;
-  font-family:inherit;font-size:13px;font-weight:700;color:var(--text-faint);
-  transition:background .15s,color .15s}
-.filters button + button{border-left:1px solid var(--rule)}
+/* The filter row.
+
+   Was a full-width four-segment slab with a gold wash on the live one. It
+   read as the loudest thing on the card, which put a filter control above
+   the record it filters. This hugs its own content, sits left with the
+   table, and the count is a numeral rather than a badge — the record is
+   what should be read first. */
+.filters{display:inline-flex;flex-wrap:wrap;gap:2px;margin-top:16px;padding:3px;
+  border:1px solid var(--rule);border-radius:11px;background:var(--charcoal)}
+.filters button{display:inline-flex;align-items:center;gap:7px;
+  padding:8px 15px;border:none;border-radius:8px;background:none;cursor:pointer;
+  font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text-faint);
+  white-space:nowrap;transition:background .15s,color .15s}
 .filters button:hover{background:var(--charcoal-3);color:var(--parchment)}
-.filters button[aria-pressed="true"]{color:var(--parchment);
-  background:linear-gradient(180deg,rgba(226,182,92,.19),rgba(212,146,58,.09))}
-.filters button:focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
-.fc{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
-  padding:2px 7px;border-radius:100px;background:var(--charcoal-3);color:var(--text-faint);
-  transition:background .15s,color .15s}
-.filters button[aria-pressed="true"] .fc{background:rgba(226,182,92,.2);color:var(--gold)}
+.filters button[aria-pressed="true"]{color:var(--parchment);background:var(--charcoal-4);
+  box-shadow:inset 0 0 0 1px rgba(226,182,92,.22)}
+.filters button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.fc{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--stone)}
+.filters button[aria-pressed="true"] .fc{color:var(--gold)}
+
+/* Nothing on this card is a paragraph somebody settles in to read — they are
+   captions above a table. An 80ch measure on them left a third of every row
+   empty and cost a line each, so they run the full width of the card. */
+#recordHost .card-lede,
+#standingHost .card-lede{max-width:none}
+.standing .t .s{max-width:none}
 
 .rec{margin-top:16px}
 .rec-row{display:grid;grid-template-columns:94px 108px minmax(0,1fr) 132px 152px;gap:16px;
@@ -714,9 +723,11 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   .tab{padding:10px 13px;font-size:13px}
   .tally{grid-template-columns:1fr}
   .tally > div + div{border-left:none;padding-left:0;border-top:1px solid var(--rule);padding-top:16px}
-  .filters{grid-template-columns:repeat(2,1fr)}
-  .filters button:nth-child(odd){border-left:none}
-  .filters button:nth-child(n+3){border-top:1px solid var(--rule)}
+  /* Left over from the four-across segmented bar. The row hugs its content
+     and wraps on its own now; on a phone it should fill the width rather
+     than sit in a short box beside empty space. */
+  .filters{display:flex;width:100%}
+  .filters button{flex:1 1 auto;justify-content:center;padding:9px 10px}
   .rec-head{display:none}
   .rec-row{grid-template-columns:1fr;gap:6px;padding:16px 0}
   .rec-row .date{order:-1}
@@ -1633,7 +1644,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
               <div class="p" data-p="kick">none on record</div>
             </div>
             <div>
-              <div class="k">Bans &amp; locks</div>
+              <div class="k">Bans &amp; User Locks</div>
               <div class="n zero" data-t="ban">0</div>
               <div class="p" data-p="ban">none on record</div>
             </div>
@@ -1656,7 +1667,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
             <button aria-pressed="true"  data-f="all">All Record<span class="fc" data-c="all">0</span></button>
             <button aria-pressed="false" data-f="warn">Warnings<span class="fc" data-c="warn">0</span></button>
             <button aria-pressed="false" data-f="kick">Kicks<span class="fc" data-c="kick">0</span></button>
-            <button aria-pressed="false" data-f="ban">Bans &amp; locks<span class="fc" data-c="ban">0</span></button>
+            <button aria-pressed="false" data-f="ban">Bans &amp; User Locks<span class="fc" data-c="ban">0</span></button>
           </div>
 
           <!-- empty -->
@@ -1673,7 +1684,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
           <div class="rec" id="recList" hidden>
             <div class="rec-head">
               <div class="rec-row">
-                <span>Date &amp; time (UTC)</span><span>Type</span><span>Reason</span><span>Issued by</span><span>Status</span>
+                <span>Date (UTC)</span><span>Type</span><span>Reason</span><span>Issued by</span><span>Status</span>
               </div>
             </div>
             <div id="recRows"></div>
@@ -2377,6 +2388,62 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     renderActivity(d);
   }
 
+  /* ------------------------------------------------------------------ paging */
+  /* Both lists below grow without limit — a signed-in device is added every
+     time somebody opens the UCP from a new browser, and the activity log gets
+     a line per sign-in. Left unpaged they turned the Security tab into a
+     several-thousand-pixel scroll where the two cards underneath were
+     unreachable in practice. Same pager as the record, same 8 a page, so the
+     control means one thing everywhere on the page. */
+  var PAGE_SIZE = 8;
+  var PAGES = {};
+
+  /**
+   * @param key    a name for this list, used to remember which page it is on
+   * @param items  the whole array
+   * @param host   element to draw into
+   * @param draw   function(slice) -> HTML for the rows
+   */
+  function paged(key, items, host, draw){
+    if(PAGES[key] === undefined) PAGES[key] = 1;
+    var total = items.length;
+    var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if(PAGES[key] > pages) PAGES[key] = pages;
+    var page  = PAGES[key];
+    var first = (page-1)*PAGE_SIZE;
+    var slice = items.slice(first, first+PAGE_SIZE);
+
+    var nav = '';
+    if(pages > 1){
+      var b = [];
+      b.push('<button data-pg="'+key+':'+(page-1)+'"'+(page<=1?' disabled':'')+'>Previous</button>');
+      for(var i=1;i<=pages;i++){
+        b.push('<button data-pg="'+key+':'+i+'"'+(i===page?' aria-current="true"':'')+'>'+i+'</button>');
+      }
+      b.push('<button data-pg="'+key+':'+(page+1)+'"'+(page>=pages?' disabled':'')+'>Next</button>');
+      nav = '<div class="pager">'+
+              '<span class="pcount">Showing '+(first+1)+'–'+Math.min(first+PAGE_SIZE,total)+
+                ' of '+total+'</span>'+
+              '<div class="pnav">'+b.join('')+'</div>'+
+            '</div>';
+    }
+    host.innerHTML = draw(slice) + nav;
+  }
+
+  /* One listener for every pager on the page. The redraw goes back through
+     the same render function, so a page number can never disagree with the
+     rows under it. */
+  document.addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-pg]'); if(!b) return;
+    ev.preventDefault();
+    var bits = b.getAttribute('data-pg').split(':');
+    PAGES[bits[0]] = parseInt(bits[1], 10);
+    if(!DATA) return;
+    if(bits[0] === 'sess') renderSessions(DATA); else renderActivity(DATA);
+    var card = b.closest('.card');
+    if(card) card.scrollIntoView({block:'start', behavior:'smooth'});
+  });
+
   /* ------------------------------------------------------ where you're signed in */
   var DEV_ICO = {
     desktop:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
@@ -2398,7 +2465,12 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     $('sessAside').textContent = s.length === 1 ? '1 active session' : s.length+' active sessions';
     $('sessLede').textContent  = 'Anything you don\'t recognise, sign it out and change your password.';
 
-    $('sessHost').innerHTML = '<div class="rows">' + s.map(function(x){
+    /* The exact stamp AND the relative one. "last active 2 hours ago" is the
+       one somebody reads at a glance; the UTC time is the one they quote to
+       staff when they report a sign-in that wasn't them, and a report with a
+       relative time in it is worthless by the time it is read. */
+    paged('sess', s, $('sessHost'), function(slice){
+    return '<div class="rows">' + slice.map(function(x){
       var seen = new Date(x.last_seen*1000);
       var when = x.current ? 'active now' : 'last active '+ago(seen);
       var meta = [esc(x.ip), when];
@@ -2410,12 +2482,14 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
           '<div class="n">'+esc(x.device)+
             (x.current ? ' <span class="tagnow">This device</span>' : '')+'</div>' +
           '<div class="s">'+meta.join(' · ')+'</div>' +
+          '<div class="s stamp-utc">'+esc(shortDate(seen))+', '+esc(hhmm(seen))+'</div>' +
         '</div>' +
         '<div class="row-r">' + (x.current
           ? '<button class="btn" disabled>Current</button>'
           : '<button class="btn danger" data-revoke="'+esc(x.id)+'">Sign out</button>') +
         '</div></div>';
     }).join('') + '</div>';
+    });
   }
 
   /* One click, no confirmation. Ending a session is the safe direction — the
@@ -2476,7 +2550,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       return;
     }
 
-    $('logHost').innerHTML = '<div class="log">' + a.map(function(x){
+    paged('log', a, $('logHost'), function(slice){
+    return '<div class="log">' + slice.map(function(x){
       var t = new Date(x.at*1000);
       var head = EVENTS[x.event] || 'Account activity';
       var stamp = shortDate(t)+', '+hhmm(t);
@@ -2486,6 +2561,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         '<div class="log-s">'+esc(stamp)+' · '+esc(x.device)+' · '+esc(x.ip)+'</div>' +
       '</div>';
     }).join('') + '</div>';
+    });
   }
 
   /* ----------------------------------------------------------------- RECORD */

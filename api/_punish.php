@@ -228,7 +228,86 @@ function punish_lift_kind(PDO $pdo, int $accountId, string $kind,
  * yet — so the record says so rather than showing a clean sheet that would
  * read as "this player has never been warned".
  */
-function record_for(PDO $pdo, int $accountId, bool $showIssuer = false): array
+/**
+ * Has docs/migration-record-edit.sql been run?
+ *
+ * Same shape as the other capability guards: a server one migration behind
+ * refuses the two endpoints with a sentence naming the file, instead of
+ * throwing a 500 that reaches the page as "Something went wrong".
+ */
+function punish_edit_available(PDO $pdo): bool
+{
+    static $ok = null;
+    if ($ok !== null) return $ok;
+    try { $pdo->query('SELECT edited_at FROM ucp_punishments LIMIT 1'); $ok = true; }
+    catch (Throwable $e) { $ok = false; }
+    return $ok;
+}
+
+/**
+ * One line in the punishment log.
+ *
+ * `snapshot` holds the entry as it was, as JSON. On an edit that is the old
+ * and new wording; on a delete it is the whole entry, which is the only copy
+ * left once the row is gone.
+ */
+function punish_log_add(PDO $pdo, array $p, array $actor, string $action,
+                        ?string $detail = null, ?string $snapshot = null): void
+{
+    try {
+        $pdo->prepare(
+            'INSERT INTO ucp_punishment_log
+                (punishment_id, account_id, action, actor_id, actor_name, detail, snapshot,
+                 created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([
+            (int)$p['id'], (int)$p['account_id'], $action,
+            (int)$actor['id'], (string)$actor['username'], $detail, $snapshot, time(),
+        ]);
+    } catch (Throwable $e) {
+        // The log table is part of the same migration as the columns, and the
+        // endpoints refuse without it. Nothing useful to do here.
+    }
+}
+
+/**
+ * Who may change what is on a record.
+ *
+ * Two separate powers, deliberately not one.
+ *
+ *   Editing is correcting the wording of a reason. The administrator who
+ *   issued it may fix their own — they wrote it, they know what they meant,
+ *   and making them queue for a Manager to fix a typo means the typo stays.
+ *   They may not touch anybody else's: an administrator quietly rewording a
+ *   colleague's ban reason is how a record stops being evidence.
+ *
+ *   Deleting removes the entry from the record entirely. That is the power
+ *   to make a punishment never have happened, so it sits with Management and
+ *   the Founder and nowhere else — including the administrator who issued
+ *   it, who otherwise could erase their own mistakes before anybody read
+ *   them.
+ *
+ * Both are refused outright on the player's own view of their record. The
+ * flags are computed here, on the server, and the endpoints ask again — the
+ * buttons the page draws are a convenience, not the rule.
+ */
+const BS_RECORD_ADMIN_RANK = 8;      // Management and the Founder
+
+function record_may_delete(?array $viewer): bool
+{
+    return $viewer !== null && (int)($viewer['admin_rank'] ?? 0) >= BS_RECORD_ADMIN_RANK;
+}
+
+function record_may_edit(?array $viewer, array $p): bool
+{
+    if ($viewer === null) return false;
+    if ((int)($viewer['admin_rank'] ?? 0) >= BS_RECORD_ADMIN_RANK) return true;
+    $issuer = $p['issued_by'] !== null ? (int)$p['issued_by'] : 0;
+    return $issuer > 0 && $issuer === (int)$viewer['id'];
+}
+
+function record_for(PDO $pdo, int $accountId, bool $showIssuer = false,
+                    ?array $viewer = null): array
 {
     if (!punish_available($pdo)) {
         return ['available' => false, 'entries' => [], 'standing' => null,
@@ -279,7 +358,13 @@ function record_for(PDO $pdo, int $accountId, bool $showIssuer = false): array
         if ($lastAt === null) $lastAt = (int)$p['issued_at'];
 
         $e = punish_out($p, $showIssuer);
-        $e['appeal'] = $appeals[(int)$p['id']] ?? null;
+        $e['appeal']     = $appeals[(int)$p['id']] ?? null;
+        $e['can_edit']   = record_may_edit($viewer, $p);
+        $e['can_delete'] = record_may_delete($viewer);
+        $e['edited_at']  = isset($p['edited_at']) && $p['edited_at'] !== null
+                             ? (int)$p['edited_at'] : null;
+        $e['edited_by']  = isset($p['edited_by_name']) && $p['edited_by_name'] !== ''
+                             ? (string)$p['edited_by_name'] : null;
         $entries[] = $e;
     }
 
