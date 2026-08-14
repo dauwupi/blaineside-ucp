@@ -396,11 +396,37 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
      * they must not see. Rank is not a reason to see your own file. */
     $staff = appeal_is_staff($acc) && !$mine;
 
-    $owner = null;
-    $st = $pdo->prepare('SELECT username FROM ucp_accounts WHERE id = ? LIMIT 1');
+    $owner = null; $accounts = null;
+    $st = $pdo->prepare(
+        'SELECT username, forum_member_id, discord, discord_username, discord_linked_at
+           FROM ucp_accounts WHERE id = ? LIMIT 1'
+    );
     $st->execute([(int)$a['account_id']]);
     $row = $st->fetch();
-    if ($row) $owner = (string)$row['username'];
+    if ($row) {
+        $owner = (string)$row['username'];
+
+        /* An appeal against a forum or Discord ban is about an account the
+         * UCP already knows. Making a handler go and look it up separately —
+         * on a page they may not have open, for a name the player may have
+         * spelled differently — is the sort of small friction that turns a
+         * two-minute decision into a ten-minute one. */
+        $accounts = [
+            'forum' => [
+                'linked'    => $row['forum_member_id'] !== null,
+                'member_id' => $row['forum_member_id'] !== null
+                               ? (int)$row['forum_member_id'] : null,
+            ],
+            'discord' => [
+                'linked'    => !empty($row['discord_username']),
+                'username'  => $row['discord_username'] ?: null,
+                // What they typed at sign-up, which is NOT the same fact.
+                'given'     => $row['discord'] ?: null,
+                'linked_at' => $row['discord_linked_at'] !== null
+                               ? (int)$row['discord_linked_at'] : null,
+            ],
+        ];
+    }
 
     $ps = appeal_punishments($pdo, $a);
 
@@ -431,6 +457,7 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
             return punish_out($p, $showIssuer);
         }, $ps),
         'punishment' => $ps ? punish_out($ps[0], $showIssuer) : null,
+        'accounts'   => $accounts,
 
         /* Platforms the appellant ticked that have nothing on file. Worth
            saying out loud: it is usually a misread of the question, and a

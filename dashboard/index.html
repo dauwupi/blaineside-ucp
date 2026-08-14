@@ -1210,7 +1210,7 @@
         if(!a || !e || e.ok !== true) return;
         if(e.open){
           a.textContent = 'View your appeal';
-          a.setAttribute('href', '/dashboard/appeal?id=' + e.open);
+          a.setAttribute('href', '/dashboard/appeals?id=' + e.open);
         } else if(!e.may && e.why){
           /* Can't appeal — a cooldown, or the tables aren't migrated. Say so
              rather than sending them to a page that will refuse them. */

@@ -83,10 +83,16 @@ $pdo->prepare(
 )->execute([$id, (int)$acc['id'], (string)$acc['username'],
             $staffOnly ? 1 : 0, $comment, $now]);
 
+/* comments_enabled goes to 0 with the verdict.
+ *
+ * A decided appeal is finished. Leaving it open invites the appellant to
+ * argue with the outcome in a thread nobody is reading any more, and the
+ * reply that never comes reads as being ignored. Staff can still write here
+ * — appeal-comment.php checks the status, not this flag, for them. */
 $pdo->prepare(
     'UPDATE ucp_appeals
         SET status = ?, concluded_at = ?, concluded_by = ?, concluded_by_name = ?,
-            updated_at = ?,
+            updated_at = ?, comments_enabled = 0,
             handler_id = COALESCE(handler_id, ?), handler_name = COALESCE(handler_name, ?)
       WHERE id = ? AND status = \'pending\''
 )->execute([$verdict, $now, (int)$acc['id'], (string)$acc['username'], $now,
