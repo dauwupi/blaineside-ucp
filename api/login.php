@@ -9,6 +9,7 @@
  * only established once /api/2fa-verify.php accepts a code.
  */
 require __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/_lock.php';
 require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
 require __DIR__ . '/_login_finish.php';
@@ -88,6 +89,33 @@ if ($acc['status'] === 'pending') {
 }
 if ($acc['status'] === 'suspended') {
     fail('This account is suspended. Contact staff on Discord.', 403);
+}
+
+/* A lock is answered, not just refused.
+ *
+ * The password was right, so this is the account holder — telling them
+ * nothing would send them round the reset-password loop for a problem a
+ * password can't fix. They get what happened, why if a reason was given, and
+ * where to appeal. `locked` in the response lets the sign-in page draw that
+ * as a state rather than as another red validation error. */
+if ($acc['status'] === 'locked') {
+    // The reason lives in a column added by docs/migration-userlock.sql. The
+    // status can't read 'locked' before that ran, but fetch it defensively
+    // anyway — a missing reason should cost the wording, not the response.
+    try {
+        $rs = $pdo->prepare('SELECT lock_reason FROM ucp_accounts WHERE id = ? LIMIT 1');
+        $rs->execute([(int)$acc['id']]);
+        $acc['lock_reason'] = $rs->fetchColumn() ?: null;
+    } catch (Throwable $e) {
+        $acc['lock_reason'] = null;
+    }
+
+    json_out([
+        'ok'     => false,
+        'locked' => true,
+        'reason' => $acc['lock_reason'],
+        'error'  => lock_message($acc),
+    ], 403);
 }
 
 // ---- Two-factor gate ------------------------------------------------------

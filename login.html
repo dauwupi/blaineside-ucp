@@ -9,7 +9,7 @@
 <title>Sign in — BlaineSide UCP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="/assets/fa/fontawesome.css">
-<link rel="stylesheet" href="/assets/css/ucp.css?v=2.4.6">
+<link rel="stylesheet" href="/assets/css/ucp.css?v=2.4.7">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -139,6 +139,15 @@
 .ls-sub{margin-top:14px;font-size:12px;color:var(--text-faint);min-height:16px;transition:opacity .14s ease}
 .ls-sub.swap{opacity:0}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
+.accountlock{display:none;gap:12px;margin-top:16px;padding:14px 15px;border-radius:12px;
+  background:rgba(201,82,74,.08);border:1px solid rgba(201,82,74,.32)}
+.accountlock.show{display:flex}
+.accountlock .ali{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
+  background:rgba(201,82,74,.16);color:#e79187;font-size:13px}
+.accountlock .alb{flex:1;min-width:0}
+.accountlock .alb h4{font-size:13.5px;font-weight:700;color:#e79187;margin-bottom:5px}
+.accountlock .alb p{font-size:12.5px;line-height:1.55;color:var(--text-faint,#968e7e)}
+.accountlock .alb p + p{margin-top:7px}
 .lockbar{display:none;align-items:center;gap:9px;margin-top:16px;padding:11px 13px;border-radius:10px;background:rgba(201,82,74,.09);border:1px solid rgba(201,82,74,.28);font-size:12px;color:#e79187;font-weight:600}
 .lockbar.show{display:flex}
 .lockbar .fa{color:#dd7168}
@@ -187,7 +196,7 @@
 /* No "Create UCP" tab mid-verification — the account already exists and the
    sign-in is half-finished; clicking it would silently abandon the flow. */
 .auth:has(#twofa.on) .tabs{display:none}
-</style><script src="/assets/js/ucp.js?v=2.4.6"></script>
+</style><script src="/assets/js/ucp.js?v=2.4.7"></script>
 </head>
 <body>
 <div class="stage">
@@ -254,6 +263,18 @@
           </div>
           <div class="rowline"><span class="chk on" data-chk><span class="box"><i class="fa fa-check"></i></span> Remember me</span></div>
           <div class="lockbar" id="lockbar"><i class="fa fa-lock"></i> <span id="lockmsg"></span></div>
+          <!-- An account lock is not a failed sign-in: the password was right.
+               It gets its own panel rather than the red field state, which
+               would send somebody round the reset-password loop. -->
+          <div class="accountlock" id="acctLock">
+            <span class="ali"><i class="fa fa-lock"></i></span>
+            <div class="alb">
+              <h4>This account is locked</h4>
+              <p id="acctLockWhy"></p>
+              <p>You can appeal it through Reports &amp; Appeals once you are able to sign in,
+                 or speak to staff on Discord.</p>
+            </div>
+          </div>
           <button class="submit" id="signinBtn">Sign in <i class="fa fa-arrow-right" style="font-size:12px"></i></button>
           <div class="alt">New to Blaine County? <a href="/create">Create a UCP</a></div>
         </div>
@@ -371,7 +392,10 @@ document.addEventListener('click',function(e){
     m.className='msg show '+(state==='ok'?'ok':'err');
     m.innerHTML='<i class="fa '+(state==='ok'?'fa-check-circle':'fa-exclamation-circle')+'"></i> '+text;
   }
-  function clearMsgs(){setMsg(msgUser,inpUser,null);setMsg(msgPw,inpPw,null);}
+  function clearMsgs(){
+    setMsg(msgUser,inpUser,null);setMsg(msgPw,inpPw,null);
+    var al=document.getElementById('acctLock'); if(al) al.classList.remove('show');
+  }
 
   /* Runs the lock countdown using the server's remaining seconds. */
   function lockFor(seconds){
@@ -487,6 +511,17 @@ document.addEventListener('click',function(e){
       // Server says this account+IP is locked — mirror its countdown.
       if(d.locked && d.locked_for){ lockFor(d.locked_for); return; }
       // Unverified / suspended (403) — surface the reason, no attempt counting.
+      /* A locked account answered correctly — the password is not the
+         problem, so it must not be marked as one. */
+      if(res.status===403 && d.locked){
+        setMsg(msgPw,inpPw,null);
+        document.getElementById('acctLockWhy').textContent = d.reason
+          ? d.reason
+          : 'A member of staff has put a hold on it.';
+        document.getElementById('acctLock').classList.add('show');
+        pw.value='';
+        return;
+      }
       if(res.status===403){ setMsg(msgPw,inpPw,'err',UCP.esc(d.error||'Access denied.')); return; }
       // Wrong credentials. One generic message for both cases so we never
       // reveal whether a UCP name exists.

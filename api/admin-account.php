@@ -22,6 +22,7 @@ require_once __DIR__ . '/_sessions.php';
 require_once __DIR__ . '/_ips.php';
 require_once __DIR__ . '/_teams.php';
 require_once __DIR__ . '/_admin.php';
+require_once __DIR__ . '/_lock.php';
 
 throttle('admin-account', 40);
 
@@ -34,10 +35,16 @@ if ($id < 1) {
     json_out(['ok' => false, 'error' => 'No account asked for.'], 400);
 }
 
+/* The lock columns only exist after docs/migration-userlock.sql. Asked for
+   separately so a server one migration behind still serves the page. */
+$lockCols = lock_available($pdo)
+    ? ', locked_at, locked_by_name, lock_reason'
+    : '';
+
 $st = $pdo->prepare(
     'SELECT id, username, admin_rank, status, created_at, last_login,
             forum_member_id, discord, discord_username, discord_linked_at,
-            totp_enabled, totp_secret
+            totp_enabled, totp_secret' . $lockCols . '
        FROM ucp_accounts WHERE id = ? LIMIT 1'
 );
 $st->execute([$id]);
@@ -132,6 +139,9 @@ ok([
     'status'      => (string)$t['status'],
     'teams'       => array_map(function ($k) { return ['key' => $k, 'label' => team_label($k)]; },
                                teams_for($pdo, (int)$t['id'])),
+
+    // Null unless the account is locked right now.
+    'lock'        => lock_state($t),
     'created_at'  => $t['created_at'],
     'member_days' => $createdTs ? (int)floor((time() - $createdTs) / 86400) : null,
     'last_login'  => $t['last_login'],
@@ -164,10 +174,17 @@ ok([
     'characters'  => [],
     'punishments' => [],
 
-    // Who is doing the looking, so the page can label itself.
+    /* What the person looking at this page is allowed to DO to it.
+     *
+     * Worked out here rather than by the page comparing ranks: the page is
+     * drawing buttons, and it should be drawing them from the same answer
+     * api/member-lock.php will give when one is pressed. */
     'viewer' => [
-        'id'   => (int)$acc['id'],
-        'rank' => (int)$acc['admin_rank'],
-        'self' => (int)$acc['id'] === (int)$t['id'],
+        'id'        => (int)$acc['id'],
+        'rank'      => (int)$acc['admin_rank'],
+        'self'      => (int)$acc['id'] === (int)$t['id'],
+        'may_lock'  => lock_available($pdo) && lock_block_reason($acc, $t) === null,
+        'lock_why'  => lock_block_reason($acc, $t),
+        'lock_min'  => rank_name(BS_LOCK_MIN_RANK),
     ],
 ]);

@@ -739,7 +739,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.6">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.7">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
@@ -768,6 +768,54 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     letter-spacing:.02em;color:#e3bd72;background:rgba(226,182,92,.08);
     border:1px solid rgba(226,182,92,.3);border-radius:100px;padding:5px 12px;white-space:nowrap}
   .lookro svg{width:13px;height:13px;stroke-width:2.2;flex:none}
+
+  /* ---- Administrative actions ----
+     A separate card, below the account, deliberately not mixed in with the
+     read-only panels above it. Everything here CHANGES something; everything
+     above it only reports. Actions with nothing behind them yet are listed
+     and disabled rather than hidden, so the shape of the finished tool is
+     visible — the same rule the search fields follow. */
+  .actcard{border-color:rgba(193,85,63,.22)}
+  .actgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px}
+  .act{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;
+    font-family:inherit;font-size:13px;font-weight:600;color:var(--parchment);text-align:left;width:100%}
+  .act:hover:not(:disabled){background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .act .ai{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint);transition:.14s}
+  .act .ai svg{width:15px;height:15px;stroke-width:1.9}
+  .act .at{flex:1;min-width:0}
+  .act .at .n{display:block;line-height:1.2}
+  .act .at .s{display:block;font-size:11px;font-weight:500;color:var(--text-dim);margin-top:3px;line-height:1.35}
+  .act:disabled{cursor:not-allowed;opacity:.5}
+  .act.danger:not(:disabled) .ai{color:#d29b8d;border-color:rgba(193,85,63,.3);background:rgba(193,85,63,.08)}
+  .act.danger:not(:disabled):hover{border-color:rgba(193,85,63,.45);background:rgba(193,85,63,.07)}
+  .act.on .ai{color:#9fae8d;border-color:rgba(127,160,90,.3);background:rgba(127,160,90,.08)}
+  .act .soon{font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-dim);border:1px solid var(--border-soft);border-radius:100px;padding:2px 6px;flex:none}
+
+  /* The locked banner. Loud on purpose — it is the single most important
+     thing about an account that has one. */
+  .lockbar{display:flex;align-items:flex-start;gap:13px;padding:14px 16px;margin-bottom:18px;
+    border-radius:12px;background:rgba(193,85,63,.08);border:1px solid rgba(193,85,63,.35)}
+  .lockbar .li{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
+    background:rgba(193,85,63,.16);color:#e0a99b}
+  .lockbar .li svg{width:15px;height:15px;stroke-width:2}
+  .lockbar .lb{flex:1;min-width:0}
+  .lockbar .lb h4{font-size:13.5px;font-weight:700;color:#e6b8ab;margin-bottom:4px}
+  .lockbar .lb p{font-size:12.5px;color:var(--text-faint);line-height:1.55}
+  .lockbar .lb p b{color:var(--parchment);font-weight:600}
+
+  /* Reason box for the lock dialog. */
+  .lockform{margin-top:12px;display:none}
+  .lockform.on{display:block}
+  .lockform label{display:block;font-size:11.5px;font-weight:600;color:var(--text-faint);margin-bottom:7px}
+  .lockform textarea{width:100%;min-height:74px;padding:11px 12px;border-radius:10px;resize:vertical;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--parchment);
+    font-family:inherit;font-size:13px;line-height:1.5}
+  .lockform textarea:focus{outline:none;border-color:rgba(226,182,92,.5);box-shadow:0 0 0 3px rgba(212,146,58,.13)}
+  .lockform .row{display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap}
+  .lockform .hint{font-size:11.5px;color:var(--text-dim);flex:1;min-width:180px}
 
   /* The rank badge takes the group's colour, built exactly like the chips on
      Group Management so one group looks the same wherever it appears. */
@@ -983,10 +1031,34 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       </div>
     </section>
 
+    <!-- ============ ADMINISTRATIVE ACTIONS ============
+         Below the account rather than beside it: everything above reports,
+         everything here changes something. -->
+    <div class="card actcard" id="actCard" hidden>
+      <div class="card-h">
+        <h3>Administrative actions</h3>
+        <span class="aside" id="actAside"></span>
+      </div>
+      <div class="card-b">
+        <div id="lockBanner"></div>
+        <div class="actgrid" id="actGrid"></div>
+        <div class="lockform" id="lockForm">
+          <label for="lockReason">Why is this account being locked? The player is shown this
+            wording when they try to sign in, so write it to them.</label>
+          <textarea id="lockReason" maxlength="190" placeholder="e.g. Held while a report about your account is looked into."></textarea>
+          <div class="row">
+            <span class="hint" id="lockHint">Locking signs them out everywhere immediately.</span>
+            <button class="btn" id="lockCancel">Cancel</button>
+            <button class="btn danger" id="lockConfirm">Lock account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.6"></script>
+<script src="/assets/js/ucp.js?v=2.4.7"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
@@ -1279,7 +1351,138 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 
     renderProfileTab(d);
     renderRecord(d);
+    renderActions(d);
   }
+
+  /* =====================================================================
+     ADMINISTRATIVE ACTIONS
+
+     What the person looking may DO to this account. The list is fixed —
+     these are the things an administrator does to a player — but only the
+     ones that exist are live. The rest are drawn and disabled, so the shape
+     of the finished tool is visible; a hidden button is indistinguishable
+     from a feature nobody thought of.
+
+     Whether the lock is offered is the SERVER's answer (viewer.may_lock),
+     not this page comparing ranks. The button and the endpoint that runs
+     when it's pressed read the same decision.
+     ===================================================================== */
+  var ACT_ICONS = {
+    ban:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>',
+    lock:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    unlock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-1.5"/></svg>',
+    warn:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>',
+    note:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
+    send:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 3L3 10l7 3 3 7z"/></svg>',
+    edit:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h4l10-10-4-4L4 16z"/></svg>'
+  };
+
+  function renderActions(d){
+    var card = $('actCard');
+    var v = d.viewer || {};
+    card.hidden = false;
+
+    var locked = !!d.lock;
+
+    /* The banner comes first, because on a locked account it is the single
+       most important thing on the page. */
+    $('lockBanner').innerHTML = locked
+      ? '<div class="lockbar"><span class="li">' + ACT_ICONS.lock + '</span><div class="lb">' +
+          '<h4>This account is locked</h4>' +
+          '<p>' + (d.lock.by ? 'Locked by <b>' + esc(d.lock.by) + '</b>' : 'Locked') +
+          (d.lock.at ? ' · ' + esc(ago(new Date(d.lock.at * 1000))) : '') + '. ' +
+          (d.lock.reason ? 'Reason given: <b>' + esc(d.lock.reason) + '</b>'
+                         : 'No reason was recorded.') +
+          '</p></div></div>'
+      : '';
+
+    $('actAside').textContent = locked ? 'Locked' : '';
+
+    var acts = [];
+
+    // ---- the one that works ----
+    if(locked){
+      acts.push({ icon:'unlock', name:'Remove the user lock',
+        sub:'Lets them sign in again straight away.',
+        live:v.may_lock, why:v.lock_why, cls:'on', go:'unlock' });
+    } else {
+      acts.push({ icon:'lock', name:'Issue a user lock',
+        sub:'Holds the account and tells them why. They keep access to appeals.',
+        live:v.may_lock, why:v.lock_why, cls:'danger', go:'lock' });
+    }
+
+    // ---- designed, not built ----
+    acts.push({ icon:'ban',  name:'Issue a ban',  sub:'Needs the punishment system.', live:false });
+    acts.push({ icon:'warn', name:'Issue a warning', sub:'Needs the punishment system.', live:false });
+    acts.push({ icon:'note', name:'Admin scratchpad', sub:'Private staff notes on this account.', live:false });
+    acts.push({ icon:'send', name:'Send in-game notification', sub:'Needs the game server link.', live:false });
+    acts.push({ icon:'edit', name:'Administrate profile', sub:'Edit the account on their behalf.', live:false });
+
+    $('actGrid').innerHTML = acts.map(function(a){
+      return '<button class="act ' + (a.live ? (a.cls || '') : '') + '"' +
+        (a.live ? ' data-act="' + a.go + '"' : ' disabled') +
+        (a.why ? ' title="' + esc(a.why) + '"' : '') + '>' +
+        '<span class="ai">' + ACT_ICONS[a.icon] + '</span>' +
+        '<span class="at"><span class="n">' + esc(a.name) + '</span>' +
+          '<span class="s">' + esc(a.live ? a.sub : (a.why || a.sub)) + '</span></span>' +
+        (a.live ? '' : '<span class="soon">Soon</span>') +
+      '</button>';
+    }).join('');
+
+    $('lockForm').classList.remove('on');
+  }
+
+  /* ---- the lock dialog ----
+     Locking asks for a reason; unlocking asks for a nod. Both use the same
+     strip so there is one place on the page where something is confirmed. */
+  var LOCK_MODE = null;
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-act]');
+    if(!b) return;
+    LOCK_MODE = b.getAttribute('data-act');
+    var form = $('lockForm');
+    form.classList.add('on');
+    $('lockReason').style.display = LOCK_MODE === 'lock' ? '' : 'none';
+    form.querySelector('label').style.display = LOCK_MODE === 'lock' ? '' : 'none';
+    $('lockHint').textContent = LOCK_MODE === 'lock'
+      ? 'Locking signs them out everywhere immediately.'
+      : 'They will be able to sign in again straight away.';
+    $('lockConfirm').textContent = LOCK_MODE === 'lock' ? 'Lock account' : 'Unlock account';
+    $('lockConfirm').className = 'btn ' + (LOCK_MODE === 'lock' ? 'danger' : 'primary');
+    if(LOCK_MODE === 'lock') $('lockReason').focus();
+  });
+
+  $('lockCancel').addEventListener('click', function(){
+    $('lockForm').classList.remove('on');
+    LOCK_MODE = null;
+  });
+
+  $('lockConfirm').addEventListener('click', function(){
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = LOCK_MODE === 'lock' ? 'Locking…' : 'Unlocking…';
+    UCP.post('member-lock.php', {
+      id: TARGET,
+      locked: LOCK_MODE === 'lock',
+      reason: $('lockReason').value
+    }).then(function(res){
+      btn.disabled = false;
+      var r = res.data || {};
+      if(!r.ok){
+        flash('err', esc(r.error || 'That did not work.'));
+        $('lockForm').classList.remove('on');
+        renderActions(DATA);
+        return;
+      }
+      flash('ok', esc(r.message));
+      $('lockReason').value = '';
+      reload();
+    }).catch(function(){
+      btn.disabled = false;
+      flash('err', 'Could not reach the server.');
+    });
+  });
 
   function renderProfileTab(d){
     /* FEATURE-GATED: characters */
@@ -1380,6 +1583,13 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       (extra || '') +
       '</div>';
     reveal();
+  }
+
+  /** Re-fetches the account and redraws. Used after an administrative action. */
+  function reload(){
+    return UCP.get('admin-account.php?id=' + TARGET).then(function(d){
+      if(d && d.ok === true) render(d);
+    });
   }
 
   UCP.get('session.php').then(function(s){
