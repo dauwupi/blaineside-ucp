@@ -774,6 +774,33 @@
     .stat:nth-child(n+2){border-top:1px solid var(--border-soft)}
     .stat:nth-child(1){border-top:none}
   }
+
+  /* Past appeals on the lock screen.
+     A locked player's second question, after "why", is "what happened last
+     time" — and the only alternative to answering it here is them asking
+     staff to go and look it up. */
+  .lockpast{margin-top:26px;padding-top:22px;border-top:1px solid var(--rule)}
+  .lockpast h3{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:12px}
+  .lockpast .lp{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;
+    background:var(--charcoal);border:1px solid var(--border);transition:.14s;
+    text-decoration:none}
+  .lockpast .lp + .lp{margin-top:7px}
+  .lockpast .lp:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .lockpast .lpst{flex:none;font-size:9.5px;font-weight:800;letter-spacing:.08em;
+    text-transform:uppercase;padding:3px 8px;border-radius:100px;line-height:1.5}
+  .lockpast .lpst.accepted{color:#9fae8d;background:rgba(127,160,90,.12);
+    border:1px solid rgba(127,160,90,.3)}
+  .lockpast .lpst.rejected{color:#d29b8d;background:rgba(193,85,63,.12);
+    border:1px solid rgba(193,85,63,.32)}
+  .lockpast .lpst.pending{color:#e3bd72;background:rgba(226,182,92,.1);
+    border:1px solid rgba(226,182,92,.3)}
+  .lockpast .lpm{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--parchment)}
+  .lockpast .lpd{display:block;font-size:11.5px;font-weight:500;color:var(--text-faint);
+    margin-top:2px}
+  .lockpast .lpg{flex:none;color:var(--text-dim);font-size:17px;line-height:1}
+  .lockpast .lp:hover .lpg{color:var(--parchment)}
+  .lockpast .lpmore{font-size:11.5px;color:var(--text-dim);margin-top:9px}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 <script src="/assets/js/ucp.js?v=2.5.1"></script>
@@ -1190,6 +1217,8 @@
            open — filled in by the eligibility call below, because a locked
            player clicking "Appeal" only to be told they already have one is
            a dead end from a page that has no other exits. */
+        '<div id="lockPast"></div>' +
+
         '<div class="lockacts">' +
           '<a class="btn primary" id="lockAppeal" href="/dashboard/appeals#submit">' +
             'Appeal this lock</a>' +
@@ -1208,6 +1237,28 @@
       .then(function(e){
         var a = document.getElementById('lockAppeal');
         if(!a || !e || e.ok !== true) return;
+        /* Past appeals, on the one page a locked account can reach.
+           Somebody locked for the second time wants to read what they were
+           told the first time, and the alternative is asking staff to go and
+           look it up. Compact — status, when, and a way in. */
+        var past = (e.history || []).filter(function(h){ return h.id !== e.open; });
+        if(past.length){
+          document.getElementById('lockPast').innerHTML =
+            '<div class="lockpast"><h3>Your past appeals</h3>' +
+            past.slice(0, 6).map(function(h){
+              var d = new Date(h.created_at * 1000);
+              var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              return '<a class="lp" href="/dashboard/appeals?id=' + h.id + '">' +
+                '<span class="lpst ' + h.status + '">' + h.status + '</span>' +
+                '<span class="lpm">Appeal #' + h.id + '<span class="lpd">' +
+                  d.getUTCDate() + ' ' + M[d.getUTCMonth()] + ' ' + d.getUTCFullYear() +
+                  (h.overruled ? ' · overturned' : '') + '</span></span>' +
+                '<span class="lpg">›</span></a>';
+            }).join('') +
+            (past.length > 6 ? '<div class="lpmore">Showing the six most recent.</div>' : '') +
+            '</div>';
+        }
+
         if(e.open){
           a.textContent = 'View your appeal';
           a.setAttribute('href', '/dashboard/appeals?id=' + e.open);

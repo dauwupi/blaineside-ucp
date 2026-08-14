@@ -738,6 +738,47 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
+
+  /* ---- administrative record ---- */
+  .standing{display:flex;align-items:flex-start;gap:15px;padding:16px 18px;border-radius:12px;
+    margin-bottom:18px;background:var(--charcoal);border:1px solid var(--border)}
+  .standing .standing-ico{width:38px;height:38px;flex:none;display:grid;place-items:center;
+    border-radius:11px;background:var(--charcoal-3);border:1px solid var(--border);
+    color:var(--text-faint)}
+  .standing .standing-ico svg{width:19px;height:19px;stroke-width:1.9}
+  .standing .t .h{font-size:14.5px;font-weight:700;color:var(--parchment)}
+  .standing .t .s{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
+    text-wrap:pretty}
+  .standing.lvl-good{background:rgba(127,160,90,.06);border-color:rgba(127,160,90,.26)}
+  .standing.lvl-good .standing-ico{background:rgba(127,160,90,.1);
+    border-color:rgba(127,160,90,.3);color:#9fae8d}
+  .standing.lvl-good .t .h{color:#a8bb92}
+  .standing.lvl-watch{background:rgba(226,182,92,.06);border-color:rgba(226,182,92,.26)}
+  .standing.lvl-watch .standing-ico{background:rgba(226,182,92,.1);
+    border-color:rgba(226,182,92,.3);color:#e3bd72}
+  .standing.lvl-watch .t .h{color:#e3bd72}
+  .standing.lvl-held{background:rgba(193,85,63,.07);border-color:rgba(193,85,63,.3)}
+  .standing.lvl-held .standing-ico{background:rgba(193,85,63,.1);
+    border-color:rgba(193,85,63,.3);color:#d29b8d}
+  .standing.lvl-held .t .h{color:#dfa294}
+
+  .recnone{font-size:13px;color:var(--text-faint);padding:18px 0 6px;line-height:1.6}
+
+  /* The appeal outcome, as a link — the record is where somebody asks "was
+     this ever challenged", and the answer should be one click from here. */
+  .recap{display:inline-block;font-size:12px;font-weight:600;margin-top:4px;
+    text-transform:capitalize}
+  .recap.accepted{color:#9fae8d}
+  .recap.rejected{color:#d29b8d}
+  .recap.pending {color:#e3bd72}
+  .recap:hover{text-decoration:underline}
+  .rec .st + .recap{display:block}
+
+  .recgap{margin-top:18px;padding-top:15px;border-top:1px solid var(--rule);
+    display:flex;flex-direction:column;gap:5px}
+  .recgap b{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:2px}
+  .recgap span{font-size:12.5px;color:var(--text-faint);line-height:1.55}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -2462,17 +2503,151 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   }
 
   /* ----------------------------------------------------------------- RECORD */
+  /* =====================================================================
+     THE ADMINISTRATIVE RECORD
+
+     Built from api/_punish.php's record_for(), which both this page and the
+     other one read — so a player's Standing tab and the staff view of the
+     same account cannot disagree about what is on file.
+
+     Two things it deliberately does NOT do:
+
+       - Show an empty table. Warnings and kicks are not recorded anywhere
+         yet, and a record listing only bans while looking complete would
+         read as "never been warned". They are named as missing instead.
+       - Hide the appeal. An entry that was appealed and overturned is a
+         different fact from one that was never challenged, and the record
+         is the place that has to say which.
+     ===================================================================== */
+  var RECKIND = {
+    user_lock:   { cls:'ban',  label:'User lock' },
+    game_ban:    { cls:'ban',  label:'In-game ban' },
+    forum_ban:   { cls:'ban',  label:'Forum ban' },
+    discord_ban: { cls:'ban',  label:'Discord ban' }
+  };
+
+  function recMon(ts){
+    var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var d = new Date(ts*1000), p = function(x){ return String(x).padStart(2,'0'); };
+    return { d: M[d.getUTCMonth()]+' '+p(d.getUTCDate())+', '+d.getUTCFullYear(),
+             t: p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC' };
+  }
+
+  /* How long it ran, in the words somebody would use out loud. */
+  function recLen(e){
+    if(e.permanent) return 'Permanent';
+    if(!e.expires_at) return '—';
+    var days = Math.max(1, Math.round((e.expires_at - e.issued_at) / 86400));
+    return days === 1 ? '1 day' : days + ' days';
+  }
+
+  /* The right-hand column: what happened to it, and what happened to any
+     appeal against it. Two facts, and the second only when there is one. */
+  function recState(e, staff){
+    var bits = [];
+    if(e.active){
+      bits.push('<span class="st live">In force</span>');
+    } else if(e.lifted_at){
+      bits.push('<span class="st done">Lifted'+(staff && e.lifted_by
+        ? ' by '+recEsc(e.lifted_by) : '')+'</span>');
+    } else {
+      bits.push('<span class="st done">Ended</span>');
+    }
+    if(e.appeal){
+      bits.push('<a class="recap '+e.appeal.status+'" href="/dashboard/appeals?id='+
+        e.appeal.id+'">Appeal '+e.appeal.status+'</a>');
+    } else if(e.appealable && e.active){
+      bits.push('<span class="st done">Not appealed</span>');
+    }
+    return bits.join('');
+  }
+
+  function recEsc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+  }
+
+  /**
+   * @param rec    the `record` block from the endpoint
+   * @param staff  true on the staff view — adds the Issued by column
+   * @param mine   true on the player's own page — changes "this account" to "your"
+   */
+  function recordHTML(rec, staff, mine){
+    if(!rec || !rec.available){
+      return null;                       // caller draws the not-built notice
+    }
+
+    var st = rec.standing || {};
+    var ICO = {
+      good:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/>',
+      watch:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M12 9v4M12 16h.01"/>',
+      held:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
+    };
+
+    var head = '<div class="standing lvl-'+(st.level||'good')+'">'+
+      '<span class="standing-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+      (ICO[st.level]||ICO.good)+'</svg></span>'+
+      '<div class="t"><div class="h">'+recEsc(st.title||'')+'</div>'+
+      '<div class="s">'+recEsc(st.note||'')+'</div></div></div>';
+
+    var body;
+    if(!rec.entries.length){
+      body = '<div class="recnone">Nothing has ever been issued against '+
+             (mine ? 'your account' : 'this account')+'.</div>';
+    } else {
+      body =
+        '<div class="rec">'+
+          '<div class="rec-head"><div class="rec-row">'+
+            '<span>Date</span><span>Type</span><span>Reason</span>'+
+            '<span>'+(staff ? 'Issued by' : 'Length')+'</span><span>Status</span>'+
+          '</div></div>'+
+          rec.entries.map(function(e){
+            var k = RECKIND[e.kind] || { cls:'ban', label:e.noun };
+            var w = recMon(e.issued_at);
+            return '<div class="rec-row">'+
+              '<span class="date">'+w.d+'<span class="tm">'+w.t+'</span></span>'+
+              '<span><span class="kind '+k.cls+'">'+recEsc(k.label)+'</span></span>'+
+              '<span class="why">'+(e.reason ? recEsc(e.reason)
+                : '<span style="color:var(--text-dim)">No reason was recorded.</span>')+'</span>'+
+              '<span class="'+(staff?'by':'len')+'">'+
+                (staff ? '<b>'+recEsc(e.issued_by || 'Unknown')+'</b>'+recLen(e)
+                       : recLen(e))+'</span>'+
+              '<span>'+recState(e, staff)+'</span>'+
+            '</div>';
+          }).join('')+
+        '</div>';
+    }
+
+    /* What the record cannot show. Named, not omitted — a list of bans that
+       looks complete is a claim about warnings too. */
+    var gaps = (rec.not_recorded||[]).length
+      ? '<div class="recgap">'+
+          '<b>Not on here yet</b>'+
+          (rec.not_recorded||[]).map(function(g){
+            return '<span>'+recEsc(g.label)+' — '+recEsc(g.why)+'</span>';
+          }).join('')+
+        '</div>'
+      : '';
+
+    return head + body + gaps;
+  }
+
   function renderRecord(d){
-    /* FEATURE-GATED: the whole tab */
-    if(!d.features.record){
+    var html = recordHTML(d.record, false, true);
+    if(html === null){
       $('standingHost').innerHTML = blank('doc',
         'Not available yet',
-        'The administrative record system isn\'t built. When it is, this shows every warning, ' +
-        'kick and ban on your account, and whether anything from the last 30 days is holding ' +
-        'your standing.');
+        'The record isn\'t set up on this server yet. When it is, this shows everything ' +
+        'issued against your account and whether any of it is still in force.');
       $('recLast').textContent = '';
-      $('recordHost').hidden = true;
+      if($('recordHost')) $('recordHost').hidden = true;
+      return;
     }
+    $('standingHost').innerHTML = html;
+    $('recLast').textContent = d.record.last_at
+      ? 'Last entry ' + ago(new Date(d.record.last_at * 1000))
+      : 'Last entry: none';
+    if($('recordHost')) $('recordHost').hidden = true;
   }
 
   /* =====================================================================

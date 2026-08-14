@@ -211,3 +211,128 @@ function punish_lift_kind(PDO $pdo, int $accountId, string $kind,
           WHERE account_id = ? AND kind = ? AND active = 1'
     )->execute([time(), $byId, $byName, $why, $accountId, $kind]);
 }
+
+/**
+ * The administrative record for one account.
+ *
+ * Everything on file, with the appeal outcome attached to each entry, plus
+ * a one-line reading of where they stand. This is what both the player's
+ * own Standing tab and the staff Administrative Record are drawn from, so
+ * the two cannot disagree about the same account.
+ *
+ * $showIssuer follows the rule the rest of the system follows: a player is
+ * not told which administrator punished them, and staff always are.
+ *
+ * Warnings and kicks are deliberately NOT invented. They are not in
+ * punish_kinds() because they are not appealable, and nothing records them
+ * yet — so the record says so rather than showing a clean sheet that would
+ * read as "this player has never been warned".
+ */
+function record_for(PDO $pdo, int $accountId, bool $showIssuer = false): array
+{
+    if (!punish_available($pdo)) {
+        return ['available' => false, 'entries' => [], 'standing' => null,
+                'last_at' => null, 'not_recorded' => record_not_recorded()];
+    }
+
+    $st = $pdo->prepare(
+        'SELECT * FROM ucp_punishments WHERE account_id = ?
+          ORDER BY issued_at DESC, id DESC'
+    );
+    $st->execute([$accountId]);
+    $rows = $st->fetchAll();
+
+    /* The appeal against each one, if there was ever an appeal. Fetched in
+     * a single pass rather than per row: a long record would otherwise be
+     * one query per entry, and this page is opened for exactly the accounts
+     * with long records. */
+    $appeals = [];
+    try {
+        $ap = $pdo->prepare(
+            'SELECT ap.punishment_id, a.id, a.status
+               FROM ucp_appeal_punishments ap
+               JOIN ucp_appeals a ON a.id = ap.appeal_id
+              WHERE a.account_id = ?
+              ORDER BY a.created_at DESC'
+        );
+        $ap->execute([$accountId]);
+        foreach ($ap->fetchAll() as $r) {
+            $pid = (int)$r['punishment_id'];
+            if (!isset($appeals[$pid])) {                 // newest wins
+                $appeals[$pid] = ['id' => (int)$r['id'], 'status' => (string)$r['status']];
+            }
+        }
+    } catch (Throwable $e) {
+        // Appeals not migrated. The record still lists the punishments.
+    }
+
+    $now      = time();
+    $entries  = [];
+    $active   = 0;
+    $recent   = 0;                                        // issued in the last 30 days
+    $lastAt   = null;
+
+    foreach ($rows as $p) {
+        $inForce = punish_in_force($p);
+        if ($inForce) $active++;
+        if ((int)$p['issued_at'] > $now - 2592000) $recent++;
+        if ($lastAt === null) $lastAt = (int)$p['issued_at'];
+
+        $e = punish_out($p, $showIssuer);
+        $e['appeal'] = $appeals[(int)$p['id']] ?? null;
+        $entries[] = $e;
+    }
+
+    return [
+        'available'    => true,
+        'entries'      => $entries,
+        'last_at'      => $lastAt,
+        'standing'     => record_standing($active, $recent, count($entries)),
+        'not_recorded' => record_not_recorded(),
+    ];
+}
+
+/**
+ * Where they stand, in one line.
+ *
+ * Three states, and the middle one matters most: somebody whose ban expired
+ * last week is not in the same position as somebody with a clean sheet, and
+ * saying "in good standing" to both would make the phrase worthless.
+ */
+function record_standing(int $active, int $recent, int $total): array
+{
+    if ($active > 0) {
+        return [
+            'level' => 'held',
+            'title' => $active === 1 ? 'One punishment in force' : $active . ' punishments in force',
+            'note'  => 'Standing is held while anything is in force. It clears on its own when '
+                     . 'the punishment ends or is lifted.',
+        ];
+    }
+    if ($recent > 0) {
+        return [
+            'level' => 'watch',
+            'title' => 'Recent entries on the record',
+            'note'  => $recent . ' ' . ($recent === 1 ? 'entry was' : 'entries were')
+                     . ' added in the last 30 days. Nothing is in force. Entries stop counting '
+                     . 'towards standing once they are 30 days old.',
+        ];
+    }
+    return [
+        'level' => 'good',
+        'title' => 'In good standing',
+        'note'  => $total === 0
+            ? 'Nothing on the record.'
+            : 'Nothing in force and nothing in the last 30 days. Older entries stay on the '
+            . 'record but no longer count against standing.',
+    ];
+}
+
+/** What this record cannot show yet, said out loud. */
+function record_not_recorded(): array
+{
+    return [
+        ['label' => 'Warnings', 'why' => 'Not recorded in the UCP yet.'],
+        ['label' => 'Kicks',    'why' => 'Not recorded in the UCP yet.'],
+    ];
+}

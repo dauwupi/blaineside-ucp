@@ -17,6 +17,7 @@ require __DIR__ . '/_2fa.php';
 require_once __DIR__ . '/_sessions.php';
 require_once __DIR__ . '/_discord.php';
 require_once __DIR__ . '/_ips.php';
+require_once __DIR__ . '/_punish.php';
 
 $pdo = db();
 $acc = current_account($pdo);
@@ -132,6 +133,8 @@ ok([
         try { require_once __DIR__ . '/_teams.php'; return teams_for($pdo, $uid); }
         catch (Throwable $e) { return []; }
     })(),
+    // The player's own record: everything on file, minus who issued it.
+    'record'   => record_for($pdo, $uid, false),
     'created_at'  => $acc['created_at'],
     'member_days' => $memberDays,
     'last_login'  => $acc['last_login'],
@@ -173,7 +176,10 @@ ok([
     // here renders as an honest "not available yet" rather than sample data.
     'features' => [
         'characters'     => false,       // no character tables yet
-        'record'         => false,       // administrative record system not built
+        /* Live once docs/migration-appeals.sql has run. Warnings and kicks
+           still aren't recorded anywhere — the record says which parts of
+           itself are missing rather than showing a clean sheet. */
+        'record'         => punish_available($pdo),
         'sessions'       => $tracking,   // ucp_sessions
         'activity_log'   => $tracking,   // ucp_security_log
         'discord_link'   => discord_configured(),

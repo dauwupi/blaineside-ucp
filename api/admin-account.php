@@ -23,6 +23,7 @@ require_once __DIR__ . '/_ips.php';
 require_once __DIR__ . '/_teams.php';
 require_once __DIR__ . '/_admin.php';
 require_once __DIR__ . '/_lock.php';
+require_once __DIR__ . '/_punish.php';
 
 throttle('admin-account', 40);
 
@@ -169,10 +170,11 @@ ok([
     // api/profile.php — the page draws "not available yet", never sample data.
     'features' => [
         'characters' => false,
-        'record'     => false,
+        'record'     => punish_available($pdo),
     ],
     'characters'  => [],
-    'punishments' => [],
+    // Staff see the same record the player does, plus who issued each entry.
+    'record'      => record_for($pdo, $id, true),
 
     /* What the person looking at this page is allowed to DO to it.
      *
