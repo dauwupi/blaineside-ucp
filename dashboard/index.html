@@ -773,8 +773,8 @@
     .stat:nth-child(1){border-top:none}
   }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
-<script src="/assets/js/ucp.js?v=2.5.0"></script>
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
+<script src="/assets/js/ucp.js?v=2.5.1"></script>
 </head>
 <body>
 
@@ -1216,13 +1216,15 @@
           UCP_RANK = (typeof d.rank==='number') ? d.rank : 0;
           UCP_ROLE = d.role || 'Member';   // server maps rank→name (Member for rank 0)
           if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
-          const was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join();
+          const was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
           IS_ADMINISTRATOR = UCP_RANK >= 3;
           IS_MANAGER       = UCP_RANK >= 8;
           IS_FOUNDER       = UCP_RANK >= 9;
+          MY_RANK          = UCP_RANK | 0;
+          MY_TEAMS         = d.teams || [];
           /* Only redraw if the seed was wrong — redrawing identical HTML is
              what the eye reads as a flash. */
-          if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join() !== was) renderSidebar(SIDEBAR);
+          if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderSidebar(SIDEBAR);
           applyIdentity();
         } else if(d && d.authenticated===false){
           window.location = '/login';
@@ -1302,10 +1304,34 @@
       { label:'Administrative Search', href:'/dashboard/search' },
     ]},
 
+    { heading:'Reports, Appeals & Refunds' },
+    /* Everyone submits; who may open a PANEL is the only thing that varies,
+       and it is `min` (a rank) OR `team` (a sub-group that opens it at any
+       rank). The same rule lives server-side in api/_queues.php and every
+       page behind these links asks it again — this only decides what is
+       drawn. */
+    { label:'Refund Requests', icon:'coin', children:[
+      { label:'Submit a Request',      href:'/dashboard/refunds#submit' },
+      { label:'My Requests',           href:'/dashboard/refunds#mine' },
+      { label:'Refund Request Panel',  href:'/dashboard/refunds#panel', min:3 },
+    ]},
+    { label:'Ban Appeals', icon:'gavel', children:[
+      { label:'Appeal your Punishment', href:'/dashboard/appeals#submit' },
+      { label:'Ban Appeal Panel',       href:'/dashboard/appeals#panel', min:1 },
+    ]},
+    { label:'Staff Reports', icon:'flag', children:[
+      { label:'Submit a Staff Report', href:'/dashboard/reports#submit' },
+      { label:'Staff Report Panel',    href:'/dashboard/reports#panel',
+        min:8, team:'staff_management' },
+    ]},
+    { label:'Asset Transfers', icon:'swap', children:[
+      { label:'Submit an Asset Transfer', href:'/dashboard/transfers#submit' },
+      { label:'My Asset Transfers',       href:'/dashboard/transfers#mine' },
+      { label:'Asset Transfer Panel',     href:'/dashboard/transfers#panel', min:3 },
+    ]},
     { heading:'Account' },
 
     { label:'My Profile',        icon:'user',  href:'/profile' },
-    { label:'Reports & Appeals', icon:'doc',   href:'#' },
     { label:'World Points',      icon:'clock', href:'#' },
     { label:'XM Radio',          icon:'radio', href:'#' },
   ];
@@ -1321,6 +1347,10 @@
     doc:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
     clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
     radio:'<path d="M8 6l10 6-10 6z"/><path d="M4 5v14"/>',
+    coin:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.8h4a1.7 1.7 0 0 1 0 3.4h-3a1.7 1.7 0 0 0 0 3.4h4"/>',
+    gavel:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/>',
+    flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    swap:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
     chev:'<path d="M9 6l6 6-6 6"/>',
     search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
   };
@@ -1333,6 +1363,7 @@
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
   let IS_MANAGER=false, IS_FOUNDER=false, IS_ADMINISTRATOR=false;
+  let MY_RANK = 0, MY_TEAMS = [];   // the ladder rung, and sub-group keys
   /* Seed from the last known session so the FIRST paint is right. Without
      this every navigation drew the sidebar twice — once with no
      Administration section, once with it — which is the flicker.
@@ -1344,19 +1375,41 @@
     IS_ADMINISTRATOR = me.rank >= 3;
     IS_MANAGER       = me.rank >= 8;
     IS_FOUNDER       = me.rank >= 9;
+    MY_RANK          = me.rank | 0;
+    MY_TEAMS         = me.teams || [];
     UCP_RANK = me.rank;
     UCP_ROLE = me.role || 'Member';
     UCP_NAME = me.name || UCP_NAME;
   })();
+  /* Menu gates.
+
+     `min` is a rank on the ladder in api/_ranks.php. `team` is a sub-group
+     key that opens the item on its own at ANY rank — which is how a Staff
+     Management holder reaches the Staff Report Panel without being
+     Management. A menu drawn from rank alone would be wrong for exactly the
+     people the sub-group exists for.
+
+     This decides what is DRAWN. Every page behind a link asks the server,
+     and every endpoint checks again; nothing here is a permission. */
+  function navMay(x){
+    if(!x) return true;
+    if(x.admin && !IS_MANAGER) return false;
+    if(x.founder && !IS_FOUNDER) return false;
+    if(x.admins && !IS_ADMINISTRATOR) return false;
+    if(x.notFounder && IS_FOUNDER) return false;
+    if(typeof x.min === 'number' && MY_RANK < x.min
+       && !(x.team && MY_TEAMS.indexOf(x.team) > -1)) return false;
+    return true;
+  }
+
   function renderSidebar(items){
     const nav = document.getElementById('nav');
-    items = items.filter(it => (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER)
-                        && (!it.admins || IS_ADMINISTRATOR));
+    items = items.filter(it => navMay(it));
     nav.innerHTML = items.map(it=>{
       if(it.heading) return `<div class="nav-heading">${esc(it.heading)}</div>`;
 
       if(it.children){
-        const subs = it.children.filter(c=>!c.notFounder || !IS_FOUNDER).map(c=> c.empty
+        const subs = it.children.filter(navMay).map(c=> c.empty
           ? `<a class="slot-empty">${esc(c.label)}</a>`
           : `<a href="${esc(c.href||'#')}">${esc(c.label)}</a>`).join('');
         return `<div class="nav-group" data-collapsible>

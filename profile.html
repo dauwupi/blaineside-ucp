@@ -739,7 +739,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
 <body>
 
@@ -1720,7 +1720,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.5.0"></script>
+<script src="/assets/js/ucp.js?v=2.5.1"></script>
 <script src="/assets/js/qrcode.js" defer></script>
 <script>
 /* =====================================================================
@@ -1868,9 +1868,33 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     { label:'Administrators', icon:'search', admins:true, children:[
       { label:'Administrative Search', href:'/dashboard/search' },
     ]},
+    { heading:'Reports, Appeals & Refunds' },
+    /* Everyone submits; who may open a PANEL is the only thing that varies,
+       and it is `min` (a rank) OR `team` (a sub-group that opens it at any
+       rank). The same rule lives server-side in api/_queues.php and every
+       page behind these links asks it again — this only decides what is
+       drawn. */
+    { label:'Refund Requests', icon:'coin', children:[
+      { label:'Submit a Request',      href:'/dashboard/refunds#submit' },
+      { label:'My Requests',           href:'/dashboard/refunds#mine' },
+      { label:'Refund Request Panel',  href:'/dashboard/refunds#panel', min:3 },
+    ]},
+    { label:'Ban Appeals', icon:'gavel', children:[
+      { label:'Appeal your Punishment', href:'/dashboard/appeals#submit' },
+      { label:'Ban Appeal Panel',       href:'/dashboard/appeals#panel', min:1 },
+    ]},
+    { label:'Staff Reports', icon:'flag', children:[
+      { label:'Submit a Staff Report', href:'/dashboard/reports#submit' },
+      { label:'Staff Report Panel',    href:'/dashboard/reports#panel',
+        min:8, team:'staff_management' },
+    ]},
+    { label:'Asset Transfers', icon:'swap', children:[
+      { label:'Submit an Asset Transfer', href:'/dashboard/transfers#submit' },
+      { label:'My Asset Transfers',       href:'/dashboard/transfers#mine' },
+      { label:'Asset Transfer Panel',     href:'/dashboard/transfers#panel', min:3 },
+    ]},
     { heading:'Account' },
     { label:'My Profile',        icon:'user',  href:'/profile', active:true },
-    { label:'Reports & Appeals', icon:'doc',   href:'#' },
     { label:'World Points',      icon:'clock', href:'#' },
     { label:'XM Radio',          icon:'radio', href:'#' },
   ];
@@ -1885,6 +1909,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     doc:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
     clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
     radio:'<path d="M8 6l10 6-10 6z"/><path d="M4 5v14"/>',
+    coin:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.8h4a1.7 1.7 0 0 1 0 3.4h-3a1.7 1.7 0 0 0 0 3.4h4"/>',
+    gavel:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/>',
+    flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    swap:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
     chev:'<path d="M9 6l6 6-6 6"/>',
     search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
   };
@@ -1893,6 +1921,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
   var IS_MANAGER = false, IS_FOUNDER = false, IS_ADMINISTRATOR = false;
+  var MY_RANK = 0, MY_TEAMS = [];   // the ladder rung, and sub-group keys
   /* Seed the menu gates from the last known session so the FIRST paint is
      right. Without this every navigation drew the sidebar twice — once with
      no Administration section, once with it — which is the flicker. The
@@ -1904,14 +1933,36 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     IS_ADMINISTRATOR = me.rank >= 3;
     IS_MANAGER       = me.rank >= 8;
     IS_FOUNDER       = me.rank >= 9;
+    MY_RANK          = me.rank | 0;
+    MY_TEAMS         = me.teams || [];
   })();
 
+  /* Menu gates.
+
+     `min` is a rank on the ladder in api/_ranks.php. `team` is a sub-group
+     key that opens the item on its own at ANY rank — which is how a Staff
+     Management holder reaches the Staff Report Panel without being
+     Management. A menu drawn from rank alone would be wrong for exactly the
+     people the sub-group exists for.
+
+     This decides what is DRAWN. Every page behind a link asks the server,
+     and every endpoint checks again; nothing here is a permission. */
+  function navMay(x){
+    if(!x) return true;
+    if(x.admin && !IS_MANAGER) return false;
+    if(x.founder && !IS_FOUNDER) return false;
+    if(x.admins && !IS_ADMINISTRATOR) return false;
+    if(x.notFounder && IS_FOUNDER) return false;
+    if(typeof x.min === 'number' && MY_RANK < x.min
+       && !(x.team && MY_TEAMS.indexOf(x.team) > -1)) return false;
+    return true;
+  }
+
   function renderNav(){
-  $('nav').innerHTML = SIDEBAR.filter(function(it){ return (!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER)
-      && (!it.admins || IS_ADMINISTRATOR); }).map(function(it){
+  $('nav').innerHTML = SIDEBAR.filter(function(it){ return navMay(it); }).map(function(it){
     if(it.heading) return '<div class="nav-heading">'+esc(it.heading)+'</div>';
     if(it.children){
-      var subs = it.children.filter(function(c){ return !c.notFounder || !IS_FOUNDER; }).map(function(c){
+      var subs = it.children.filter(navMay).map(function(c){
         return c.empty ? '<a class="slot-empty">'+esc(c.label)+'</a>'
                        : '<a href="'+esc(c.href||'#')+'">'+esc(c.label)+'</a>';
       }).join('');
@@ -2085,12 +2136,17 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     /* Keep it for the next page load — this is what stops the flicker. */
     if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
 
-    if((d.rank >= 3) !== IS_ADMINISTRATOR || (d.rank >= 8) !== IS_MANAGER){
-      IS_ADMINISTRATOR = d.rank >= 3;
-      IS_MANAGER       = d.rank >= 8;
-      IS_FOUNDER       = d.rank >= 9;
-      renderNav();
-    }
+    /* Redraw only when a gate actually changed — repainting identical HTML
+       is what the eye reads as a flash. Sub-groups are part of the signature
+       now: Staff Management opens a menu item on its own, so a change to it
+       has to redraw even though every rank flag stayed put. */
+    var navWas = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
+    IS_ADMINISTRATOR = d.rank >= 3;
+    IS_MANAGER       = d.rank >= 8;
+    IS_FOUNDER       = d.rank >= 9;
+    MY_RANK          = d.rank | 0;
+    MY_TEAMS         = d.teams || [];
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== navWas) renderNav();
 
     renderProfileTab(d);
     renderSettings(d);

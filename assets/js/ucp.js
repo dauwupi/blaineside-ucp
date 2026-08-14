@@ -203,13 +203,22 @@
   function meRead() {
     try {
       var m = JSON.parse(w.localStorage.getItem(ME_KEY) || 'null');
-      return (m && typeof m.rank === 'number') ? m : null;
+      if (!m || typeof m.rank !== 'number') return null;
+      // Written before teams existed — treat as none rather than undefined,
+      // so callers can index it without guarding every use.
+      if (!Array.isArray(m.teams)) m.teams = [];
+      return m;
     } catch (e) { return null; }
   }
   function meWrite(m) {
     try {
       w.localStorage.setItem(ME_KEY, JSON.stringify({
-        name: String(m.name || ''), role: String(m.role || 'Member'), rank: m.rank | 0
+        name: String(m.name || ''), role: String(m.role || 'Member'), rank: m.rank | 0,
+        /* Sub-group keys. The sidebar needs them: the Staff Report Panel is
+           open to Staff Management holders at any administrator rank, so a
+           menu drawn from rank alone would be wrong for exactly the people
+           the sub-group exists for. */
+        teams: Array.isArray(m.teams) ? m.teams.map(String) : []
       }));
     } catch (e) { /* private mode, quota — the page still works, it just blinks */ }
   }
@@ -248,7 +257,8 @@
    */
   function rememberMe(d) {
     if (!d || typeof d.rank !== 'number') return;
-    var m = { name: d.name || '', role: d.role || 'Member', rank: d.rank | 0 };
+    var m = { name: d.name || '', role: d.role || 'Member', rank: d.rank | 0,
+              teams: Array.isArray(d.teams) ? d.teams.map(String) : [] };
     meWrite(m);
     paintMe(m);
     initQuickSearch(m.rank);

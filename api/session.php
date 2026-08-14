@@ -88,12 +88,29 @@ if ((int)($_SESSION['epoch'] ?? 0) !== (int)$acc['session_epoch']) {
 $rank    = (int)$acc['admin_rank'];
 $enabled = !empty($acc['totp_enabled']);
 
+/* Sub-group keys, for the menu.
+ *
+ * Rank alone no longer decides the whole sidebar: the Staff Report Panel is
+ * open to Management, to the Founder, and to anyone holding Staff Management
+ * whatever their rank. Keys are enough for a gate — labels come from the
+ * registry on the page. Guarded because the table only exists after
+ * docs/migration-subgroups.sql; one migration behind, the menu falls back to
+ * rank, which is right for everyone except sub-group holders and opens no
+ * gate by mistake. */
+$teams = [];
+try {
+    require_once __DIR__ . '/_teams.php';
+    $teams = teams_for($pdo, (int)$acc['id']);
+} catch (Throwable $e) {
+}
+
 ok([
     'authenticated' => true,
     'id'     => (int)$acc['id'],
     'name'   => $acc['username'],
     'rank'   => $rank,
     'role'   => rank_name($rank),
+    'teams'  => $teams,
     'remember' => !empty($_SESSION['remember']),
     'twofa'    => $enabled,
     // Set only when security.totp_required_rank is configured and this rank

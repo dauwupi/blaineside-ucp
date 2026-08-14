@@ -658,7 +658,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
 <body>
 
@@ -754,7 +754,7 @@
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<script src="/assets/js/ucp.js?v=2.5.0"></script>
+<script src="/assets/js/ucp.js?v=2.5.1"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   const SIDEBAR=[
@@ -780,9 +780,30 @@
     {label:'Administrators',icon:'search',admins:true,children:[
       {label:'Administrative Search',href:'/dashboard/search'},
     ]},
+    {heading:'Reports, Appeals & Refunds'},
+    /* Everyone submits; who may open a PANEL is the only thing that varies,
+       and it is `min` (a rank) OR `team` (a sub-group that opens it at any
+       rank). Mirrors api/_queues.php, which is what actually enforces it. */
+    {label:'Refund Requests',icon:'coin',children:[
+      {label:'Submit a Request',href:'/dashboard/refunds#submit'},
+      {label:'My Requests',href:'/dashboard/refunds#mine'},
+      {label:'Refund Request Panel',href:'/dashboard/refunds#panel',min:3},
+    ]},
+    {label:'Ban Appeals',icon:'gavel',children:[
+      {label:'Appeal your Punishment',href:'/dashboard/appeals#submit'},
+      {label:'Ban Appeal Panel',href:'/dashboard/appeals#panel',min:1},
+    ]},
+    {label:'Staff Reports',icon:'flag',children:[
+      {label:'Submit a Staff Report',href:'/dashboard/reports#submit'},
+      {label:'Staff Report Panel',href:'/dashboard/reports#panel',min:8,team:'staff_management'},
+    ]},
+    {label:'Asset Transfers',icon:'swap',children:[
+      {label:'Submit an Asset Transfer',href:'/dashboard/transfers#submit'},
+      {label:'My Asset Transfers',href:'/dashboard/transfers#mine'},
+      {label:'Asset Transfer Panel',href:'/dashboard/transfers#panel',min:3},
+    ]},
     {heading:'Account'},
     {label:'My Profile',icon:'user',href:'/profile'},
-    {label:'Reports & Appeals',icon:'doc',href:'#'},
     {label:'World Points',icon:'clock',href:'#'},
     {label:'XM Radio',icon:'radio',href:'#'},
   ];
@@ -791,6 +812,10 @@
     chat:'<path d="M4 5h16v11H8l-4 3z"/>',briefcase:'<path d="M4 7h16v13H4z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>',
     house:'<path d="M3 10.5L12 4l9 6.5V20H3zM9 20v-6h6v6"/>',doc:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
     clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',radio:'<path d="M8 6l10 6-10 6z"/><path d="M4 5v14"/>',
+    coin:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.8h4a1.7 1.7 0 0 1 0 3.4h-3a1.7 1.7 0 0 0 0 3.4h4"/>',
+    gavel:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/>',
+    flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    swap:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
     chev:'<path d="M9 6l6 6-6 6"/>',
     search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'};
   function svgI(n,c){return `<svg class="${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor">${ICONS[n]||''}</svg>`;}
@@ -798,13 +823,34 @@
      behind them check the rank themselves; hiding the link is so nobody is
      shown a door that won't open. */
   let IS_MANAGER=false, IS_FOUNDER=false, IS_ADMINISTRATOR=false;
+  let MY_RANK = 0, MY_TEAMS = [];   // the ladder rung, and sub-group keys
+  /* Menu gates.
+
+     `min` is a rank on the ladder in api/_ranks.php. `team` is a sub-group
+     key that opens the item on its own at ANY rank — which is how a Staff
+     Management holder reaches the Staff Report Panel without being
+     Management. A menu drawn from rank alone would be wrong for exactly the
+     people the sub-group exists for.
+
+     This decides what is DRAWN. Every page behind a link asks the server,
+     and every endpoint checks again; nothing here is a permission. */
+  function navMay(x){
+    if(!x) return true;
+    if(x.admin && !IS_MANAGER) return false;
+    if(x.founder && !IS_FOUNDER) return false;
+    if(x.admins && !IS_ADMINISTRATOR) return false;
+    if(x.notFounder && IS_FOUNDER) return false;
+    if(typeof x.min === 'number' && MY_RANK < x.min
+       && !(x.team && MY_TEAMS.indexOf(x.team) > -1)) return false;
+    return true;
+  }
+
   function renderSidebar(items){
-    items=items.filter(it=>(!it.admin || IS_MANAGER) && (!it.founder || IS_FOUNDER)
-                    && (!it.admins || IS_ADMINISTRATOR));
+    items=items.filter(it=>navMay(it));
     document.getElementById('nav').innerHTML=items.map(it=>{
       if(it.heading) return `<div class="nav-heading">${escapeHtml(it.heading)}</div>`;
       if(it.children){
-        const subs=it.children.map(c=>c.empty?`<a class="slot-empty">${escapeHtml(c.label)}</a>`:`<a href="${escapeHtml(c.href||'#')}">${escapeHtml(c.label)}</a>`).join('');
+        const subs=it.children.filter(navMay).map(c=>c.empty?`<a class="slot-empty">${escapeHtml(c.label)}</a>`:`<a href="${escapeHtml(c.href||'#')}">${escapeHtml(c.label)}</a>`).join('');
         return `<div class="nav-group" data-collapsible><div class="nav-item">${svgI(it.icon,'i')}<span class="lbl">${escapeHtml(it.label)}</span>${svgI('chev','chev')}</div><div class="sub">${subs}</div></div>`;
       }
       const tag = it.href ? 'a' : 'div', attr = it.href ? ` href="${escapeHtml(it.href)}"` : '';
@@ -823,6 +869,8 @@
     IS_ADMINISTRATOR = me.rank >= 3;
     IS_MANAGER       = me.rank >= 8;
     IS_FOUNDER       = me.rank >= 9;
+    MY_RANK          = me.rank | 0;
+    MY_TEAMS         = me.teams || [];
   })();
   renderSidebar(SIDEBAR);
 
@@ -1326,11 +1374,12 @@
     if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
     if((d.rank|0) < 8){ lockOut(); return; }
 
-    const was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join();
+    const was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
     IS_MANAGER=true; IS_FOUNDER=(d.rank|0) >= 9; IS_ADMINISTRATOR=true;
+    MY_RANK = d.rank | 0; MY_TEAMS = d.teams || [];
     /* Only redraw if the seed above was wrong — redrawing identical HTML is
        what the eye reads as a flash. */
-    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER].join() !== was) renderSidebar(SIDEBAR);
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderSidebar(SIDEBAR);
 
     /* Say the limits out loud rather than letting people discover them by
        being refused. */

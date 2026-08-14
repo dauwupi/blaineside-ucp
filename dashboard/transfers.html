@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BlaineSide — County Bulletin</title>
+<title>BlaineSide — Asset Transfers</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='23' fill='%23121110'/%3E%3Ctext x='50' y='70' font-family='Oswald,sans-serif' font-size='60' font-weight='700' fill='%23e2b65c' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -307,6 +307,93 @@
   .pv-link svg{width:13px;height:13px}
   .pv-note{font-size:12px;color:var(--text-dim);margin-top:12px;line-height:1.5}
 
+
+  /* ---------- ANNOUNCEMENTS ---------- */
+  /* =====================================================================
+     ANNOUNCEMENT STRIP
+
+     Reads left to right like a filed notice: a colour stamp, then the
+     type and when it was posted, then the headline, then the detail.
+     Nothing is centred — centred text has no left edge to scan down, which
+     is why the old one turned into a paragraph floating in a box.
+
+     One --ann colour per type drives the rail, the stamp and the border,
+     so adding a type later is one variable, not six rules.
+     ===================================================================== */
+  .ann{--ann:var(--gold);--ann-ink:#1a1206;
+    display:flex;align-items:center;gap:15px;padding:13px 15px;position:relative;
+    border:1px solid color-mix(in srgb, var(--ann) 34%, transparent);
+    border-radius:13px;overflow:hidden;
+    background:linear-gradient(90deg,
+      color-mix(in srgb, var(--ann) 13%, transparent),
+      color-mix(in srgb, var(--ann) 4%, transparent) 42%,
+      transparent 78%), var(--charcoal-2)}
+  .ann::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ann)}
+  .ann-stamp{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:var(--ann);color:var(--ann-ink);box-shadow:0 6px 16px -8px var(--ann)}
+  .ann-stamp svg{width:18px;height:18px;stroke-width:2}
+  .ann-main{flex:1;min-width:0}
+  .ann-eyebrow{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--ann);margin-bottom:3px}
+  .ann-eyebrow .sep{opacity:.45}
+  .ann-eyebrow .ago{color:var(--text-faint);font-weight:700;letter-spacing:.08em}
+  .ann-head{font-size:14px;font-weight:700;color:var(--parchment);line-height:1.35;
+    letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* The detail wraps onto a second line and stops there — long enough to
+     say the thing, short enough that the strip keeps a fixed height. */
+  .ann-detail{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-top:3px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ann-acts{flex:none;display:flex;align-items:center;gap:8px}
+  .ann-link{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    padding:7px 12px;border-radius:100px;white-space:nowrap;
+    color:var(--ann);border:1px solid color-mix(in srgb, var(--ann) 40%, transparent);
+    background:color-mix(in srgb, var(--ann) 10%, transparent);transition:.16s}
+  .ann-link:hover{background:var(--ann);color:var(--ann-ink)}
+  .ann-link svg{width:12px;height:12px;stroke-width:2.4}
+  .ann-x{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;
+    background:transparent;border:none;color:var(--text-faint);cursor:pointer;transition:.14s}
+  .ann-x:hover{background:rgba(255,255,255,.06);color:var(--parchment)}
+  .ann-x svg{width:14px;height:14px;stroke-width:2.2}
+
+  .ann.t-notice     {--ann:var(--gold);--ann-ink:#1a1206}
+  .ann.t-maintenance{--ann:#7ea7d4;--ann-ink:#0b131d}
+  .ann.t-warning    {--ann:var(--amber);--ann-ink:#1a1206}
+  .ann.t-critical   {--ann:#d0644d;--ann-ink:#fff}
+  .ann.t-success    {--ann:#8fb463;--ann-ink:#0f1408}
+
+  @media (max-width:760px){
+    .ann{align-items:flex-start;gap:12px;padding:12px 13px}
+    .ann-head{white-space:normal;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .ann-detail{-webkit-line-clamp:3}
+    .ann-acts{flex-direction:column;align-items:flex-end;gap:6px}
+    .ann-link{padding:6px 10px}
+  }
+
+  .arow{display:flex;align-items:center;gap:14px;padding:15px 16px;border:1px solid var(--border-soft);
+    border-radius:13px;background:var(--charcoal-2);margin-bottom:11px}
+  .arow.live{border-color:rgba(226,182,92,.4);background:linear-gradient(180deg,rgba(226,182,92,.05),transparent)}
+  .arow .abody{flex:1;min-width:0}
+  .arow .aline{font-size:13.5px;font-weight:600;color:var(--parchment);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .arow .asub{font-size:12.5px;color:var(--text-dim);margin-top:5px;line-height:1.55;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .arow .ameta{font-size:11.5px;color:var(--text-faint);margin-top:7px;font-weight:600}
+  .arow .aacts{display:flex;align-items:center;gap:8px;flex:none}
+  .live-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;
+    letter-spacing:.1em;text-transform:uppercase;color:#1a1206;background:var(--gold);
+    padding:3px 9px;border-radius:100px}
+  .live-badge .dot{width:6px;height:6px;border-radius:50%;background:#1a1206}
+  .tchip{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 9px;border-radius:100px;border:1px solid var(--border);color:var(--text-dim)}
+  .apreview{margin-top:8px}
+  .switchrow{display:flex;align-items:center;gap:11px;margin-top:16px;font-size:13px;color:var(--text-dim)}
+  .switchrow .sw{width:38px;height:21px;border-radius:100px;background:var(--charcoal-4);position:relative;
+    border:1px solid var(--border);flex:none;transition:.2s}
+  .switchrow .sw::after{content:"";position:absolute;left:2px;top:1.5px;width:15px;height:15px;border-radius:50%;
+    background:var(--stone);transition:.2s}
+  .switchrow.on .sw{background:rgba(226,182,92,.3);border-color:rgba(226,182,92,.5)}
+  .switchrow.on .sw::after{left:19px;background:var(--gold)}
+
   /* ===== ACCOUNT MENU =====
      The same component as the profile page. It used to exist only there, so
      the button in the corner of every other page looked interactive and did
@@ -373,6 +460,96 @@
   .scrim{display:none;position:fixed;inset:0;background:rgba(8,7,6,.6);backdrop-filter:blur(2px);z-index:48;opacity:0;transition:opacity .22s}
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+
+  /* The card shell, same as the lookup and profile pages. Announcements
+     draws its own list rows and never needed it, so it isn't in the shell
+     this page was cut from. */
+  .card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;
+    box-shadow:0 20px 44px -30px rgba(0,0,0,.9);overflow:hidden}
+  .card + .card{margin-top:20px}
+  .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:17px 22px 15px;border-bottom:1px solid var(--rule)}
+  .card-h h3{font-size:15.5px;font-weight:700;letter-spacing:-.015em}
+  .card-b{padding:6px 22px 18px}
+  /* =====================================================================
+     REPORTS, APPEALS & REFUNDS — one area, three or fewer views.
+
+     Nothing here is built. That is the whole design problem: an area that
+     is coming soon can either be hidden until it works, or it can be shown
+     honestly. Hiding it means nobody knows it is coming and staff keep
+     answering the same question in Discord. Showing an empty table means
+     "you have no refund requests", which is a different and worse lie.
+
+     So each view states what it will ask for, what happens afterwards, and
+     that it is not switched on — and the page never draws a form, a table
+     or a count it cannot stand behind.
+     ===================================================================== */
+  .qhead{display:flex;align-items:flex-start;gap:16px;margin-bottom:22px}
+  .qhead .qi{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:13px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--gold)}
+  .qhead .qi svg{width:21px;height:21px;stroke-width:1.8}
+  .qhead h1{font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .qhead p{font-size:13.5px;color:var(--text-faint);line-height:1.6;margin-top:6px;
+    max-width:66ch;text-wrap:pretty}
+
+  /* The view switcher. The sidebar links straight to a view, so this is a
+     second way to the same place rather than the only one. */
+  .qtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .qtab{display:inline-flex;align-items:center;gap:9px;padding:10px 16px;border-radius:11px;
+    border:1px solid var(--border);background:var(--charcoal-2);color:var(--text-dim);
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
+  .qtab:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .qtab[aria-selected="true"]{background:var(--charcoal-4);color:var(--parchment);
+    border-color:rgba(226,182,92,.34);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+  .qtab .lk{display:inline-grid;place-items:center;width:15px;height:15px;flex:none;
+    color:var(--text-faint)}
+  .qtab .lk svg{width:13px;height:13px;stroke-width:2.1}
+
+  .qgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+  @media (max-width:1040px){ .qgrid{grid-template-columns:1fr} }
+
+  .qwhat{font-size:14.5px;font-weight:600;color:var(--parchment);line-height:1.5;
+    padding-top:16px}
+  .qsteps{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:0}
+  .qsteps li{display:flex;gap:13px;padding:13px 0;font-size:13px;color:var(--text-faint);
+    line-height:1.6;text-wrap:pretty}
+  .qsteps li + li{border-top:1px solid var(--rule)}
+  .qsteps .n{flex:none;width:21px;height:21px;display:grid;place-items:center;border-radius:7px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-dim);
+    font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px}
+  .qafter{margin-top:16px;padding:14px 16px;border-radius:11px;background:var(--charcoal);
+    border:1px solid var(--border);font-size:12.5px;color:var(--text-faint);line-height:1.65;
+    text-wrap:pretty}
+  .qafter b{color:var(--parchment);font-weight:600}
+
+  /* The status panel. Amber, not red: nothing is wrong, it just isn't here
+     yet. The refusal panel below it is the one that gets a colour. */
+  .qstate{display:flex;align-items:flex-start;gap:12px;padding:15px 17px;border-radius:12px;
+    background:rgba(226,182,92,.06);border:1px solid rgba(226,182,92,.26)}
+  .qstate .si{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:9px;
+    background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.3);color:#e3bd72}
+  .qstate .si svg{width:15px;height:15px;stroke-width:2}
+  .qstate h4{font-size:13.5px;font-weight:700;color:#e3bd72}
+  .qstate p{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
+    text-wrap:pretty}
+
+  .qno{display:flex;align-items:flex-start;gap:13px;padding:16px 18px;border-radius:12px;
+    background:rgba(193,85,63,.07);border:1px solid rgba(193,85,63,.32)}
+  .qno .si{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
+    background:rgba(193,85,63,.1);border:1px solid rgba(193,85,63,.3);color:#d29b8d}
+  .qno .si svg{width:16px;height:16px;stroke-width:2}
+  .qno h4{font-size:14px;font-weight:700;color:#dfa294}
+  .qno p{font-size:13px;color:var(--text-faint);line-height:1.65;margin-top:5px;
+    max-width:62ch;text-wrap:pretty}
+  .qno .who{color:var(--parchment);font-weight:600}
+
+  .qmeta{display:flex;flex-direction:column}
+  .qmeta .row{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+    padding:13px 0;font-size:13px}
+  .qmeta .row + .row{border-top:1px solid var(--rule)}
+  .qmeta .k{color:var(--text-faint);font-size:12.5px}
+  .qmeta .v{color:var(--parchment);font-weight:600;text-align:right}
+  .qmeta .v.off{color:var(--text-dim);font-weight:500}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -404,7 +581,7 @@
       <button class="icon-btn hamburger" id="menuToggle" aria-label="Open menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <div class="page-title"><h1>County Bulletin</h1></div>
+      <div class="page-title"><h1>Asset Transfers</h1></div>
       <div class="spacer"></div>
       <div class="searchbox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -439,120 +616,21 @@
 
     <main class="content">
 
-      <!-- ============ LISTING VIEW ============ -->
-      <div class="view active" id="view-list">
-        <a class="page-back" href="/dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-          Back to dashboard
-        </a>
-        <div class="phead">
-          <div>
-            <h2>County Bulletin</h2>
-            <p>Post news, events and notices. Choose which ones appear on the <b>dashboard</b>.</p>
-          </div>
-          <button class="btn primary" onclick="openEditor()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
-            New bulletin
-          </button>
-        </div>
-
-        <div class="slotbar">
-          <span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h13v14H4z"/><path d="M17 8h3v9a2 2 0 0 1-2 2M7 9h7M7 13h7M7 17h4"/></svg>On dashboard</span>
-          <span class="cnt"><b id="slotUsed">0</b> / <span id="slotMax">5</span></span>
-          <span class="track"><i id="slotFill" style="width:0%"></i></span>
-          <span class="note" id="slotNote">Up to 5 bulletins rotate on the dashboard.</span>
-        </div>
-
-        <div class="grid" id="grid"></div>
-        <div class="pager" id="pager"></div>
-      </div>
-
-      <!-- ============ CREATE / EDIT VIEW ============ -->
-      <div class="view" id="view-edit">
-        <a class="page-back" href="#" onclick="closeEditor();return false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-          Back to all bulletins
-        </a>
-        <div class="phead"><div><h2 id="editTitle">New bulletin</h2><p>Fill in the details. The preview on the right updates as you type.</p></div></div>
-
-        <div class="editor">
-          <div class="form-card">
-            <div class="field">
-              <label><span class="lt">Type <span class="req">*</span></span></label>
-              <div class="seg" id="typeSeg">
-                <button data-type="event" class="on"><span class="swatch" style="background:var(--danger)"></span>Event</button>
-                <button data-type="update"><span class="swatch" style="background:var(--stone)"></span>Update</button>
-                <button data-type="notice"><span class="swatch" style="background:var(--gold)"></span>Notice</button>
-              </div>
-            </div>
-
-            <div class="field">
-              <label><span class="lt">Title <span class="req">*</span></span><span class="count"><span id="titleCount">0</span>/70</span></label>
-              <input type="text" id="fTitle" maxlength="70" placeholder="e.g. Sandy Shores Rodeo returns this weekend" oninput="syncPreview()">
-            </div>
-
-            <div class="field">
-              <label><span class="lt">Description <span class="req">*</span></span><span class="count"><span id="bodyCount">0</span>/240</span></label>
-              <textarea id="fBody" maxlength="240" placeholder="What's happening, when, and what players need to know." oninput="syncPreview()"></textarea>
-            </div>
-
-            <div class="field">
-              <label><span class="lt">Link <span class="opt">(optional)</span></span></label>
-              <input type="text" id="fLink" placeholder="https://… — players who click the bulletin go here" oninput="syncPreview()">
-              <span class="field-hint" id="linkHint"></span>
-            </div>
-
-            <div class="field">
-              <label><span class="lt">Author</span></label>
-              <div class="locked-field" title="Automatically set to your UCP name">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5z"/></svg>
-                <span id="fByLabel">dustin_hale</span>
-                <span class="lock-note">Your UCP name</span>
-              </div>
-            </div>
-
-            <div class="field">
-              <label><span class="lt">Image <span class="opt">(optional)</span></span></label>
-              <div class="uploader" id="uploader">
-                <div class="drop" id="drop">
-                  <span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16l5-5 4 4 3-3 4 4M4 20h16V4H4z"/></svg></span>
-                  <h5>Drop an image here or <span class="browse">browse</span></h5>
-                  <p>PNG or JPG · a wide image works best for the banner</p>
-                </div>
-                <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" hidden>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button class="btn ghost" onclick="closeEditor()">Cancel</button>
-              <button class="btn primary" id="saveBtn" onclick="saveBulletin()">Publish bulletin</button>
-            </div>
-          </div>
-
-          <div class="preview-wrap">
-            <div class="preview-label"><span class="dotlbl"></span>Live preview</div>
-            <div class="pv-slide g1" id="pv">
-              <div class="pvbg" id="pvbg"></div>
-              <div class="cap">
-                <span class="tag tg evt" id="pvTag">Event</span>
-                <h4 id="pvTitle">Your title appears here</h4>
-                <p id="pvBody">Your description will show here as you write it, giving players the key details at a glance.</p>
-                <div class="m" id="pvMeta">Just now · Staff Team</div>
-                <span class="pv-link" id="pvLink" hidden>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
-                  Read more
-                </span>
-              </div>
-            </div>
-            <p class="pv-note">Exactly how it looks on the dashboard when shown — including the Read more button, which appears whenever a link is set. Drag the image in its frame above to reposition it.</p>
-          </div>
+      <div class="qhead">
+        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>
+        <div>
+          <h1>Asset Transfers</h1>
+          <p>Moving a vehicle, property or business from one player to another, on the record.</p>
         </div>
       </div>
+
+      <div class="qtabs" id="qtabs" role="tablist" aria-label="Asset Transfers views"></div>
+      <div id="qbody"></div>
 
     </main>
   </div>
 
-  <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
 
 <script src="/assets/js/ucp.js?v=2.5.1"></script>
 <script>
@@ -674,433 +752,194 @@
   })();
   renderSidebar(SIDEBAR);
 
-  /* ===================== BULLETIN DATA =====================
-     Each bulletin: {id, type, title, body, by, when, link (url|null),
-     image (dataURL|null), imgpos (0-100 vertical %), shown (on dashboard)}.
-     MAX_SHOWN caps how many rotate on the dashboard.
-     `by` is always the UCP name of whoever created it (locked). Wire to server later. */
-  let UCP_NAME="";                // filled from api/session.php
-  let MAX_SHOWN=5;                // both confirmed by the server on load
-  let PER_PAGE=6;
-  const THEME_BY_TYPE={event:1,update:2,notice:3};
-  const TAGCLASS={event:'evt',update:'upd',notice:''};
-  const TAGLABEL={event:'Event',update:'Update',notice:'Notice'};
+  /* =====================================================================
+     ASSET TRANSFERS
 
-  /* One page of bulletins, straight from api/bulletins.php. The listing
-     deliberately carries no image data — six banners of base64 would be a
-     slow payload for a thumbnail — so cards draw the type wash instead and
-     the editor fetches the full row when it opens. */
-  let BULLETINS=[];
-  let TOTAL_PAGES=1, SHOWN_COUNT=0, LOADING=false;
+     Three things this page will not do:
 
-  /* "2 hours ago" from a unix timestamp. */
-  function whenFrom(ts){
-    if(window.UCP && UCP.relTime) return UCP.relTime(ts);
-    const d=Math.floor(Date.now()/1000)-ts;
-    if(d<3600) return Math.max(1,Math.floor(d/60))+' min ago';
-    if(d<86400) return Math.floor(d/3600)+'h ago';
-    return Math.floor(d/86400)+'d ago';
+       - draw a form that cannot submit,
+       - draw an empty list that reads as "you have none",
+       - decide for itself who may open the staff panel.
+
+     The last one matters most. api/queues.php answers it, this page asks,
+     and when the answer is no it says who the view IS for rather than
+     pretending the link was never there. Somebody who typed the URL
+     deserves a sentence, not a blank page.
+     ===================================================================== */
+  var AREA  = "transfers";
+  var VIEWS = [
+  {
+    "key": "submit",
+    "label": "Submit an Asset Transfer",
+    "what": "Ask for something of yours to be moved to somebody else.",
+    "steps": [
+      "What is moving, and to whom.",
+      "What you are getting for it, if anything.",
+      "Confirmation from both sides before it goes anywhere."
+    ],
+    "after": "Staff check it is really yours and that the other player agreed, then make the move in game."
+  },
+  {
+    "key": "mine",
+    "label": "My Asset Transfers",
+    "what": "Transfers you have sent or been named in.",
+    "steps": [
+      "Waiting on the other player, waiting on staff, done, or refused.",
+      "What was moved, and when.",
+      "Anything a reviewing administrator asked you for."
+    ],
+    "after": "Both sides see the same record, so neither can claim a different version of it later."
+  },
+  {
+    "key": "panel",
+    "label": "Asset Transfer Panel",
+    "what": "The transfer queue.",
+    "steps": [
+      "Check ownership and that both players consented.",
+      "Approve and carry out the move, or refuse it with a reason.",
+      "Every completed transfer stays attached to both accounts."
+    ],
+    "after": "Trainee Admin and above, for the same reason as refunds: property changes hands as a result."
   }
+];
+  var STATE = null;                      // api/queues.php, for this area
+  var VIEW  = VIEWS[0].key;
 
-  const grid=document.getElementById('grid');
+  function vBy(k){ for(var i=0;i<VIEWS.length;i++) if(VIEWS[i].key === k) return VIEWS[i]; return null; }
 
-  function shownCount(){ return SHOWN_COUNT; }
+  var QI = {
+    lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    build:'<path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.3-2.3z"/>',
+    chev:'<path d="M9 6l6 6-6 6"/>'
+  };
+  function qsvg(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+QI[n]+'</svg>'; }
 
-  function renderSlotbar(){
-    const used=shownCount();
-    document.getElementById('slotUsed').textContent=used;
-    document.getElementById('slotMax').textContent=MAX_SHOWN;
-    document.getElementById('slotFill').style.width=(used/MAX_SHOWN*100)+'%';
-    const note=document.getElementById('slotNote');
-    note.textContent = used>=MAX_SHOWN
-      ? 'Dashboard is full — turn one off to feature another.'
-      : `${MAX_SHOWN-used} more can be shown on the dashboard.`;
-    note.style.color = used>=MAX_SHOWN ? 'var(--warn)' : 'var(--text-dim)';
-  }
-
-  function cardHTML(b){
-    const full=shownCount()>=MAX_SHOWN;
-    const lockOff = !b.shown && full; /* can't turn on when full */
-    /* The listing carries a small thumbnail, not the full banner. Cards
-       without one (no image, or an older row) fall back to the type wash. */
-    const thumb = b.thumb
-      ? `<div class="thumb"><img src="${b.thumb}" style="object-position:center ${b.imgpos}%"><div class="grad"></div></div>`
-      : `<div class="thumb noimg g${THEME_BY_TYPE[b.type]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h13v14H4z"/><path d="M17 8h3v9M7 9h7M7 13h7"/></svg></div>`;
-    return `<div class="bcard ${b.shown?'shown':''}" data-id="${b.id}">
-      <div class="thumb-wrap" style="position:relative">
-        ${thumb}
-        <span class="tag ${TAGCLASS[b.type]}">${TAGLABEL[b.type]}</span>
-        ${b.shown?`<span class="shown-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>On dashboard</span>`:''}
-      </div>
-      <div class="body">
-        <h3>${escapeHtml(b.title)}</h3>
-        <p>${escapeHtml(b.body)}</p>
-        <div class="meta">${escapeHtml(whenFrom(b.at))} · ${escapeHtml(b.by||'Staff')}${b.link?` · <span class="link-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Link</span>`:''}</div>
-      </div>
-      <div class="foot" data-foot>
-        <label class="toggle ${b.shown?'on':''} ${lockOff?'disabled':''}" ${lockOff?'title="Dashboard is full"':''} onclick="toggleShown(${b.id},event)">
-          <span class="sw"></span>${b.shown?'Showing':'Show on dashboard'}
-        </label>
-        <button class="icon-act" title="Edit" onclick="openEditor(${b.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="M13 5l4 4"/></svg></button>
-        <button class="icon-act del" title="Delete" onclick="askDelete(${b.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 7h14M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>
-      </div>
-    </div>`;
-  }
-
-  let curPage=1;
-
-  function renderList(){
-    const pager=document.getElementById('pager');
-    if(!BULLETINS.length){
-      grid.style.display='block';
-      grid.innerHTML=`<div class="empty">
-        <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h13v14H4z"/><path d="M17 8h3v9a2 2 0 0 1-2 2M7 9h7M7 13h7M7 17h4"/></svg></span>
-        <h4>No bulletins yet</h4>
-        <p>Create your first bulletin to share county news, events and notices with players.</p>
-        <button class="btn primary" onclick="openEditor()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>New bulletin</button>
-      </div>`;
-      pager.innerHTML='';
-      renderSlotbar();
-      return;
-    }
-    grid.style.display='grid';
-    grid.innerHTML=BULLETINS.map(cardHTML).join('');
-    renderPager(TOTAL_PAGES);
-    renderSlotbar();
-  }
-
-  /* Pulls one page from the server. Every action that changes something
-     calls this afterwards rather than patching the local copy, so what is
-     on screen is what is in the database — including whatever another
-     manager did while this page sat open. */
-  function loadPage(n){
-    if(LOADING) return Promise.resolve();
-    LOADING=true;
-    curPage = n || curPage;
-    return UCP.get('bulletins.php?scope=all&page='+curPage).then(function(d){
-      LOADING=false;
-      if(!d || d.ok!==true){
-        if(d && d.authenticated===false){ window.location.replace('/login?return='+encodeURIComponent('/dashboard/bulletin')); return; }
-        toast('Could not load bulletins');
-        return;
-      }
-      BULLETINS   = d.bulletins||[];
-      TOTAL_PAGES = d.pages||1;
-      SHOWN_COUNT = d.shown||0;
-      MAX_SHOWN   = d.max_shown||MAX_SHOWN;
-      PER_PAGE    = d.per_page||PER_PAGE;
-      curPage     = d.page||curPage;
-      renderList();
-    }).catch(function(){ LOADING=false; toast('Could not reach the server'); });
-  }
-
-  function renderPager(totalPages){
-    const pager=document.getElementById('pager');
-    if(totalPages<=1){ pager.innerHTML=''; return; }
-    const prev=`<button class="pg" data-pg="${curPage-1}" ${curPage===1?'disabled':''} aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>`;
-    const next=`<button class="pg" data-pg="${curPage+1}" ${curPage===totalPages?'disabled':''} aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>`;
-    const pages=[];
-    for(let i=1;i<=totalPages;i++){ if(i===1||i===totalPages||Math.abs(i-curPage)<=1) pages.push(i); }
-    const nums=[]; let last=0;
-    pages.forEach(p=>{ if(p-last>1) nums.push('<span class="pg-gap">…</span>'); nums.push(`<button class="pg ${p===curPage?'on':''}" data-pg="${p}">${p}</button>`); last=p; });
-    pager.innerHTML=prev+nums.join('')+next;
-  }
-
-  document.getElementById('pager').addEventListener('click',e=>{
-    const p=e.target.closest('[data-pg]'); if(!p)return;
-    loadPage(parseInt(p.dataset.pg,10)).then(function(){
-      document.querySelector('.content').scrollIntoView({behavior:'smooth',block:'start'});
-    });
-  });
-
-  function toggleShown(id,e){
-    if(e) e.preventDefault();
-    const b=BULLETINS.find(x=>x.id===id); if(!b) return;
-    if(!b.shown && SHOWN_COUNT>=MAX_SHOWN){ toast('Dashboard is full — turn one off first'); return; }
-
-    UCP.post('bulletin-toggle.php',{id:id, on:!b.shown}).then(function(res){
-      const d=res.data||{};
-      if(!d.ok){ toast(d.error||'That did not work'); loadPage(); return; }
-      toast(d.message);
-      loadPage();
-    }).catch(function(){ toast('Could not reach the server'); });
-  }
-
-  /* inline delete confirm */
-  function askDelete(id){
-    const card=grid.querySelector(`.bcard[data-id="${id}"]`); if(!card) return;
-    const foot=card.querySelector('[data-foot]');
-    if(card.querySelector('.confirm')) return;
-    const c=document.createElement('div'); c.className='confirm';
-    c.innerHTML=`<span class="q">Delete this bulletin?</span>
-      <button class="btn sm ghost" data-cancel>Cancel</button>
-      <button class="btn sm danger" data-confirm>Delete</button>`;
-    foot.style.display='none';
-    foot.after(c);
-    c.querySelector('[data-cancel]').onclick=()=>{c.remove();foot.style.display='';};
-    c.querySelector('[data-confirm]').onclick=()=>{
-      c.querySelector('[data-confirm]').textContent='Deleting…';
-      UCP.post('bulletin-delete.php',{id:id}).then(function(res){
-        const d=res.data||{};
-        if(!d.ok){ toast(d.error||'That did not work'); c.remove(); foot.style.display=''; return; }
-        toast(d.message);
-        loadPage();
-      }).catch(function(){ toast('Could not reach the server'); c.remove(); foot.style.display=''; });
-    };
-  }
-
-  /* ===================== EDITOR ===================== */
-  let editingId=null;
-  let draft={type:'event',title:'',body:'',link:'',image:null,thumb:null,imgpos:50,imageTouched:false};
-
-  function showView(name){
-    document.getElementById('view-list').classList.toggle('active',name==='list');
-    document.getElementById('view-edit').classList.toggle('active',name==='edit');
-    document.querySelector('.page-title h1').textContent = name==='edit' ? 'County Bulletin — Editor' : 'County Bulletin';
-    window.scrollTo(0,0);
-  }
-
-  function openEditor(id){
-    if(id){
-      /* The listing carries no image data, so fetch the full row before
-         opening — otherwise a save would look like the picture was removed. */
-      const b=BULLETINS.find(x=>x.id===id); if(!b) return;
-      editingId=id;
-      draft={type:b.type,title:b.title,body:b.body,link:b.link||'',image:null,thumb:null,imgpos:b.imgpos,imageTouched:false};
-      if(b.has_image){
-        UCP.get('bulletins.php?id='+id).then(function(d){
-          if(d && d.ok===true && d.bulletin && editingId===id){
-            draft.image=d.bulletin.image;
-            draft.imgpos=d.bulletin.imgpos;
-            renderUploader(); syncPreview();
-          }
-        });
-      }
-      document.getElementById('editTitle').textContent='Edit bulletin';
-      document.getElementById('saveBtn').textContent='Save changes';
-    } else {
-      editingId=null;
-      draft={type:'event',title:'',body:'',link:'',image:null,thumb:null,imgpos:50,imageTouched:false};
-      document.getElementById('editTitle').textContent='New bulletin';
-      document.getElementById('saveBtn').textContent='Publish bulletin';
-    }
-    /* fill form */
-    document.getElementById('fTitle').value=draft.title;
-    document.getElementById('fBody').value=draft.body;
-    document.getElementById('fLink').value=draft.link;
-    document.getElementById('fByLabel').textContent=UCP_NAME;  /* author always locked to UCP name */
-    document.querySelectorAll('#typeSeg button').forEach(btn=>btn.classList.toggle('on',btn.dataset.type===draft.type));
-    renderUploader();
-    syncPreview();
-    showView('edit');
-  }
-  function closeEditor(){ showView('list'); renderList(); }
-
-  /* type segmented control */
-  document.getElementById('typeSeg').addEventListener('click',e=>{
-    const btn=e.target.closest('button'); if(!btn) return;
-    draft.type=btn.dataset.type;
-    document.querySelectorAll('#typeSeg button').forEach(b=>b.classList.toggle('on',b===btn));
-    syncPreview();
-  });
-
-  /* normalise + validate a link. Returns {url, ok, msg} */
-  function checkLink(raw){
-    const v=(raw||'').trim();
-    if(!v) return {url:null, ok:true, msg:''};
-    let url=v;
-    if(!/^https?:\/\//i.test(url)) url='https://'+url;  /* assume https if scheme omitted */
-    try{
-      const u=new URL(url);
-      if(!u.hostname.includes('.')) return {url:null, ok:false, msg:'That doesn\u2019t look like a valid web address.'};
-      return {url:u.href, ok:true, msg:'Players who click this bulletin will open '+u.hostname};
-    }catch(_){ return {url:null, ok:false, msg:'That doesn\u2019t look like a valid web address.'}; }
-  }
-
-  /* counts + preview */
-  function syncPreview(){
-    draft.title=document.getElementById('fTitle').value;
-    draft.body=document.getElementById('fBody').value;
-    draft.link=document.getElementById('fLink').value;
-    document.getElementById('titleCount').textContent=draft.title.length;
-    document.getElementById('bodyCount').textContent=draft.body.length;
-
-    /* link hint */
-    const lc=checkLink(draft.link);
-    const hint=document.getElementById('linkHint');
-    hint.textContent=lc.msg;
-    hint.className='field-hint '+(draft.link.trim()?(lc.ok?'ok':'err'):'');
-
-    const theme=THEME_BY_TYPE[draft.type];
-    const pv=document.getElementById('pv');
-    pv.className='pv-slide g'+theme+(draft.image?' has-img':'');
-    const tag=document.getElementById('pvTag');
-    tag.className='tag tg '+(TAGCLASS[draft.type]||'');
-    tag.textContent=TAGLABEL[draft.type];
-    document.getElementById('pvTitle').textContent=draft.title||'Your title appears here';
-    document.getElementById('pvBody').textContent=draft.body||'Your description will show here as you write it, giving players the key details at a glance.';
-    document.getElementById('pvMeta').textContent='Just now · '+UCP_NAME;
-    document.getElementById('pvLink').hidden = !(lc.ok && lc.url);
-
-    const pvbg=document.getElementById('pvbg');
-    if(draft.image){
-      pvbg.innerHTML=`<img src="${draft.image}" style="object-position:center ${draft.imgpos}%">`;
-    } else { pvbg.innerHTML=''; }
-
-    const linkValid = !draft.link.trim() || lc.ok;
-    document.getElementById('saveBtn').disabled = !(draft.title.trim() && draft.body.trim() && linkValid);
-  }
-
-  /* ===================== IMAGE UPLOAD + REPOSITION ===================== */
-  const fileInput=document.getElementById('fileInput');
-  const drop=document.getElementById('drop');
-  drop.addEventListener('click',()=>fileInput.click());
-  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag');});
-  drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
-  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');if(e.dataTransfer.files[0])loadImage(e.dataTransfer.files[0]);});
-  fileInput.addEventListener('change',e=>{if(e.target.files[0])loadImage(e.target.files[0]);});
-
-  /* Downscale before it ever leaves the browser: a phone photo is several
-     megabytes, and this ends up as a data: URL in one database column.
-     1600px wide, re-encoded as JPEG, puts a banner at roughly 150-300 KB —
-     well inside the server's 1.2 MB ceiling. */
-  function loadImage(file){
-    if(!file) return;
-    if(!file.type.startsWith('image/')){toast('That file isn\u2019t an image');return;}
-    const r=new FileReader();
-    r.onload=()=>{
-      const img=new Image();
-      img.onload=()=>{
-        const MAX=1600, scale=Math.min(1, MAX/img.width);
-        const c=document.createElement('canvas');
-        c.width=Math.round(img.width*scale); c.height=Math.round(img.height*scale);
-        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-        let out; try{ out=c.toDataURL('image/jpeg',0.82); }catch(e){ out=r.result; }
-        /* Small PNGs sometimes grow when re-encoded — keep whichever is smaller. */
-        draft.image = out.length < r.result.length ? out : r.result;
-
-        /* And a card-sized copy in the same pass, so the management listing
-           can show six thumbnails without shipping six banners. */
-        const tw=560, ts=Math.min(1, tw/img.width);
-        const t=document.createElement('canvas');
-        t.width=Math.round(img.width*ts); t.height=Math.round(img.height*ts);
-        t.getContext('2d').drawImage(img,0,0,t.width,t.height);
-        try{ draft.thumb=t.toDataURL('image/jpeg',0.72); }catch(e){ draft.thumb=null; }
-
-        draft.imgpos=50; draft.imageTouched=true;
-        renderUploader(); syncPreview();
-      };
-      img.onerror=()=>toast('That image could not be read');
-      img.src=r.result;
-    };
-    r.readAsDataURL(file);
-  }
-
-  function renderUploader(){
-    const up=document.getElementById('uploader');
-    if(!draft.image){
-      up.innerHTML=`<div class="drop" id="drop">
-          <span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16l5-5 4 4 3-3 4 4M4 20h16V4H4z"/></svg></span>
-          <h5>Drop an image here or <span class="browse">browse</span></h5>
-          <p>PNG or JPG · a wide image works best for the banner</p>
-        </div>
-        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" hidden>`;
-      wireDrop();
-      return;
-    }
-    up.innerHTML=`<div class="imgframe" id="imgframe">
-        <img id="frameImg" src="${draft.image}" style="object-position:center ${draft.imgpos}%" draggable="false">
-        <div class="hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7-7 7 7"/><path d="M5 12l7 7 7-7"/></svg>Drag up or down to reposition</div>
-      </div>
-      <div class="img-actions">
-        <button class="btn sm ghost" id="replaceImg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16l5-5 4 4 3-3 4 4M4 20h16V4H4z"/></svg>Replace</button>
-        <button class="btn sm danger" id="removeImg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 7h14M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Remove</button>
-      </div>
-      <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" hidden>`;
-    wireFrame();
-  }
-
-  function wireDrop(){
-    const fi=document.getElementById('fileInput'), dp=document.getElementById('drop');
-    dp.addEventListener('click',()=>fi.click());
-    dp.addEventListener('dragover',e=>{e.preventDefault();dp.classList.add('drag');});
-    dp.addEventListener('dragleave',()=>dp.classList.remove('drag'));
-    dp.addEventListener('drop',e=>{e.preventDefault();dp.classList.remove('drag');if(e.dataTransfer.files[0])loadImage(e.dataTransfer.files[0]);});
-    fi.addEventListener('change',e=>{if(e.target.files[0])loadImage(e.target.files[0]);});
-  }
-
-  function wireFrame(){
-    const fi=document.getElementById('fileInput');
-    document.getElementById('replaceImg').onclick=()=>fi.click();
-    fi.addEventListener('change',e=>{if(e.target.files[0])loadImage(e.target.files[0]);});
-    document.getElementById('removeImg').onclick=()=>{draft.image=null;draft.thumb=null;draft.imgpos=50;draft.imageTouched=true;renderUploader();syncPreview();};
-
-    const frame=document.getElementById('imgframe'), img=document.getElementById('frameImg');
-    let dragging=false, startY=0, startPos=draft.imgpos;
-    const START=e=>{dragging=true;startY=(e.touches?e.touches[0].clientY:e.clientY);startPos=draft.imgpos;frame.classList.add('dragging');};
-    const MOVE=e=>{
-      if(!dragging)return;
-      const y=(e.touches?e.touches[0].clientY:e.clientY);
-      const dy=y-startY;
-      /* map drag distance to 0-100%; frame height ~190px, dragging full height = full range */
-      let pos=startPos - (dy/190)*100;
-      pos=Math.max(0,Math.min(100,pos));
-      draft.imgpos=pos;
-      img.style.objectPosition='center '+pos+'%';
-      const pvimg=document.querySelector('#pvbg img'); if(pvimg) pvimg.style.objectPosition='center '+pos+'%';
-      e.preventDefault();
-    };
-    const END=()=>{dragging=false;frame.classList.remove('dragging');};
-    frame.addEventListener('mousedown',START);
-    window.addEventListener('mousemove',MOVE);
-    window.addEventListener('mouseup',END);
-    frame.addEventListener('touchstart',START,{passive:false});
-    frame.addEventListener('touchmove',MOVE,{passive:false});
-    frame.addEventListener('touchend',END);
-  }
-
-  /* ===================== SAVE ===================== */
-  function saveBulletin(){
-    if(!draft.title.trim()||!draft.body.trim()) return;
-    const lc=checkLink(draft.link);
-    if(draft.link.trim() && !lc.ok){ toast('Fix the link before publishing'); return; }
-
-    const btn=document.getElementById('saveBtn');
-    const label=btn.textContent;
-    btn.disabled=true; btn.textContent='Saving…';
-
-    const payload={
-      type:draft.type,
-      title:draft.title.trim(),
-      body:draft.body.trim(),
-      link:lc.url||'',
-      imgpos:draft.imgpos
-    };
-    if(editingId) payload.id=editingId;
-    /* Only send `image` when it is part of this edit. Leaving the key out
-       tells the server to keep what it has; sending null is how the Remove
-       button clears it. */
-    if(!editingId || draft.imageTouched){
-      payload.image=draft.image;
-      payload.thumb=draft.thumb||null;
-    }
-
-    UCP.post('bulletin-save.php',payload).then(function(res){
-      btn.disabled=false; btn.textContent=label;
-      const d=res.data||{};
-      if(!d.ok){ toast(d.error||'That did not work'); return; }
-      toast(d.message);
-      /* The byline is set server-side from the session and is never touched
-         on an edit, so a post keeps the name of whoever wrote it. */
-      if(!editingId) curPage=1;
-      closeEditor();
-      loadPage();
-    }).catch(function(){
-      btn.disabled=false; btn.textContent=label;
-      toast('Could not reach the server');
+  /* ---- the view switcher ----
+     Rebuilt whenever the server answer lands, because a view the caller may
+     not open is not drawn as a disabled tab — it is not a tab. The tab bar
+     is navigation; the refusal belongs on the page they asked for, where it
+     can explain itself. */
+  function renderTabs(){
+    var host = document.getElementById('qtabs');
+    host.innerHTML = VIEWS.filter(function(v){
+      var st = STATE && STATE.views ? STATE.views[v.key] : null;
+      return !st || st.may || v.key === VIEW;      // keep the one being refused
+    }).map(function(v){
+      var st = STATE && STATE.views ? STATE.views[v.key] : null;
+      var no = st && !st.may;
+      return '<button class="qtab" role="tab" data-view="'+v.key+'" '+
+             'aria-selected="'+(v.key === VIEW ? 'true' : 'false')+'">'+
+             (no ? '<span class="lk">'+qsvg('lock')+'</span>' : '') +
+             escapeHtml(v.label)+'</button>';
+    }).join('');
+    Array.prototype.forEach.call(host.querySelectorAll('[data-view]'), function(b){
+      b.addEventListener('click', function(){ go(b.getAttribute('data-view'), true); });
     });
   }
 
+  function renderView(){
+    var v = vBy(VIEW), host = document.getElementById('qbody');
+    if(!v) return;
+    document.querySelector('.page-title h1').textContent = v.label;
+    document.title = 'BlaineSide \u2014 ' + v.label;
+
+    var st = STATE && STATE.views ? STATE.views[v.key] : null;
+
+    /* Refused. Say who it is for, in the server's words — the page does not
+       get to invent a rule the endpoint doesn't have. */
+    if(st && !st.may){
+      host.innerHTML =
+        '<div class="card"><div class="card-b" style="padding-top:18px">' +
+          '<div class="qno"><span class="si">'+qsvg('lock')+'</span><div>' +
+            '<h4>'+escapeHtml(v.label)+' isn\u2019t open to you</h4>' +
+            '<p>'+escapeHtml(st.why || '')+'</p>' +
+            '<p>If you think that is wrong, speak to Staff Management rather than the ' +
+            'administrator who sent you here.</p>' +
+          '</div></div>' +
+        '</div></div>';
+      return;
+    }
+
+    var steps = v.steps.map(function(t, i){
+      return '<li><span class="n">'+(i+1)+'</span><span>'+escapeHtml(t)+'</span></li>';
+    }).join('');
+
+    host.innerHTML =
+      '<div class="qgrid">' +
+        '<div class="card"><div class="card-h"><h3>'+escapeHtml(v.label)+'</h3></div>' +
+          '<div class="card-b">' +
+            '<p class="qwhat">'+escapeHtml(v.what)+'</p>' +
+            '<ul class="qsteps">'+steps+'</ul>' +
+            '<div class="qafter">'+escapeHtml(v.after)+'</div>' +
+          '</div></div>' +
+        '<div>' +
+          '<div class="qstate"><span class="si">'+qsvg('build')+'</span><div>' +
+            '<h4>Not switched on yet</h4>' +
+            '<p>'+escapeHtml((STATE && STATE.why) || 'This isn\u2019t switched on yet.')+' ' +
+            'Nothing is stored and nothing is sent from this page. Until it opens, ' +
+            'raise it with staff the way you do now.</p>' +
+          '</div></div>' +
+          '<div class="card" style="margin-top:20px"><div class="card-h"><h3>Who this is for</h3></div>' +
+            '<div class="card-b"><div class="qmeta">'+
+              VIEWS.map(function(x){
+                var s2 = STATE && STATE.views ? STATE.views[x.key] : null;
+                var may = !s2 || s2.may;
+                return '<div class="row"><span class="k">'+escapeHtml(x.label)+'</span>' +
+                       '<span class="v'+(may ? '' : ' off')+'">'+(may ? 'You' : 'Not you')+'</span></div>';
+              }).join('') +
+            '</div></div></div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /* The hash IS the view: the sidebar links to /dashboard/transfers#panel, so
+     arriving, switching tabs and using the back button all go through one
+     path rather than three that can disagree. */
+  function go(key, push){
+    if(!vBy(key)) key = VIEWS[0].key;
+    VIEW = key;
+    if(push && history.replaceState) history.replaceState(null, '', location.pathname + '#' + key);
+    renderTabs(); renderView();
+  }
+  window.addEventListener('hashchange', function(){
+    go((location.hash || '').replace('#',''), false);
+  });
+
+  UCP.get('session.php').then(function(d){
+    if(!d || d.authenticated !== true){
+      window.location.replace('/login?return='+encodeURIComponent('/dashboard/transfers'));
+      return;
+    }
+    var an = document.getElementById('acctName'), ar = document.getElementById('acctRole');
+    if(an) an.textContent = d.name || '';
+    if(ar) ar.textContent = d.role || 'Member';
+    if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
+
+    var was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
+    IS_ADMINISTRATOR = (d.rank|0) >= 3;
+    IS_MANAGER       = (d.rank|0) >= 8;
+    IS_FOUNDER       = (d.rank|0) >= 9;
+    MY_RANK          = d.rank | 0;
+    MY_TEAMS         = d.teams || [];
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderSidebar(SIDEBAR);
+
+    /* The gate. Asked for, not assumed from the rank this page just read —
+       Staff Management opens the Staff Report Panel below Management, and
+       that rule lives in api/_queues.php, not here. */
+    return UCP.get('queues.php').then(function(q){
+      if(q && q.ok === true && q.queues){
+        for(var i=0;i<q.queues.length;i++) if(q.queues[i].key === AREA) STATE = q.queues[i];
+      }
+      go((location.hash || '').replace('#',''), false);
+    });
+  }).catch(function(){
+    /* No answer from the server. Draw the page with no gate resolved rather
+       than a spinner that never ends — every view still says it isn't built,
+       which is the true part, and the panel gate is enforced server-side
+       whatever this page decided to draw. */
+    go((location.hash || '').replace('#',''), false);
+    toast('Could not reach the server');
+  });
 
   /* ===== ACCOUNT MENU ===== */
   (function(){
@@ -1148,51 +987,6 @@
     document.getElementById('utcTime').textContent=`${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
     document.getElementById('utcDate').textContent=`${DAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;}
   tickClock();setInterval(tickClock,1000);
-
-  /* =====================================================================
-     BOOT — who is this, and may they be here?
-
-     Every endpoint behind this page checks the rank itself; this is so the
-     page doesn't render a management console to someone who would only be
-     refused by every button on it.
-     ===================================================================== */
-  function lockOut(){
-    document.querySelector('.content').innerHTML=`
-      <div class="empty" style="margin:60px auto;max-width:520px">
-        <span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
-        <h4>Management only</h4>
-        <p>The County Bulletin is managed by Management and Founders. If you think you should have access, speak to a Founder.</p>
-        <a class="btn primary" href="/dashboard">Back to dashboard</a>
-      </div>`;
-  }
-
-  UCP.get('session.php').then(function(d){
-    if(!d || d.authenticated!==true){
-      window.location.replace('/login?return='+encodeURIComponent('/dashboard/bulletin'));
-      return;
-    }
-    UCP_NAME = d.name || '';
-    const byLabel=document.getElementById('fByLabel');
-    if(byLabel) byLabel.textContent = UCP_NAME;
-    const an=document.getElementById('acctName'), ar=document.getElementById('acctRole');
-    if(an) an.textContent = UCP_NAME;
-    if(ar) ar.textContent = d.role || 'Member';
-    /* Keep it for the next page load — this is what stops the flicker. */
-    if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
-
-    /* 8 = Management, 9 = Founder — the same line the server draws. */
-    if((d.rank|0) < 8){ lockOut(); return; }
-
-    const was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
-    IS_MANAGER=true; IS_FOUNDER=(d.rank|0) >= 9; IS_ADMINISTRATOR=true;
-    MY_RANK = d.rank | 0; MY_TEAMS = d.teams || [];
-    /* Only redraw if the seed above was wrong — redrawing identical HTML is
-       what the eye reads as a flash. */
-    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderSidebar(SIDEBAR);
-
-    loadPage(1);
-  }).catch(function(){ toast('Could not reach the server'); });
-
 </script>
 </body>
 </html>

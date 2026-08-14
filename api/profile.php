@@ -124,6 +124,14 @@ ok([
     ],
     'rank'     => $rank,
     'role'     => rank_name($rank),
+    /* Sub-group keys, for the sidebar — the Staff Report Panel opens on
+       Staff Management at any administrator rank, so a menu drawn from rank
+       alone is wrong for the people the sub-group exists for. Guarded: the
+       table arrives with docs/migration-subgroups.sql. */
+    'teams'    => (function () use ($pdo, $uid) {
+        try { require_once __DIR__ . '/_teams.php'; return teams_for($pdo, $uid); }
+        catch (Throwable $e) { return []; }
+    })(),
     'created_at'  => $acc['created_at'],
     'member_days' => $memberDays,
     'last_login'  => $acc['last_login'],
