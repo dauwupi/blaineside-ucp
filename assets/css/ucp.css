@@ -1,11 +1,18 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,system-ui,sans-serif;color:var(--parch);-webkit-font-smoothing:antialiased}
 a{text-decoration:none;color:inherit}
+/* Time-of-day wash over the backdrop photo. Four tints, all of them dull:
+   the backdrop sits behind body copy all day and is meant to be noticed
+   only if you look for it. Dusk used to be rgba(150,72,22,.42), which was
+   roughly twice the strength of the other three and turned the whole page
+   orange for four hours every evening. The rule is that no channel goes
+   much past the ~90 the others sit at. Repeated inline on every dashboard
+   page — change all of them together. */
 .tod{position:absolute;inset:0;z-index:0;pointer-events:none;transition:background 1s ease}
 .stage.tod-night .tod{background:rgba(20,28,56,.54)}
 .stage.tod-dawn .tod{background:rgba(78,44,66,.42)}
 .stage.tod-day .tod{background:rgba(64,46,26,.20)}
-.stage.tod-dusk .tod{background:rgba(150,72,22,.42)}
+.stage.tod-dusk .tod{background:rgba(92,48,28,.42)}
 .brand{display:flex;align-items:baseline;gap:13px}
 .brand .mark{font-size:24px;font-weight:900;letter-spacing:.02em}
 .brand .mark em{font-style:normal;color:var(--gold)}

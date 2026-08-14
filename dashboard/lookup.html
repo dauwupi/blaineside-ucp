@@ -138,7 +138,7 @@ button{font-family:inherit}
 .bg-stage.tod-night .tod{background:rgba(20,28,56,.54)}
 .bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
 .bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
-.bg-stage.tod-dusk  .tod{background:rgba(150,72,22,.42)}
+.bg-stage.tod-dusk  .tod{background:rgba(92,48,28,.42)}
 /* An even vignette: equally dark on all four sides, lightest in the
    middle. The old version graded left-to-right, which read as a black
    band down one edge rather than as a backdrop. */
@@ -276,23 +276,28 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .tabpanel[hidden]{display:none}
 
 /* ---- profile columns ----
-   The default is the two columns this page has always had, at the widths
-   it has always had them: reading column, then the account summary. The
-   Administrative actions card sits ABOVE the reading column here.
+   Three, all inside the page's normal content width: Administrative
+   actions, then the read-only panels, then the account summary.
 
-   On a wide screen the actions move out into their own column on the
-   outside edge — see the min-width rule further down. They are given room
-   the page didn't have rather than taken out of the middle: taking 300px
-   from Characters and Linked accounts to hold six short buttons is a bad
-   trade, and it is the whole reason this isn't a three-column layout by
-   default. */
-.pgrid{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:20px;align-items:start}
+   The account column pays for the actions column. It was 336px of label
+   over value with the values ending a third of the way across — a column
+   sized for a two-column page. At 248 the same rows read the same and the
+   middle keeps most of what it had.
+
+   Both outer columns stick; the middle is the only one long enough to
+   scroll past them. */
+.pgrid{display:grid;grid-template-columns:284px minmax(0,1fr) 248px;gap:20px;align-items:start}
 .pgrid > .col-a{grid-column:1;grid-row:1}
-.pgrid > .col-l{grid-column:1;grid-row:2}
-.pgrid > .col-r{grid-column:2;grid-row:1 / span 2;
-  position:sticky;top:calc(var(--header-h) + 20px)}
-.pgrid > .col-a > .card{margin-bottom:20px}
+.pgrid > .col-l{grid-column:2;grid-row:1}
+.pgrid > .col-r{grid-column:3;grid-row:1}
+.pgrid > .col-a,
+.pgrid > .col-r{position:sticky;top:calc(var(--header-h) + 20px)}
+
+/* Nothing to show in it — close the column rather than leave a gap. */
+.pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 248px}
 .pgrid:has(> .col-a > .card[hidden]) > .col-a{display:none}
+.pgrid:has(> .col-a > .card[hidden]) > .col-l{grid-column:1}
+.pgrid:has(> .col-a > .card[hidden]) > .col-r{grid-column:2}
 
 /* ---- settings row: label + description left, control right ---- */
 .rows > .row:first-child,
@@ -690,45 +695,16 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-/* ---- the wide layout: actions outside the column ----
-   Past this width the page has room to spare on both sides of its 1180px
-   column, and the Administrative actions card moves out into it.
-
-   Everything above the tabs — the read-only bar, the lock banner, the
-   identity card, the tabs themselves — stays at its normal width and is
-   pulled to the RIGHT edge, so it lines up exactly with Characters and
-   Account. Only the actions card sticks out to the left. The reading
-   column and the account summary keep the widths they have at every other
-   size: the extra space comes from the page margin, not from them.
-
-   1780px is where the sums work out. Below it there isn't enough margin to
-   take a 300px column without stealing from the middle, so the actions
-   fold back above Characters rather than squeezing everything.
-
-   The head blocks are inset by exactly one actions column plus one gap,
-   rather than given a width of their own, so they stay flush with the
-   reading column at every width above the breakpoint. */
-@media (min-width:1780px){
-  .content{max-width:1600px}
-  .content > #flash,
-  .content > .lookbar,
-  .content > #lockBanner,
-  .content > .card,
-  .content > .tabbar,
-  .content > #p-record{margin-left:320px}
-
-  .pgrid{grid-template-columns:300px minmax(0,1fr) 336px}
-  .pgrid > .col-a{grid-column:1;grid-row:1;
-    position:sticky;top:calc(var(--header-h) + 20px)}
-  .pgrid > .col-l{grid-column:2;grid-row:1}
-  .pgrid > .col-r{grid-column:3;grid-row:1}
-  .pgrid > .col-a > .card{margin-bottom:0}
-  .actlist{grid-template-columns:1fr}
-
-  /* Nothing to show in it — close the column rather than leave a gap. */
-  .pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 336px}
-  .pgrid:has(> .col-a > .card[hidden]) > .col-l{grid-column:1}
-  .pgrid:has(> .col-a > .card[hidden]) > .col-r{grid-column:2}
+/* Three columns need about 1050px of content width. Below that the actions
+   fold back above the reading column and the account summary returns to a
+   comfortable width, rather than three strips none of which can be read. */
+@media (max-width:1340px){
+  .pgrid,
+  .pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 300px}
+  .pgrid > .col-a{position:static;grid-column:1;grid-row:1}
+  .pgrid > .col-l{grid-column:1;grid-row:2}
+  .pgrid > .col-r{grid-column:2;grid-row:1 / span 2}
+  .pgrid > .col-a > .card{margin-bottom:20px}
 }
 
 @media (max-width:1140px){
@@ -798,7 +774,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.8">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.9">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
@@ -1141,7 +1117,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.8"></script>
+<script src="/assets/js/ucp.js?v=2.4.9"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
