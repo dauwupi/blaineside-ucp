@@ -138,7 +138,7 @@ button{font-family:inherit}
 .bg-stage.tod-night .tod{background:rgba(20,28,56,.54)}
 .bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
 .bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
-.bg-stage.tod-dusk  .tod{background:rgba(92,48,28,.42)}
+.bg-stage.tod-dusk  .tod{background:rgba(58,40,34,.34)}
 /* An even vignette: equally dark on all four sides, lightest in the
    middle. The old version graded left-to-right, which read as a black
    band down one edge rather than as a backdrop. */
@@ -774,7 +774,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.9">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
@@ -805,21 +805,28 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   .lookro svg{width:13px;height:13px;stroke-width:2.2;flex:none}
 
   /* ---- Administrative actions ----
-     A separate card, below the account, deliberately not mixed in with the
-     read-only panels above it. Everything here CHANGES something; everything
-     above it only reports. Actions with nothing behind them yet are listed
-     and disabled rather than hidden, so the shape of the finished tool is
-     visible — the same rule the search fields follow. */
-  .actcard{border-color:rgba(193,85,63,.22)}
-  /* The card sits in a 300px column, so it gives back the page's usual 22px
-     of card padding — at this width that gutter is worth more as text. */
+     Its own card, deliberately not mixed in with the read-only panels
+     beside it. Everything here CHANGES something; everything around it only
+     reports. Actions with nothing behind them yet are listed and disabled
+     rather than hidden, so the shape of the finished tool is visible — the
+     same rule the search fields follow.
+
+     No accent border. The card is a normal panel like every other one on
+     the page; the individual destructive action carries the warning, not
+     the container holding six mostly-inert buttons. */
   .actcard .card-h{padding-left:17px;padding-right:17px}
   .actcard .card-b{padding-left:15px;padding-right:15px}
-  /* Below the wide breakpoint this card spans the reading column, and a
-     single stack of six rows leaves the SOON badge stranded half a screen
-     from its label. It tiles instead, and goes back to one column when it
-     moves out to the side. */
-  .actlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:7px}
+
+  /* One row per line in the side column; two across when the card folds
+     back over the reading column and a single stack would strand each SOON
+     badge half a screen from its label.
+
+     min() is load-bearing: a bare minmax(272px,1fr) sets a floor the track
+     keeps even when the card is narrower than 272, and the rows spill out
+     past the card's right edge. min(272px,100%) lets the track shrink to
+     the card instead. */
+  .actlist{display:grid;gap:7px;
+    grid-template-columns:repeat(auto-fill,minmax(min(272px,100%),1fr))}
 
   /* Two rows rather than one: icon and name on the first, the explanation
      beneath it across the full width. In a narrow column a single flex line
@@ -1117,7 +1124,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.9"></script>
+<script src="/assets/js/ucp.js?v=2.5.0"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
