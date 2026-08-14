@@ -9,7 +9,7 @@
 <title>Sign in — BlaineSide UCP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="/assets/fa/fontawesome.css">
-<link rel="stylesheet" href="/assets/css/ucp.css?v=2.4.7">
+<link rel="stylesheet" href="/assets/css/ucp.css?v=2.4.8">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -196,7 +196,7 @@
 /* No "Create UCP" tab mid-verification — the account already exists and the
    sign-in is half-finished; clicking it would silently abandon the flow. */
 .auth:has(#twofa.on) .tabs{display:none}
-</style><script src="/assets/js/ucp.js?v=2.4.7"></script>
+</style><script src="/assets/js/ucp.js?v=2.4.8"></script>
 </head>
 <body>
 <div class="stage">
@@ -492,6 +492,16 @@ document.addEventListener('click',function(e){
       busy=false;
       if(d.ok){
         try{ localStorage.setItem('bs-last-user',u); }catch(e){}
+
+        /* A locked account goes straight through. Running them past
+           "Loading your characters… Syncing money & vehicles…" and then
+           showing them a lock screen would be a small cruelty. */
+        if(d.locked){
+          setMsg(msgUser,inpUser,null); setMsg(msgPw,inpPw,null);
+          window.location = d.redirect || '/dashboard';
+          return;
+        }
+
         setMsg(msgUser,inpUser,'ok','UCP found.');
         setMsg(msgPw,inpPw,'ok','Signing you in…');
         // A mandatory-2FA setup redirect outranks any ?return= — otherwise a

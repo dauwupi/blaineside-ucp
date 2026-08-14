@@ -88,34 +88,35 @@ if ($acc['status'] === 'pending') {
     fail('Please verify your email before signing in. Check your inbox, or resend the link.', 403);
 }
 if ($acc['status'] === 'suspended') {
-    fail('This account is suspended. Contact staff on Discord.', 403);
+    fail('This account is banned. Contact staff on Discord.', 403);
 }
 
-/* A lock is answered, not just refused.
+/* A locked account signs in — to a room with one door.
  *
- * The password was right, so this is the account holder — telling them
- * nothing would send them round the reset-password loop for a problem a
- * password can't fix. They get what happened, why if a reason was given, and
- * where to appeal. `locked` in the response lets the sign-in page draw that
- * as a state rather than as another red validation error. */
+ * They are let through the password check and no further: 'uid' is never
+ * set, so every authenticated endpoint in the UCP still treats this browser
+ * as signed out. What IS set is 'locked_uid', which only api/session.php
+ * reads, and only to tell the dashboard to draw the lock notice and offer
+ * the way to appeal.
+ *
+ * Refusing them outright was the safer-looking option and the worse one: a
+ * player who is simply bounced assumes the site is broken, and goes looking
+ * for the wrong problem — usually the password reset, which cannot fix this.
+ *
+ * Two-factor is skipped deliberately. There is nothing behind this door to
+ * protect, and demanding a code before telling somebody why they can't get
+ * in is a cruelty with no security value. */
 if ($acc['status'] === 'locked') {
-    // The reason lives in a column added by docs/migration-userlock.sql. The
-    // status can't read 'locked' before that ran, but fetch it defensively
-    // anyway — a missing reason should cost the wording, not the response.
-    try {
-        $rs = $pdo->prepare('SELECT lock_reason FROM ucp_accounts WHERE id = ? LIMIT 1');
-        $rs->execute([(int)$acc['id']]);
-        $acc['lock_reason'] = $rs->fetchColumn() ?: null;
-    } catch (Throwable $e) {
-        $acc['lock_reason'] = null;
-    }
-
-    json_out([
-        'ok'     => false,
-        'locked' => true,
-        'reason' => $acc['lock_reason'],
-        'error'  => lock_message($acc),
-    ], 403);
+    session_regenerate_id(true);
+    $_SESSION = [
+        'locked_uid'  => (int)$acc['id'],
+        'locked_name' => (string)$acc['username'],
+    ];
+    ok([
+        'locked'   => true,
+        'name'     => $acc['username'],
+        'redirect' => '/dashboard',
+    ]);
 }
 
 // ---- Two-factor gate ------------------------------------------------------

@@ -176,6 +176,47 @@
   .account-btn .caret{width:15px;height:15px;color:var(--text-dim);stroke-width:2;flex:none}
   .account-btn .acct-ico{display:none}
 
+  /* ===== LOCKED =====
+     What a locked account gets instead of a dashboard. Everything else is
+     removed rather than disabled: a greyed-out sidebar invites clicking, and
+     a page full of things that don't respond reads as broken software at
+     exactly the moment somebody needs to trust what it says. */
+  .lockpage{max-width:640px;margin:0 auto;padding:8px 0 40px}
+  .lockhero{background:var(--charcoal-2);border:1px solid rgba(193,85,63,.34);border-radius:16px;
+    padding:30px 30px 26px;box-shadow:0 24px 60px -28px rgba(0,0,0,.9)}
+  .lockhero .mark{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;
+    background:rgba(193,85,63,.14);border:1px solid rgba(193,85,63,.3);color:#e0a99b;margin-bottom:18px}
+  .lockhero .mark svg{width:24px;height:24px;stroke-width:1.9}
+  .lockhero h1{font-size:23px;font-weight:700;letter-spacing:-.02em;margin-bottom:9px}
+  .lockhero .lede{font-size:14px;color:var(--text-faint);line-height:1.65}
+  .lockwhy{margin-top:20px;padding:15px 16px;border-radius:12px;background:var(--charcoal);
+    border:1px solid var(--border)}
+  .lockwhy .k{font-size:9.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:8px}
+  .lockwhy .v{font-size:14px;color:var(--parchment);line-height:1.6}
+  .lockwhy .m{font-size:12px;color:var(--text-dim);margin-top:10px}
+  .locksteps{margin-top:22px;padding-top:20px;border-top:1px solid var(--border-soft)}
+  .locksteps h3{font-size:12.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:13px}
+  .lockstep{display:flex;gap:12px;padding:9px 0;font-size:13.5px;color:var(--text-faint);line-height:1.55}
+  .lockstep .n{width:22px;height:22px;flex:none;border-radius:7px;display:grid;place-items:center;
+    background:var(--charcoal-3);border:1px solid var(--border);font-size:11px;font-weight:800;
+    color:var(--text-dim)}
+  .lockstep b{color:var(--parchment);font-weight:600}
+  .lockacts{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+  /* This page has no .btn of its own — every other button on the dashboard
+     is a bespoke component — so the lock screen brings its own. */
+  .lockacts .btn{flex:1;min-width:150px;display:inline-flex;align-items:center;justify-content:center;
+    gap:8px;padding:12px 18px;border-radius:11px;font-family:inherit;font-size:13.5px;font-weight:700;
+    cursor:pointer;border:1px solid var(--border);background:var(--charcoal-2);color:var(--parchment);
+    transition:.15s}
+  .lockacts .btn:hover:not(:disabled){background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .lockacts .btn.primary{background:linear-gradient(145deg,var(--gold),var(--amber));color:#1a1206;
+    border:none;box-shadow:0 6px 16px rgba(212,146,58,.24)}
+  .lockacts .btn.primary:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(212,146,58,.32)}
+  .lockacts .btn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+  .lockfoot{text-align:center;font-size:12px;color:var(--text-dim);margin-top:20px;line-height:1.6}
+
   .account-menu{position:absolute;right:0;top:calc(100% + 10px);width:230px;
     background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
     box-shadow:0 24px 50px -18px rgba(0,0,0,.8);padding:8px;z-index:60}
@@ -732,8 +773,8 @@
     .stat:nth-child(1){border-top:none}
   }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.7">
-<script src="/assets/js/ucp.js?v=2.4.7"></script>
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.8">
+<script src="/assets/js/ucp.js?v=2.4.8"></script>
 </head>
 <body>
 
@@ -1063,9 +1104,109 @@
 
   /* Ask the server who's signed in. If nobody, bounce to the login page.
      Falls back to the demo values if the API isn't deployed yet. */
+  /* =====================================================================
+     LOCKED ACCOUNTS
+
+     They are allowed this far and no further. api/login.php gives a locked
+     sign-in a session with no 'uid' in it, so every authenticated endpoint
+     already refuses them — this only decides what they SEE, which is an
+     explanation rather than a bounce back to the sign-in page they just came
+     from. Everything except Log out is removed from the document.
+     ===================================================================== */
+  /* Set before anything else touches the page. The dashboard's other
+     loaders — bulletins, announcements, stats — are already in flight when
+     this runs, and they write into elements the lock screen has replaced.
+     They check this and stand down rather than throwing into a page the
+     player is trying to read. */
+  let UCP_LOCKED = false;
+
+  function showLocked(d){
+    UCP_LOCKED = true;
+    /* finishLoading() never runs for a locked account, so the skeleton class
+       has to come off here or the whole page stays in its loading state. */
+    document.body.classList.remove('loading');
+    document.querySelectorAll('.skeleton').forEach(el => el.classList.remove('skeleton'));
+    const lock = d.lock || {};
+    const when = lock.at ? new Date(lock.at * 1000) : null;
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
+      c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    document.getElementById('nav').innerHTML = '';
+    document.querySelectorAll('.topbar .icon-btn, .topbar .searchbox, .topbar .divider')
+      .forEach(el => el.remove());
+    const title = document.querySelector('.page-title h1');
+    if(title) title.textContent = 'Account locked';
+
+    const acctName = document.getElementById('acctName');
+    const acctRole = document.getElementById('acctRole');
+    if(acctName) acctName.textContent = d.name || '';
+    if(acctRole){ acctRole.textContent = 'Locked';
+      acctRole.style.setProperty('color', '#d29b8d', 'important'); }
+    const menuName = document.getElementById('menuName'), menuRole = document.getElementById('menuRole');
+    if(menuName) menuName.textContent = d.name || '';
+    if(menuRole){ menuRole.textContent = 'Locked';
+      menuRole.style.setProperty('color', '#d29b8d', 'important'); }
+    /* The account menu goes too — My Profile behind it leads nowhere. */
+    const mi = document.querySelectorAll('.account-menu .menu-item:not(.danger), .account-menu .menu-sep');
+    mi.forEach(el => el.remove());
+
+    document.querySelector('.content').innerHTML =
+      '<div class="lockpage"><div class="lockhero">' +
+        '<span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+          '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
+        '<h1>Your account is locked</h1>' +
+        '<p class="lede">A member of staff has put a hold on this UCP while something is looked ' +
+          'into. You can still sign in to read this page, but nothing else is available until the ' +
+          'lock is removed.</p>' +
+
+        '<div class="lockwhy">' +
+          '<div class="k">Reason given</div>' +
+          '<div class="v">' + (lock.reason ? esc(lock.reason)
+              : 'No reason was recorded. Ask staff on Discord and they can tell you.') + '</div>' +
+          '<div class="m">' +
+            (lock.by ? 'Locked by ' + esc(lock.by) : 'Locked') +
+            (when ? ' · ' + when.getUTCDate() + ' ' +
+              ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][when.getUTCMonth()] +
+              ' ' + when.getUTCFullYear() : '') +
+          '</div>' +
+        '</div>' +
+
+        '<div class="locksteps">' +
+          '<h3>What happens now</h3>' +
+          '<div class="lockstep"><span class="n">1</span><span>Staff review whatever prompted the ' +
+            'lock. Most are resolved without any further action.</span></div>' +
+          '<div class="lockstep"><span class="n">2</span><span>You will be able to <b>appeal it ' +
+            'from this page</b> once appeals are switched on. Until then, speak to staff on ' +
+            'Discord.</span></div>' +
+          '<div class="lockstep"><span class="n">3</span><span>If the lock is lifted, everything ' +
+            'comes back exactly as you left it. <b>Nothing has been deleted.</b></span></div>' +
+        '</div>' +
+
+        '<div class="lockacts">' +
+          '<button class="btn" id="lockAppeal" disabled>Appeal this lock · coming soon</button>' +
+          '<button class="btn primary" id="lockOut">Log out</button>' +
+        '</div>' +
+      '</div>' +
+      '<p class="lockfoot">Your characters, money and property are untouched. A lock only stops ' +
+        'access to the UCP.</p></div>';
+
+    document.getElementById('lockOut').addEventListener('click', function(){
+      this.disabled = true;
+      if(window.UCP && UCP.forgetMe) UCP.forgetMe();
+      fetch('/api/csrf.php',{credentials:'include'}).then(r=>r.json()).catch(()=>({}))
+        .then(t=>fetch('/api/logout.php',{method:'POST',credentials:'include',
+          headers:{'Content-Type':'application/json','X-CSRF-Token':(t&&t.token)||''},body:'{}'}))
+        .then(()=>window.location.replace('/login'))
+        .catch(()=>window.location.href='/api/logout.php?next=/login');
+    });
+
+    document.body.classList.add('ready');
+  }
+
   (function loadSession(){
     fetch('/api/session.php',{credentials:'include'})
       .then(r=>r.json()).then(d=>{
+        if(d && d.locked){ showLocked(d); return; }
         if(d && d.ok && d.authenticated){
           // Two-factor is mandatory for this rank and isn't on yet. The API
           // still answers normally — the gate is the UCP being unusable until
@@ -1326,6 +1467,7 @@
   document.getElementById('newsNext').addEventListener('click',()=>nudge(1));
 
   function mountBulletin(posts){
+    if(UCP_LOCKED) return;
     const built=renderBulletin(posts);
     slides=built.slides; dots=built.dots; idx=0;
     dots.forEach((d,i)=>d.addEventListener('click',()=>{go(i);startNews();}));
@@ -1567,7 +1709,7 @@
 
   fetch('/api/announcements.php',{credentials:'include'})
     .then(r=>r.json())
-    .then(d=>{ if(d && d.ok===true) renderAnnouncement(d.announcement); })
+    .then(d=>{ if(!UCP_LOCKED && d && d.ok===true) renderAnnouncement(d.announcement); })
     .catch(()=>{});
 
   /* mobile drawer */
@@ -1635,7 +1777,7 @@
   startLoading();
   (function loadStats(){
     var done = false;
-    var reveal = function(){ if(!done){ done = true; finishLoading(); } };
+    var reveal = function(){ if(!done && !UCP_LOCKED){ done = true; finishLoading(); } };
 
     fetch('/api/stats.php', {credentials:'include'})
       .then(function(r){ return r.json(); })
@@ -1653,7 +1795,7 @@
   })();
 
   /* apply the signed-in user's name/role across the header + greeting */
-  applyIdentity();
+  if(!UCP_LOCKED) applyIdentity();
 
   /* =====================================================================
      LIVE DISCORD STATS  —  pulls online + member counts from Discord's

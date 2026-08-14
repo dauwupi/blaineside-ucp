@@ -168,7 +168,7 @@ function admin_search_tabs(): array
                 ['key'=>'group',    'label'=>'Group',           'type'=>'select', 'icon'=>'shield',
                  'available'=>true, 'options'=>$groups],
                 ['key'=>'status',   'label'=>'Account status',  'type'=>'select', 'icon'=>'flag', 'available'=>true,
-                 'options'=>[['','Any status'],['active','Active'],['suspended','Suspended'],['pending','Pending email']]],
+                 'options'=>[['','Any status'],['active','Active'],['suspended','Banned'],['locked','Locked'],['pending','Pending email']]],
                 ['key'=>'twofa',    'label'=>'Two-step',        'type'=>'select', 'icon'=>'lock', 'available'=>true,
                  'options'=>[['','Either'],['1','On'],['0','Off']]],
                 ['key'=>'joined_after',  'label'=>'Registered after',  'type'=>'date', 'icon'=>'cal', 'available'=>true],
@@ -333,7 +333,7 @@ function admin_build_user_query(PDO $pdo, array $in): array
         $args[]  = (int)$v;
         $used[]  = 'group';
     }
-    if (($v = $has('status')) !== null && in_array($v, ['active','suspended','pending'], true)) {
+    if (($v = $has('status')) !== null && in_array($v, ['active','suspended','locked','pending'], true)) {
         $where[] = 'status = ?';
         $args[]  = $v;
         $used[]  = 'status';

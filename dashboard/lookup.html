@@ -739,7 +739,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.7">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.8">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
@@ -776,7 +776,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
      and disabled rather than hidden, so the shape of the finished tool is
      visible — the same rule the search fields follow. */
   .actcard{border-color:rgba(193,85,63,.22)}
-  .actgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px}
+  .actlist{display:flex;flex-direction:column;gap:8px}
   .act{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:11px;
     background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;
     font-family:inherit;font-size:13px;font-weight:600;color:var(--parchment);text-align:left;width:100%}
@@ -796,7 +796,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 
   /* The locked banner. Loud on purpose — it is the single most important
      thing about an account that has one. */
-  .lockbar{display:flex;align-items:flex-start;gap:13px;padding:14px 16px;margin-bottom:18px;
+  .lockbar{display:flex;align-items:flex-start;gap:13px;padding:15px 17px;margin-bottom:18px;
     border-radius:12px;background:rgba(193,85,63,.08);border:1px solid rgba(193,85,63,.35)}
   .lockbar .li{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
     background:rgba(193,85,63,.16);color:#e0a99b}
@@ -807,6 +807,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   .lockbar .lb p b{color:var(--parchment);font-weight:600}
 
   /* Reason box for the lock dialog. */
+  /* Red, because this account cannot be used — amber would read as a
+     warning about it rather than a state of it. */
+  .chip.stop{color:#e0a99b;border-color:rgba(193,85,63,.42);background:rgba(193,85,63,.1)}
+
   .lockform{margin-top:12px;display:none}
   .lockform.on{display:block}
   .lockform label{display:block;font-size:11.5px;font-weight:600;color:var(--text-faint);margin-bottom:7px}
@@ -903,6 +907,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       </span>
     </div>
 
+    <div id="lockBanner"></div>
+
     <!-- ============ IDENTITY ============ -->
     <div class="card">
       <div class="idcard">
@@ -939,6 +945,30 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       <div class="pgrid">
 
         <div class="col-l">
+
+          <!-- Administrative actions sit at the top of the reading column,
+               not in a band across the bottom: they are the reason an admin
+               opened this page, and a full-width grid left a ragged row of
+               tiles with nothing to line up against. -->
+          <div class="card actcard" id="actCard" hidden>
+            <div class="card-h">
+              <h3>Administrative actions</h3>
+              <span class="aside" id="actAside"></span>
+            </div>
+            <div class="card-b">
+              <div class="actlist" id="actGrid"></div>
+              <div class="lockform" id="lockForm">
+                <label for="lockReason">Why is this account being locked? The player is shown this
+                  wording when they sign in, so write it to them.</label>
+                <textarea id="lockReason" maxlength="190" placeholder="e.g. Held while a report about your account is looked into."></textarea>
+                <div class="row">
+                  <span class="hint" id="lockHint">Locking signs them out everywhere immediately.</span>
+                  <button class="btn" id="lockCancel">Cancel</button>
+                  <button class="btn danger" id="lockConfirm">Lock account</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- FEATURE-GATED: no character tables yet. -->
           <div class="card">
@@ -1031,34 +1061,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       </div>
     </section>
 
-    <!-- ============ ADMINISTRATIVE ACTIONS ============
-         Below the account rather than beside it: everything above reports,
-         everything here changes something. -->
-    <div class="card actcard" id="actCard" hidden>
-      <div class="card-h">
-        <h3>Administrative actions</h3>
-        <span class="aside" id="actAside"></span>
-      </div>
-      <div class="card-b">
-        <div id="lockBanner"></div>
-        <div class="actgrid" id="actGrid"></div>
-        <div class="lockform" id="lockForm">
-          <label for="lockReason">Why is this account being locked? The player is shown this
-            wording when they try to sign in, so write it to them.</label>
-          <textarea id="lockReason" maxlength="190" placeholder="e.g. Held while a report about your account is looked into."></textarea>
-          <div class="row">
-            <span class="hint" id="lockHint">Locking signs them out everywhere immediately.</span>
-            <button class="btn" id="lockCancel">Cancel</button>
-            <button class="btn danger" id="lockConfirm">Lock account</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.4.7"></script>
+<script src="/assets/js/ucp.js?v=2.4.8"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
@@ -1325,10 +1331,21 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       (last ? '<span class="sep">·</span><span>Last log in <b>'+ago(last)+'</b></span>' : '');
 
     var chips = [];
+    /* A stopped account is red, not amber. Amber is "look at this"; these are
+       "this account cannot be used", and the difference has to be visible
+       from across the room. Suspended reads as Banned — same state in the
+       database, the word the community actually uses. */
     if(d.status !== 'active'){
-      chips.push('<span class="chip warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
-        '<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>' +
-        '</svg>'+esc(d.status.charAt(0).toUpperCase()+d.status.slice(1))+'</span>');
+      var word = d.status === 'suspended' ? 'Banned'
+               : d.status === 'locked'    ? 'Locked'
+               : d.status === 'pending'   ? 'Pending email' : d.status;
+      var mild = d.status === 'pending';
+      chips.push('<span class="chip ' + (mild ? 'warn' : 'stop') + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+        (d.status === 'locked'
+          ? '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
+          : '<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>') +
+        '</svg>' + esc(word) + '</span>');
     }
     chips.push(d.twofa.enabled
       ? '<span class="chip good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Two-step on</span>'
@@ -1396,7 +1413,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
           '</p></div></div>'
       : '';
 
-    $('actAside').textContent = locked ? 'Locked' : '';
+    $('actAside').innerHTML = locked
+      ? '<span class="chip stop" style="font-size:10.5px;padding:3px 9px">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Locked</span>'
+      : '';
 
     var acts = [];
 
@@ -1524,7 +1544,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     var rows = [
       ['Account ID',   '#'+d.id, null],
       ['Group',        d.role || 'Member', null],
-      ['Status',       d.status.charAt(0).toUpperCase()+d.status.slice(1), null],
+      ['Status',       d.status === 'suspended' ? 'Banned'
+                       : d.status.charAt(0).toUpperCase()+d.status.slice(1), null],
       ['Member since', created ? shortDate(created) : '—',
         d.member_days != null ? n(d.member_days)+' days' : null],
       ['Last log in', last ? hhmm(last) : '—', last ? ago(last) : 'never logged in'],

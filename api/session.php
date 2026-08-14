@@ -8,6 +8,45 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
 
+/* A locked sign-in. Not a session — 'uid' is unset, so every authenticated
+ * endpoint still refuses this browser. It is reported here, and only here, so
+ * the dashboard can draw the lock notice instead of bouncing them to a sign-in
+ * page that would let them straight back to the same place. */
+if (empty($_SESSION['uid']) && !empty($_SESSION['locked_uid'])) {
+    $pdo = db();
+    $st  = $pdo->prepare('SELECT id, username, status FROM ucp_accounts WHERE id = ? LIMIT 1');
+    $st->execute([(int)$_SESSION['locked_uid']]);
+    $row = $st->fetch();
+
+    // Unlocked while they sat on the page? Then the lock session is stale and
+    // they should sign in properly.
+    if (!$row || $row['status'] !== 'locked') {
+        $_SESSION = [];
+        session_destroy();
+        json_out(['ok' => false, 'authenticated' => false, 'pending_2fa' => false], 200);
+    }
+
+    $lock = ['at' => null, 'by' => null, 'reason' => null];
+    try {
+        $st = $pdo->prepare('SELECT locked_at, locked_by_name, lock_reason FROM ucp_accounts WHERE id = ? LIMIT 1');
+        $st->execute([(int)$row['id']]);
+        $l = $st->fetch();
+        if ($l) $lock = ['at' => $l['locked_at'] !== null ? (int)$l['locked_at'] : null,
+                         'by' => $l['locked_by_name'], 'reason' => $l['lock_reason']];
+    } catch (Throwable $e) {
+        // Columns not migrated — the notice loses its detail, not its point.
+    }
+
+    json_out([
+        'ok'            => true,
+        'authenticated' => false,
+        'pending_2fa'   => false,
+        'locked'        => true,
+        'name'          => $row['username'],
+        'lock'          => $lock,
+    ], 200);
+}
+
 if (empty($_SESSION['uid'])) {
     // A half-finished two-factor sign-in is NOT a session — 'uid' is unset, so
     // everything downstream correctly treats this browser as signed out. It is

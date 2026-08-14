@@ -628,7 +628,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.7">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.4.8">
 </head>
 <body>
 
@@ -716,7 +716,7 @@
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<script src="/assets/js/ucp.js?v=2.4.7"></script>
+<script src="/assets/js/ucp.js?v=2.4.8"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   const SIDEBAR=[
@@ -975,7 +975,12 @@
       '</tr>';
     }
 
-    const bad = m.status !== 'active' ? ' <span class="mtag bad">' + escapeHtml(m.status) + '</span>' : '';
+    /* "Suspended" is the database's word; "Banned" is the community's, and
+       it is the one that will match the server's ban system. */
+    const label = m.status === 'suspended' ? 'Banned'
+                : m.status === 'pending'   ? 'Pending email'
+                : m.status === 'locked'    ? 'Locked' : m.status;
+    const bad = m.status !== 'active' ? ' <span class="mtag bad">' + escapeHtml(label) + '</span>' : '';
     return '<tr>' +
       '<td class="rid">#' + m.id + '</td>' +
       '<td><span class="rname">' + escapeHtml(m.name) + '</span>' + bad +
