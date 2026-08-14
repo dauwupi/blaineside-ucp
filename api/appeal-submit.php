@@ -80,13 +80,40 @@ if (!$matched) {
 }
 $match = $matched[0];   // the oldest, kept on the appeal row itself
 
+/* Assigned on arrival to whoever issued it.
+ *
+ * An appeal that lands in a pile marked "not assigned" waits for somebody to
+ * volunteer. Giving it to the administrator who issued the punishment gives
+ * it an owner from the first second, and that administrator is the one who
+ * already knows what happened. A Senior Admin reassigns it if a second pair
+ * of eyes is wanted — see BS_APPEAL_MANAGE_RANK.
+ *
+ * Only if they are still staff and still active. An appeal handed to an
+ * account that can't open it is worse than an unassigned one, because it
+ * looks handled. */
+$handlerId = null; $handlerName = null;
+if (!empty($match['issued_by'])) {
+    $h = $pdo->prepare(
+        'SELECT id, username, admin_rank FROM ucp_accounts
+          WHERE id = ? AND status = \'active\' LIMIT 1'
+    );
+    $h->execute([(int)$match['issued_by']]);
+    $row = $h->fetch();
+    if ($row && (int)$row['admin_rank'] >= BS_APPEAL_STAFF_RANK
+             && (int)$row['id'] !== (int)$acc['id']) {
+        $handlerId   = (int)$row['id'];
+        $handlerName = (string)$row['username'];
+    }
+}
+
 $now = time();
 $pdo->prepare(
     'INSERT INTO ucp_appeals
         (account_id, punishment_id, platforms, character_id, body, status,
-         comments_enabled, created_at, updated_at)
-     VALUES (?, ?, ?, NULL, ?, \'pending\', 1, ?, ?)'
-)->execute([(int)$acc['id'], (int)$match['id'], implode(',', $platforms), $body, $now, $now]);
+         handler_id, handler_name, comments_enabled, created_at, updated_at)
+     VALUES (?, ?, ?, NULL, ?, \'pending\', ?, ?, 1, ?, ?)'
+)->execute([(int)$acc['id'], (int)$match['id'], implode(',', $platforms), $body,
+            $handlerId, $handlerName, $now, $now]);
 
 $id = (int)$pdo->lastInsertId();
 
@@ -114,6 +141,11 @@ foreach ($evidence as $ev) {
         'INSERT INTO ucp_appeal_evidence (appeal_id, url, note, created_at) VALUES (?, ?, ?, ?)'
     )->execute([$id, $url, $note !== '' ? mb_substr($note, 0, 190) : null, $now]);
     $kept++;
+}
+
+if ($handlerName !== null) {
+    appeal_log_add($pdo, $id, $acc, 'handler',
+        'Assigned to ' . $handlerName . ', who issued the punishment.');
 }
 
 appeal_log_add($pdo, $id, $acc, 'submitted',

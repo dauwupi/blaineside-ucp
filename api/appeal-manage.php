@@ -25,9 +25,11 @@ $acc = current_account($pdo);
 if (!appeals_available($pdo)) {
     json_out(['ok' => false, 'error' => appeals_missing_reason()], 409);
 }
-if (!appeal_is_staff($acc)) {
+/* Reassigning an appeal, and closing it to replies, are both ways to reach
+   over the head of whoever is handling it. Senior Admin and above. */
+if (!appeal_may_manage($acc)) {
     json_out(['ok' => false,
-              'error' => 'Managing an appeal is for ' . rank_name(BS_APPEAL_STAFF_RANK)
+              'error' => 'Reassigning an appeal is for ' . rank_name(BS_APPEAL_MANAGE_RANK)
                        . ' and above.'], 403);
 }
 

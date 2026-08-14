@@ -39,10 +39,26 @@ if (!appeal_may_view($acc, $a)) {
     json_out(['ok' => false, 'error' => 'That appeal isn\'t yours.'], 403);
 }
 
-/* Staff powers apply to other people's appeals, not your own. A staff
-   member appealing their own ban is the appellant here — they don't get to
-   leave a staff-only comment on their own case, or bypass a closed thread. */
+/* Staff powers apply to other people's appeals, not your own. A staff member
+   appealing their own ban is the appellant here — they don't get to leave a
+   staff-only comment on their own case, or bypass a closed thread.
+ *
+ * And READING an appeal is not the same as speaking on it. Anyone from
+ * Support Staff up can open the queue; only the handler, or Senior Admin and
+ * above, may write. An appeal answered by four people at once is worse for
+ * the appellant than a slow one. */
 $staff = appeal_is_staff($acc) && (int)$acc['id'] !== (int)$a['account_id'];
+$mayAct = appeal_may_act($acc, $a);
+
+if ($staff && !$mayAct) {
+    json_out([
+        'ok'    => false,
+        'error' => ($a['handler_name']
+                    ? $a['handler_name'] . ' is handling this appeal. '
+                    : 'This appeal isn\'t assigned to you. ')
+                 . rank_name(BS_APPEAL_MANAGE_RANK) . ' and above can reply on any appeal.',
+    ], 403);
+}
 
 if ($staffOnly && !$staff) {
     json_out(['ok' => false, 'error' => 'Only staff can leave a staff-only comment.'], 403);

@@ -34,6 +34,16 @@ require_once __DIR__ . '/_teams.php';
 /** Support Staff and above work the appeal queue — see api/_queues.php. */
 const BS_APPEAL_STAFF_RANK = 1;
 
+/**
+ * Senior Admin and above.
+ *
+ * Two things sit here rather than with the wider staff team: reassigning an
+ * appeal, and speaking on one you are not handling. Both are ways to reach
+ * over the head of whoever is dealing with it, and an appeal that three
+ * people are answering at once is worse for the appellant than a slow one.
+ */
+const BS_APPEAL_MANAGE_RANK = 6;
+
 /** How long a rejected appellant waits before appealing again. */
 const BS_APPEAL_COOLDOWN = 7776000;      // 90 days
 
@@ -97,18 +107,51 @@ function appeal_conclude_block(PDO $pdo, array $acc, array $appeal, ?array $puni
     if ($appeal['status'] !== 'pending') {
         return 'This appeal was already ' . $appeal['status'] . '.';
     }
-    /* $punishment is really the whole list for this appeal — an appeal can
-       cover more than one. Issuing ANY of them bars you from deciding it;
-       "I only gave them the forum ban, somebody else gave the game ban" is
-       not a reason to sit in judgement on both. */
-    if ($punishment !== null) {
-        $list = isset($punishment[0]) && is_array($punishment[0]) ? $punishment : [$punishment];
-        if (appeal_issued_any($list, (int)$acc['id'])) {
-            return 'You issued one of the punishments under appeal, so you can\'t decide it. '
-                 . 'Hand it to another administrator.';
-        }
-    }
-    return null;
+    /* The administrator who issued the punishment is NOT barred from deciding
+       the appeal against it — they are the default handler, because they are
+       the one who knows what happened. If a second opinion is wanted, a
+       Senior Admin reassigns it. */
+    return appeal_may_act($acc, $appeal)
+        ? null
+        : 'This appeal is being handled by ' . ($appeal['handler_name'] ?: 'someone else')
+        . '. ' . rank_name(BS_APPEAL_MANAGE_RANK) . ' and above can take it over.';
+}
+
+/**
+ * May this staff member act on this appeal — comment on it, or decide it?
+ *
+ * The handler, or Senior Admin and above. Not every member of staff who can
+ * open it: an appeal is a conversation between one player and one handler,
+ * and four people answering at once is worse for the appellant than a slow
+ * reply. Anyone else reads it, and takes it up with the handler.
+ */
+function appeal_may_act(array $acc, array $appeal): bool
+{
+    if (!appeal_is_staff($acc)) return false;
+    if ((int)$acc['id'] === (int)$appeal['account_id']) return false;
+    if ((int)($appeal['handler_id'] ?? 0) === (int)$acc['id']) return true;
+    return (int)$acc['admin_rank'] >= BS_APPEAL_MANAGE_RANK;
+}
+
+/** May they reassign it, or change who may reply? Senior Admin and above. */
+function appeal_may_manage(array $acc): bool
+{
+    return appeal_is_staff($acc) && (int)$acc['admin_rank'] >= BS_APPEAL_MANAGE_RANK;
+}
+
+/** Everyone who could be given an appeal: Support Staff and above, active. */
+function appeal_handlers(PDO $pdo): array
+{
+    $st = $pdo->prepare(
+        'SELECT id, username, admin_rank FROM ucp_accounts
+          WHERE status = \'active\' AND admin_rank >= ?
+          ORDER BY admin_rank DESC, username_lower ASC'
+    );
+    $st->execute([BS_APPEAL_STAFF_RANK]);
+    return array_map(function ($r) {
+        return ['id' => (int)$r['id'], 'name' => (string)$r['username'],
+                'rank' => (int)$r['admin_rank'], 'role' => rank_name((int)$r['admin_rank'])];
+    }, $st->fetchAll());
 }
 
 /**
@@ -414,10 +457,14 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
             'staff'        => true,
             'may_conclude' => $block === null,
             'why'          => $block,
+            'may_comment'  => appeal_may_act($acc, $a),
+            'may_manage'   => appeal_may_manage($acc),
             'is_handler'   => (int)($a['handler_id'] ?? 0) === (int)$acc['id'],
+            'manage_rank'  => rank_name(BS_APPEAL_MANAGE_RANK),
         ];
     } else {
         $out['viewer'] = ['staff' => false, 'may_conclude' => false, 'why' => null,
+                          'may_comment' => $mine, 'may_manage' => false,
                           'is_handler' => false];
     }
 
