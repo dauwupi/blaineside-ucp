@@ -739,67 +739,26 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 
-  /* ---- administrative record ---- */
-  .standing{display:flex;align-items:flex-start;gap:15px;padding:16px 18px;border-radius:12px;
-    margin-bottom:18px;background:var(--charcoal);border:1px solid var(--border)}
-  .standing .standing-ico{width:38px;height:38px;flex:none;display:grid;place-items:center;
-    border-radius:11px;background:var(--charcoal-3);border:1px solid var(--border);
-    color:var(--text-faint)}
-  .standing .standing-ico svg{width:19px;height:19px;stroke-width:1.9}
-  .standing .t .h{font-size:14.5px;font-weight:700;color:var(--parchment)}
-  .standing .t .s{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
-    text-wrap:pretty}
-  .standing.lvl-good{background:rgba(127,160,90,.06);border-color:rgba(127,160,90,.26)}
-  .standing.lvl-good .standing-ico{background:rgba(127,160,90,.1);
-    border-color:rgba(127,160,90,.3);color:#9fae8d}
-  .standing.lvl-good .t .h{color:#a8bb92}
-  .standing.lvl-watch{background:rgba(226,182,92,.06);border-color:rgba(226,182,92,.26)}
-  .standing.lvl-watch .standing-ico{background:rgba(226,182,92,.1);
-    border-color:rgba(226,182,92,.3);color:#e3bd72}
-  .standing.lvl-watch .t .h{color:#e3bd72}
-  .standing.lvl-held{background:rgba(193,85,63,.07);border-color:rgba(193,85,63,.3)}
-  .standing.lvl-held .standing-ico{background:rgba(193,85,63,.1);
-    border-color:rgba(193,85,63,.3);color:#d29b8d}
-  .standing.lvl-held .t .h{color:#dfa294}
-
-  .recnone{font-size:13px;color:var(--text-faint);padding:18px 0 6px;line-height:1.6}
-
-  /* The appeal outcome, as a link — the record is where somebody asks "was
-     this ever challenged", and the answer should be one click from here. */
-  .recap{display:inline-block;font-size:12px;font-weight:600;margin-top:4px;
-    text-transform:capitalize}
+  /* Two lines in the status cell, never run together. */
+  .rec .st{display:block}
+  .recsub{display:block;font-size:12px;color:var(--text-dim);font-weight:500;margin-top:3px}
+  .recap{display:block;font-size:12px;font-weight:600;margin-top:3px;text-transform:capitalize}
   .recap.accepted{color:#9fae8d}
   .recap.rejected{color:#d29b8d}
   .recap.pending {color:#e3bd72}
   .recap:hover{text-decoration:underline}
-  .rec .st + .recap{display:block}
+
+  /* Red, not amber, while something is actually in force — `bad` on its own
+     is the 30-day warning state and this is heavier than that. */
+  .standing.held .standing-ico{background:rgba(193,85,63,.1);
+    border-color:rgba(193,85,63,.32);color:#d29b8d}
+  .standing.held .t .h{color:#dfa294}
 
   .recgap{margin-top:18px;padding-top:15px;border-top:1px solid var(--rule);
     display:flex;flex-direction:column;gap:5px}
   .recgap b{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
     color:var(--text-dim);margin-bottom:2px}
   .recgap span{font-size:12.5px;color:var(--text-faint);line-height:1.55}
-
-  /* Status column: the punishment's state, then the appeal's, stacked. */
-  .recstate{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
-  .recsub{font-size:12px;color:var(--text-dim);font-weight:500}
-  .rec .st + .recap{display:inline-block;margin-top:0}
-
-  .recempty{padding:20px 0 4px;font-size:13px;color:var(--text-faint);line-height:1.6;
-    max-width:62ch;text-wrap:pretty}
-
-  /* The filter strip, drawn in full. Only one kind can be counted today; the
-     others say why on hover rather than being left off, so the row is the
-     shape of the finished record rather than a thing that grows buttons. */
-  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-  .filters button{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;
-    border-radius:10px;border:1px solid var(--border);background:var(--charcoal);
-    color:var(--text-dim);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
-    transition:.14s}
-  .filters button:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
-  .filters button[aria-pressed="true"]{background:var(--charcoal-4);color:var(--parchment);
-    border-color:rgba(226,182,92,.32)}
-  .filters button:disabled{opacity:.45;cursor:not-allowed}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -1674,7 +1633,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
               <div class="p" data-p="kick">none on record</div>
             </div>
             <div>
-              <div class="k">Bans</div>
+              <div class="k">Bans &amp; locks</div>
               <div class="n zero" data-t="ban">0</div>
               <div class="p" data-p="ban">none on record</div>
             </div>
@@ -1697,7 +1656,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
             <button aria-pressed="true"  data-f="all">All Record<span class="fc" data-c="all">0</span></button>
             <button aria-pressed="false" data-f="warn">Warnings<span class="fc" data-c="warn">0</span></button>
             <button aria-pressed="false" data-f="kick">Kicks<span class="fc" data-c="kick">0</span></button>
-            <button aria-pressed="false" data-f="ban">Bans<span class="fc" data-c="ban">0</span></button>
+            <button aria-pressed="false" data-f="ban">Bans &amp; locks<span class="fc" data-c="ban">0</span></button>
           </div>
 
           <!-- empty -->
@@ -1718,6 +1677,12 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
               </div>
             </div>
             <div id="recRows"></div>
+          </div>
+
+          <div class="recgap">
+            <b>Not on here yet</b>
+            <span>Warnings — not recorded in the UCP yet, so the filter counts zero.</span>
+            <span>Kicks — not recorded in the UCP yet, so the filter counts zero.</span>
           </div>
 
           <div class="pager" id="recPager" hidden>
@@ -2527,34 +2492,39 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   /* =====================================================================
      THE ADMINISTRATIVE RECORD
 
-     Built from api/_punish.php's record_for(), which both this page and the
-     other one read — so a player's Standing tab and the staff view of the
-     same account cannot disagree about what is on file.
+     This drives the markup that was already on the page rather than
+     replacing it: the standing block, the three-column tally, the segmented
+     filter bar, the table, the pager and the stamp. That shell was designed
+     and signed off; my first attempt drew its own version on top of it,
+     which is why it read as a box inside a box.
 
-     Two things it deliberately does NOT do:
+     The data comes from api/_punish.php's record_for(), which both this page
+     and the staff view read — so a player's Standing tab and an
+     administrator looking at the same account cannot disagree.
 
-       - Show an empty table. Warnings and kicks are not recorded anywhere
-         yet, and a record listing only bans while looking complete would
-         read as "never been warned". They are named as missing instead.
-       - Hide the appeal. An entry that was appealed and overturned is a
-         different fact from one that was never challenged, and the record
-         is the place that has to say which.
+     Warnings and kicks have no source yet. Their filters still work and
+     still count, they simply count zero, and the page says so underneath
+     rather than leaving a row of bans looking like the whole story.
      ===================================================================== */
   var RECKIND = {
-    user_lock:   { cls:'ban',  label:'User lock' },
-    game_ban:    { cls:'ban',  label:'In-game ban' },
-    forum_ban:   { cls:'ban',  label:'Forum ban' },
-    discord_ban: { cls:'ban',  label:'Discord ban' }
+    user_lock:   { cls:'ban',  group:'ban',  label:'User lock' },
+    game_ban:    { cls:'ban',  group:'ban',  label:'In-game ban' },
+    forum_ban:   { cls:'ban',  group:'ban',  label:'Forum ban' },
+    discord_ban: { cls:'ban',  group:'ban',  label:'Discord ban' }
   };
+  var REC_PER_PAGE = 8;
+  var REC = { all: [], filter: 'all', page: 1, staff: false, mine: false };
 
-  function recMon(ts){
+  function recEsc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+  }
+  function recWhen(ts){
     var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var d = new Date(ts*1000), p = function(x){ return String(x).padStart(2,'0'); };
     return { d: M[d.getUTCMonth()]+' '+p(d.getUTCDate())+', '+d.getUTCFullYear(),
-             t: p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC' };
+             t: p(d.getUTCHours())+':'+p(d.getUTCMinutes()) };
   }
-
-  /* How long it ran, in the words somebody would use out loud. */
   function recLen(e){
     if(e.permanent) return 'Permanent';
     if(!e.expires_at) return '—';
@@ -2562,131 +2532,178 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     return days === 1 ? '1 day' : days + ' days';
   }
 
-  /* The right-hand column: what happened to it, and what happened to any
-     appeal against it. Two facts, and the second only when there is one. */
-  function recState(e, staff){
-    /* Two facts stacked, never run together: what the punishment is doing,
-       and what happened to any appeal against it. They were inline spans, so
-       "In force" and "Not appealed" printed as one word. */
+  /* The status cell: what the punishment is doing, then what happened to any
+     appeal against it. Two lines, never run together — they were inline
+     spans, which printed "Active" and "Not appealed" as one word. */
+  function recStatus(e, staff){
     var head = e.active
       ? '<span class="st live">Active</span>'
       : (e.lifted_at
           ? '<span class="st done">Lifted'+(staff && e.lifted_by
               ? ' by '+recEsc(e.lifted_by) : '')+'</span>'
           : '<span class="st done">Ended</span>');
-
     var sub = e.appeal
       ? '<a class="recap '+e.appeal.status+'" href="/dashboard/appeals?id='+e.appeal.id+'">'+
         'Appeal '+e.appeal.status+'</a>'
       : (e.appealable && e.active ? '<span class="recsub">Not appealed</span>' : '');
-
-    return '<span class="recstate">'+head+sub+'</span>';
+    return head + sub;
   }
 
-  function recEsc(s){
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+  function recGroupOf(e){ return (RECKIND[e.kind] || {}).group || 'ban'; }
+
+  function recFiltered(){
+    if(REC.filter === 'all') return REC.all;
+    return REC.all.filter(function(e){ return recGroupOf(e) === REC.filter; });
+  }
+
+  function recPaint(){
+    var list  = recFiltered();
+    var pages = Math.max(1, Math.ceil(list.length / REC_PER_PAGE));
+    if(REC.page > pages) REC.page = pages;
+    var slice = list.slice((REC.page-1)*REC_PER_PAGE, REC.page*REC_PER_PAGE);
+
+    var rows = document.getElementById('recRows');
+    var listEl = document.getElementById('recList');
+    var empty  = document.getElementById('recEmpty');
+    var pager  = document.getElementById('recPager');
+
+    if(!list.length){
+      listEl.hidden = true; pager.hidden = true; empty.hidden = false;
+      empty.querySelector('h4').textContent = REC.filter === 'all'
+        ? (REC.mine ? 'Nothing on your record' : 'Nothing on this record')
+        : 'Nothing in this filter';
+      empty.querySelector('p').textContent = REC.filter === 'all'
+        ? (REC.mine
+            ? 'No warnings, kicks, bans or user locks have ever been issued against this account.'
+            : 'No warnings, kicks, bans or user locks have ever been issued against this player.')
+        : 'Warnings and kicks aren’t recorded in the UCP yet, so there is nothing to show '
+          + 'under this filter.';
+      return;
+    }
+
+    empty.hidden = true; listEl.hidden = false;
+    rows.innerHTML = slice.map(function(e){
+      var k = RECKIND[e.kind] || { cls:'ban', label:e.noun };
+      var w = recWhen(e.issued_at);
+      return '<div class="rec-row">'+
+        '<span class="date">'+w.d+'<span class="tm">'+w.t+'</span></span>'+
+        '<span><span class="kind '+k.cls+'">'+recEsc(k.label)+'</span></span>'+
+        '<span class="why">'+(e.reason ? recEsc(e.reason)
+          : '<span style="color:var(--text-dim)">No reason was recorded.</span>')+'</span>'+
+        '<span class="by"><b>'+recEsc(REC.staff ? (e.issued_by || 'Unknown') : recLen(e))+'</b>'+
+          (REC.staff ? recLen(e) : (e.active ? 'In force now' : 'Ended'))+'</span>'+
+        '<span>'+recStatus(e, REC.staff)+'</span>'+
+      '</div>';
+    }).join('');
+
+    /* The pager only appears when it has something to do. */
+    pager.hidden = pages < 2;
+    if(pages > 1){
+      var first = (REC.page-1)*REC_PER_PAGE + 1;
+      var last  = Math.min(REC.page*REC_PER_PAGE, list.length);
+      document.getElementById('recShowing').textContent =
+        'Showing ' + first + '–' + last + ' of ' + list.length;
+      var nav = [];
+      nav.push('<button data-rp="'+(REC.page-1)+'"'+(REC.page<=1?' disabled':'')+'>Previous</button>');
+      for(var i=1;i<=pages;i++){
+        nav.push('<button data-rp="'+i+'"'+(i===REC.page?' aria-current="true"':'')+'>'+i+'</button>');
+      }
+      nav.push('<button data-rp="'+(REC.page+1)+'"'+(REC.page>=pages?' disabled':'')+'>Next</button>');
+      document.getElementById('recNav').innerHTML = nav.join('');
+      Array.prototype.forEach.call(document.querySelectorAll('#recNav [data-rp]'), function(b){
+        b.addEventListener('click', function(){
+          REC.page = parseInt(b.getAttribute('data-rp'), 10); recPaint();
+        });
+      });
+    }
   }
 
   /**
    * @param rec    the `record` block from the endpoint
-   * @param staff  true on the staff view — adds the Issued by column
-   * @param mine   true on the player's own page — changes "this account" to "your"
+   * @param staff  true on the staff view — the fourth column becomes Issued by
+   * @param mine   true on the player's own page — changes the wording
    */
-  function recordHTML(rec, staff, mine){
-    if(!rec || !rec.available){
-      return null;                       // caller draws the not-built notice
-    }
+  function recordRender(rec, staff, mine){
+    REC.staff = staff; REC.mine = mine;
+    REC.all = (rec && rec.entries) || [];
 
-    var st = rec.standing || {};
+    var counts = { all: REC.all.length, warn: 0, kick: 0, ban: 0 };
+    REC.all.forEach(function(e){ counts[recGroupOf(e)]++; });
+
+    /* ---- standing ---- */
+    var st = (rec && rec.standing) || {};
+    var box = document.getElementById('standing');
     var ICO = {
       good:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/>',
       watch:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M12 9v4M12 16h.01"/>',
       held:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
     };
+    // `bad` is the page's own class for the amber state; `held` adds the red.
+    box.className = 'standing' + (st.level === 'good' ? '' :
+                                  st.level === 'held' ? ' bad held' : ' bad');
+    document.getElementById('standingIco').innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+      (ICO[st.level] || ICO.good)+'</svg>';
+    document.getElementById('standingH').textContent = st.title || 'In good standing';
+    document.getElementById('standingS').textContent = st.note || '';
 
-    /* The filter strip. Bans are the only kind that can be counted today,
-       so the other two carry a zero and say why on hover rather than being
-       left off — the row is the shape of the finished record, and a strip
-       that grows two new buttons later is harder to trust than one that
-       says what is coming. */
-    var counts = { ban: rec.entries.length, warn: 0, kick: 0 };
-    var filters = '<div class="filters" role="group" aria-label="Filter the record">'+
-      '<button aria-pressed="true">All <span class="fc">'+rec.entries.length+'</span></button>'+
-      '<button aria-pressed="false" disabled title="Warnings aren\u2019t recorded in the UCP yet">'+
-        'Warnings <span class="fc">0</span></button>'+
-      '<button aria-pressed="false" disabled title="Kicks aren\u2019t recorded in the UCP yet">'+
-        'Kicks <span class="fc">0</span></button>'+
-      '<button aria-pressed="false" disabled title="Filtering arrives with the second kind of '+
-        'entry">Bans &amp; locks <span class="fc">'+counts.ban+'</span></button>'+
-    '</div>';
+    /* ---- the tally ----
+       Three numbers with a caption each. Warnings and kicks read "not
+       recorded yet" rather than "none on record": zero because nothing
+       writes them is a different fact from zero because none were issued,
+       and this is exactly where somebody would read the wrong one. */
+    var TALLY = {
+      warn: { n: counts.warn, p: 'not recorded yet' },
+      kick: { n: counts.kick, p: 'not recorded yet' },
+      ban:  { n: counts.ban,  p: counts.ban === 0 ? 'none on record'
+                                : (counts.ban === 1 ? '1 on record' : counts.ban + ' on record') }
+    };
+    Object.keys(TALLY).forEach(function(k){
+      var n = document.querySelector('[data-t="'+k+'"]');
+      var p = document.querySelector('[data-p="'+k+'"]');
+      if(n){ n.textContent = TALLY[k].n; n.className = 'n ' + (TALLY[k].n ? 'hit' : 'zero'); }
+      if(p) p.textContent = TALLY[k].p;
+    });
 
-    var head = '<div class="standing lvl-'+(st.level||'good')+'">'+
-      '<span class="standing-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
-      (ICO[st.level]||ICO.good)+'</svg></span>'+
-      '<div class="t"><div class="h">'+recEsc(st.title||'')+'</div>'+
-      '<div class="s">'+recEsc(st.note||'')+'</div></div></div>';
+    /* ---- filters ---- */
+    Object.keys(counts).forEach(function(k){
+      var c = document.querySelector('[data-c="'+k+'"]');
+      if(c) c.textContent = counts[k];
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#recFilters [data-f]'), function(b){
+      b.addEventListener('click', function(){
+        REC.filter = b.getAttribute('data-f'); REC.page = 1;
+        Array.prototype.forEach.call(document.querySelectorAll('#recFilters [data-f]'),
+          function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        recPaint();
+      });
+    });
 
-    /* The table is drawn even when it is empty.
-       A one-line "nothing here" told you the answer and nothing about the
-       shape of the thing — you could not tell what would appear, in what
-       order, or what the columns would say. The headings cost four words
-       and answer all of it. */
-    var body =
-        '<div class="rec">'+
-          '<div class="rec-head"><div class="rec-row">'+
-            '<span>Date</span><span>Type</span><span>Reason</span>'+
-            '<span>'+(staff ? 'Issued by' : 'Length')+'</span><span>Status</span>'+
-          '</div></div>'+
-          (rec.entries.length ? '' :
-            '<div class="recempty">Nothing has ever been issued against '+
-            (mine ? 'your account' : 'this account')+'. Bans, user locks and their appeals '+
-            'would appear here, newest first.</div>')+
-          rec.entries.map(function(e){
-            var k = RECKIND[e.kind] || { cls:'ban', label:e.noun };
-            var w = recMon(e.issued_at);
-            return '<div class="rec-row">'+
-              '<span class="date">'+w.d+'<span class="tm">'+w.t+'</span></span>'+
-              '<span><span class="kind '+k.cls+'">'+recEsc(k.label)+'</span></span>'+
-              '<span class="why">'+(e.reason ? recEsc(e.reason)
-                : '<span style="color:var(--text-dim)">No reason was recorded.</span>')+'</span>'+
-              '<span class="'+(staff?'by':'len')+'">'+
-                (staff ? '<b>'+recEsc(e.issued_by || 'Unknown')+'</b>'+recLen(e)
-                       : recLen(e))+'</span>'+
-              '<span>'+recState(e, staff)+'</span>'+
-            '</div>';
-          }).join('')+
-        '</div>';
+    /* The fourth column is not the same thing on both pages: staff want to
+       know who issued it, and the player is not told that. The heading has
+       to follow, or the player's own record labels its length "Issued by". */
+    var head4 = document.querySelector('#recList .rec-head .rec-row span:nth-child(4)');
+    if(head4) head4.textContent = staff ? 'Issued by' : 'Length';
 
-    /* What the record cannot show. Named, not omitted — a list of bans that
-       looks complete is a claim about warnings too. */
-    var gaps = (rec.not_recorded||[]).length
-      ? '<div class="recgap">'+
-          '<b>Not on here yet</b>'+
-          (rec.not_recorded||[]).map(function(g){
-            return '<span>'+recEsc(g.label)+' — '+recEsc(g.why)+'</span>';
-          }).join('')+
-        '</div>'
-      : '';
+    document.getElementById('recCount').textContent =
+      counts.all + (counts.all === 1 ? ' entry' : ' entries');
 
-    return head + filters + body + gaps;
+    recPaint();
   }
   function renderRecord(d){
-    var html = recordHTML(d.record, false, true);
-    if(html === null){
-      $('standingHost').innerHTML = blank('doc',
-        'Not available yet',
+    if(!d.record || !d.record.available){
+      $('standingHost').innerHTML = blank('doc', 'Not available yet',
         'The record isn\'t set up on this server yet. When it is, this shows everything ' +
         'issued against your account and whether any of it is still in force.');
       $('recLast').textContent = '';
-      if($('recordHost')) $('recordHost').hidden = true;
+      $('recordHost').hidden = true;
       return;
     }
-    $('standingHost').innerHTML = html;
+    $('recordHost').hidden = false;
+    recordRender(d.record, false, true);
     $('recLast').textContent = d.record.last_at
       ? 'Last entry ' + ago(new Date(d.record.last_at * 1000))
       : 'Last entry: none';
-    if($('recordHost')) $('recordHost').hidden = true;
   }
 
   /* =====================================================================
