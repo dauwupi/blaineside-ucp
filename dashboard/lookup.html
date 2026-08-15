@@ -1147,6 +1147,18 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
     </button>
     <div class="divider"></div>
+      <!-- Credit balance. In the markup, not created by JavaScript: an
+           element that arrives after the first paint is a visible jump in
+           the top bar on every single load. assets/js/ucp.js fills the
+           figure in and still inserts the whole block on any page that
+           does not carry it. -->
+      <div class="creditbox">
+        <span class="cmain">
+          <svg class="cico" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/><path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg>
+          <span class="cnum unknown" id="creditValue">&mdash;</span>
+        </span>
+        <a class="cplus" href="/dashboard/store#credits" aria-label="Buy credits" title="Buy credits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></a>
+      </div>
     <div class="account">
       <button class="account-btn" id="acctBtn">
         <svg class="acct-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>

@@ -872,45 +872,6 @@
      whatever api/session.php reports. When a ledger exists, session.php
      gains a `credits` number and this lights up with no change here.
      ===================================================================== */
-  var CREDIT_CSS = [
-    /* Same height, radius, fill and border as the search box and the bell —
-       #121110, not the #201d19 of a card. The top bar is one row of
-       controls and they should read as one set. The account button is
-       pulled to the same height here for the same reason: it was 46px
-       against the search box's 38 and looked like it belonged to a
-       different bar. */
-    '.topbar .creditbox{display:flex;align-items:stretch;height:38px;border-radius:10px;',
-      'border:1px solid var(--border,#38322b);background:var(--charcoal,#121110);',
-      'overflow:hidden;flex:none}',
-    '.topbar .account-btn{height:38px;padding:0 12px}',
-
-    /* The value is a readout, not a control: no pointer, no hover, nothing
-       to click. Only the + does anything, which is the one action there is
-       to take on a balance. */
-    '.topbar .creditbox .cmain{display:flex;align-items:center;gap:9px;padding:0 13px;',
-      'cursor:default;user-select:none}',
-    '.topbar .creditbox .cico{width:21px;height:21px;flex:none;stroke:var(--gold,#e2b65c);',
-      'fill:none;stroke-width:1.6}',
-    /* min-width, and tabular figures, so the box is the same size at 0 and
-       at 999,9K. Without it the element resized as the balance arrived and
-       everything to its left moved — which is most of what the flicker
-       actually was. Centred, so the space either side stays even. */
-    '.topbar .creditbox .cnum{font-family:Oswald,sans-serif;font-weight:600;font-size:16.5px;',
-      'line-height:1;letter-spacing:.01em;font-variant-numeric:tabular-nums;',
-      'color:var(--gold,#e2b65c);min-width:56px;text-align:center;display:inline-block}',
-    '.topbar .creditbox .cnum.unknown{color:var(--text-dim,#655e51)}',
-
-    '.topbar .creditbox .cplus{width:34px;display:grid;place-items:center;',
-      'color:var(--text-faint,#968e7e);border-left:1px solid var(--border,#38322b);',
-      'background:transparent;transition:background .15s ease,color .15s ease}',
-    '.topbar .creditbox .cplus svg{width:14px;height:14px;stroke:currentColor;fill:none;',
-      'stroke-width:2.4}',
-    '.topbar .creditbox .cplus:hover{background:rgba(226,182,92,.12);color:var(--gold,#e2b65c)}',
-    '.topbar .creditbox .cplus:focus-visible{outline:2px solid rgba(226,182,92,.55);',
-      'outline-offset:-2px}',
-    '@media (prefers-reduced-motion:reduce){.topbar .creditbox .cplus{transition:none}}'
-  ].join('');
-
   /* In full to 9,999, then abbreviated from 10,0K. Never wider than five
      characters, so the box cannot change width as somebody spends.
      Truncated rather than rounded: a balance that reads higher than it is
@@ -933,13 +894,6 @@
     if (!bar || document.querySelector('.creditbox')) return;
     var acct = bar.querySelector('.account');
     if (!acct) return;
-
-    if (!document.getElementById('credit-style')) {
-      var st = document.createElement('style');
-      st.id = 'credit-style';
-      st.textContent = CREDIT_CSS;
-      document.head.appendChild(st);
-    }
 
     var box = document.createElement('div');
     box.className = 'creditbox';
@@ -997,7 +951,7 @@
     name.parentNode.replaceChild(a, name);
   }
 
-  var UCP_VERSION = '2.9.2';
+  var UCP_VERSION = '3.0.0';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1044,7 +998,21 @@
   w.renderSidebar = renderNav;
 
   applyTod();
-  document.addEventListener('DOMContentLoaded', function () {
+  /* =====================================================================
+     BOOT
+
+     Not DOMContentLoaded. This script is loaded at the END of the body,
+     after the top bar and the sidebar have already been parsed, so those
+     elements exist the moment it runs — but DOMContentLoaded does not fire
+     until the whole document has finished. Everything in between is a
+     window where the browser has painted the page's own static markup and
+     none of this has touched it yet, which is the flash of a bare top bar
+     on every load.
+
+     So: run now if the bar is already there, and fall back to the event
+     for any page that loads this file in the head.
+     ===================================================================== */
+  function boot() {
     applyTod();
     startClock();
     initTabFade();
@@ -1058,5 +1026,11 @@
     // Drawn from the cached rank so the box doesn't flash in and out; the
     // real rank corrects it a moment later via rememberMe() below.
     initQuickSearch(CACHED ? CACHED.rank : 0);
-  });
+  }
+
+  if (document.querySelector('.topbar') || document.querySelector('#nav')) {
+    boot();
+  } else {
+    document.addEventListener('DOMContentLoaded', boot);
+  }
 })(window);

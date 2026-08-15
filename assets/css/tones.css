@@ -171,3 +171,48 @@
   .bs-in,.bs-fade,.bs-open{animation:none}
   #nav .nav-item,#nav .nav-item .chev,#nav a{transition:none}
 }
+
+
+/* =====================================================================
+   THE TOP BAR
+
+   These rules used to be injected by assets/js/ucp.js. That is too late:
+   the browser paints the page's own static bar first — the shorter search
+   placeholder, the 46px account button, no balance — and only then does
+   the script restyle it. The result is a visible flash of a different top
+   bar on every load, which is exactly what it looked like.
+
+   In this file they are in the <head> and blocking, so the first paint is
+   already correct. The script's only remaining job is to create the
+   balance element, which it now does the moment it runs rather than
+   waiting for DOMContentLoaded.
+   ===================================================================== */
+.topbar .account-btn{height:38px;padding:0 12px}
+
+.topbar .creditbox{display:flex;align-items:stretch;height:38px;border-radius:10px;
+  border:1px solid var(--border);background:var(--charcoal);overflow:hidden;flex:none}
+
+/* The value is a readout, not a control: no pointer, no hover, nothing to
+   click. Only the + does anything. */
+.topbar .creditbox .cmain{display:flex;align-items:center;gap:9px;padding:0 13px;
+  cursor:default;user-select:none}
+.topbar .creditbox .cico{width:21px;height:21px;flex:none;stroke:var(--gold);fill:none;
+  stroke-width:1.6}
+
+/* min-width and tabular figures, so the box is the same size at 0 and at
+   999,9K and nothing beside it moves when the balance arrives. */
+.topbar .creditbox .cnum{font-family:Oswald,sans-serif;font-weight:600;font-size:16.5px;
+  line-height:1;letter-spacing:.01em;font-variant-numeric:tabular-nums;color:var(--gold);
+  min-width:56px;text-align:center;display:inline-block}
+.topbar .creditbox .cnum.unknown{color:var(--text-dim)}
+
+.topbar .creditbox .cplus{width:34px;display:grid;place-items:center;color:var(--text-faint);
+  border-left:1px solid var(--border);background:transparent;
+  transition:background .15s ease,color .15s ease}
+.topbar .creditbox .cplus svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.4}
+.topbar .creditbox .cplus:hover{background:rgba(226,182,92,.12);color:var(--gold)}
+.topbar .creditbox .cplus:focus-visible{outline:2px solid rgba(226,182,92,.55);outline-offset:-2px}
+
+@media (prefers-reduced-motion:reduce){
+  .topbar .creditbox .cplus{transition:none}
+}
