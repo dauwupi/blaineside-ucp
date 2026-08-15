@@ -273,17 +273,20 @@ function report_view_block(PDO $pdo, array $acc, array $r): ?string
 {
     $me = (int)$acc['id'];
 
-    /* The subject check runs FIRST, before the panel check, so that a
-       Staff Management holder reported by somebody is refused for the
-       right reason. */
+    /* Their own report is theirs, whoever it names — including when it
+       names them. Somebody who wrote it cannot be kept from reading it. */
+    if ((int)$r['account_id'] === $me) return null;
+
+    /* The subject check runs before the panel check, so that a Staff
+       Management holder reported by somebody else is refused for the right
+       reason. */
     if (report_subject_blind($pdo, $acc) && report_is_subject($pdo, (int)$r['id'], $me)) {
         return 'This report names you. The Staff Report Panel is held through a sub-group, and '
              . 'a sub-group is not a reason to be the one person who can read the complaint '
              . 'against you. Management will handle it.';
     }
 
-    if ((int)$r['account_id'] === $me) return null;          // their own report
-    if (report_may_panel($pdo, $acc))  return null;
+    if (report_may_panel($pdo, $acc)) return null;
 
     return 'That report is not yours.';
 }
@@ -301,9 +304,13 @@ function report_is_mine(array $acc, array $r): bool
    Two lists, and they are not the same list.
 
      report_staff_options()  — who can be REPORTED. Everyone at Support
-                               Staff and above, including Management and
-                               Founders, minus the person asking. Nobody is
-                               un-reportable; that is the point of the queue.
+                               Staff and above, including Management, the
+                               Founders, and the person asking. Nobody is
+                               un-reportable; that is the point of the
+                               queue, and a staff member filing about their
+                               own conduct is rare but real — usually to put
+                               something on record before somebody else
+                               does.
 
      report_handlers()       — who a report can be ALLOCATED to. Only people
                                who can open the panel, so a report is never
@@ -318,7 +325,7 @@ function report_is_mine(array $acc, array $r): bool
  * knows the rank and not the spelling — "one of the Support team" narrows
  * eighty names to six.
  */
-function report_staff_options(PDO $pdo, int $exceptId = 0): array
+function report_staff_options(PDO $pdo): array
 {
     /* Support Staff (1) to Founder (9) — the whole ladder above Member.
      * Nobody is un-reportable; that is the point of the queue, and a list
@@ -338,7 +345,6 @@ function report_staff_options(PDO $pdo, int $exceptId = 0): array
     );
     $out = [];
     foreach ($st->fetchAll() as $r) {
-        if ((int)$r['id'] === $exceptId) continue;
         $out[] = [
             'id'    => (int)$r['id'],
             'name'  => (string)$r['username'],

@@ -29,10 +29,11 @@ ok([
     'why'         => $e['why'],
     'open'        => $e['open'],
     'open_max'    => BS_REPORT_OPEN_MAX,
-    /* Everyone at Support Staff and above except the caller. Nobody is
-       un-reportable — a Founder appears in this list like anyone else. */
-    'staff'       => reports_available($pdo)
-                     ? report_staff_options($pdo, (int)$acc['id']) : [],
+    /* Everyone from Support Staff to Founder. Nobody is un-reportable —
+       a Founder appears in this list like anyone else, and so does the
+       person asking: submitting is open to all, and it is READING a report
+       that the conflict rules govern. */
+    'staff'       => reports_available($pdo) ? report_staff_options($pdo) : [],
     'channels'    => array_map(function ($k, $l) { return ['key' => $k, 'label' => $l]; },
                      array_keys(report_channels()), array_values(report_channels())),
     'frequencies' => array_map(function ($k, $l) { return ['key' => $k, 'label' => $l]; },

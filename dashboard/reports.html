@@ -1256,14 +1256,12 @@
      dismiss. What it said now sits in the rail on the right, in front of
      the reporter while they write rather than two screens behind them.
      ===================================================================== */
-  .split{display:grid;grid-template-columns:minmax(0,1fr) 310px}
-  .split > .pane{padding:20px 22px 22px;min-width:0}
-  .split > .rail{padding:20px 20px 24px;background:var(--charcoal);
-    border-left:1px solid var(--rule)}
-  @media (max-width:1080px){
-    .split{grid-template-columns:1fr}
-    .split > .rail{border-left:0;border-top:1px solid var(--rule)}
-  }
+  /* Two columns of cards on the page background — the same shape as one
+     report, so the two views of this page are built the same way. */
+  .split{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+  .split > .card{margin-top:0}
+  .rail .card + .card{margin-top:16px}
+  @media (max-width:1080px){ .split{grid-template-columns:1fr} }
   .sticky{position:sticky;top:calc(var(--header-h, 64px) + 18px)}
 
   /* Native select arrows were the browser's, and on a dark control they
@@ -1352,7 +1350,7 @@
      so the label on the verdict is one the reporter has already seen. */
   .cats{display:flex;flex-direction:column;gap:1px;background:var(--rule);
     border:1px solid var(--rule);border-radius:11px;overflow:hidden}
-  .cat{background:var(--charcoal);padding:10px 12px}
+  .cat{background:var(--charcoal-2);padding:10px 12px}
   .cat .n{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
   .cat .n::before{content:"";width:6px;height:6px;border-radius:50%;flex:none;
     background:currentColor}
@@ -1365,11 +1363,6 @@
   .rbox h5{font-size:12px;font-weight:700;color:#e3bd72}
   .rbox p{font-size:11.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
     text-wrap:pretty}
-  /* Section headings inside the rail. Named .sect so they cannot collide
-     with .sec, which is the band inside a report card. */
-  .rail .sect{margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
-  .sect-t{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
-    color:var(--stone);margin-bottom:12px}
   /* The live character count. Not floated — a float dropped it onto the
      line below its own sentence and read as a stray number. */
   .count{font-variant-numeric:tabular-nums}
@@ -1395,6 +1388,10 @@
   /* A Save that belongs to the card rather than to one field inside it.
      `.panelfield .go` only reaches the ones nested in a field. */
   .card-b > .go{display:flex;justify-content:flex-end;margin-top:12px}
+  /* The per-page control is a 60px select, and the chevron padding meant
+     for a full-width one left no room for the number. */
+  .perpage .sel{width:auto;padding:8px 30px 8px 11px;font-size:12.5px;
+    background-position:right 9px center;background-size:13px}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -1721,19 +1718,18 @@
   var UNKNOWN = false;    // "I don't know who it was"
   var EVN = 0;
 
-  /* ---- the sidebar ---- */
+  /* ---- the sidebar ----
+     A column of cards on the page background, not one tinted panel welded
+     to the side of the form. The tint was a second surface colour inside a
+     card that already had one, and the seam showed where they met. Cards
+     with headers and a gap between them are what the rest of this page is
+     made of; the rail should not be the one thing that isn't.
+     ===================================================================== */
   function asideHTML(){
-    var cats = [
-      ['c1','Misconduct','A broken rule or staff policy, or conduct below the server’s '+
-        'standards.'],
-      ['c2','Punishment appeal','A punishment reduced or removed, rather than conduct '+
-        'reported.'],
-      ['c3','Subteam','Duties inside a sub-team. Goes to its leader or the line manager.'],
-      ['c4','Rejected','Spam, backseat moderation, or filed for somebody else. Not reviewed.']
-    ].map(function(c){
-      return '<div class="cat '+c[0]+'"><div class="n">'+escapeHtml(c[1])+'</div>'+
-             '<p>'+escapeHtml(c[2])+'</p></div>';
-    }).join('');
+    function card(title, body){
+      return '<div class="card"><div class="card-h"><h3>'+title+'</h3></div>'+
+             '<div class="card-b">'+body+'</div></div>';
+    }
 
     var steps = [
       [1,'You send it','It goes to Staff Management. The staff member is never told who is '+
@@ -1746,14 +1742,24 @@
         '<div class="s">'+escapeHtml(t[2])+'</div></span></div>';
     }).join('');
 
+    var cats = [
+      ['c1','Misconduct','A broken rule or staff policy, or conduct below the server’s '+
+        'standards.'],
+      ['c2','Punishment appeal','A punishment reduced or removed, rather than conduct '+
+        'reported.'],
+      ['c3','Subteam','Duties inside a sub-team. Goes to its leader or the line manager.'],
+      ['c4','Rejected','Spam, backseat moderation, or filed for somebody else. Not reviewed.']
+    ].map(function(c){
+      return '<div class="cat '+c[0]+'"><div class="n">'+escapeHtml(c[1])+'</div>'+
+             '<p>'+escapeHtml(c[2])+'</p></div>';
+    }).join('');
+
     return '<div class="rail"><div class="sticky">'+
-      '<div class="sect-t">What happens next</div>'+
-      '<div class="tline">'+steps+'</div>'+
-      '<div class="sect"><div class="sect-t">The four categories</div>'+
-        '<div class="cats">'+cats+'</div></div>'+
-      '<div class="rbox"><h5>Heard nothing for a week?</h5>'+
-        '<p>Some reports are slower because of who is involved. Speak to a member of Staff '+
-        'Management directly rather than sending it again.</p></div>'+
+      card('What happens next', '<div class="tline">'+steps+'</div>') +
+      card('The four categories', '<div class="cats">'+cats+'</div>') +
+      card('Heard nothing for a week?',
+        '<p class="card-lede">Some reports are slower because of who is involved. Speak to a '+
+        'member of Staff Management directly rather than sending it again.</p>') +
     '</div></div>';
   }
 
@@ -1832,6 +1838,20 @@
     /* The unknown question exists only while the answer matters. */
     var uq = document.getElementById('unkq');
     if(uq) uq.hidden = !UNKNOWN;
+    renumber();
+  }
+
+  /* The numbers are on the questions you can see. A hidden question that
+     still holds its place makes the form skip from 1 to 3, which reads as
+     a question that failed to load. */
+  function renumber(){
+    var qs = document.querySelectorAll('.pane .q'), n = 0;
+    Array.prototype.forEach.call(qs, function(q){
+      if(q.hidden) return;
+      n++;
+      var b = q.querySelector('.qn b');
+      if(b) b.textContent = n + '.';
+    });
   }
 
   function evRow(){
@@ -1875,12 +1895,11 @@
         (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div></div>';
     }
 
-    return '<div class="card"><div class="card-h"><h3>Submit a Staff Report</h3>'+
+    return '<div class="split">'+
+      '<div class="card"><div class="card-h"><h3>Submit a Staff Report</h3>'+
       '<span class="aside">Goes to Staff Management · '+
       (OPTS.open_max - OPTS.open)+' of '+OPTS.open_max+' slots free</span></div>'+
-      '<div class="split">'+
-
-      '<div class="pane">'+
+      '<div class="card-b pane">'+
         '<p class="lede">Staff Management and the Management Team read every report, and hold '+
         'staff to the highest standards. Report a member of staff who breaks a rule, is abusive '+
         'towards you, or makes a decision you disagree with — speak to them first unless it is '+
@@ -1963,10 +1982,10 @@
           '<button class="btn primary" type="button" id="send">'+ai('flag')+
           'Submit Report</button>'+
         '</div>'+
-      '</div>'+
+      '</div></div>'+
 
       asideHTML() +
-      '</div></div>';
+    '</div>';
   }
 
   function wireForm(){
@@ -2244,29 +2263,36 @@
   }
 
   /* First, last, and a window either side of where you are — the same
-     control the appeal queue uses, because it is the same job. */
+     control as a player's administrative record, chevrons and all, so the
+     two tables page the same way. */
   function pagerHTML(d){
-    if(d.pages <= 1){
-      return '<div class="pager"><span class="pinfo">'+d.total+
-             (d.total === 1 ? ' report' : ' reports')+'</span></div>';
-    }
+    var info = '<span class="pinfo">'+d.total+(d.total === 1 ? ' report' : ' reports')+
+      (d.pages > 1 ? ' · page '+d.page+' of '+d.pages : '')+'</span>';
+    if(d.pages <= 1) return '<div class="pager">'+info+'</div>';
+
     var out = [], seen = {};
     function push(n){
       if(n < 1 || n > d.pages || seen[n]) return; seen[n] = 1;
-      out.push('<button data-page="'+n+'"'+(n === d.page ? ' aria-current="true"' : '')+'>'+
-               n+'</button>');
+      out.push('<button class="pg'+(n === d.page ? ' on' : '')+'" data-page="'+n+'"'+
+               (n === d.page ? ' aria-current="true"' : '')+'>'+n+'</button>');
     }
     push(1);
-    if(d.page - 2 > 2) out.push('<span class="gap">…</span>');
+    if(d.page - 2 > 2) out.push('<span class="pg-gap">…</span>');
     for(var i = d.page - 1; i <= d.page + 1; i++) push(i);
-    if(d.page + 2 < d.pages - 1) out.push('<span class="gap">…</span>');
+    if(d.page + 2 < d.pages - 1) out.push('<span class="pg-gap">…</span>');
     push(d.pages);
-    return '<div class="pager"><span class="pinfo">'+d.total+
-      (d.total === 1 ? ' report' : ' reports')+' · page '+d.page+' of '+d.pages+'</span>'+
-      '<button data-page="'+(d.page-1)+'"'+(d.page <= 1 ? ' disabled' : '')+'>Previous</button>'+
+
+    return '<div class="pager">'+ info +
+      '<button class="pg" data-page="'+(d.page-1)+'"'+(d.page <= 1 ? ' disabled' : '')+
+        ' aria-label="Previous page">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+        '<path d="M15 6l-6 6 6 6"/></svg></button>'+
       out.join('')+
-      '<button data-page="'+(d.page+1)+'"'+(d.page >= d.pages ? ' disabled' : '')+
-      '>Next</button></div>';
+      '<button class="pg" data-page="'+(d.page+1)+'"'+(d.page >= d.pages ? ' disabled' : '')+
+        ' aria-label="Next page">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+        '<path d="M9 6l6 6-6 6"/></svg></button>'+
+    '</div>';
   }
 
   function loadQueue(){

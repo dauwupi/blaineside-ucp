@@ -80,7 +80,7 @@ if (mb_strlen($want) > BS_REPORT_WANT_MAX) {
  * is a report no one can be allocated and no one can answer.
  */
 $roster = [];
-foreach (report_staff_options($pdo, (int)$acc['id']) as $s) $roster[$s['id']] = $s;
+foreach (report_staff_options($pdo) as $s) $roster[$s['id']] = $s;
 
 $named = [];
 foreach ($wantIds as $raw) {
