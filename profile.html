@@ -237,9 +237,26 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .idcard .who{flex:1;min-width:250px}
 .nameline{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
 .nameline h2{font-size:27px;font-weight:700;letter-spacing:-.025em;line-height:1.15}
-.rank{font-size:11.5px;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:100px;
-  color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));white-space:nowrap}
-.rank.member{background:var(--charcoal-3);color:var(--text-faint);border:1px solid var(--border)}
+/* The rank badge is built exactly like .gchip in assets/css/tones.css —
+   a dark pill tinted with the tier's own colour, a hairline of the same,
+   and the label in --tone-text. Every rank from Member to Founder uses
+   the one construction; only the hue changes down the ladder, so the
+   badge looks the same here as it does everywhere else in the UCP.
+   Nothing is filled with gold any more: a solid fill needs dark ink for
+   amber and stone and white ink for Support Staff's red, which is what
+   made this badge a different component from the chips beside it. */
+.rank{display:inline-flex;align-items:center;font-size:10.5px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;padding:5px 11px;border-radius:100px;
+  white-space:nowrap;line-height:1.35;
+  color:var(--tone-text,#9a9082);
+  background:color-mix(in srgb, var(--tone,#7d7365) 17%, transparent);
+  border:1px solid color-mix(in srgb, var(--tone,#7d7365) 44%, transparent)}
+/* Member is not a special case any more — it is tone-0 like the rest.
+   Kept as a selector only so old markup carrying the class still lands
+   on the same pill. */
+.rank.member{color:var(--tone-text,#9a9082);
+  background:color-mix(in srgb, var(--tone,#7d7365) 17%, transparent);
+  border:1px solid color-mix(in srgb, var(--tone,#7d7365) 44%, transparent)}
 .idmeta{margin-top:8px;font-size:13px;color:var(--text-faint);display:flex;flex-wrap:wrap;
   align-items:center;gap:5px 10px}
 .idmeta .sep{color:var(--stone)}
@@ -1031,7 +1048,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         <div class="who">
           <div class="nameline">
             <h2 id="idName">&nbsp;</h2>
-            <span class="rank member" id="idRank" hidden></span>
+            <span class="rank tone-0" id="idRank" hidden></span>
           </div>
           <div class="idmeta" id="idMeta"></div>
         </div>
@@ -2134,7 +2151,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     var rank = $('idRank');
     rank.hidden = false;
     rank.textContent = d.role || 'Member';
-    rank.className = 'rank' + (d.rank > 0 ? '' : ' member');
+    /* The badge carries the tier's own colour, the same construction the
+       group chips use, so a rank looks identical wherever it appears.
+       tone-0 covers Member and anything off the end of the ladder. */
+    rank.className = 'rank tone-' + ((d.rank|0) >= 0 && (d.rank|0) <= 9 ? (d.rank|0) : 0);
 
     var created = parseUTC(d.created_at), last = parseUTC(d.last_login);
     $('idMeta').innerHTML =
