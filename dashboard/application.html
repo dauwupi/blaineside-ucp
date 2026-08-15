@@ -630,7 +630,7 @@
     border:1px solid var(--border-soft);border-radius:11px;font-size:12.5px}
   .arow + .fb{margin-top:10px}
   .arow .r{margin-left:auto;display:flex;gap:9px;align-items:center;color:var(--text-dim)}
-  .alist{display:flex;flex-direction:column;gap:12px}
+  .alist{display:flex;flex-direction:column;gap:7px}
 
   /* Feedback can be very long. Six lines, a fade, and a control that opens
      the rest — so one wall of text cannot push everything else off screen,
@@ -672,6 +672,26 @@
     font-size:13px;line-height:1.8;white-space:pre-wrap;margin-top:11px;overflow-wrap:anywhere}
   .backline{display:flex;align-items:center;gap:11px;margin-bottom:16px;flex-wrap:wrap}
   .backline .btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2}
+  /* ---- the passed view ---- */
+  .hero{background:linear-gradient(180deg,rgba(127,160,90,.10),rgba(127,160,90,.02));
+    border:1px solid rgba(127,160,90,.34);border-radius:16px;padding:34px 30px;text-align:center}
+  .hero .tick{width:56px;height:56px;margin:0 auto 16px;border-radius:50%;display:grid;
+    place-items:center;background:rgba(127,160,90,.16);border:1px solid rgba(127,160,90,.4)}
+  .hero .tick svg{width:26px;height:26px;stroke:#9dbd77;fill:none;stroke-width:2.6}
+  .hero h2{font-size:27px;font-weight:800;letter-spacing:-.03em}
+  .hero p{font-size:13.5px;color:var(--text-faint);margin:9px auto 0;max-width:62ch;line-height:1.7}
+  .herobtns{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+  .nextgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+  @media (max-width:880px){ .nextgrid{grid-template-columns:1fr} }
+  .tile{background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
+    padding:17px 18px;transition:border-color .14s}
+  .tile:hover{border-color:var(--charcoal-4)}
+  .tile .ti{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+    background:var(--charcoal-3);border:1px solid var(--border);margin-bottom:11px}
+  .tile .ti svg{width:16px;height:16px;stroke:var(--gold);fill:none;stroke-width:1.9}
+  .tile b{display:block;font-size:13.5px;font-weight:700}
+  .tile span{display:block;font-size:12.5px;color:var(--text-faint);line-height:1.7;margin-top:5px}
+
   .lede{font-size:12.5px;color:var(--text-faint);line-height:1.75}
   .empty{border:1px dashed var(--border);border-radius:12px;padding:26px 18px;text-align:center;
     color:var(--text-dim);font-size:12.5px}
@@ -928,6 +948,18 @@
         : '<div class="empty">Nothing yet. This is your first application.</div>') + '</div></div>';
   }
 
+  var NEXT_ICONS = {
+    user:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+    book:'<path d="M4 5h7v15H4z"/><path d="M13 5h7v15h-7z"/><path d="M11 5v15"/>',
+    chat:'<path d="M4 5h16v11H8l-4 3z"/>',
+    gavel:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/>'
+  };
+  function nextTile(icon, title, body){
+    return '<div class="tile"><span class="ti"><svg viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor">' + (NEXT_ICONS[icon] || '') + '</svg></span>' +
+      '<b>' + escapeHtml(title) + '</b><span>' + escapeHtml(body) + '</span></div>';
+  }
+
   function nextCard(){
     return '<div class="card"><div class="card-h"><h3>What happens next</h3></div><div class="card-b">' +
       '<p class="lede">A Support Staff member reads your answers in full. If something is missing you get it ' +
@@ -1005,15 +1037,59 @@
       return;
     }
 
+    /* =================================================================
+       PASSED
+
+       The one page in the UCP somebody reaches exactly once, so it is
+       worth more than a green tick. No attempt list here: a player who is
+       in does not need a record of the times they were not, and the whole
+       history is one click away on any of those rows anyway — this view
+       is about what happens next.
+       ================================================================= */
     if(d.state === 'passed'){
-      h = '<div class="state good"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
-          '<path d="M5 13l4 4L19 7"/></svg></div><div><h4>You passed your application</h4>' +
-          '<p>Blaine County is open to you — there is nothing else to do here. Your attempts stay ' +
-          'below for your own reference.</p></div>' +
-          '<div class="act"><span class="pill pass">Passed ' + shortDate(d.current && d.current.decided ? d.current.decided.at : null) + '</span></div></div>' +
-          '<div style="margin-top:16px">' + historyCard(d.history) + '</div>';
+      var when = d.current && d.current.decided ? d.current.decided.at : null;
+      var who  = d.current && d.current.decided ? d.current.decided.name : null;
+
+      h = '<div class="hero">' +
+        '<div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+          '<path d="M5 13l4 4L19 7"/></svg></div>' +
+        '<h2>You\'re in.</h2>' +
+        '<p>Your application was accepted' + (who ? ' by ' + escapeHtml(who) : '') +
+          (when ? ' on ' + shortDate(when) : '') + '. Blaine County is open to you — ' +
+          'connect and start playing whenever you like.</p>' +
+        '<div class="herobtns">' +
+          '<a class="btn primary" href="/dashboard">Go to the dashboard</a>' +
+          '<a class="btn" href="#" id="copyIp">Copy the server address</a>' +
+        '</div></div>' +
+
+        '<div class="nextgrid">' +
+          nextTile('user', 'Make your character',
+            'Your first character is created in game. Take the name and the backstory you ' +
+            'wrote in the application — it is the one people will know you by.') +
+          nextTile('book', 'Read the rules once more',
+            'You have shown you know them. The full set is on the forums, and the parts ' +
+            'people trip over most are the crime-zone and chain-robbing rules.') +
+          nextTile('chat', 'Say hello on the forums',
+            'Factions recruit there, events are posted there, and it is the fastest way ' +
+            'to find people to play with on your first night.') +
+          nextTile('gavel', 'If something goes wrong',
+            'Ban appeals, staff reports and refund requests all live in this UCP, in the ' +
+            'menu on the left. Every one of them is read by a person.') +
+        '</div>';
+
       el('body').innerHTML = h;
-      wireFeedback(); wireHistory();
+      var ci = el('copyIp');
+      if(ci) ci.addEventListener('click', function(e){
+        e.preventDefault();
+        /* No clipboard permission prompt on a failure path: if the browser
+           refuses, the address is still shown rather than silently lost. */
+        var addr = 'play.blaineside.com';
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(addr)
+            .then(function(){ toast('Copied ' + addr); })
+            .catch(function(){ toast(addr); });
+        } else { toast(addr); }
+      });
       return;
     }
 

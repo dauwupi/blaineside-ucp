@@ -237,9 +237,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .idcard .who{flex:1;min-width:250px}
 .nameline{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
 .nameline h2{font-size:27px;font-weight:700;letter-spacing:-.025em;line-height:1.15}
-.rank{font-size:11.5px;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:100px;
-  color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));white-space:nowrap}
-.rank.member{background:var(--charcoal-3);color:var(--text-faint);border:1px solid var(--border)}
+/* The rank badge lives in assets/css/tones.css — see .gchip,.rank there. */
 .idmeta{margin-top:8px;font-size:13px;color:var(--text-faint);display:flex;flex-wrap:wrap;
   align-items:center;gap:5px 10px}
 .idmeta .sep{color:var(--stone)}
@@ -1108,13 +1106,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   .lockform .row{display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap}
   .lockform .hint{font-size:11.5px;color:var(--text-dim);flex:1;min-width:180px}
 
-  /* The rank badge takes the group's colour, built exactly like the chips on
-     Group Management so one group looks the same wherever it appears. */
-  .rank{background:color-mix(in srgb, var(--tone) 17%, transparent);
-    color:var(--tone-text);
-    border:1px solid color-mix(in srgb, var(--tone) 44%, transparent)}
-  .rank.member{background:color-mix(in srgb, var(--tone) 17%, transparent);
-    color:var(--tone-text);border:1px solid color-mix(in srgb, var(--tone) 44%, transparent)}
+  /* The rank badge is in assets/css/tones.css. Nothing to override here. */
 
 
   /* The record's own styles all live in the ADMINISTRATIVE RECORD block
@@ -1206,7 +1198,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
         <div class="who">
           <div class="nameline">
             <h2 id="idName">&nbsp;</h2>
-            <span class="rank member" id="idRank" hidden></span>
+            <span class="rank tone-0" id="idRank" hidden></span>
           </div>
           <div class="idmeta" id="idMeta"></div>
         </div>
