@@ -127,6 +127,40 @@ function report_outcomes(): array
     ];
 }
 
+/**
+ * The title, built rather than typed.
+ *
+ * Nobody was ever going to write a better title than the list of people the
+ * report is about, and asking for one produced "Staff report" eight times
+ * out of ten — which is no title at all in a queue of forty. So the form
+ * doesn't ask: it shows what the title will be as the names go in, and this
+ * is what actually writes it, on the server, where it cannot be edited into
+ * something else by hand.
+ */
+function report_title_for(array $names, bool $unknown): string
+{
+    $parts = array_values(array_filter($names, function ($n) { return trim((string)$n) !== ''; }));
+    if ($unknown) $parts[] = 'an unknown staff member';
+    if (!$parts) return 'Staff Report';
+
+    /* Five names is a title nobody can read at a glance, so it stops at
+       three and counts the rest. */
+    if (count($parts) > 4) {
+        $list = implode(', ', array_slice($parts, 0, 3)) . ' and ' . (count($parts) - 3) . ' others';
+    } else {
+        $last = array_pop($parts);
+        $list = $parts ? implode(', ', $parts) . ' and ' . $last : $last;
+    }
+
+    $t = 'Staff Report — ' . $list;
+    return mb_strlen($t) > BS_REPORT_TITLE_MAX
+        ? mb_substr($t, 0, BS_REPORT_TITLE_MAX - 1) . '…'
+        : $t;
+}
+
+/** How much has to be said when nobody can be named. */
+const BS_REPORT_UNKNOWN_MIN = 40;
+
 function report_channel_label(string $k): string   { return report_channels()[$k] ?? $k; }
 function report_frequency_label(string $k): string { return report_frequencies()[$k] ?? $k; }
 function report_outcome_label(?string $k): ?string  {
@@ -509,6 +543,13 @@ function report_out(PDO $pdo, array $r, array $acc): array
         'incident_at'=> $r['incident_at'] !== null ? (int)$r['incident_at'] : null,
         'witnesses'  => $r['witnesses'] !== null && $r['witnesses'] !== ''
                         ? (string)$r['witnesses'] : null,
+        /* The report names nobody the UCP knows. Carried as its own flag
+           rather than inferred from an empty subject list, because "we
+           don't know who it was" and "the accounts have since been
+           deleted" are different facts and the second one exists. */
+        'unknown'    => !empty($r['unknown']),
+        'unknown_note' => isset($r['unknown_note']) && $r['unknown_note'] !== null
+                        && $r['unknown_note'] !== '' ? (string)$r['unknown_note'] : null,
         'body'       => (string)$r['body'],
         'outcome_wanted' => $r['outcome_wanted'] !== null && $r['outcome_wanted'] !== ''
                         ? (string)$r['outcome_wanted'] : null,

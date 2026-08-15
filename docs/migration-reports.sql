@@ -59,6 +59,15 @@ CREATE TABLE IF NOT EXISTS ucp_reports (
   body              TEXT         NOT NULL,
   outcome_wanted    TEXT         DEFAULT NULL,
 
+  -- Nobody the UCP knows was named. Its own flag rather than "the subject
+  -- list is empty", because "we don't know who it was" and "the accounts
+  -- have since been deleted" are different facts and the second one
+  -- happens. unknown_note is what the reporter DOES know — required when
+  -- the flag is set, because a report against nobody with nothing to go on
+  -- cannot be worked by anybody.
+  unknown           TINYINT(1)   NOT NULL DEFAULT 0,
+  unknown_note      TEXT         DEFAULT NULL,
+
   -- 'pending' | 'concluded' | 'rejected'.
   status            VARCHAR(12)  NOT NULL DEFAULT 'pending',
 

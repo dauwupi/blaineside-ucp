@@ -1,8 +1,11 @@
 <?php
 /**
  * POST /api/report-submit.php
- * Body: { title, staff:[id,...], channel, incident_at, frequency, witnesses,
- *         body, outcome_wanted, evidence:[{url,note}] }
+ * Body: { staff:[id,...], unknown, unknown_note, channel, incident_at,
+ *         frequency, witnesses, body, outcome_wanted, evidence:[{url,note}] }
+ *
+ * There is no title in that list on purpose — it is built from the names,
+ * here, by report_title_for(). See the note on that function.
  *
  * Sends a staff report.
  *
@@ -38,7 +41,8 @@ if (!$e['may']) {
 }
 
 $in       = read_input();
-$title    = trim((string)($in['title'] ?? ''));
+$unknown  = !empty($in['unknown']);
+$unote    = trim((string)($in['unknown_note'] ?? ''));
 $channel  = strtolower(trim((string)($in['channel'] ?? '')));
 $freq     = strtolower(trim((string)($in['frequency'] ?? '')));
 $witness  = trim((string)($in['witnesses'] ?? ''));
@@ -48,14 +52,6 @@ $evidence = is_array($in['evidence'] ?? null) ? $in['evidence'] : [];
 $wantIds  = is_array($in['staff'] ?? null) ? $in['staff'] : [];
 
 /* ---- the words ---- */
-if (mb_strlen($title) < BS_REPORT_TITLE_MIN) {
-    fail('Give the report a title that says what it is about. "Staff report" on its own '
-       . 'tells the person reading it nothing.', 422);
-}
-if (mb_strlen($title) > BS_REPORT_TITLE_MAX) {
-    fail('That title is too long. Keep it under ' . BS_REPORT_TITLE_MAX . ' characters — '
-       . 'the detail belongs in the report itself.', 422);
-}
 if (!isset(report_channels()[$channel]))    fail('Say where this happened.', 422);
 if (!isset(report_frequencies()[$freq]))    fail('Say whether this was a one-off or is ongoing.', 422);
 
@@ -93,10 +89,29 @@ foreach ($wantIds as $raw) {
     if (count($named) >= BS_REPORT_STAFF_MAX) break;
     $named[$sid] = $roster[$sid];
 }
-if (!$named) {
-    fail('Name at least one member of staff. If the person you mean isn\'t in the list they '
-       . 'are not currently staff, and this is not the queue for it.', 422);
+/* Nobody named is allowed, but only when it is said out loud.
+ *
+ * "I don't know who it was" is a real and common situation — an unnamed
+ * administrator in a crowded scene, a Discord moderator whose handle
+ * nobody caught. Refusing those reports loses exactly the ones where the
+ * reporter had least power. But a report against nobody, with nothing to
+ * go on, cannot be worked either, so the price of the option is saying how
+ * Staff Management might establish who it was. */
+if (!$named && !$unknown) {
+    fail('Name at least one member of staff. If you don\'t know who it was, tick the unknown '
+       . 'option instead and tell us what you do know.', 422);
 }
+if ($unknown && mb_strlen($unote) < BS_REPORT_UNKNOWN_MIN) {
+    fail('Tell us how we might work out who it was — roughly when, where, what they were doing, '
+       . 'anything anyone said. Without something to go on there is nothing to look into.', 422);
+}
+if (mb_strlen($unote) > BS_REPORT_BODY_MAX) {
+    fail('That is too long. Put the detail in the report itself.', 422);
+}
+if (!$unknown) $unote = '';
+
+/* Built, not typed — see report_title_for(). */
+$title = report_title_for(array_map(function ($s) { return $s['name']; }, $named), $unknown);
 
 /* ---- when ----
  *
@@ -119,11 +134,11 @@ $now = time();
 $pdo->prepare(
     'INSERT INTO ucp_reports
         (account_id, title, channel, incident_at, frequency, witnesses, body,
-         outcome_wanted, status, comments_enabled, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, \'pending\', 1, ?, ?)'
+         outcome_wanted, unknown, unknown_note, status, comments_enabled, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'pending\', 1, ?, ?)'
 )->execute([(int)$acc['id'], $title, $channel, $at, $freq,
             $witness !== '' ? mb_substr($witness, 0, 255) : null,
-            $body, $want, $now, $now]);
+            $body, $want, $unknown ? 1 : 0, $unote !== '' ? $unote : null, $now, $now]);
 
 $id = (int)$pdo->lastInsertId();
 
@@ -152,9 +167,10 @@ foreach ($evidence as $ev) {
 }
 
 report_log_add($pdo, $id, $acc, 'submitted',
-    'Report submitted against ' . implode(', ', array_map(function ($s) {
-        return $s['name'];
-    }, $named)) . '.');
+    'Report submitted against ' . ($named
+        ? implode(', ', array_map(function ($s) { return $s['name']; }, $named))
+          . ($unknown ? ' and an unknown staff member' : '')
+        : 'an unknown staff member') . '.');
 
 ok([
     'id'      => $id,

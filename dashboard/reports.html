@@ -1255,6 +1255,129 @@
     letter-spacing:.09em;text-transform:uppercase;padding:2px 8px;border-radius:100px;
     color:#dfa294;background:rgba(193,85,63,.12);border:1px solid rgba(193,85,63,.34);
     vertical-align:middle}
+
+  /* =====================================================================
+     SUBMIT — form and reference, side by side
+
+     The information page is gone. It was a wall you had to read and
+     dismiss before the form appeared, and nobody reads a wall they can
+     dismiss. What it said now sits in the rail on the right, in front of
+     the reporter while they write rather than two screens behind them.
+     ===================================================================== */
+  .split{display:grid;grid-template-columns:minmax(0,1fr) 310px}
+  .split > .pane{padding:20px 22px 22px;min-width:0}
+  .split > .rail{padding:20px 20px 24px;background:var(--charcoal);
+    border-left:1px solid var(--rule)}
+  @media (max-width:1080px){
+    .split{grid-template-columns:1fr}
+    .split > .rail{border-left:0;border-top:1px solid var(--rule)}
+  }
+  .sticky{position:sticky;top:calc(var(--header-h, 64px) + 18px)}
+
+  /* Native select arrows were the browser's, and on a dark control they
+     render as a black triangle in a black box. Replaced with the same
+     chevron the rest of the UCP uses, drawn as a background image so it
+     works on a real <select> rather than needing a fake one. */
+  .sel{appearance:none;-webkit-appearance:none;-moz-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a7f70' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 13px center;background-size:15px;
+    padding-right:38px}
+  .sel::-ms-expand{display:none}
+  /* A dark <option> list is the OS's, not ours; this is the most a page can
+     say about it, and it stops white-on-white on Windows. */
+  .sel option,.sel optgroup{background:var(--charcoal-2);color:var(--parchment)}
+  input[type=datetime-local]::-webkit-calendar-picker-indicator{filter:invert(.62) sepia(.2)}
+
+  .lede{font-size:13.5px;color:var(--text-faint);line-height:1.65;text-wrap:pretty}
+  .qs{margin-top:6px}
+  .formfoot{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:20px;
+    padding-top:18px;border-top:1px solid var(--rule)}
+  .formfoot p{flex:1;min-width:260px;font-size:12.5px;color:var(--text-dim);line-height:1.6;
+    text-wrap:pretty}
+  .formfoot p b{color:var(--text-faint);font-weight:600}
+
+  /* ---- who it is about ----
+     Rows, not pills. A pill had to carry a name, a group and a remove
+     button in one line of 12px text, and all three ended up at the same
+     weight — the name no louder than the rank it was in. */
+  .picked{display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:12px;
+    overflow:hidden;margin-top:12px}
+  .picked.none{padding:13px 15px;font-size:12.5px;color:var(--text-dim);font-style:italic;
+    background:var(--charcoal)}
+  .prow{display:flex;align-items:center;gap:13px;padding:11px 13px 11px 15px;
+    background:var(--charcoal)}
+  .prow + .prow{border-top:1px solid var(--rule)}
+  .prow .pd{width:8px;height:8px;border-radius:50%;flex:none;background:var(--tone-text,var(--stone))}
+  .prow.unk .pd{background:transparent;border:1.5px dashed var(--stone)}
+  .prow .pb{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+  .prow .pn{font-size:13.5px;font-weight:700;color:var(--parchment)}
+  .prow .pg{font-size:11.5px;color:var(--tone-text,var(--text-dim))}
+  .prow.unk .pn{color:var(--text-faint)}
+  .prow.unk .pg{color:var(--text-dim)}
+  .prow .px{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:8px;
+    border:1px solid transparent;background:transparent;color:var(--text-dim);cursor:pointer;
+    transition:.14s}
+  .prow .px:hover{color:#dfa294;background:rgba(193,85,63,.1);border-color:rgba(193,85,63,.3)}
+  .prow .px svg{width:13px;height:13px;stroke-width:2.4}
+
+  /* A quiet second way to answer the same question. Not a checkbox in the
+     row above it: "I don't know" is a different answer, not a modifier of
+     the one they were about to give. */
+  .linkbtn{display:inline-flex;align-items:center;gap:8px;margin-top:11px;padding:0;
+    border:0;background:none;font-family:inherit;font-size:12.5px;font-weight:600;
+    color:var(--text-faint);cursor:pointer;transition:.14s}
+  .linkbtn:hover{color:var(--gold)}
+  .linkbtn svg{width:14px;height:14px;stroke-width:2}
+
+  /* The title, shown rather than typed. */
+  .tprevwrap{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:12px;
+    padding:11px 14px;border-radius:11px;background:var(--charcoal-3);
+    border:1px solid var(--border-soft)}
+  .tprevwrap .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--stone);flex:none}
+  .tprev{font-size:13.5px;font-weight:600;color:var(--parchment);min-width:0;
+    overflow-wrap:anywhere}
+  .tprev.empty{color:var(--text-dim);font-weight:500;font-style:italic}
+
+  /* ---- the rail ---- */
+  .tline{display:flex;flex-direction:column}
+  .tstep{display:flex;gap:12px;padding:0 0 16px;position:relative}
+  .tstep:last-child{padding-bottom:0}
+  .tstep .d{flex:none;width:11px;height:11px;border-radius:50%;margin-top:3px;
+    background:var(--charcoal-3);border:2px solid var(--charcoal-4);z-index:1}
+  .tstep.on .d{background:var(--gold);border-color:var(--gold);
+    box-shadow:0 0 0 4px rgba(226,182,92,.13)}
+  .tstep::before{content:"";position:absolute;left:5px;top:14px;bottom:-2px;width:1px;
+    background:var(--rule)}
+  .tstep:last-child::before{display:none}
+  .tstep .b{min-width:0}
+  .tstep .t{font-size:12.5px;font-weight:700;color:var(--parchment)}
+  .tstep.on .t{color:var(--gold)}
+  .tstep .s{font-size:11.5px;color:var(--text-dim);line-height:1.55;margin-top:3px;
+    text-wrap:pretty}
+
+  /* The four categories, in the colours they keep on the concluded report —
+     so the label on the verdict is one the reporter has already seen. */
+  .cats{display:flex;flex-direction:column;gap:1px;background:var(--rule);
+    border:1px solid var(--rule);border-radius:11px;overflow:hidden}
+  .cat{background:var(--charcoal);padding:10px 12px}
+  .cat .n{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
+  .cat .n::before{content:"";width:6px;height:6px;border-radius:50%;flex:none;
+    background:currentColor}
+  .cat.c1 .n{color:#d98a78} .cat.c2 .n{color:#e3bd72}
+  .cat.c3 .n{color:#93a7cb} .cat.c4 .n{color:#9a9082}
+  .cat p{font-size:11px;color:var(--text-dim);line-height:1.5;margin-top:4px;text-wrap:pretty}
+
+  .rbox{padding:12px 14px;border-radius:11px;border:1px solid rgba(226,182,92,.24);
+    background:rgba(226,182,92,.05);margin-top:18px}
+  .rbox h5{font-size:12px;font-weight:700;color:#e3bd72}
+  .rbox p{font-size:11.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
+    text-wrap:pretty}
+  /* Section headings inside the rail. Named .sect so they cannot collide
+     with .sec, which is the band inside a report card. */
+  .rail .sect{margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
+  .sect-t{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--stone);margin-bottom:12px}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -1400,6 +1523,7 @@
     coin:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.8h4a1.7 1.7 0 0 1 0 3.4h-3a1.7 1.7 0 0 0 0 3.4h4"/>',
     gavel:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/>',
     flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6v.2"/><path d="M12 17h.01"/>',
     swap:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
     chev:'<path d="M9 6l6 6-6 6"/>',
     search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'};
@@ -1505,6 +1629,7 @@
     link:'<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
     msg:'<path d="M4 5h16v11H8l-4 3z"/>',
     flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6v.2"/><path d="M12 17h.01"/>',
     pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
   };
   function ai(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+AI[n]+'</svg>'; }
@@ -1563,231 +1688,131 @@
   }
 
   /* =====================================================================
-     WHAT A STAFF REPORT IS
+     SUBMIT
 
-     The information panel, and it is not decoration. Most reports that
-     waste Staff Management's time are one of four things: a decision the
-     reporter never raised with the person who made it, a ban appeal filed
-     in the wrong queue, a report filed on somebody else's behalf, or a
-     report with nothing attached. All four are cheap to prevent here and
-     expensive to unpick afterwards, so this comes before the form and the
-     form does not exist until it has been read.
+     There is no information page any more, and that is the point. It was a
+     wall you had to read and dismiss before the form appeared — and nobody
+     reads a wall they can dismiss. Everything it said is now in the column
+     on the right, where it is still in front of you while you are writing:
+     the four categories are visible at the moment you are deciding whether
+     your thing is misconduct or a punishment appeal, rather than two
+     screens earlier.
+
+     The form is what the page IS.
      ===================================================================== */
-  var AGREED = false;
-
-  function infoHTML(){
-    var cats = [
-      ['Misconduct Report', 'Conduct not up to the standards of the server. Also a broken '+
-        'server rule, a broken staff policy, or anything that would be considered illegal.'],
-      ['Punishment Appeal', 'A punishment being appealed to be reduced — admin jail down to a '+
-        'warning — or removed because the record is not up to standard.'],
-      ['Subteam Report', 'Only about duties performed inside a sub-team. These are handed to '+
-        'the sub-team leader or the line manager.'],
-      ['Rejected Report', 'Outside these guidelines, spam, backseat moderation, or filed on '+
-        'somebody else’s behalf. Rejected reports are not reviewed.']
-    ];
-    return '<div class="card"><div class="card-h"><h3>Staff Report Information</h3></div>'+
-      '<div class="card-b">'+
-      '<p class="card-lede">Staff Reports are handled by the Staff Management Team and the '+
-        'Management Team. We take all staff reports seriously, and we hold our staff to the '+
-        'highest standards.</p>'+
-      '<p class="card-lede">Once the report reaches us it is placed under review. Within the '+
-        'first 24–48 hours it is put into one of these categories:</p>'+
-      '<div class="asks">'+ cats.map(function(c){
-        return '<div class="askrow"><span class="qn">'+ai('flag')+'</span><span>'+
-          '<b>'+escapeHtml(c[0])+'</b><br>'+escapeHtml(c[1])+'</span></div>';
-      }).join('') +'</div>'+
-      '<div class="fieldnote" style="margin-top:14px">Staff Management aim to conclude every '+
-      'report in reasonable time, but the people involved make some slower than others. If you '+
-      'have heard nothing for a week, speak to a member of Staff Management directly.</div>'+
-      '</div></div>';
-  }
-
-  function whenHTML(){
-    var when = [
-      'They break a rule — in game, on the forums, or on Discord.',
-      'They make a decision involving you that you disagree with. Speak to them first unless '+
-        'you believe it is direct misconduct; if you can’t resolve it, report it here.',
-      'If it is about a ban, the ban appeal must be made and concluded before this comes to '+
-        'Staff Management.',
-      'They are abusive or disrespectful towards you.',
-      'Any other misconduct not listed here.'
-    ];
-    var need = [
-      'The staff member, or members, you are reporting.',
-      'Anyone else involved, and the names of any witnesses.',
-      'The date and time, accurate to server time.',
-      'Whether it happened once or is still happening.',
-      'A chatlog, screenshot or recording. Evidence carries far more weight than a description.',
-      'What happened, and what you want done about it.'
-    ];
-    return '<div class="card"><div class="card-h"><h3>Before you send it</h3></div>'+
-      '<div class="card-b">'+
-      '<p class="card-lede">A staff report can be made when a member of staff:</p>'+
-      '<div class="asks">'+ when.map(function(t,i){
-        return '<div class="askrow"><span class="qn">'+(i+1)+'</span><span>'+escapeHtml(t)+
-               '</span></div>'; }).join('') +'</div>'+
-      '<p class="card-lede" style="margin-top:18px">Have all of this ready. Anything missing '+
-        'delays the report, or gets it rejected for not carrying enough to act on:</p>'+
-      '<div class="asks">'+ need.map(function(t){
-        return '<div class="askrow"><span class="qn">'+ai('tick')+'</span><span>'+
-               escapeHtml(t)+'</span></div>'; }).join('') +'</div>'+
-      '</div></div>';
-  }
-
-  /* ---- the gate: read it, then the form appears ---- */
-  function gateHTML(){
-    return infoHTML() + whenHTML() +
-      '<div class="card"><div class="card-b">'+
-        '<div class="note-a"><span class="si">'+ai('info')+'</span><div>'+
-          '<h4>Ready?</h4>'+
-          '<p>A report can’t be edited once it is sent — anything you think of afterwards goes '+
-          'in a comment on the report itself, where it is timestamped rather than quietly '+
-          'folded into what you originally wrote.</p>'+
-          '<div class="acts"><button class="btn primary" id="begin">'+ai('pen')+
-          'Begin Report</button></div>'+
-        '</div></div>'+
-      '</div></div>';
-  }
-
-  /* =====================================================================
-     THE FORM
-     ===================================================================== */
-  var PICKED = [];      // account ids of the staff being reported
+  var PICKED = [];        // account ids of the staff being reported
+  var UNKNOWN = false;    // "I don't know who it was"
   var EVN = 0;
 
-  function staffPickerHTML(){
-    var groups = [], seen = {};
-    (OPTS.staff||[]).forEach(function(s){
-      if(!seen[s.group]){ seen[s.group] = []; groups.push(s.group); }
-      seen[s.group].push(s);
-    });
-    var opts = groups.map(function(g){
-      return '<optgroup label="'+escapeHtml(g)+'">'+ seen[g].map(function(s){
-        return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>';
-      }).join('') +'</optgroup>';
+  /* ---- the sidebar ---- */
+  function asideHTML(){
+    var cats = [
+      ['c1','Misconduct','A broken rule or staff policy, or conduct below the server’s '+
+        'standards.'],
+      ['c2','Punishment appeal','A punishment reduced or removed, rather than conduct '+
+        'reported.'],
+      ['c3','Subteam','Duties inside a sub-team. Goes to its leader or the line manager.'],
+      ['c4','Rejected','Spam, backseat moderation, or filed for somebody else. Not reviewed.']
+    ].map(function(c){
+      return '<div class="cat '+c[0]+'"><div class="n">'+escapeHtml(c[1])+'</div>'+
+             '<p>'+escapeHtml(c[2])+'</p></div>';
     }).join('');
 
-    return '<div class="q"><div class="qn"><b>2.</b>Which member of staff is this about?</div>'+
-      '<div class="qbody">'+
-        (opts
-          ? '<div class="pickrow">'+
-              '<select class="sel" id="staffSel"><option value="">Choose a staff member…'+
-              '</option>'+opts+'</select>'+
-              '<button class="btn sm" type="button" id="staffAdd">'+ai('plus')+'Add</button>'+
-            '</div>'+
-            '<div class="chips" id="chips"></div>'+
-            '<div class="hint">Name everyone the report is actually about — up to '+
-            (OPTS.limits.staff_max)+'. Two administrators in the same situation is one '+
-            'report, not two.</div>'
-          : '<div class="fieldnote bad">There are no staff accounts to report. That is almost '+
-            'certainly a fault rather than good news — tell a Founder.</div>')+
-      '</div></div>';
+    var steps = [
+      [1,'You send it','It goes to Staff Management. The staff member is never told who is '+
+        'handling it.'],
+      [0,'Reviewed in 24–48 hours','Placed under review and put into one of four categories.'],
+      [0,'Decided','You are told what was decided and why — never who decided it.']
+    ].map(function(t){
+      return '<div class="tstep'+(t[0]?' on':'')+'"><span class="d"></span><span class="b">'+
+        '<div class="t">'+escapeHtml(t[1])+'</div>'+
+        '<div class="s">'+escapeHtml(t[2])+'</div></span></div>';
+    }).join('');
+
+    return '<div class="rail"><div class="sticky">'+
+      '<div class="sect-t">What happens next</div>'+
+      '<div class="tline">'+steps+'</div>'+
+      '<div class="sect"><div class="sect-t">The four categories</div>'+
+        '<div class="cats">'+cats+'</div></div>'+
+      '<div class="rbox"><h5>Heard nothing for a week?</h5>'+
+        '<p>Some reports are slower because of who is involved. Speak to a member of Staff '+
+        'Management directly rather than sending it again.</p></div>'+
+    '</div></div>';
   }
 
-  function formHTML(){
-    var chans = (OPTS.channels||[]).map(function(c){
-      return '<option value="'+escapeHtml(c.key)+'">'+escapeHtml(c.label)+'</option>';
-    }).join('');
-    var freqs = (OPTS.frequencies||[]).map(function(f){
-      return '<option value="'+escapeHtml(f.key)+'">'+escapeHtml(f.label)+'</option>';
-    }).join('');
-
-    return '<div class="card"><div class="card-h"><h3>Staff Report</h3>'+
-      '<span class="aside">Sent to Staff Management</span></div><div class="card-b">'+
-
-      '<div class="q"><div class="qn"><b>1.</b>Title</div>'+
-        '<div class="qbody"><input class="inp" id="title" maxlength="'+OPTS.limits.title_max+'" '+
-        'placeholder="What the report is about, in one line"></div></div>'+
-
-      staffPickerHTML() +
-
-      '<div class="q"><div class="qn"><b>3.</b>When and where did this happen?</div>'+
-        '<div class="qbody"><div class="frow">'+
-          '<div><label class="flab" for="when">Date and time (server time, UTC)</label>'+
-            '<input class="inp" type="datetime-local" id="when"></div>'+
-          '<div><label class="flab" for="freq">Once, or ongoing?</label>'+
-            '<select class="sel" id="freq">'+freqs+'</select></div>'+
-          '<div><label class="flab" for="chan">Where</label>'+
-            '<select class="sel" id="chan">'+chans+'</select></div>'+
-        '</div>'+
-        '<div class="hint" id="whenHint">The clock at the top of this page is server time. '+
-        'An ongoing pattern doesn’t need an exact moment — pick roughly when it started.</div>'+
-        '</div></div>'+
-
-      '<div class="q"><div class="qn"><b>4.</b>Character</div>'+
-        '<div class="qbody"><select class="sel" disabled><option>Characters aren’t linked to '+
-        'the UCP yet</option></select>'+
-        '<div class="hint">This fills in when the game server is connected. Until then, put '+
-        'the character name in the report itself.</div></div></div>'+
-
-      '<div class="q"><div class="qn"><b>5.</b>Anyone else involved, or any witnesses</div>'+
-        '<div class="qbody"><input class="inp" id="wit" maxlength="255" '+
-        'placeholder="John Doe, Jane Doe"></div></div>'+
-
-      '<div class="q"><div class="qn"><b>6.</b>What happened?</div>'+
-        '<div class="qbody"><textarea class="ta" id="body" maxlength="'+OPTS.limits.body_max+'" '+
-        'placeholder="In order, in your own words. Times, names, and what was said."></textarea>'+
-        '<div class="hint"><span class="counter" id="bodyCount">0</span> characters. At least '+
-        OPTS.limits.body_min+'.</div></div></div>'+
-
-      '<div class="q"><div class="qn"><b>7.</b>What do you want to happen?</div>'+
-        '<div class="qbody"><textarea class="ta" id="want" maxlength="'+OPTS.limits.want_max+'" '+
-        'style="min-height:96px" placeholder="An apology, a decision reversed, the record '+
-        'corrected — say what would settle this."></textarea>'+
-        '<div class="hint">A report with no asked-for outcome leaves Staff Management guessing '+
-        'what would settle it.</div></div></div>'+
-
-      '<div class="q"><div class="qn"><b>8.</b>Evidence</div>'+
-        '<div class="qbody" id="evs"></div>'+
-        '<div class="qbody"><button class="btn sm" type="button" id="evAdd">'+ai('plus')+
-        'Add a link</button>'+
-        '<div class="hint">Links only — screenshots, recordings, chatlogs or a forum post. '+
-        'Upload the file somewhere first and paste the link. Evidence carries far more weight '+
-        'than a description of it.</div></div></div>'+
-
-      '<div class="fieldnote" style="margin-top:18px">By sending this you confirm the '+
-      'information is accurate to the best of your knowledge and that the evidence is of what '+
-      'actually happened, rather than recreated or edited. Knowingly submitting false '+
-      'information to Staff Management can itself be acted on.</div>'+
-      '<div class="fieldnote">The contents of this report and its evidence may be shown to '+
-      'Management and to the staff member while it is looked into. Nobody is prejudiced for '+
-      'making a report, and that protection is the point of the queue.</div>'+
-      '<div class="fieldnote">A report can’t be edited once it is sent. Anything further goes '+
-      'in a comment on the report.</div>'+
-
-      '<div class="formfoot">'+
-        '<button class="btn" type="button" id="back">Back</button>'+
-        '<button class="btn primary" type="button" id="send">'+ai('flag')+
-        'Submit Report</button>'+
-      '</div>'+
-      '</div></div>';
-  }
-
-  function chipsHTML(){
-    if(!PICKED.length) return '<div class="chip-none">Nobody named yet.</div>';
+  /* ---- who it is about ----
+     Redesigned from a pill. A pill had to carry a name, a group and a
+     remove button in one line of 12px text, and all three ended up
+     competing at the same size — the name no bigger than the group it was
+     in. These are rows: name first at the weight of a name, group under it,
+     remove on the far right where it can be hit. */
+  function pickedHTML(){
+    if(!PICKED.length && !UNKNOWN){
+      return '<div class="picked none">Nobody named yet.</div>';
+    }
     var by = {};
     (OPTS.staff||[]).forEach(function(s){ by[s.id] = s; });
-    return PICKED.map(function(id){
+
+    var rows = PICKED.map(function(id){
       var s = by[id]; if(!s) return '';
-      return '<span class="chip"><b>'+escapeHtml(s.name)+'</b>'+
-        '<span class="cg">'+escapeHtml(s.group)+'</span>'+
-        '<button type="button" class="cx" data-drop="'+id+'" aria-label="Remove">'+
-        ai('x')+'</button></span>';
+      return '<div class="prow"><span class="pd tone-'+(s.rank|0)+'"></span>'+
+        '<span class="pb"><span class="pn">'+escapeHtml(s.name)+'</span>'+
+        '<span class="pg tone-'+(s.rank|0)+'">'+escapeHtml(s.group)+'</span></span>'+
+        '<button type="button" class="px" data-drop="'+id+'" aria-label="Remove '+
+        escapeHtml(s.name)+'">'+ai('x')+'</button></div>';
     }).join('');
+
+    if(UNKNOWN){
+      rows += '<div class="prow unk"><span class="pd"></span>'+
+        '<span class="pb"><span class="pn">An unknown staff member</span>'+
+        '<span class="pg">You’ll be asked what you do know</span></span>'+
+        '<button type="button" class="px" data-drop="unknown" aria-label="Remove">'+
+        ai('x')+'</button></div>';
+    }
+    return '<div class="picked">'+rows+'</div>';
   }
 
-  function paintChips(){
-    var host = document.getElementById('chips');
+  /* The title is not asked for. It is this, and it updates as names go in —
+     shown rather than typed, so the reporter can see exactly what lands in
+     the queue without being able to write "staff report" into it. */
+  function titlePreview(){
+    var by = {};
+    (OPTS.staff||[]).forEach(function(s){ by[s.id] = s; });
+    var parts = PICKED.map(function(id){ return by[id] ? by[id].name : null; })
+                      .filter(Boolean);
+    if(UNKNOWN) parts.push('an unknown staff member');
+    if(!parts.length) return 'Staff Report';
+    var list;
+    if(parts.length > 4){
+      list = parts.slice(0,3).join(', ') + ' and ' + (parts.length - 3) + ' others';
+    } else {
+      var last = parts.pop();
+      list = parts.length ? parts.join(', ') + ' and ' + last : last;
+    }
+    return 'Staff Report — ' + list;
+  }
+
+  function paintPicked(){
+    var host = document.getElementById('picked');
     if(!host) return;
-    host.innerHTML = chipsHTML();
+    host.innerHTML = pickedHTML();
     Array.prototype.forEach.call(host.querySelectorAll('[data-drop]'), function(b){
       b.addEventListener('click', function(){
-        var id = parseInt(b.getAttribute('data-drop'), 10);
-        PICKED = PICKED.filter(function(x){ return x !== id; });
-        paintChips();
+        var v = b.getAttribute('data-drop');
+        if(v === 'unknown') UNKNOWN = false;
+        else PICKED = PICKED.filter(function(x){ return x !== parseInt(v,10); });
+        paintPicked();
       });
     });
+
+    var t = document.getElementById('tprev');
+    if(t){
+      t.textContent = titlePreview();
+      t.className = 'tprev' + (PICKED.length || UNKNOWN ? '' : ' empty');
+    }
+    /* The unknown question exists only while the answer matters. */
+    var uq = document.getElementById('unkq');
+    if(uq) uq.hidden = !UNKNOWN;
   }
 
   function evRow(){
@@ -1795,55 +1820,169 @@
     return '<div class="evrow" data-ev="'+i+'">'+
       '<span class="ic">'+ai('link')+'</span>'+
       '<div class="eb">'+
-        '<input class="inp" data-url placeholder="https://…">'+
-        '<input class="inp sm" data-note maxlength="190" '+
+        '<input class="ti" data-url placeholder="https://…">'+
+        '<input class="ti sm" data-note maxlength="190" '+
         'placeholder="What this shows (optional)">'+
       '</div>'+
-      '<button class="btn icon" type="button" data-evdrop aria-label="Remove">'+ai('x')+
+      '<button class="evx" type="button" data-evdrop aria-label="Remove">'+ai('x')+
       '</button></div>';
   }
 
-  function wireGate(){
-    var b = document.getElementById('begin');
-    if(b) b.addEventListener('click', function(){
-      AGREED = true; renderSubmit();
-      window.scrollTo({top:0, behavior:'smooth'});
+  function formHTML(){
+    var groups = [], seen = {};
+    (OPTS.staff||[]).forEach(function(s){
+      if(!seen[s.group]){ seen[s.group] = []; groups.push(s.group); }
+      seen[s.group].push(s);
     });
+    var staffOpts = groups.map(function(g){
+      return '<optgroup label="'+escapeHtml(g)+'">'+ seen[g].map(function(s){
+        return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>';
+      }).join('') +'</optgroup>';
+    }).join('');
+
+    var chans = (OPTS.channels||[]).map(function(c){
+      return '<option value="'+escapeHtml(c.key)+'">'+escapeHtml(c.label)+'</option>';
+    }).join('');
+    var freqs = (OPTS.frequencies||[]).map(function(f){
+      return '<option value="'+escapeHtml(f.key)+'">'+escapeHtml(f.label)+'</option>';
+    }).join('');
+
+    var n = 0;
+    function q(label, body, hint, id){
+      n++;
+      return '<div class="q"'+(id ? ' id="'+id+'" hidden' : '')+'>'+
+        '<div class="qn"><b>'+n+'.</b>'+label+'</div>'+
+        '<div class="qbody">'+body+
+        (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div></div>';
+    }
+
+    return '<div class="card"><div class="card-h"><h3>Submit a Staff Report</h3>'+
+      '<span class="aside">Goes to Staff Management · '+
+      (OPTS.open_max - OPTS.open)+' of '+OPTS.open_max+' slots free</span></div>'+
+      '<div class="split">'+
+
+      '<div class="pane">'+
+        '<p class="lede">Staff Management and the Management Team read every report, and hold '+
+        'staff to the highest standards. Report a member of staff who breaks a rule, is abusive '+
+        'towards you, or makes a decision you disagree with — speak to them first unless it is '+
+        'direct misconduct, and if it is about a ban, appeal it and let that conclude before it '+
+        'comes here.</p>'+
+
+        '<div class="qs">'+
+
+        q('Which member of staff is this about?',
+          '<div class="pickrow">'+
+            '<select class="sel" id="staffSel"><option value="">Choose a staff member…</option>'+
+            staffOpts+'</select>'+
+            '<button class="btn sm" type="button" id="staffAdd">'+ai('plus')+'Add</button>'+
+          '</div>'+
+          '<button class="linkbtn" type="button" id="unkAdd">'+ai('help')+
+          'I don’t know who it was</button>'+
+          '<div id="picked"></div>'+
+          '<div class="tprevwrap"><span class="k">Title</span>'+
+          '<span class="tprev empty" id="tprev">Staff Report</span></div>',
+          'The title is written from these names — you don’t type one. Name everyone the report '+
+          'is actually about, up to '+OPTS.limits.staff_max+'.') +
+
+        /* Only ever visible when the unknown option is on. A permanently
+           present "if you don't know…" box invites the answer. */
+        q('What do you know about who it was?',
+          '<textarea class="ta" id="unote" maxlength="'+OPTS.limits.body_max+'" '+
+          'style="min-height:100px" placeholder="Roughly when and where, what they were doing, '+
+          'anything they said, what their name looked like. Anything that narrows it down."'+
+          '></textarea>',
+          'Staff Management can check who was on duty at a given time — but only if there is a '+
+          'time and a place to check. Without something to go on there is nothing to look into.',
+          'unkq') +
+
+        q('When and where did this happen?',
+          '<div class="frow">'+
+            '<div><label class="flab" for="when">Date and time (server time, UTC)</label>'+
+              '<input class="ti" type="datetime-local" id="when"></div>'+
+            '<div><label class="flab" for="freq">Once, or ongoing?</label>'+
+              '<select class="sel" id="freq">'+freqs+'</select></div>'+
+            '<div><label class="flab" for="chan">Where</label>'+
+              '<select class="sel" id="chan">'+chans+'</select></div>'+
+          '</div>',
+          '<span id="whenHint">The clock at the top of this page is server time.</span>') +
+
+        q('Anyone else involved, or any witnesses',
+          '<input class="ti" id="wit" maxlength="255" placeholder="John Doe, Jane Doe">') +
+
+        q('What happened?',
+          '<textarea class="ta" id="body" maxlength="'+OPTS.limits.body_max+'" '+
+          'placeholder="In order, in your own words. Times, names, and what was said."'+
+          '></textarea>',
+          '<span class="counter" id="bodyCount">0</span> characters. At least '+
+          OPTS.limits.body_min+'.') +
+
+        q('What do you want to happen?',
+          '<textarea class="ta" id="want" maxlength="'+OPTS.limits.want_max+'" '+
+          'style="min-height:84px" placeholder="An apology, a decision reversed, the record '+
+          'corrected — say what would settle this."></textarea>',
+          'A report with no asked-for outcome leaves Staff Management guessing what would '+
+          'settle it.') +
+
+        q('Evidence',
+          '<div id="evs"></div>'+
+          '<button class="btn sm" type="button" id="evAdd" style="margin-top:11px">'+
+          ai('plus')+'Add a link</button>',
+          'Links only — upload the file somewhere first and paste the link. A clip, screenshot '+
+          'or chatlog carries far more weight than a description of one.') +
+
+        '</div>'+
+
+        '<div class="formfoot">'+
+          '<p><b>A report can’t be edited once it is sent.</b> Anything you think of afterwards '+
+          'goes in a comment on the report, timestamped rather than folded into what you '+
+          'originally wrote. Knowingly submitting false information can itself be acted on.</p>'+
+          '<button class="btn primary" type="button" id="send">'+ai('flag')+
+          'Submit Report</button>'+
+        '</div>'+
+      '</div>'+
+
+      asideHTML() +
+      '</div></div>';
   }
 
   function wireForm(){
-    paintChips();
+    paintPicked();
 
-    var sel = document.getElementById('staffSel'), add = document.getElementById('staffAdd');
-    if(add) add.addEventListener('click', function(){
+    var sel = document.getElementById('staffSel');
+    document.getElementById('staffAdd').addEventListener('click', function(){
       var id = parseInt(sel.value, 10);
       if(!id) return;
       if(PICKED.indexOf(id) > -1){ toast('Already named.'); return; }
       if(PICKED.length >= OPTS.limits.staff_max){
         toast('That is as many as one report can name.'); return;
       }
-      PICKED.push(id); sel.value = ''; paintChips();
+      PICKED.push(id); sel.value = ''; paintPicked();
+    });
+
+    document.getElementById('unkAdd').addEventListener('click', function(){
+      if(UNKNOWN){ toast('Already added.'); return; }
+      UNKNOWN = true; paintPicked();
+      var u = document.getElementById('unote');
+      if(u) u.focus();
     });
 
     var body = document.getElementById('body'), count = document.getElementById('bodyCount');
-    if(body) body.addEventListener('input', function(){
+    body.addEventListener('input', function(){
       count.textContent = body.value.length;
       count.className = 'counter' + (body.value.length < OPTS.limits.body_min ? ' low' : '');
     });
 
     /* An ongoing pattern has no single moment, so the date stops being
-       required the second they say so — and says which it is rather than
-       silently accepting a blank. */
+       required the second they say so — and the hint says which it is
+       rather than silently accepting a blank. */
     var freq = document.getElementById('freq'), hint = document.getElementById('whenHint');
     function freqSaid(){
-      if(!freq) return;
       hint.textContent = freq.value === 'continuous'
-        ? 'Roughly when it started is enough for an ongoing pattern. The clock at the top of '+
+        ? 'Roughly when it started is enough for something ongoing. The clock at the top of '+
           'this page is server time.'
         : 'Required for a one-off. The clock at the top of this page is server time.';
     }
-    if(freq) freq.addEventListener('change', freqSaid);
-    freqSaid();
+    freq.addEventListener('change', freqSaid); freqSaid();
 
     var evs = document.getElementById('evs');
     function addEv(){
@@ -1859,24 +1998,23 @@
     });
     addEv();
 
-    document.getElementById('back').addEventListener('click', function(){
-      AGREED = false; renderSubmit(); window.scrollTo({top:0, behavior:'smooth'});
-    });
-
     document.getElementById('send').addEventListener('click', function(){
       var btn = this;
       var when = document.getElementById('when').value;
+      var u = document.getElementById('unote');
       var payload = {
-        title:  document.getElementById('title').value.trim(),
-        staff:  PICKED,
+        staff:   PICKED,
+        unknown: UNKNOWN,
+        unknown_note: UNKNOWN && u ? u.value.trim() : '',
         channel: document.getElementById('chan').value,
         frequency: freq.value,
-        /* datetime-local has no timezone, and the label says server time —
-           so it is read AS UTC rather than as the reader's own clock, which
-           is what makes "accurate to server time" true rather than a hope. */
+        /* datetime-local carries no timezone, and the label says server
+           time — so it is read AS UTC rather than as the reader's own
+           clock, which is what makes "accurate to server time" true rather
+           than a hope. */
         incident_at: when ? Math.floor(Date.parse(when + ':00Z') / 1000) : '',
         witnesses: document.getElementById('wit').value.trim(),
-        body: document.getElementById('body').value.trim(),
+        body: body.value.trim(),
         outcome_wanted: document.getElementById('want').value.trim(),
         evidence: Array.prototype.map.call(
           document.querySelectorAll('#evs .evrow'), function(r){
@@ -1905,12 +2043,12 @@
           '<p>'+escapeHtml(OPTS.why || '')+'</p>'+
           '<div class="acts"><a class="btn primary" href="/dashboard/reports#mine">'+
           ai('doc')+'See your reports</a></div>'+
-        '</div></div></div></div>' + infoHTML();
+        '</div></div></div></div>';
       return;
     }
 
-    host.innerHTML = AGREED ? formHTML() : gateHTML();
-    if(AGREED) wireForm(); else wireGate();
+    host.innerHTML = formHTML();
+    wireForm();
   }
 
   /* =====================================================================
@@ -2160,10 +2298,15 @@
         }).join(', ')
       : '<span class="v soft">Nobody named</span>';
 
+    /* An unknown subject is a name in this cell, not a blank one. A handler
+       scanning the grid needs to see "nobody knows" as an answer rather
+       than as a rendering failure. */
+    var names = d.subjects.map(function(s){ return escapeHtml(s.name); });
+    var roles = d.subjects.map(function(s){ return s.role || 'No longer here'; });
+    if(d.unknown){ names.push('An unknown staff member'); roles.push('Not identified'); }
+
     var cells = [
-      fcell('Reported', d.subjects.map(function(s){ return escapeHtml(s.name); }).join(', ')
-            || '—',
-            d.subjects.map(function(s){ return s.role || 'No longer here'; }).join(' · ')),
+      fcell('Reported', names.join(', ') || '—', roles.join(' · ')),
       fcell('Where', escapeHtml(d.channel_label), escapeHtml(d.frequency_label)),
       fcell('Incident', d.incident_at
             ? stampEsc(d.incident_at) + ' UTC'
@@ -2261,12 +2404,18 @@
       '<div class="ansq"><div class="n"><b>1.</b>What happened?</div>'+
         '<div class="a text">'+escapeHtml(d.body)+'</div></div>'+
 
-      '<div class="ansq"><div class="n"><b>2.</b>What do you want to happen?</div>'+
+      (d.unknown
+        ? '<div class="ansq"><div class="n"><b>2.</b>What do they know about who it was?</div>'+
+          '<div class="a text">'+escapeHtml(d.unknown_note || '')+'</div></div>'
+        : '')+
+
+      '<div class="ansq"><div class="n"><b>'+(d.unknown?3:2)+'.</b>What do you want to happen?'+
+        '</div>'+
         (d.outcome_wanted
           ? '<div class="a text">'+escapeHtml(d.outcome_wanted)+'</div>'
           : '<div class="a none">Nothing was asked for.</div>')+'</div>'+
 
-      '<div class="ansq"><div class="n"><b>3.</b>Evidence</div>'+
+      '<div class="ansq"><div class="n"><b>'+(d.unknown?4:3)+'.</b>Evidence</div>'+
         '<div class="a">'+ev+'</div></div>'+
 
       (d.status !== 'pending' ? verdictNote() : '')+
