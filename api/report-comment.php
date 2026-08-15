@@ -18,6 +18,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_reports.php';
+require_once __DIR__ . '/_notify.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -82,6 +83,28 @@ if ($staff) {
         $staffOnly ? 'Left a staff-only note.' : 'Replied to the reporter.');
 } else {
     report_log_add($pdo, $id, $acc, 'comment', 'The reporter added a comment.');
+}
+
+/* A staff-only note goes nowhere. Otherwise it is the other side: the
+   reporter when staff wrote, and the handler when the reporter did —
+   without naming the handler to the reporter, which is rule 3. */
+if (!$staffOnly) {
+    if ($staff) {
+        notify($pdo, (int)$r['account_id'], 'report', 'comment',
+            'New reply on your staff report',
+            ['body' => mb_substr($body, 0, 160),
+             'url'  => '/dashboard/reports?id=' . $id,
+             'actor_id' => (int)$acc['id'],
+             'dedupe'   => 'report:' . $id . ':comment:owner']);
+    } elseif (!empty($r['handler_id'])) {
+        notify($pdo, (int)$r['handler_id'], 'report', 'comment',
+            $acc['username'] . ' replied on staff report #' . $id,
+            ['body' => mb_substr($body, 0, 160),
+             'url'  => '/dashboard/reports?id=' . $id,
+             'actor_name' => (string)$acc['username'],
+             'actor_id'   => (int)$acc['id'],
+             'dedupe'     => 'report:' . $id . ':comment:handler']);
+    }
 }
 
 $st = $pdo->prepare('SELECT * FROM ucp_reports WHERE id = ? LIMIT 1');

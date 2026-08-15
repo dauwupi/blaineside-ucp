@@ -13,6 +13,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_appeals.php';
+require_once __DIR__ . '/_notify.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -101,6 +102,40 @@ $pdo->prepare('UPDATE ucp_appeals SET updated_at = ? WHERE id = ?')->execute([$n
 if ($staff) {
     appeal_log_add($pdo, $id, $acc, 'commented',
         $staffOnly ? 'Left a staff-only comment.' : 'Replied to the appellant.');
+}
+
+/* Who hears about it.
+ *
+ * A staff-only comment goes nowhere: it is a note between handlers, and
+ * notifying the appellant about a comment they cannot read would tell them
+ * something happened and refuse to say what.
+ *
+ * Otherwise it is the other side of the conversation — the appellant when
+ * staff wrote, the handler when the appellant did. Not "everyone with
+ * access": an appeal is a conversation between two people, and the queue
+ * is where anybody else finds it. */
+if (!$staffOnly) {
+    if ($staff) {
+        notify($pdo, (int)$a['account_id'], 'appeal', 'comment',
+            'New reply on your ban appeal',
+            /* The reply itself, not just that there was one — most are two
+               lines, and a notification that makes you open a page to learn
+               nothing is worse than none. */
+            ['body' => mb_substr($body, 0, 160),
+             'url'  => '/dashboard/appeals?id=' . $id,
+             /* Staff are named to each other, never to the appellant — the
+                same rule the appeal page follows. */
+             'actor_id' => (int)$acc['id'],
+             'dedupe'   => 'appeal:' . $id . ':comment:owner']);
+    } elseif (!empty($a['handler_id'])) {
+        notify($pdo, (int)$a['handler_id'], 'appeal', 'comment',
+            $acc['username'] . ' replied on appeal #' . $id,
+            ['body' => mb_substr($body, 0, 160),
+             'url'  => '/dashboard/appeals?id=' . $id,
+             'actor_name' => (string)$acc['username'],
+             'actor_id'   => (int)$acc['id'],
+             'dedupe'     => 'appeal:' . $id . ':comment:handler']);
+    }
 }
 
 ok(['id' => $id, 'message' => 'Comment added.']);

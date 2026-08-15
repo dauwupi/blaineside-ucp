@@ -521,12 +521,10 @@
     background:linear-gradient(180deg,var(--gold),var(--amber))}
   .qtab[aria-selected="true"] .ai{background:rgba(226,182,92,.12);
     border-color:rgba(226,182,92,.34);color:var(--gold)}
-  /* the staff side, when it is not the one you are on */
-  .qtab.staff{border-color:rgba(226,182,92,.26);
-    background:linear-gradient(140deg,rgba(226,182,92,.055),var(--charcoal-2) 62%)}
-  .qtab.staff .ai{color:var(--gold);background:rgba(226,182,92,.1);
-    border-color:rgba(226,182,92,.26)}
-  .qtab.staff:hover{border-color:rgba(226,182,92,.45)}
+  /* The staff view used to be tinted gold to mark it out. It marked it out
+     as the important one instead, which it is not — it is one of three, and
+     the person who needs it knows who they are. The STAFF pill says what it
+     is; the box looks like every other box. */
   .qtab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   .smark{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
     color:#e3bd72;background:rgba(226,182,92,.11);border:1px solid rgba(226,182,92,.3);
@@ -1411,7 +1409,7 @@
   .pager.tight{margin-top:12px;gap:6px}
   .pager.tight .pinfo{font-size:11.5px}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.0">
 </head>
 <body>
 
@@ -1494,7 +1492,7 @@
   </div>
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-<script src="/assets/js/ucp.js?v=2.6.0"></script>
+<script src="/assets/js/ucp.js?v=2.7.0"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.
@@ -2064,6 +2062,14 @@
   function renderMine(){
     var host = document.getElementById('qbody');
     if(!MINE){ host.innerHTML = ''; return; }
+
+    if(MINE.error){
+      host.innerHTML = '<div class="card"><div class="card-h"><h3>Your staff reports</h3></div>'+
+        '<div class="card-b"><div class="note-a bad"><span class="si">'+ai('warn')+
+        '</span><div><h4>Your reports couldn’t be loaded</h4>'+
+        '<p>'+escapeHtml(MINE.error)+'</p></div></div></div></div>';
+      return;
+    }
 
     if(!MINE.reports.length){
       host.innerHTML = '<div class="card"><div class="card-h"><h3>Your staff reports</h3></div>'+
@@ -2768,9 +2774,20 @@
     if(key === 'mine'){
       renderMine();
       if(!MINE) UCP.get('report-mine.php').then(function(d){
-        MINE = (d && d.ok === true) ? d : { reports: [] };
+        /* The server's own words when it refuses, rather than a toast that
+           says "could not reach the server" for something it plainly
+           reached. An empty list and a failure are different states and
+           used to look identical. */
+        if(!(d && d.ok === true)){
+          MINE = { reports: [], error: (d && d.error) || null };
+        } else {
+          MINE = d;
+        }
         renderMine();
-      }).catch(function(){ toast('Could not reach the server'); });
+      }).catch(function(){
+        MINE = { reports: [], error: 'The server did not answer. Try again in a moment.' };
+        renderMine();
+      });
       return;
     }
     renderSubmit();

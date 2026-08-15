@@ -17,6 +17,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_appeals.php';
+require_once __DIR__ . '/_notify.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -179,6 +180,23 @@ appeal_log_add($pdo, $id, $acc, 'submitted',
         : implode(' and ', array_map(function ($k) {
               $l = punish_platforms(); return $l[$k] ?? $k;
           }, $platforms)) . ' — nothing recorded in the UCP, so nothing is attached'));
+
+/* Tell the handler it landed.
+ *
+ * An appeal assigned to the administrator who issued the punishment is only
+ * useful if that administrator finds out — otherwise "assigned on arrival"
+ * means it sits with one named person and nobody looks at it. */
+if ($handlerId !== null) {
+    notify($pdo, $handlerId, 'appeal', 'submitted',
+        'New ban appeal from ' . $acc['username'],
+        ['body'  => $match ? 'Against the ' . punish_kind_label((string)$match['kind'])
+                             . ' you issued.'
+                           : 'Nothing is recorded in the UCP for it.',
+         'url'   => '/dashboard/appeals?id=' . $id,
+         'actor_name' => (string)$acc['username'],
+         'actor_id'   => (int)$acc['id'],
+         'dedupe'     => 'appeal:' . $id . ':submitted']);
+}
 
 ok([
     'id'      => $id,

@@ -23,6 +23,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_reports.php';
+require_once __DIR__ . '/_notify.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -171,6 +172,24 @@ report_log_add($pdo, $id, $acc, 'submitted',
         ? implode(', ', array_map(function ($s) { return $s['name']; }, $named))
           . ($unknown ? ' and an unknown staff member' : '')
         : 'an unknown staff member') . '.');
+
+/* Staff Management hear about it, minus anybody the report names.
+ *
+ * A report arrives unallocated, so there is no one person to tell — and an
+ * unallocated report that nobody is told about is the exact failure the
+ * 24-48 hour promise on the form is meant to prevent. The subjects are cut
+ * from the list here as well as from the queue: a notification saying a
+ * report exists is most of what the report says. */
+$subjects = array_keys($named);
+foreach (report_handlers($pdo) as $h) {
+    if (in_array((int)$h['id'], $subjects, true)) continue;
+    notify($pdo, (int)$h['id'], 'report', 'submitted',
+        'New staff report — ' . $title,
+        ['body' => 'Waiting to be triaged and allocated.',
+         'url'  => '/dashboard/reports?id=' . $id,
+         'actor_id' => (int)$acc['id'],
+         'dedupe'   => 'report:' . $id . ':submitted']);
+}
 
 ok([
     'id'      => $id,

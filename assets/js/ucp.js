@@ -610,6 +610,176 @@
       });
   }
 
+
+  /* =====================================================================
+     NOTIFICATIONS — the bell in the top bar
+
+     Self-contained on purpose, like the quick search above it: markup,
+     styles and behaviour all live here, so every page with a bell button
+     gets a working panel without a line copied into it. Eleven copies of a
+     component is eleven things to forget when one of them changes.
+
+     What it does NOT do is invent urgency. There is no sound, no toast, no
+     red badge for something read a week ago. The dot appears when there is
+     something unread and goes away when there isn't, and the count is
+     collapsed server-side so one conversation is one notification rather
+     than fourteen.
+     ===================================================================== */
+  var NOTE_CSS = [
+    '.bellwrap{position:relative;display:inline-flex}',
+    '.bellwrap .icon-btn .dot{display:none}',
+    '.bellwrap.has .icon-btn .dot{display:block}',
+    '.notepanel{position:absolute;top:calc(100% + 10px);right:0;width:370px;max-width:88vw;',
+      'background:var(--charcoal-2,#1a1815);border:1px solid var(--border,#26221e);',
+      'border-radius:13px;box-shadow:0 26px 60px -24px rgba(0,0,0,.85);z-index:80;',
+      'overflow:hidden;display:none}',
+    '.notepanel.open{display:block}',
+    '.notepanel .nh{display:flex;align-items:center;gap:10px;padding:13px 15px;',
+      'border-bottom:1px solid var(--rule,#302b25)}',
+    '.notepanel .nh b{font-size:13.5px;font-weight:700;color:var(--parchment,#f1efe9)}',
+    '.notepanel .nh .n{font-size:11px;font-weight:800;padding:2px 8px;border-radius:100px;',
+      'color:#e3bd72;background:rgba(226,182,92,.12);border:1px solid rgba(226,182,92,.3)}',
+    '.notepanel .nh button{margin-left:auto;border:0;background:none;font-family:inherit;',
+      'font-size:12px;font-weight:600;color:var(--text-faint,#968e7e);cursor:pointer}',
+    '.notepanel .nh button:hover{color:var(--gold,#e2b65c)}',
+    '.notelist{max-height:400px;overflow:auto}',
+    '.noterow{display:flex;gap:12px;padding:12px 15px;border-bottom:1px solid var(--rule,#302b25);',
+      'cursor:pointer;transition:.13s}',
+    '.noterow:last-child{border-bottom:0}',
+    '.noterow:hover{background:var(--charcoal-3,#221f1b)}',
+    '.noterow .i{flex:none;width:30px;height:30px;display:grid;place-items:center;',
+      'border-radius:9px;background:var(--charcoal-3,#221f1b);border:1px solid var(--border,#26221e);',
+      'color:var(--text-dim,#655e51)}',
+    '.noterow.new .i{color:#e3bd72;background:rgba(226,182,92,.1);',
+      'border-color:rgba(226,182,92,.28)}',
+    '.noterow .i svg{width:15px;height:15px;stroke-width:2;fill:none;stroke:currentColor}',
+    '.noterow .b{min-width:0;flex:1}',
+    '.noterow .t{font-size:12.5px;font-weight:600;color:var(--text-faint,#968e7e);',
+      'line-height:1.45}',
+    '.noterow.new .t{color:var(--parchment,#f1efe9);font-weight:700}',
+    '.noterow .s{font-size:11.5px;color:var(--text-dim,#655e51);line-height:1.5;margin-top:3px;',
+      'overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+    '.noterow .w{font-size:11px;color:var(--text-dim,#655e51);margin-top:4px}',
+    '.notenone{padding:26px 18px;text-align:center;font-size:12.5px;',
+      'color:var(--text-dim,#655e51);line-height:1.6}'
+  ].join('');
+
+  var NOTE_ICONS = {
+    appeal:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/>' +
+           '<path d="M15 14l4.5 4.5"/>',
+    report:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    system:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'
+  };
+
+  var noteOpen = false, noteTimer = null, noteWired = false;
+
+  function noteBell() {
+    return document.querySelector('.icon-btn[aria-label="Notifications"], ' +
+                                  '.icon-btn[title="Notifications"]');
+  }
+
+  function noteRender(d) {
+    var panel = document.getElementById('notepanel');
+    var wrap = panel && panel.parentNode;
+    if (!panel) return;
+
+    var list = (d && d.notifications) || [];
+    var unread = (d && d.unread) | 0;
+
+    if (wrap) wrap.classList.toggle('has', unread > 0);
+
+    panel.querySelector('.nh .n').textContent = unread;
+    panel.querySelector('.nh .n').style.display = unread ? '' : 'none';
+
+    panel.querySelector('.notelist').innerHTML = list.length
+      ? list.map(function (n) {
+          var icon = NOTE_ICONS[n.area] || NOTE_ICONS.system;
+          return '<div class="noterow' + (n.read ? '' : ' new') + '" data-id="' + n.id + '"' +
+            (n.url ? ' data-url="' + esc(n.url) + '"' : '') + '>' +
+            '<span class="i"><svg viewBox="0 0 24 24">' + icon + '</svg></span>' +
+            '<span class="b">' +
+              '<div class="t">' + esc(n.title) + '</div>' +
+              (n.body ? '<div class="s">' + esc(n.body) + '</div>' : '') +
+              '<div class="w">' + esc(relTime(n.at)) +
+                (n.actor ? ' · ' + esc(n.actor) : '') + '</div>' +
+            '</span></div>';
+        }).join('')
+      : '<div class="notenone">Nothing yet.<br>Replies to your appeals and staff reports ' +
+        'turn up here.</div>';
+  }
+
+  function noteFetch() {
+    return get('notifications.php').then(function (d) {
+      if (d && d.ok === true) noteRender(d);
+      return d;
+    });
+  }
+
+  function initNotifications() {
+    var bell = noteBell();
+    if (!bell || noteWired) return;
+    noteWired = true;
+
+    if (!document.getElementById('note-style')) {
+      var st = document.createElement('style');
+      st.id = 'note-style';
+      st.textContent = NOTE_CSS;
+      document.head.appendChild(st);
+    }
+
+    /* The button is wrapped rather than replaced, so a page that styles its
+       own top bar keeps whatever it did to the button. */
+    var wrap = document.createElement('span');
+    wrap.className = 'bellwrap';
+    bell.parentNode.insertBefore(wrap, bell);
+    wrap.appendChild(bell);
+
+    var panel = document.createElement('div');
+    panel.className = 'notepanel';
+    panel.id = 'notepanel';
+    panel.innerHTML =
+      '<div class="nh"><b>Notifications</b><span class="n" style="display:none">0</span>' +
+      '<button type="button" data-readall>Mark all read</button></div>' +
+      '<div class="notelist"></div>';
+    wrap.appendChild(panel);
+
+    bell.addEventListener('click', function (e) {
+      e.stopPropagation();
+      noteOpen = !noteOpen;
+      panel.classList.toggle('open', noteOpen);
+      if (noteOpen) noteFetch();
+    });
+    panel.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', function () {
+      noteOpen = false; panel.classList.remove('open');
+    });
+
+    panel.querySelector('[data-readall]').addEventListener('click', function () {
+      post('notification-read.php', { all: true }).then(noteFetch);
+    });
+
+    /* Opening one marks it read and goes where it points. Marking it read
+       first and navigating second means a slow request cannot leave the
+       badge lit for something the reader has plainly seen. */
+    panel.querySelector('.notelist').addEventListener('click', function (e) {
+      var row = e.target.closest('.noterow');
+      if (!row) return;
+      var url = row.getAttribute('data-url');
+      row.classList.remove('new');
+      post('notification-read.php', { id: +row.getAttribute('data-id') })
+        .then(function () { if (url) window.location.href = url; else noteFetch(); })
+        .catch(function () { if (url) window.location.href = url; });
+    });
+
+    noteFetch();
+    /* Every 90 seconds. Often enough that a reply arrives while the tab is
+       open, rare enough that a dashboard left up all day is not a load. */
+    if (noteTimer) clearInterval(noteTimer);
+    noteTimer = setInterval(function () {
+      if (!document.hidden) noteFetch();
+    }, 90000);
+  }
+
   w.UCP = {
     post: post, get: get, loadCsrf: loadCsrf,
     esc: esc, relTime: relTime, readCookie: readCookie, fmtSecs: fmtSecs,
@@ -618,7 +788,8 @@
     rank: CACHED ? CACHED.rank : null,
     rememberMe: rememberMe, forgetMe: forgetMe, paintMe: paintMe,
     initQuickSearch: initQuickSearch,
-    nav: renderNav, NAV: NAV
+    nav: renderNav, NAV: NAV,
+    notifications: noteFetch
   };
 
   /* Pages still say `renderSidebar(SIDEBAR)` after the session lands, and
@@ -635,6 +806,7 @@
     loadCsrf();
     paintMe(CACHED);            // first paint, before session.php answers
     renderNav();                // ditto for the menu, from the cached rank
+    initNotifications();
     // Drawn from the cached rank so the box doesn't flash in and out; the
     // real rank corrects it a moment later via rememberMe() below.
     initQuickSearch(CACHED ? CACHED.rank : 0);

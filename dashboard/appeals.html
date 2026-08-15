@@ -521,12 +521,10 @@
     background:linear-gradient(180deg,var(--gold),var(--amber))}
   .qtab[aria-selected="true"] .ai{background:rgba(226,182,92,.12);
     border-color:rgba(226,182,92,.34);color:var(--gold)}
-  /* the staff side, when it is not the one you are on */
-  .qtab.staff{border-color:rgba(226,182,92,.26);
-    background:linear-gradient(140deg,rgba(226,182,92,.055),var(--charcoal-2) 62%)}
-  .qtab.staff .ai{color:var(--gold);background:rgba(226,182,92,.1);
-    border-color:rgba(226,182,92,.26)}
-  .qtab.staff:hover{border-color:rgba(226,182,92,.45)}
+  /* The staff view used to be tinted gold to mark it out. It marked it out
+     as the important one instead, which it is not — it is one of three, and
+     the person who needs it knows who they are. The STAFF pill says what it
+     is; the box looks like every other box. */
   .qtab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   .smark{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
     color:#e3bd72;background:rgba(226,182,92,.11);border:1px solid rgba(226,182,92,.3);
@@ -1159,7 +1157,7 @@
   .hrow .hgo svg{width:15px;height:15px;stroke-width:2.2}
   .hrow:hover .hgo{color:var(--parchment)}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.0">
 </head>
 <body>
 
@@ -1243,7 +1241,7 @@
   </div>
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-<script src="/assets/js/ucp.js?v=2.6.0"></script>
+<script src="/assets/js/ucp.js?v=2.7.0"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.
@@ -1975,7 +1973,7 @@
     if(head) head.style.display = 'none';
 
     document.getElementById('qbody').innerHTML =
-      lookbarHTML(staff) +
+      lookbarHTML(staff) + ownNote() +
       '<div class="apgrid'+(staff?'':' solo')+'">'+
         '<div>'+ banCard() + appealCard() + commentsCard() +
           (staff ? '' : historyCard(d.history, false, {hideEmpty:true})) +'</div>'+
@@ -1984,6 +1982,24 @@
       '</div>';
 
     wire();
+  }
+
+  /* Their own appeal, seen from the staff side.
+     Only Management and Founders reach this — below that rank an appeal of
+     your own is the player's view, and somebody else decides it. There is
+     no queue above Management to send it to, so the door is not bolted; it
+     is signposted. */
+  function ownNote(){
+    var v = DATA.viewer;
+    if(!v || !v.staff || !v.own) return '';
+    return '<div class="card"><div class="card-b">'+
+      '<div class="note-a bad"><span class="si">'+ai('warn')+'</span><div>'+
+        '<h4>This is your own appeal</h4>'+
+        '<p>You are seeing the staff view of it because you are Management — there is no queue '+
+        'above this one to send it to. Everything you do here is in the running log with your '+
+        'name on it, and the verdict is recorded as yours.</p>'+
+        '<p>If somebody else can decide it, hand it to them with the Handler control.</p>'+
+      '</div></div></div></div>';
   }
 
   /* ---- what is being appealed ----------------------------------------

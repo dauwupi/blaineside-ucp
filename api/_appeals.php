@@ -154,6 +154,28 @@ function appeal_is_staff(array $acc): bool
 }
 
 /**
+ * The rank from which an appeal of one's own is still seen — and handled —
+ * as staff.
+ *
+ * Below it, a member of staff appealing their own punishment is just an
+ * appellant: they get the player's view, and somebody else decides. That is
+ * right for almost everybody.
+ *
+ * Management and Founders are the exception, for the same reason they are
+ * the exception on a staff report: there is no queue above them. Hiding
+ * their own appeal from them would not make anybody more impartial, it would
+ * only mean the most senior people in the community cannot see a page
+ * everyone else can. The page marks the conflict plainly and the log carries
+ * their name; the judgement is theirs.
+ */
+const BS_APPEAL_SELF_RANK = 8;      // Management
+
+function appeal_sees_own_as_staff(array $acc): bool
+{
+    return (int)($acc['admin_rank'] ?? 0) >= BS_APPEAL_SELF_RANK;
+}
+
+/**
  * May this account read this appeal?
  *
  * Its author always may. Staff may. Nobody else — an appeal is about one
@@ -177,7 +199,7 @@ function appeal_conclude_block(PDO $pdo, array $acc, array $appeal, ?array $puni
     if (!appeal_is_staff($acc)) {
         return 'Concluding an appeal is for ' . rank_name(BS_APPEAL_STAFF_RANK) . ' and above.';
     }
-    if ((int)$acc['id'] === (int)$appeal['account_id']) {
+    if ((int)$acc['id'] === (int)$appeal['account_id'] && !appeal_sees_own_as_staff($acc)) {
         return 'You can\'t decide your own appeal.';
     }
     if ($appeal['status'] !== 'pending') {
@@ -704,7 +726,9 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
      * would hand them the staff-only comments about their own case and the
      * log of who has been looking at it, which is the exact conversation
      * they must not see. Rank is not a reason to see your own file. */
-    $staff = appeal_is_staff($acc) && !$mine;
+    /* Their own appeal is the player's view — unless they are Management or
+       a Founder, who keep the staff view of everything. */
+    $staff = appeal_is_staff($acc) && (!$mine || appeal_sees_own_as_staff($acc));
 
     $owner = null; $accounts = null; $whois = null;
     $st = $pdo->prepare(
@@ -876,6 +900,10 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
         $out['log']    = appeal_log($pdo, (int)$a['id']);
         $out['viewer'] = [
             'staff'        => true,
+            /* Their own appeal, seen from the staff side. Only Management
+               and Founders ever get here; the page draws a warning rather
+               than a lock, and every action carries their name in the log. */
+            'own'          => $mine,
             'may_conclude' => $block === null,
             'why'          => $block,
             'may_comment'  => appeal_may_act($acc, $a),
@@ -886,13 +914,14 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
                nothing to overturn on one that was accepted. */
             'may_overrule' => $a['status'] === 'rejected' && appeals_has_waits($pdo)
                               && appeal_may_overrule($pdo, $acc)
-                              && (int)$acc['id'] !== (int)$a['account_id'],
+                              && ((int)$acc['id'] !== (int)$a['account_id']
+                                  || appeal_sees_own_as_staff($acc)),
             'waits'        => appeals_has_waits($pdo) ? appeal_wait_options() : [],
             'wait_suggest' => appeal_suggested_wait($pdo, (int)$a['account_id']),
         ];
     } else {
-        $out['viewer'] = ['staff' => false, 'may_conclude' => false, 'why' => null,
-                          'may_comment' => $mine, 'may_manage' => false,
+        $out['viewer'] = ['staff' => false, 'own' => $mine, 'may_conclude' => false,
+                          'why' => null, 'may_comment' => $mine, 'may_manage' => false,
                           'may_overrule' => false, 'is_handler' => false];
     }
 

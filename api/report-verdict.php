@@ -30,6 +30,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_reports.php';
+require_once __DIR__ . '/_notify.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -115,6 +116,14 @@ $pdo->prepare(
       WHERE id = ?'
 )->execute([$status, $category, $outcome, $now, (int)$acc['id'],
             (string)$acc['username'], $now, $id]);
+
+/* What was decided, never who decided it — the notification obeys the same
+   rule as the page it links to. */
+notify($pdo, (int)$r['account_id'], 'report', 'verdict',
+    'Your staff report was ' . ($rejected ? 'rejected' : 'concluded'),
+    ['body' => report_category_label($category) . ' — ' . report_outcome_label($outcome),
+     'url'  => '/dashboard/reports?id=' . $id,
+     'actor_id' => (int)$acc['id']]);
 
 report_log_add($pdo, $id, $acc, 'concluded',
     report_category_label($category) . ' — ' . report_outcome_label($outcome) . '.');

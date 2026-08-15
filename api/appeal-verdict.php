@@ -26,6 +26,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_appeals.php';
+require_once __DIR__ . '/_notify.php';
 require_once __DIR__ . '/_sessions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
@@ -166,6 +167,15 @@ appeal_log_add($pdo, $id, $acc, 'verdict',
     'Concluded as ' . $verdict
     . ($verdict === 'rejected' && $waits ? ' — can appeal again in ' . $wait . ' days' : '')
     . ($lifted ? ' — ' . $lifted : ''));
+
+/* The decision is the one notification nobody should have to go looking
+   for. It carries the outcome in the title, so the bell answers the
+   question without opening anything. */
+notify($pdo, (int)$a['account_id'], 'appeal', 'verdict',
+    'Your ban appeal was ' . $verdict,
+    ['body' => mb_substr($comment, 0, 160),
+     'url'  => '/dashboard/appeals?id=' . $id,
+     'actor_id' => (int)$acc['id']]);
 
 ok([
     'id'       => $id,

@@ -21,6 +21,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_reports.php';
+require_once __DIR__ . '/_notify.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -161,6 +162,19 @@ if ($comment !== '') {
 }
 
 report_log_add($pdo, $id, $acc, 'handled', implode(' ', $changes));
+
+/* Being given a report is the notification that matters most on this page:
+   an allocation nobody is told about is an allocation that has not
+   happened. Only on a change, and never to the person who did it. */
+if (isset($hid) && $hid !== null && (int)($r['handler_id'] ?? 0) !== (int)$hid) {
+    notify($pdo, (int)$hid, 'report', 'allocated',
+        'A staff report was allocated to you',
+        ['body' => (string)$r['title'],
+         'url'  => '/dashboard/reports?id=' . $id,
+         'actor_name' => (string)$acc['username'],
+         'actor_id'   => (int)$acc['id'],
+         'dedupe'     => 'report:' . $id . ':allocated']);
+}
 
 $st = $pdo->prepare('SELECT * FROM ucp_reports WHERE id = ? LIMIT 1');
 $st->execute([$id]);
