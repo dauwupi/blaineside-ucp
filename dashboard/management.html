@@ -597,12 +597,20 @@
   /* flex:1 pushes the meta line to the bottom of every tile, so the meta
      lines align across a row however long the description runs. */
   .tile p{font-size:12px;color:var(--text-faint);line-height:1.6;margin-top:10px;flex:1}
-  .tile .meta{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:10px;
-    border-top:1px solid var(--border-soft);font-size:11px;color:var(--text-dim);
-    font-weight:600;letter-spacing:.02em}
-  .tile .meta s{width:5px;height:5px;border-radius:50%;background:var(--charcoal-4);
-    text-decoration:none;flex:none}
-  .tile .meta .who{color:var(--text-faint)}
+  /* One chip, and it never wraps.
+
+     This was a hairline rule with two labels either side of a dot. In a
+     quarter-width tile "New player applications · Applicants see it" broke
+     across two lines and each half landed at a different height, so the
+     bottom of every tile looked different. A single short chip cannot do
+     that at any width, and the thing it dropped — where the tool applies —
+     is already the first clause of the description above it. */
+  .tile .aud{margin-top:13px}
+  .tile .aud span{display:inline-flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;text-indent:.05em;
+    line-height:1;padding:5px 9px;border-radius:6px;white-space:nowrap;
+    color:var(--text-dim);border:1px solid var(--border);background:var(--charcoal-3)}
+  .tile:hover .aud span{color:var(--text-faint);border-color:var(--charcoal-4)}
 
   /* ---- search ---- */
   .searchrow{display:flex;align-items:center;gap:11px;margin-bottom:16px;flex-wrap:wrap}
@@ -838,28 +846,28 @@
      href:'/dashboard/bulletin',
      blurb:'The rolling board on the dashboard. Events, notices and updates, each with an ' +
            'image, a tag and a place in the slot order.',
-     where:'Dashboard', who:'Everyone sees it',
+     where:'Dashboard', who:'Everyone',
      find:'event events notice notices news post posts slide slides carousel board bulletin'},
 
     {icon:'megaphone', min:8, title:'Announcements',
      href:'/dashboard/announcements',
      blurb:'The banner across the top of every page. One live at a time, and the loudest thing ' +
            'in the UCP — used for downtime and rule changes.',
-     where:'Every page', who:'Everyone sees it',
+     where:'Every page', who:'Everyone',
      find:'announce announcement banner alert notice downtime maintenance broadcast message'},
 
     {icon:'question',  min:8, title:'Question Manager',
      href:'/dashboard/app-questions',
      blurb:'What every applicant is asked. Pinned questions, the random pool, character ' +
            'minimums, and how many are drawn per application.',
-     where:'New player applications', who:'Applicants see it',
+     where:'New player applications', who:'Applicants',
      find:'question questions scenario scenarios pinned pool draw minimum apply application applicant applicants prompt'},
 
     {icon:'template',  min:8, title:'Response Templates',
      href:'/dashboard/app-templates',
      blurb:'The saved replies Support Staff drop into application feedback. Inserted and then ' +
            'edited — never sent on their own.',
-     where:'Application feedback', who:'Support Staff use it',
+     where:'Application feedback', who:'Support Staff',
      find:'template templates reply replies response responses canned saved feedback deny denial pass accept application'},
 
     {icon:'people',    min:8, title:'Group Management',
@@ -879,8 +887,7 @@
       '<h3>' + escapeHtml(t.title) + '</h3>' +
       '<svg class="go" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>' +
       '<p>' + escapeHtml(t.blurb) + '</p>' +
-      '<div class="meta"><span class="who">' + escapeHtml(t.where) + '</span>' +
-      '<s></s><span>' + escapeHtml(t.who) + '</span></div></a>';
+      '<div class="aud"><span>' + escapeHtml(t.who) + '</span></div></a>';
   }
 
   var MINE = [], Q = '';
