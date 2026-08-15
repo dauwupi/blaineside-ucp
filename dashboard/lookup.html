@@ -1003,7 +1003,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.3">
+<link rel="stylesheet" href="/assets/css/tones.css">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
@@ -1425,7 +1425,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.7.3"></script>
+<script src="/assets/js/ucp.js"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
@@ -1566,12 +1566,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     document.body.classList.remove('nav-open'); scrim.classList.remove('show'); });
 
   var DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  (function tickClock(){
-    var d = new Date(), p = function(x){ return String(x).padStart(2,'0'); };
-    $('utcTime').textContent = p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds());
-    $('utcDate').textContent = DAYS[d.getUTCDay()]+', '+d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear();
-    setTimeout(tickClock, 1000);
-  })();
+  /* The clock, the build number and the status line are drawn by
+     assets/js/ucp.js — one copy for every page. */
 
   /* ---- tabs ---- */
   var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));

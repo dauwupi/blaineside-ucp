@@ -374,7 +374,7 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.3">
+<link rel="stylesheet" href="/assets/css/tones.css">
 </head>
 <body>
 
@@ -554,7 +554,7 @@
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<script src="/assets/js/ucp.js?v=2.7.3"></script>
+<script src="/assets/js/ucp.js"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.
@@ -1063,12 +1063,8 @@
   scrim.addEventListener('click',()=>{document.body.classList.remove('nav-open');scrim.classList.remove('show');});
   window.addEventListener('resize',()=>{if(window.innerWidth>760){document.body.classList.remove('nav-open');scrim.classList.remove('show');}});
 
-  /* clock */
-  const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function tickClock(){const d=new Date(),p=n=>String(n).padStart(2,'0');
-    document.getElementById('utcTime').textContent=`${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
-    document.getElementById('utcDate').textContent=`${DAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;}
-  tickClock();setInterval(tickClock,1000);
+  /* The clock, the build number and the status line are drawn by
+     assets/js/ucp.js — one copy for every page. */
 
   /* =====================================================================
      BOOT — who is this, and may they be here?

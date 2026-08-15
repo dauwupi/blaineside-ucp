@@ -1452,7 +1452,7 @@
   .ndel svg{width:14px;height:14px;stroke-width:2}
   .ndel:hover{color:#dfa294;border-color:rgba(193,85,63,.45);background:rgba(193,85,63,.1)}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.4">
+<link rel="stylesheet" href="/assets/css/tones.css">
 </head>
 <body>
 
@@ -1520,8 +1520,8 @@
         <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
         <div class="tx">
           <h1>Notifications</h1>
-          <p>Everything the UCP has told you, oldest still here at the bottom. Opening one takes
-            you to what it is about; the tick marks it read without going anywhere.</p>
+          <p>Everything the UCP has told you, newest first. Opening one takes you to what it
+            is about; the tick keeps it and the bin throws it away.</p>
         </div>
       </div>
 
@@ -1532,7 +1532,7 @@
   </div>
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-<script src="/assets/js/ucp.js?v=2.7.4"></script>
+<script src="/assets/js/ucp.js"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.
@@ -1687,8 +1687,10 @@
         (NLOADED ? 'Nothing here' : 'Loading…')+'</h4><p>'+
         (!NLOADED ? 'One moment.'
           : NOTES.length ? 'No '+NFILTER+' notifications.'
-          : 'Replies to your appeals and staff reports turn up here, along with anything '+
-            'allocated to you.')+'</p></div>';
+          /* Deliberately not a list of what CAN appear here. This is the
+             whole UCP's notification area, and naming the two queues that
+             use it today would be wrong the week a third one does. */
+          : 'Anything that needs your attention will turn up here.')+'</p></div>';
 
     /* "Mark all read" belongs in the header, beside the count it changes.
        Floated above the first row it read as that row's own control and sat
@@ -1702,7 +1704,7 @@
         '</span></div>'+
         '<div class="card-b">'+ body +
           '<div class="fieldnote">Kept for 14 days, then removed on their own. Deleting one '+
-          'here doesn’t touch the appeal or the report it points at.</div>'+
+          'here doesn’t change whatever it points at.</div>'+
         '</div></div>';
 
     Array.prototype.forEach.call(host.querySelectorAll('[data-nf]'), function(b){
@@ -1842,12 +1844,8 @@
   scrim.addEventListener('click',()=>{document.body.classList.remove('nav-open');scrim.classList.remove('show');});
   window.addEventListener('resize',()=>{if(window.innerWidth>760){document.body.classList.remove('nav-open');scrim.classList.remove('show');}});
 
-  /* clock */
-  const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function tickClock(){const d=new Date(),p=n=>String(n).padStart(2,'0');
-    document.getElementById('utcTime').textContent=`${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
-    document.getElementById('utcDate').textContent=`${DAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;}
-  tickClock();setInterval(tickClock,1000);
+  /* The clock, the build number and the status line are drawn by
+     assets/js/ucp.js — one copy for every page. */
 </script>
 </body>
 </html>

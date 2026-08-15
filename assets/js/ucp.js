@@ -708,8 +708,10 @@
                 (n.actor ? ' · ' + esc(n.actor) : '') + '</div>' +
             '</span></div>';
         }).join('')
-      : '<div class="notenone">Nothing yet.<br>Replies to your appeals and staff reports ' +
-        'turn up here.</div>';
+      /* No list of what can appear here — this is the whole UCP's
+         notification area, not the appeals one. */
+      : '<div class="notenone">Nothing yet.<br>Anything that needs your attention ' +
+        'turns up here.</div>';
   }
 
   function noteFetch() {
@@ -787,6 +789,46 @@
     }, 90000);
   }
 
+
+  /* =====================================================================
+     THE SIDEBAR FOOTER — the clock, the build number, the status line
+
+     Here for the same reason the menu is: it was identical markup in
+     twelve files, and one of them said a different version number than the
+     rest within a week. `UCP_VERSION` below is the only place the build
+     number is written down.
+
+     The pages keep the markup as a fallback for a browser that never runs
+     this; what is drawn here replaces it.
+     ===================================================================== */
+  var UCP_VERSION = '2.4.1';
+
+  var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function initSideFoot() {
+    var foot = document.querySelector('.side-foot');
+    if (!foot) return;
+
+    foot.innerHTML =
+      '<div class="foot-line"><span class="fv" id="utcTime">00:00:00</span> UTC · ' +
+        '<span id="utcDate">—</span></div>' +
+      '<div class="foot-line">UCP v' + esc(UCP_VERSION) + ' · ' +
+        '<span class="st"><span class="d"></span>All systems normal</span></div>';
+
+    var t = document.getElementById('utcTime'), d2 = document.getElementById('utcDate');
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function tick() {
+      var d = new Date();
+      t.textContent = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ':' +
+                      pad(d.getUTCSeconds());
+      d2.textContent = FOOT_DAYS[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' +
+                       FOOT_MON[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
   w.UCP = {
     post: post, get: get, loadCsrf: loadCsrf,
     esc: esc, relTime: relTime, readCookie: readCookie, fmtSecs: fmtSecs,
@@ -795,7 +837,7 @@
     rank: CACHED ? CACHED.rank : null,
     rememberMe: rememberMe, forgetMe: forgetMe, paintMe: paintMe,
     initQuickSearch: initQuickSearch,
-    nav: renderNav, NAV: NAV,
+    nav: renderNav, NAV: NAV, version: UCP_VERSION,
     notifications: noteFetch
   };
 
@@ -814,6 +856,7 @@
     paintMe(CACHED);            // first paint, before session.php answers
     renderNav();                // ditto for the menu, from the cached rank
     initNotifications();
+    initSideFoot();
     // Drawn from the cached rank so the box doesn't flash in and out; the
     // real rank corrects it a moment later via rememberMe() below.
     initQuickSearch(CACHED ? CACHED.rank : 0);

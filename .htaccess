@@ -131,6 +131,27 @@ RedirectMatch 404 ^/docs(/|$)
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # ---------------------------------------------------------------------
+  # The shared front-end files revalidate on every visit.
+  #
+  # assets/js/ucp.js and assets/css/*.css are the sidebar, the bell, the
+  # quick search, the clock and the build number — one copy for every page.
+  # They used to be cache-busted with ?v=2.7.5 on a query string, which
+  # meant changing one line of JavaScript was an edit to twelve HTML files,
+  # and the twelfth was the one somebody forgot.
+  #
+  # no-cache does NOT mean "don't cache": the browser keeps the file and
+  # asks whether it has changed, so the ordinary answer is a 304 with no
+  # body. One conditional request per page load, and a deploy is live the
+  # moment it lands.
+  #
+  # Images and fonts are not included — they are replaced by uploading a
+  # new name, not by editing the old one.
+  # ---------------------------------------------------------------------
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
 </IfModule>
 
 ErrorDocument 404 /login
