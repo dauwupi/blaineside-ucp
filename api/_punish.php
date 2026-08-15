@@ -20,50 +20,133 @@
 require_once __DIR__ . '/_ranks.php';
 
 /**
- * The kinds, in the order they appear on the form.
+ * The four kinds, in the order their cards appear on the record.
  *
- * `platform` is what the player ticks in question 1. Two kinds could in
- * principle share one — they don't today — which is why the mapping is
- * explicit rather than the key doing double duty.
+ * `card` is which box on the Administrative Record the entry is drawn in.
+ * There is one card per kind and no merged list — a ban and a kick are not
+ * the same sort of thing and reading them in one column made them look like
+ * they were.
+ *
+ * `counts` is whether the entry is part of the record SUMMARY. A user lock
+ * is not: it stops an account signing in while something is looked into,
+ * which is a restriction on access rather than a mark against the person.
+ * Counting it would put a number on a screenshot that says something untrue
+ * about them.
+ *
+ * `stateful` is whether Active / Ended means anything. A ban runs and then
+ * stops; a lock holds until it is lifted. A warning or a kick is a note on
+ * the record — it happened, and that is the whole of it. Giving those two a
+ * status would be inventing a fact about them.
+ *
+ * `live` is whether anything writes this kind yet. Only user locks do: they
+ * are issued by the UCP itself in api/member-lock.php. Bans, warnings and
+ * kicks arrive with the game server link; the record is built for them now
+ * so that nothing about this page changes when they do.
+ *
+ * Forum and Discord bans are deliberately absent. They are issued on those
+ * platforms and live there, and a mirrored row in the UCP could silently
+ * disagree with the thing it was describing. Appeals against them still
+ * work — see api/appeal-submit.php, which only requires a punishment on
+ * file for the in-game platform.
  */
 function punish_kinds(): array
 {
     return [
-        'game_ban' => [
-            'label'    => 'Game',
+        'ban' => [
+            'label'    => 'Ban',
+            'card'     => 'ban',
             'platform' => 'game',
-            'noun'     => 'in-game ban',
+            'noun'     => 'ban',
+            'counts'   => true,
+            'stateful' => true,
+            'appealable' => true,
             'live'     => false,
-            'why'      => 'The game server isn\'t linked to the UCP yet, so in-game bans '
-                        . 'aren\'t recorded here.',
+            'why'      => 'The game server isn\'t linked to the UCP yet, so bans aren\'t '
+                        . 'recorded here.',
+        ],
+        'warning' => [
+            'label'    => 'Warning',
+            'card'     => 'warn',
+            'platform' => 'game',
+            'noun'     => 'warning',
+            'counts'   => true,
+            'stateful' => false,
+            'appealable' => false,
+            'live'     => false,
+            'why'      => 'Warnings aren\'t recorded in the UCP yet.',
+        ],
+        'kick' => [
+            'label'    => 'Kick',
+            'card'     => 'kick',
+            'platform' => 'game',
+            'noun'     => 'kick',
+            'counts'   => true,
+            'stateful' => false,
+            'appealable' => false,
+            'live'     => false,
+            'why'      => 'Kicks aren\'t recorded in the UCP yet.',
         ],
         'user_lock' => [
-            'label'    => 'Game',
+            'label'    => 'User lock',
+            'card'     => 'lock',
             'platform' => 'game',
             'noun'     => 'user lock',
+            'counts'   => false,
+            'stateful' => true,
+            'appealable' => true,
             'live'     => true,
             'why'      => null,
-        ],
-        'discord_ban' => [
-            'label'    => 'Discord',
-            'platform' => 'discord',
-            'noun'     => 'Discord ban',
-            'live'     => false,
-            'why'      => 'Discord bans aren\'t recorded in the UCP yet — they are entered by '
-                        . 'staff by hand until the bot is connected.',
-        ],
-        'forum_ban' => [
-            'label'    => 'Forums',
-            'platform' => 'forums',
-            'noun'     => 'forum ban',
-            'live'     => false,
-            'why'      => 'Forum bans aren\'t recorded in the UCP yet — they are entered by '
-                        . 'staff by hand until the forum link is built.',
         ],
     ];
 }
 
-/** The three tick-boxes on question 1, in order. */
+/**
+ * The cards on the record, in order, with the wording each one carries.
+ *
+ * Both pages read this, so the staff view and the player's own view cannot
+ * describe the same kind two different ways.
+ */
+function punish_cards(): array
+{
+    return [
+        [
+            'key'   => 'ban',
+            'kind'  => 'ban',
+            'title' => 'Bans',
+            'lede'  => 'Bans issued in game. A ban ends on its own date unless it is permanent, '
+                     . 'and stays on the record either way.',
+            'blank' => 'No ban has ever been issued against this account.',
+        ],
+        [
+            'key'   => 'warn',
+            'kind'  => 'warning',
+            'title' => 'Warnings',
+            'lede'  => 'Formal warnings. A warning is a note on the record — it is not something '
+                     . 'that runs and then ends, and it cannot be appealed. It never leaves the '
+                     . 'record.',
+            'blank' => 'No warning has ever been issued against this account.',
+        ],
+        [
+            'key'   => 'kick',
+            'kind'  => 'kick',
+            'title' => 'Kicks',
+            'lede'  => 'Kicks from the server. A kick is over the moment it happens — it is '
+                     . 'logged here as a fact and nothing more, and it cannot be appealed.',
+            'blank' => 'This account has never been kicked.',
+        ],
+        [
+            'key'   => 'lock',
+            'kind'  => 'user_lock',
+            'title' => 'User locks',
+            'lede'  => 'A user lock stops this account signing in to the UCP. It is a '
+                     . 'restriction, not a punishment — it is counted nowhere in the record '
+                     . 'summary and it does not affect standing. It stays until it is lifted.',
+            'blank' => 'This account has never been locked.',
+        ],
+    ];
+}
+
+/** The three tick-boxes on the appeal form, in order. */
 function punish_platforms(): array
 {
     return [
@@ -85,7 +168,26 @@ function punish_platform_of(string $kind): string
     return $k[$kind]['platform'] ?? 'game';
 }
 
-/** Does the punishments table exist? False until migration-appeals.sql runs. */
+function punish_card_of(string $kind): string
+{
+    $k = punish_kinds();
+    return $k[$kind]['card'] ?? 'ban';
+}
+
+/** Is this kind part of the record summary? False for user locks. */
+function punish_counts(string $kind): bool
+{
+    $k = punish_kinds();
+    return !empty($k[$kind]['counts']);
+}
+
+/** Does Active / Ended mean anything for this kind? */
+function punish_stateful(string $kind): bool
+{
+    $k = punish_kinds();
+    return !empty($k[$kind]['stateful']);
+}
+
 function punish_available(PDO $pdo): bool
 {
     static $ok = null;
@@ -141,23 +243,30 @@ function punish_by_id(PDO $pdo, int $id): ?array
  * is not told which administrator banned them, because that turns an
  * appeal into a complaint about a person.
  */
-function punish_out(array $p, bool $showIssuer = false): array
+function punish_out(array $p, bool $showIssuer = false, int $issuerRank = 0): array
 {
-    $perm = !empty($p['permanent']);
+    $kind = (string)$p['kind'];
     return [
         'id'         => (int)$p['id'],
-        'kind'       => (string)$p['kind'],
-        'noun'       => punish_kind_label((string)$p['kind']),
-        'platform'   => punish_platform_of((string)$p['kind']),
-        'permanent'  => $perm,
+        'kind'       => $kind,
+        'label'      => punish_kinds()[$kind]['label'] ?? $kind,
+        'noun'       => punish_kind_label($kind),
+        'card'       => punish_card_of($kind),
+        'platform'   => punish_platform_of($kind),
+        'stateful'   => punish_stateful($kind),
+        'permanent'  => !empty($p['permanent']),
         'expires_at' => $p['expires_at'] !== null ? (int)$p['expires_at'] : null,
         'reason'     => $p['reason'] !== null && $p['reason'] !== '' ? (string)$p['reason'] : null,
         'issued_at'  => (int)$p['issued_at'],
         'issued_by'  => $showIssuer ? ($p['issued_by_name'] ?: null) : null,
+        /* The issuer's rank travels with the name so the page can colour it
+           the same way the name is coloured everywhere else in the UCP. A
+           name in the wrong colour is worse than a name in no colour. */
+        'issued_rank'=> $showIssuer ? $issuerRank : 0,
         'active'     => punish_in_force($p),
         'appealable' => !empty($p['appealable']),
         'lifted_at'  => $p['lifted_at'] !== null ? (int)$p['lifted_at'] : null,
-        'lifted_by'  => $p['lifted_by_name'] ?: null,
+        'lifted_by'  => $showIssuer ? ($p['lifted_by_name'] ?: null) : null,
     ];
 }
 
@@ -210,6 +319,42 @@ function punish_lift_kind(PDO $pdo, int $accountId, string $kind,
             SET active = 0, lifted_at = ?, lifted_by = ?, lifted_by_name = ?, lifted_reason = ?
           WHERE account_id = ? AND kind = ? AND active = 1'
     )->execute([time(), $byId, $byName, $why, $accountId, $kind]);
+}
+
+/**
+ * Who may change what is on a record.
+ *
+ * Two separate powers, deliberately not one.
+ *
+ *   Editing is correcting the wording of a reason. The administrator who
+ *   issued it may fix their own — they wrote it, they know what they meant,
+ *   and making them queue for a Manager to fix a typo means the typo stays.
+ *   They may not touch anybody else's: an administrator quietly rewording a
+ *   colleague's ban reason is how a record stops being evidence.
+ *
+ *   Deleting removes the entry from the record entirely. That is the power
+ *   to make a punishment never have happened, so it sits with Management and
+ *   the Founder and nowhere else — including the administrator who issued
+ *   it, who otherwise could erase their own mistakes before anybody read
+ *   them.
+ *
+ * Both are refused outright on the player's own view of their record. The
+ * flags are computed here, on the server, and the endpoints ask again — the
+ * buttons the page draws are a convenience, not the rule.
+ */
+const BS_RECORD_ADMIN_RANK = 8;      // Management and the Founder
+
+function record_may_delete(?array $viewer): bool
+{
+    return $viewer !== null && (int)($viewer['admin_rank'] ?? 0) >= BS_RECORD_ADMIN_RANK;
+}
+
+function record_may_edit(?array $viewer, array $p): bool
+{
+    if ($viewer === null) return false;
+    if ((int)($viewer['admin_rank'] ?? 0) >= BS_RECORD_ADMIN_RANK) return true;
+    $issuer = $p['issued_by'] !== null ? (int)$p['issued_by'] : 0;
+    return $issuer > 0 && $issuer === (int)$viewer['id'];
 }
 
 /**
@@ -271,47 +416,30 @@ function punish_log_add(PDO $pdo, array $p, array $actor, string $action,
 }
 
 /**
- * Who may change what is on a record.
+ * The administrative record for one account.
  *
- * Two separate powers, deliberately not one.
+ * Everything on file, grouped by the card it belongs to, plus the summary
+ * panel at the top of the page. Both the player's own view and the staff
+ * view are drawn from this one function, so the two cannot disagree about
+ * the same account.
  *
- *   Editing is correcting the wording of a reason. The administrator who
- *   issued it may fix their own — they wrote it, they know what they meant,
- *   and making them queue for a Manager to fix a typo means the typo stays.
- *   They may not touch anybody else's: an administrator quietly rewording a
- *   colleague's ban reason is how a record stops being evidence.
+ * The summary counts bans, warnings and kicks. It does not count user
+ * locks — see punish_kinds() for why.
  *
- *   Deleting removes the entry from the record entirely. That is the power
- *   to make a punishment never have happened, so it sits with Management and
- *   the Founder and nowhere else — including the administrator who issued
- *   it, who otherwise could erase their own mistakes before anybody read
- *   them.
- *
- * Both are refused outright on the player's own view of their record. The
- * flags are computed here, on the server, and the endpoints ask again — the
- * buttons the page draws are a convenience, not the rule.
+ * $showIssuer follows the rule the rest of the system follows: a player is
+ * not told which administrator punished them, and staff always are.
  */
-const BS_RECORD_ADMIN_RANK = 8;      // Management and the Founder
-
-function record_may_delete(?array $viewer): bool
-{
-    return $viewer !== null && (int)($viewer['admin_rank'] ?? 0) >= BS_RECORD_ADMIN_RANK;
-}
-
-function record_may_edit(?array $viewer, array $p): bool
-{
-    if ($viewer === null) return false;
-    if ((int)($viewer['admin_rank'] ?? 0) >= BS_RECORD_ADMIN_RANK) return true;
-    $issuer = $p['issued_by'] !== null ? (int)$p['issued_by'] : 0;
-    return $issuer > 0 && $issuer === (int)$viewer['id'];
-}
-
 function record_for(PDO $pdo, int $accountId, bool $showIssuer = false,
                     ?array $viewer = null): array
 {
     if (!punish_available($pdo)) {
-        return ['available' => false, 'entries' => [], 'standing' => null,
-                'last_at' => null, 'not_recorded' => record_not_recorded()];
+        return [
+            'available' => false,
+            'entries'   => [],
+            'cards'     => punish_cards(),
+            'counts'    => ['ban' => 0, 'warn' => 0, 'kick' => 0, 'lock' => 0],
+            'summary'   => record_summary(0, 0, 0, 0, 0, null, null),
+        ];
     }
 
     $st = $pdo->prepare(
@@ -321,10 +449,24 @@ function record_for(PDO $pdo, int $accountId, bool $showIssuer = false,
     $st->execute([$accountId]);
     $rows = $st->fetchAll();
 
-    /* The appeal against each one, if there was ever an appeal. Fetched in
-     * a single pass rather than per row: a long record would otherwise be
-     * one query per entry, and this page is opened for exactly the accounts
-     * with long records. */
+    /* The rank each issuing administrator holds now, fetched in one pass.
+       A record with forty entries would otherwise be forty queries, and this
+       page is opened for exactly the accounts with forty entries. */
+    $ranks = [];
+    if ($showIssuer && $rows) {
+        $ids = [];
+        foreach ($rows as $p) {
+            if ($p['issued_by'] !== null) $ids[(int)$p['issued_by']] = true;
+        }
+        if ($ids) {
+            $in = implode(',', array_fill(0, count($ids), '?'));
+            $rk = $pdo->prepare("SELECT id, admin_rank FROM ucp_accounts WHERE id IN ($in)");
+            $rk->execute(array_keys($ids));
+            foreach ($rk->fetchAll() as $r) $ranks[(int)$r['id']] = (int)$r['admin_rank'];
+        }
+    }
+
+    /* The appeal against each entry, if there ever was one. */
     $appeals = [];
     try {
         $ap = $pdo->prepare(
@@ -345,19 +487,21 @@ function record_for(PDO $pdo, int $accountId, bool $showIssuer = false,
         // Appeals not migrated. The record still lists the punishments.
     }
 
-    $now      = time();
-    $entries  = [];
-    $active   = 0;
-    $recent   = 0;                                        // issued in the last 30 days
-    $lastAt   = null;
+    $now     = time();
+    $entries = [];
+    $counts  = ['ban' => 0, 'warn' => 0, 'kick' => 0, 'lock' => 0];
+    $total   = 0;     // counted kinds only
+    $active  = 0;     // active bans
+    $recent  = 0;     // counted entries in the last 30 days
+    $lastAt  = null;
+    $firstAt = null;
+    $bans = $warns = $kicks = 0;
 
     foreach ($rows as $p) {
-        $inForce = punish_in_force($p);
-        if ($inForce) $active++;
-        if ((int)$p['issued_at'] > $now - 2592000) $recent++;
-        if ($lastAt === null) $lastAt = (int)$p['issued_at'];
+        $kind = (string)$p['kind'];
+        $rank = $p['issued_by'] !== null ? ($ranks[(int)$p['issued_by']] ?? 0) : 0;
 
-        $e = punish_out($p, $showIssuer);
+        $e = punish_out($p, $showIssuer, $rank);
         $e['appeal']     = $appeals[(int)$p['id']] ?? null;
         $e['can_edit']   = record_may_edit($viewer, $p);
         $e['can_delete'] = record_may_delete($viewer);
@@ -366,58 +510,76 @@ function record_for(PDO $pdo, int $accountId, bool $showIssuer = false,
         $e['edited_by']  = isset($p['edited_by_name']) && $p['edited_by_name'] !== ''
                              ? (string)$p['edited_by_name'] : null;
         $entries[] = $e;
+
+        $counts[$e['card']] = ($counts[$e['card']] ?? 0) + 1;
+
+        if (!punish_counts($kind)) continue;              // locks stop here
+
+        $total++;
+        if ($kind === 'ban')     $bans++;
+        if ($kind === 'warning') $warns++;
+        if ($kind === 'kick')    $kicks++;
+        if ($kind === 'ban' && $e['active']) $active++;
+        if ((int)$p['issued_at'] > $now - 2592000) $recent++;
+
+        $at = (int)$p['issued_at'];
+        if ($lastAt === null || $at > $lastAt)  $lastAt  = $at;
+        if ($firstAt === null || $at < $firstAt) $firstAt = $at;
     }
 
     return [
-        'available'    => true,
-        'entries'      => $entries,
-        'last_at'      => $lastAt,
-        'standing'     => record_standing($active, $recent, count($entries)),
-        'not_recorded' => record_not_recorded(),
+        'available' => true,
+        'entries'   => $entries,
+        'cards'     => punish_cards(),
+        'counts'    => $counts,
+        'summary'   => record_summary($total, $active, $recent, $bans, $warns, $lastAt, $firstAt,
+                                      $kicks),
     ];
 }
 
 /**
- * Where they stand, in one line.
+ * The summary panel, worked out here so both pages say the same thing.
  *
- * Three states, and the middle one matters most: somebody whose ban expired
- * last week is not in the same position as somebody with a clean sheet, and
- * saying "in good standing" to both would make the phrase worthless.
+ * Three states, named for what they describe rather than for a score. "In
+ * good standing" was a verdict on the person; "no recent administrative
+ * punishments" is a fact about the record, and a fact is what a screenshot
+ * of this page should be carrying.
  */
-function record_standing(int $active, int $recent, int $total): array
+function record_summary(int $total, int $active, int $recent, int $bans, int $warns,
+                        ?int $lastAt, ?int $firstAt, int $kicks = 0): array
 {
     if ($active > 0) {
-        return [
-            'level' => 'held',
-            'title' => $active === 1 ? 'One punishment in force' : $active . ' punishments in force',
-            'note'  => 'Standing is held while anything is in force. It clears on its own when '
-                     . 'the punishment ends or is lifted.',
-        ];
+        $level = 'held';
+        $head  = $active === 1 ? 'Punishment on record' : 'Punishments on record';
+        $note  = ($active === 1 ? 'One ban is active.' : $active . ' bans are active.')
+               . ' This clears on its own when the ban ends or is lifted.';
+    } elseif ($recent > 0) {
+        $level = 'watch';
+        $head  = $recent === 1 ? 'Recent administrative punishment'
+                               : 'Recent administrative punishments';
+        $note  = $recent . ($recent === 1 ? ' entry was' : ' entries were')
+               . ' added in the last 30 days. Nothing is active. Entries stop counting once they '
+               . 'are 30 days old.';
+    } else {
+        $level = 'good';
+        $head  = 'No recent administrative punishments';
+        $note  = $total > 0
+            ? 'Nothing active and nothing in the last 30 days. Older entries stay on the record '
+            . 'but no longer count against it.'
+            : 'Nothing has ever been issued against this account.';
     }
-    if ($recent > 0) {
-        return [
-            'level' => 'watch',
-            'title' => 'Recent entries on the record',
-            'note'  => $recent . ' ' . ($recent === 1 ? 'entry was' : 'entries were')
-                     . ' added in the last 30 days. Nothing is in force. Entries stop counting '
-                     . 'towards standing once they are 30 days old.',
-        ];
-    }
-    return [
-        'level' => 'good',
-        'title' => 'In good standing',
-        'note'  => $total === 0
-            ? 'Nothing on the record.'
-            : 'Nothing in force and nothing in the last 30 days. Older entries stay on the '
-            . 'record but no longer count against standing.',
-    ];
-}
 
-/** What this record cannot show yet, said out loud. */
-function record_not_recorded(): array
-{
     return [
-        ['label' => 'Warnings', 'why' => 'Not recorded in the UCP yet.'],
-        ['label' => 'Kicks',    'why' => 'Not recorded in the UCP yet.'],
+        'level'    => $level,
+        'head'     => $head,
+        'note'     => $note,
+        'total'    => $total,
+        'bans'     => $bans,
+        'warnings' => $warns,
+        'kicks'    => $kicks,
+        'active'   => $active,
+        'recent'   => $recent,
+        'last_at'  => $lastAt,
+        'first_at' => $firstAt,
     ];
 }

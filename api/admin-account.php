@@ -24,6 +24,7 @@ require_once __DIR__ . '/_teams.php';
 require_once __DIR__ . '/_admin.php';
 require_once __DIR__ . '/_lock.php';
 require_once __DIR__ . '/_punish.php';
+require_once __DIR__ . '/_scratchpad.php';
 
 throttle('admin-account', 40);
 
@@ -179,6 +180,20 @@ ok([
        endpoints ask again — see record_may_edit() in _punish.php. */
     'record'      => record_for($pdo, $id, true, $acc),
 
+    /* Every appeal this player has made, for the collapsed card under the
+       summary. Staff see who handled each one; see appeal_record_list(). */
+    'appeals'     => (function () use ($pdo, $id) {
+        try { require_once __DIR__ . '/_appeals.php'; return appeal_record_list($pdo, $id, true); }
+        catch (Throwable $e) { return []; }
+    })(),
+
+    /* Staff notes. Never sent by api/profile.php, so there is no route by
+       which the player's own page could render them by accident. */
+    'scratchpad'  => [
+        'available' => pad_available($pdo),
+        'notes'     => pad_available($pdo) ? pad_list($pdo, $id, $acc) : [],
+    ],
+
     /* What the person looking at this page is allowed to DO to it.
      *
      * Worked out here rather than by the page comparing ranks: the page is
@@ -186,6 +201,11 @@ ok([
      * api/member-lock.php will give when one is pressed. */
     'viewer' => [
         'id'        => (int)$acc['id'],
+        /* The name and rank of whoever is looking. It goes on the strap line
+           at the bottom of the summary panel, so a screenshot of somebody
+           else's record carries the fingerprint of the person who took it. */
+        'name'      => (string)$acc['username'],
+        'role'      => rank_name((int)$acc['admin_rank']),
         'rank'      => (int)$acc['admin_rank'],
         'self'      => (int)$acc['id'] === (int)$t['id'],
         'may_lock'  => lock_available($pdo) && lock_block_reason($acc, $t) === null,

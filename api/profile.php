@@ -135,6 +135,12 @@ ok([
     })(),
     // The player's own record: everything on file, minus who issued it.
     'record'   => record_for($pdo, $uid, false),
+    /* The player's own appeals. No handler names — the same rule that keeps
+       the issuing administrator off their record keeps the handler off this. */
+    'appeals'  => (function () use ($pdo, $uid) {
+        try { require_once __DIR__ . '/_appeals.php'; return appeal_record_list($pdo, $uid, false); }
+        catch (Throwable $e) { return []; }
+    })(),
     'created_at'  => $acc['created_at'],
     'member_days' => $memberDays,
     'last_login'  => $acc['last_login'],

@@ -602,6 +602,95 @@ function appeal_history(PDO $pdo, int $accountId, int $exceptId = 0, bool $staff
     }, $st->fetchAll());
 }
 
+/**
+ * The Previous appeals card on the Administrative Record.
+ *
+ * appeal_history() above answers "what has this person appealed before" for
+ * the appeal page, where the reader already has an appeal in front of them.
+ * This answers the same question for the record, where they do not — so each
+ * row also carries what the appeal was against and a short line saying what
+ * happened, and the row links straight into the appeal.
+ */
+function appeal_record_list(PDO $pdo, int $accountId, bool $staff = false): array
+{
+    if (!appeals_available($pdo)) return [];
+    $waits = appeals_has_waits($pdo);
+
+    $st = $pdo->prepare(
+        'SELECT a.id, a.status, a.created_at, a.concluded_at, a.concluded_by_name,
+                a.handler_name, a.platforms'
+        . ($waits ? ', a.reappeal_at, a.overruled_at, a.overruled_by_name' : '') . '
+           FROM ucp_appeals a
+          WHERE a.account_id = ?
+          ORDER BY a.created_at DESC, a.id DESC
+          LIMIT 100'
+    );
+    $st->execute([$accountId]);
+    $rows = $st->fetchAll();
+    if (!$rows) return [];
+
+    /* What each appeal was against, in one pass. An appeal can name more than
+       one punishment; the card shows the first and says how many others. */
+    $against = [];
+    try {
+        $ap = $pdo->prepare(
+            'SELECT ap.appeal_id, p.kind, p.reason
+               FROM ucp_appeal_punishments ap
+               JOIN ucp_punishments p ON p.id = ap.punishment_id
+               JOIN ucp_appeals a ON a.id = ap.appeal_id
+              WHERE a.account_id = ?
+              ORDER BY ap.appeal_id, ap.punishment_id'
+        );
+        $ap->execute([$accountId]);
+        foreach ($ap->fetchAll() as $r) {
+            $against[(int)$r['appeal_id']][] = [
+                'label'  => punish_kinds()[(string)$r['kind']]['label'] ?? (string)$r['kind'],
+                'reason' => $r['reason'] !== null && $r['reason'] !== ''
+                              ? (string)$r['reason'] : null,
+            ];
+        }
+    } catch (Throwable $e) {
+        // The join table is part of the appeals migration; without it the
+        // appeals still list, they just do not say what they were against.
+    }
+
+    $now = time();
+    return array_map(function ($a) use ($staff, $against, $waits, $now) {
+        $id  = (int)$a['id'];
+        $ps  = $against[$id] ?? [];
+        $head = $ps
+            ? $ps[0]['label'] . (count($ps) > 1 ? ' and ' . (count($ps) - 1) . ' more' : '')
+            : 'Appeal';
+        $what = $ps && $ps[0]['reason'] !== null ? $ps[0]['reason'] : null;
+
+        /* One short line for what happened. The status pill already says
+           accepted or rejected; this says what that meant. */
+        $note = null;
+        if ($a['status'] === 'pending') {
+            $note = 'Waiting on a verdict';
+        } elseif ($waits && !empty($a['overruled_at'])) {
+            $note = 'Rejection overturned'
+                  . ($staff && $a['overruled_by_name'] ? ' by ' . $a['overruled_by_name'] : '');
+        } elseif ($a['status'] === 'rejected' && $waits && !empty($a['reappeal_at'])) {
+            $note = (int)$a['reappeal_at'] > $now
+                ? 'Can appeal again from ' . gmdate('j M Y', (int)$a['reappeal_at'])
+                : 'Free to appeal again';
+        } elseif ($a['status'] === 'accepted') {
+            $note = 'Punishment lifted';
+        }
+
+        return [
+            'id'         => $id,
+            'status'     => (string)$a['status'],
+            'against'    => $head,
+            'what'       => $what,
+            'at'         => (int)$a['created_at'],
+            'handler'    => $staff ? ($a['handler_name'] ?: null) : null,
+            'note'       => $note,
+        ];
+    }, $rows);
+}
+
 /** One appeal row, resolved for whoever is looking at it. */
 function appeal_out(PDO $pdo, array $a, array $acc): array
 {
