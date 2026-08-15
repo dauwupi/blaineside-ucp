@@ -1,0 +1,548 @@
+<?php
+/**
+ * Applications — the shared rules.
+ *
+ * A player cannot join the server until an application has been passed. The
+ * UCP and the forums stay open the whole time; only the server is gated,
+ * which is why nothing in here refuses anybody a page.
+ *
+ * Three ideas hold the rest together:
+ *
+ *  1. An application is a SNAPSHOT. ucp_app_answers stores a copy of the
+ *     question's title, prompt and word minimum, not just its id. Questions
+ *     get rewritten and retired; a two-year-old application must still show
+ *     what it actually asked. This is why questions are retired rather than
+ *     deleted, and why nothing here joins answers back to the live question.
+ *
+ *  2. A claim is the lock. Nobody decides an application they have not
+ *     claimed — except Staff Management, Management and Founder, who
+ *     override every claim. Two people writing feedback on one application
+ *     is the failure this prevents.
+ *
+ *  3. Everything degrades. Every table is optional at runtime: one migration
+ *     behind, the feature says "not switched on yet" and the rest of the UCP
+ *     carries on. See applications_available().
+ */
+
+/** Support Staff and above reach the panel. */
+const BS_APP_PANEL_RANK = 1;
+/** Rank that overrides somebody else's claim. Staff Management does too. */
+const BS_APP_OVERRIDE_RANK = 8;
+/** A claim this old is treated as abandoned and can be taken by anyone. */
+const BS_APP_CLAIM_IDLE = 7200;
+/** Drafts older than this are swept. */
+const BS_APP_DRAFT_KEEP = 2592000;
+
+const APP_STATUSES = ['draft', 'pending', 'passed', 'denied'];
+
+
+/* ---------------------------------------------------------------------
+   Is the feature switched on?
+
+   `static $known` so a page that asks five times costs one query, and a
+   try/catch so a missing table is a feature that is off rather than a 500.
+   --------------------------------------------------------------------- */
+function applications_available(PDO $pdo): bool
+{
+    static $known = null;
+    if ($known !== null) return $known;
+    try {
+        $pdo->query('SELECT 1 FROM ucp_applications LIMIT 1');
+        $pdo->query('SELECT 1 FROM ucp_app_questions LIMIT 1');
+        $known = true;
+    } catch (Throwable $e) {
+        $known = false;
+    }
+    return $known;
+}
+
+function applications_missing_reason(): string
+{
+    return 'Applications aren\'t switched on yet.';
+}
+
+/** Does the IP table exist? Its absence costs the warning, not the page. */
+function app_ips_available(PDO $pdo): bool
+{
+    static $known = null;
+    if ($known !== null) return $known;
+    try { $pdo->query('SELECT 1 FROM ucp_account_ips LIMIT 1'); $known = true; }
+    catch (Throwable $e) { $known = false; }
+    return $known;
+}
+
+
+/* ---------------------------------------------------------------------
+   Who may open the panel.
+
+   Rank 1 and up. Deliberately NOT a sub-group: Support Staff is a rank on
+   the ladder, and this is the work that rank exists to do.
+   --------------------------------------------------------------------- */
+function app_may_panel(array $acc): bool
+{
+    return (int)$acc['admin_rank'] >= BS_APP_PANEL_RANK;
+}
+
+function app_panel_reason(): string
+{
+    return 'The Application Panel is for Support Staff and above.';
+}
+
+/** Question Manager and Response Templates: the same audience as the panel. */
+function app_may_manage(array $acc): bool
+{
+    return (int)$acc['admin_rank'] >= BS_APP_PANEL_RANK;
+}
+
+/**
+ * May this account act on this application — claim it away from somebody,
+ * decide it, write the feedback?
+ *
+ * The holder of the claim, or anyone senior enough to overrule a claim.
+ * An unclaimed application is actionable by any Support Staff, because
+ * claiming it IS the action they are about to take.
+ */
+function app_may_act(PDO $pdo, array $acc, array $app): bool
+{
+    $me   = (int)$acc['id'];
+    $rank = (int)$acc['admin_rank'];
+
+    if (!app_may_panel($acc)) return false;
+    if ($rank >= BS_APP_OVERRIDE_RANK) return true;
+    if (app_has_staff_management($pdo, $me)) return true;
+
+    $by = $app['claimed_by'] !== null ? (int)$app['claimed_by'] : 0;
+    if (!$by) return true;                       // nobody holds it
+    if ($by === $me) return true;                // you hold it
+    return app_claim_stale($app);                // they walked away
+}
+
+/** A claim nobody has touched for BS_APP_CLAIM_IDLE is fair game. */
+function app_claim_stale(array $app): bool
+{
+    if ($app['claimed_at'] === null) return true;
+    return (time() - (int)$app['claimed_at']) > BS_APP_CLAIM_IDLE;
+}
+
+/** Sub-group lookup, guarded — the table arrives with a later migration. */
+function app_has_staff_management(PDO $pdo, int $id): bool
+{
+    static $cache = [];
+    if (isset($cache[$id])) return $cache[$id];
+    $has = false;
+    try {
+        require_once __DIR__ . '/_teams.php';
+        $has = has_team($pdo, $id, 'staff_management');
+    } catch (Throwable $e) {
+    }
+    return $cache[$id] = $has;
+}
+
+
+/* ---------------------------------------------------------------------
+   The player's own state.
+
+   Exactly one of these is true at any moment, and the dashboard notice,
+   the sidebar and /dashboard/application all read the same answer:
+
+     none     never applied, no draft
+     draft    started, not sent
+     pending  sent, waiting on Support Staff
+     passed   done; the server is open
+     denied   last attempt was refused; they may start another
+   --------------------------------------------------------------------- */
+function app_state(PDO $pdo, int $accountId): array
+{
+    $out = ['state' => 'none', 'application' => null, 'attempts' => 0, 'passed' => false];
+    if (!applications_available($pdo)) return $out;
+
+    $st = $pdo->prepare(
+        'SELECT COUNT(*) FROM ucp_applications WHERE account_id = ? AND status <> ?'
+    );
+    $st->execute([$accountId, 'draft']);
+    $out['attempts'] = (int)$st->fetchColumn();
+
+    $st = $pdo->prepare(
+        'SELECT * FROM ucp_applications
+          WHERE account_id = ? AND status = ? ORDER BY id DESC LIMIT 1'
+    );
+    $st->execute([$accountId, 'passed']);
+    if ($row = $st->fetch()) {
+        $out['state']  = 'passed';
+        $out['passed'] = true;
+        $out['application'] = $row;
+        return $out;
+    }
+
+    $st = $pdo->prepare(
+        'SELECT * FROM ucp_applications
+          WHERE account_id = ? AND status IN (?, ?)
+          ORDER BY FIELD(status, ?, ?), id DESC LIMIT 1'
+    );
+    $st->execute([$accountId, 'draft', 'pending', 'draft', 'pending']);
+    if ($row = $st->fetch()) {
+        $out['state'] = $row['status'];
+        $out['application'] = $row;
+        return $out;
+    }
+
+    $st = $pdo->prepare(
+        'SELECT * FROM ucp_applications
+          WHERE account_id = ? AND status = ? ORDER BY id DESC LIMIT 1'
+    );
+    $st->execute([$accountId, 'denied']);
+    if ($row = $st->fetch()) {
+        $out['state'] = 'denied';
+        $out['application'] = $row;
+    }
+    return $out;
+}
+
+
+/* ---------------------------------------------------------------------
+   Building the question set for a new attempt.
+
+   Every pinned question, in order, then `draw_count` drawn at random from
+   the pool. The draw happens ONCE, when the draft is created, and is then
+   frozen into ucp_app_answers — re-rolling the questions every time the
+   page loaded would let somebody refresh until they liked the scenario.
+   --------------------------------------------------------------------- */
+function app_draw_count(PDO $pdo): int
+{
+    try {
+        $st = $pdo->prepare('SELECT value FROM ucp_app_config WHERE name = ? LIMIT 1');
+        $st->execute(['draw_count']);
+        $v = $st->fetchColumn();
+        if ($v !== false) return max(0, min(20, (int)$v));
+    } catch (Throwable $e) {
+    }
+    return 2;
+}
+
+function app_pick_questions(PDO $pdo): array
+{
+    $pinned = $pdo->query(
+        'SELECT * FROM ucp_app_questions
+          WHERE retired = 0 AND pinned = 1 ORDER BY sort_order, id'
+    )->fetchAll();
+
+    $n    = app_draw_count($pdo);
+    $pool = [];
+    if ($n > 0) {
+        $st = $pdo->prepare(
+            'SELECT * FROM ucp_app_questions
+              WHERE retired = 0 AND pinned = 0 ORDER BY RAND() LIMIT ' . (int)$n
+        );
+        $st->execute();
+        $pool = $st->fetchAll();
+    }
+    return array_merge($pinned, $pool);
+}
+
+/**
+ * Start a draft: one row, plus a frozen copy of the questions it asked.
+ * Returns the application id.
+ */
+function app_start_draft(PDO $pdo, int $accountId): int
+{
+    $qs = app_pick_questions($pdo);
+    if (!$qs) {
+        throw new RuntimeException('There are no questions set up yet. Try again later.');
+    }
+
+    $st = $pdo->prepare('SELECT COUNT(*) FROM ucp_applications WHERE account_id = ? AND status <> ?');
+    $st->execute([$accountId, 'draft']);
+    $attempt = (int)$st->fetchColumn() + 1;
+
+    $now = time();
+    $st  = $pdo->prepare(
+        'INSERT INTO ucp_applications (account_id, attempt, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)'
+    );
+    $st->execute([$accountId, $attempt, 'draft', $now, $now]);
+    $id = (int)$pdo->lastInsertId();
+
+    $ins = $pdo->prepare(
+        'INSERT INTO ucp_app_answers
+           (application_id, question_id, question_title, question_prompt,
+            min_words, pinned, sort_order, body)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL)'
+    );
+    $i = 0;
+    foreach ($qs as $q) {
+        $ins->execute([
+            $id, (int)$q['id'], $q['title'], $q['prompt'],
+            (int)$q['min_words'], (int)$q['pinned'], ++$i,
+        ]);
+    }
+    return $id;
+}
+
+/** The answers on one application, in the order they were asked. */
+function app_answers(PDO $pdo, int $applicationId): array
+{
+    $st = $pdo->prepare(
+        'SELECT id, question_id, question_title, question_prompt, min_words, pinned, sort_order, body
+           FROM ucp_app_answers WHERE application_id = ? ORDER BY sort_order, id'
+    );
+    $st->execute([$applicationId]);
+    $out = [];
+    foreach ($st->fetchAll() as $r) {
+        $out[] = [
+            'id'        => (int)$r['id'],
+            'title'     => $r['question_title'],
+            'prompt'    => $r['question_prompt'],
+            'min_words' => (int)$r['min_words'],
+            'pinned'    => (bool)$r['pinned'],
+            'order'     => (int)$r['sort_order'],
+            'body'      => $r['body'],
+            'words'     => app_words((string)$r['body']),
+        ];
+    }
+    return $out;
+}
+
+/** Word count the same way everywhere, so the page and the server agree. */
+function app_words(string $s): int
+{
+    $s = trim(preg_replace('/\s+/u', ' ', $s));
+    return $s === '' ? 0 : count(explode(' ', $s));
+}
+
+
+/* ---------------------------------------------------------------------
+   Addresses.
+
+   Recorded on sign-in by app_touch_ip(). Nothing back-fills: an account
+   that has not signed in since the migration simply has no rows, which
+   reads correctly as "we have not seen an address for them yet" rather
+   than as a wrong answer.
+   --------------------------------------------------------------------- */
+function app_touch_ip(PDO $pdo, int $accountId, string $ip): void
+{
+    if ($ip === '' || !app_ips_available($pdo)) return;
+    try {
+        $now = time();
+        $st  = $pdo->prepare(
+            'INSERT INTO ucp_account_ips (account_id, ip, hits, first_seen, last_seen)
+             VALUES (?, ?, 1, ?, ?)
+             ON DUPLICATE KEY UPDATE hits = hits + 1, last_seen = VALUES(last_seen)'
+        );
+        $st->execute([$accountId, substr($ip, 0, 45), $now, $now]);
+    } catch (Throwable $e) {
+    }
+}
+
+/** Every address we have seen for an account, newest first. */
+function app_ips_for(PDO $pdo, int $accountId): array
+{
+    if (!app_ips_available($pdo)) return [];
+    $st = $pdo->prepare(
+        'SELECT ip, hits, first_seen, last_seen FROM ucp_account_ips
+          WHERE account_id = ? ORDER BY last_seen DESC'
+    );
+    $st->execute([$accountId]);
+    $rows = $st->fetchAll();
+    $out  = [];
+    foreach ($rows as $i => $r) {
+        $out[] = [
+            'ip'         => $r['ip'],
+            'hits'       => (int)$r['hits'],
+            'first_seen' => (int)$r['first_seen'],
+            'last_seen'  => (int)$r['last_seen'],
+            'current'    => $i === 0,
+            'lookup'     => 'https://whatismyipaddress.com/ip/' . rawurlencode($r['ip']),
+        ];
+    }
+    return $out;
+}
+
+/**
+ * Other accounts that have used any of this account's addresses.
+ *
+ * Shared houses, universities and mobile carriers all produce these, so
+ * the wording everywhere this is shown says "worth a look", never "this
+ * is the same person". The page shows it; it never decides anything.
+ */
+function app_ip_matches(PDO $pdo, int $accountId): array
+{
+    if (!app_ips_available($pdo)) return [];
+    $st = $pdo->prepare(
+        'SELECT b.account_id, b.ip, b.last_seen, a2.username, a2.status, a2.admin_rank
+           FROM ucp_account_ips a
+           JOIN ucp_account_ips b ON b.ip = a.ip AND b.account_id <> a.account_id
+           JOIN ucp_accounts a2 ON a2.id = b.account_id
+          WHERE a.account_id = ?
+          ORDER BY b.last_seen DESC LIMIT 25'
+    );
+    $st->execute([$accountId]);
+    $out = [];
+    foreach ($st->fetchAll() as $r) {
+        $out[] = [
+            'id'        => (int)$r['account_id'],
+            'name'      => $r['username'],
+            'ip'        => $r['ip'],
+            'last_seen' => (int)$r['last_seen'],
+            'status'    => $r['status'],
+        ];
+    }
+    return $out;
+}
+
+
+/* ---------------------------------------------------------------------
+   Shaping one application for the wire.
+
+   $full = false gives a row for a table. $full = true adds the answers,
+   and — for staff only — the applicant block, the addresses and the log.
+   --------------------------------------------------------------------- */
+function app_row_out(array $r): array
+{
+    return [
+        'id'        => (int)$r['id'],
+        'attempt'   => (int)$r['attempt'],
+        'status'    => $r['status'],
+        'claimed'   => $r['claimed_by'] !== null ? [
+            'id'   => (int)$r['claimed_by'],
+            'name' => $r['claimed_by_name'],
+            'at'   => $r['claimed_at'] !== null ? (int)$r['claimed_at'] : null,
+            'stale'=> app_claim_stale($r),
+        ] : null,
+        'decided'   => $r['decided_by'] !== null ? [
+            'id'   => (int)$r['decided_by'],
+            'name' => $r['decided_by_name'],
+            'at'   => $r['decided_at'] !== null ? (int)$r['decided_at'] : null,
+        ] : null,
+        'feedback'     => $r['feedback'],
+        'submitted_at' => $r['submitted_at'] !== null ? (int)$r['submitted_at'] : null,
+        'created_at'   => (int)$r['created_at'],
+        'updated_at'   => (int)$r['updated_at'],
+    ];
+}
+
+/** The applicant block on the review screen. */
+function app_applicant(PDO $pdo, int $accountId): array
+{
+    $st = $pdo->prepare(
+        'SELECT id, username, email, admin_rank, status, created_at, last_login
+           FROM ucp_accounts WHERE id = ? LIMIT 1'
+    );
+    $st->execute([$accountId]);
+    $a = $st->fetch();
+    if (!$a) return ['id' => $accountId, 'name' => 'Deleted account'];
+
+    $punishments = null;
+    try {
+        $st = $pdo->prepare('SELECT COUNT(*) FROM ucp_punishments WHERE account_id = ?');
+        $st->execute([$accountId]);
+        $punishments = (int)$st->fetchColumn();
+    } catch (Throwable $e) {
+    }
+
+    $st = $pdo->prepare(
+        'SELECT COUNT(*) FROM ucp_applications WHERE account_id = ? AND status IN (?, ?)'
+    );
+    $st->execute([$accountId, 'passed', 'denied']);
+
+    return [
+        'id'          => (int)$a['id'],
+        'name'        => $a['username'],
+        'email'       => $a['email'],
+        'status'      => $a['status'],
+        'rank'        => (int)$a['admin_rank'],
+        'created_at'  => $a['created_at'],
+        'last_login'  => $a['last_login'],
+        'decided'     => (int)$st->fetchColumn(),
+        'punishments' => $punishments,
+    ];
+}
+
+/** Every attempt by one account, newest first — the history card. */
+function app_history(PDO $pdo, int $accountId, ?int $exclude = null): array
+{
+    $st = $pdo->prepare(
+        'SELECT * FROM ucp_applications
+          WHERE account_id = ? AND status <> ? ORDER BY id DESC'
+    );
+    $st->execute([$accountId, 'draft']);
+    $out = [];
+    foreach ($st->fetchAll() as $r) {
+        if ($exclude !== null && (int)$r['id'] === $exclude) continue;
+        $out[] = app_row_out($r);
+    }
+    return $out;
+}
+
+/** The running log on one application. */
+function app_log_list(PDO $pdo, int $applicationId): array
+{
+    try {
+        $st = $pdo->prepare(
+            'SELECT actor_name, action, detail, created_at FROM ucp_app_log
+              WHERE application_id = ? ORDER BY id'
+        );
+        $st->execute([$applicationId]);
+        return array_map(function ($r) {
+            return [
+                'actor'  => $r['actor_name'],
+                'action' => $r['action'],
+                'detail' => $r['detail'],
+                'at'     => (int)$r['created_at'],
+            ];
+        }, $st->fetchAll());
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function app_log(PDO $pdo, int $applicationId, array $acc, string $action, ?string $detail = null): void
+{
+    try {
+        $st = $pdo->prepare(
+            'INSERT INTO ucp_app_log (application_id, actor_id, actor_name, action, detail, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $st->execute([
+            $applicationId, (int)$acc['id'], $acc['username'], $action, $detail, time(),
+        ]);
+    } catch (Throwable $e) {
+    }
+}
+
+
+/* ---------------------------------------------------------------------
+   Questions and templates, shaped for the wire.
+   --------------------------------------------------------------------- */
+function app_question_out(array $r): array
+{
+    return [
+        'id'         => (int)$r['id'],
+        'title'      => $r['title'],
+        'prompt'     => $r['prompt'],
+        'min_words'  => (int)$r['min_words'],
+        'pinned'     => (bool)$r['pinned'],
+        'retired'    => (bool)$r['retired'],
+        'order'      => (int)$r['sort_order'],
+        'asked'      => (int)$r['asked_count'],
+        'by'         => $r['created_by_name'],
+        'created_at' => (int)$r['created_at'],
+        'updated_at' => (int)$r['updated_at'],
+    ];
+}
+
+function app_template_out(array $r): array
+{
+    return [
+        'id'         => (int)$r['id'],
+        'title'      => $r['title'],
+        'body'       => $r['body'],
+        'use_for'    => $r['use_for'],
+        'order'      => (int)$r['sort_order'],
+        'used'       => (int)$r['used_count'],
+        'by'         => $r['created_by_name'],
+        'created_at' => (int)$r['created_at'],
+        'updated_at' => (int)$r['updated_at'],
+    ];
+}
+
+const APP_TEMPLATE_USES = ['pass' => 'Pass', 'deny' => 'Deny', 'either' => 'Either'];
