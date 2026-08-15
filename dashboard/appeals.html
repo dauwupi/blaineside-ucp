@@ -534,41 +534,112 @@
   @media (max-width:680px){ .qtabs{grid-template-columns:1fr} }
 
   /* =====================================================================
-     WHO THIS IS — the account panel on an appeal
+     BAN DETAILS — one design
 
-     Staff only. A handler reading an appeal has one question after "what
-     does it say": who am I dealing with. Answering it used to mean opening
-     Administrative Search in another tab, and on a Discord or forum ban —
-     where the UCP has no punishment on file — this card said nothing at all.
+     This card used to be three different shapes doing the same job: a stack
+     of label-over-value rows for the punishment, a second stack for the
+     accounts, and a grid for the account panel — with Forums and Discord
+     turning up in two of them. It is now one card, sections inside it, and
+     one fact-grid component used by every section.
      ===================================================================== */
-  .whois{margin-top:16px;border-top:1px solid var(--rule);padding-top:15px}
-  .whois-h{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  .sec + .sec{margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
     margin-bottom:12px}
-  .whois-h .t{font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+  .sec-h .t{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
     color:var(--stone)}
-  .whois-h .go{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
+  .sec-h .n{font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+  .sec-h .go{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
     color:var(--text-faint);transition:color .13s}
-  .whois-h .go:hover{color:var(--gold)}
-  .whois-h .go svg{width:12px;height:12px;stroke-width:2.2;fill:none;stroke:currentColor}
-  .wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
+  .sec-h .go:hover{color:var(--gold)}
+  .sec-h .go svg{width:12px;height:12px;stroke-width:2.2;fill:none;stroke:currentColor}
+
+  /* The fact grid. Used for a punishment AND for the account.
+     Four fixed columns, not auto-fit: both grids have a multiple of four
+     cells, so the rows come out full — auto-fit left dead cells hanging off
+     the end of the account grid. */
+  .fg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
     background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
-  .wcell{background:var(--charcoal-2);padding:11px 14px 12px;min-width:0}
-  .wcell .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  .fg > div{background:var(--charcoal-2);padding:11px 14px 12px;min-width:0}
+  .fg .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
     color:var(--stone)}
-  .wcell .v{font-size:13px;font-weight:600;color:var(--parchment);margin-top:5px;line-height:1.4;
-    overflow-wrap:anywhere}
-  .wcell .v.soft{color:var(--text-dim);font-weight:500;font-style:italic}
-  .wcell .s{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4}
-  .wcell .v a{color:var(--parchment);border-bottom:1px solid var(--charcoal-4)}
-  .wcell .v a:hover{color:var(--gold);border-bottom-color:var(--gold)}
-  .wcell .grp{color:var(--tone-text)}
-  .wflag{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;
-    padding:2px 9px;border-radius:100px;white-space:nowrap}
-  .wflag::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
-  .wflag.ok{color:#9ec178;background:rgba(127,160,90,.1);border:1px solid rgba(127,160,90,.3)}
-  .wflag.bad{color:#dfa294;background:rgba(193,85,63,.1);border:1px solid rgba(193,85,63,.32)}
-  .wflag.warn{color:#e3bd72;background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.3)}
-  .wflag.off{color:var(--stone);background:var(--charcoal-3);border:1px solid var(--border)}
+  .fg .v{font-size:13px;font-weight:600;color:var(--parchment);margin-top:5px;line-height:1.4;
+    overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+  .fg .v.soft{color:var(--text-dim);font-weight:500;font-style:italic}
+  .fg .s{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4}
+  .fg .v a{color:var(--parchment);border-bottom:1px solid var(--charcoal-4)}
+  .fg .v a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+  .fg .grp{color:var(--tone-text)}
+  /* The appellant is not told who issued it, so their grid is three across.
+     Left at four it ended on a dead cell. */
+  .fg.three{grid-template-columns:repeat(3,1fr)}
+
+  /* A value carrying a state is coloured text with a dot, not a pill. Two
+     pills floating in a grid of plain values read as buttons and made those
+     cells louder than the facts around them. */
+  .dotv{display:inline-flex;align-items:center;gap:8px}
+  .dotv::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;
+    flex:none}
+  .dotv.ok{color:#9ec178} .dotv.bad{color:#e0917f} .dotv.warn{color:#e3bd72}
+  .dotv.off{color:var(--stone)}
+
+  /* ---- one punishment ---- */
+  .pun + .pun{margin-top:14px}
+  .pun-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  /* The pill says which of the two a ban is. "Ban · 14 DAYS" made the reader
+     work the kind out from the length, and a permanent one had no length to
+     work it out from. */
+  .kindp{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;
+    padding:5px 12px;border-radius:100px;white-space:nowrap;
+    border:1px solid var(--rule);background:var(--charcoal);color:var(--text-faint)}
+  .kindp::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;
+    flex:none}
+  .kindp.ban {color:#d98a78;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+  .kindp.lock{color:#b3a894;border-color:rgba(157,147,132,.34);background:rgba(157,147,132,.1)}
+  .kindp.discord{color:#93a7cb;border-color:rgba(110,130,175,.34);background:rgba(110,130,175,.11)}
+  .kindp.forums{color:#9fb0a0;border-color:rgba(120,150,120,.32);background:rgba(120,150,120,.1)}
+  .lenp{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--text-dim)}
+  .statep{margin-left:auto;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:100px;
+    white-space:nowrap;border:1px solid var(--rule);background:var(--charcoal);color:var(--stone)}
+  .statep.live{color:#e79187;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+
+  /* ---- the reason, as the thing it is: what somebody wrote ---- */
+  .why{margin-top:11px;padding:12px 15px;border-radius:11px;background:var(--charcoal-3);
+    border:1px solid var(--border-soft)}
+  .why .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--stone)}
+  .why .b{font-size:13.5px;color:var(--parchment);line-height:1.6;margin-top:5px;
+    overflow-wrap:anywhere;text-wrap:pretty;white-space:pre-wrap}
+  .why .b.soft{color:var(--text-dim);font-style:italic;white-space:normal}
+
+  /* ---- nothing on file ---- */
+  .offsite{padding:13px 15px;border-radius:12px;border:1px solid rgba(226,182,92,.24);
+    background:rgba(226,182,92,.05)}
+  .offsite .h{font-size:13px;font-weight:700;color:#e3bd72}
+  .offsite .p{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
+    text-wrap:pretty}
+
+  /* ---- characters ----
+     Designed now, empty now. When the game server is linked this fills in
+     and nothing about the card moves. */
+  .chars{border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+  .chr{display:flex;align-items:center;gap:14px;padding:11px 15px;background:var(--charcoal-2)}
+  .chr + .chr{border-top:1px solid var(--rule)}
+  .chr .cd{width:7px;height:7px;border-radius:50%;flex:none;background:var(--stone)}
+  .chr.on .cd{background:var(--ok);box-shadow:0 0 0 3px rgba(127,160,90,.15)}
+  .chr .cl{min-width:0;flex:1}
+  .chr .cn{font-size:13.5px;font-weight:700;color:var(--parchment);min-width:0}
+  .chr .cs{font-size:11px;color:var(--text-dim);margin-top:2px}
+  .chr .cf{font-size:12px;color:var(--text-faint);margin-left:auto;text-align:right;
+    white-space:nowrap}
+  .chr-none{padding:15px 16px;background:var(--charcoal-2);font-size:12.5px;
+    color:var(--text-dim);line-height:1.6;text-wrap:pretty}
+
+  @media (max-width:900px){ .fg,.fg.three{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:520px){
+    .fg,.fg.three{grid-template-columns:1fr}
+    .statep{margin-left:0}
+  }
 
   /* ---- the queue's filter strip ---- */
   .qfilters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
@@ -880,11 +951,6 @@
     font-variant-numeric:tabular-nums}
   .askrow b{color:var(--parchment);font-weight:600}
 
-  /* One block per punishment inside the one card. */
-  .punb + .punb{margin-top:20px;padding-top:20px;border-top:1px solid var(--charcoal-4)}
-  .punh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;font-weight:700;
-    color:var(--parchment);padding-bottom:2px}
-
   /* When the appeal has no staff column the grid narrows; the bar above it
      narrows to match, or a wide header sits over a narrow body. */
   body.appeal-solo .lookbar{max-width:900px}
@@ -1046,7 +1112,6 @@
   .ansq .a.text{padding:13px 15px;line-height:1.65}
   .panelfield + .panelfield{margin-top:15px;padding-top:15px}
   .panelfield .hint{margin-top:7px}
-  .punb + .punb{margin-top:16px;padding-top:16px}
   .logrow{padding:9px 0}
   .cm .body{padding:12px 15px}
   .apgrid{gap:18px}
@@ -2004,190 +2069,233 @@
      one block per punishment inside one card rather than one card each —
      they are one thing being decided, and stacking cards would suggest
      otherwise. */
-  /* One cell of the account panel. */
-  function wcell(k, v, sub){
-    return '<div class="wcell"><div class="k">'+k+'</div><div class="v">'+v+'</div>'+
+  /* One cell of the fact grid — used by a punishment and by the account. */
+  function fcell(k, v, sub){
+    return '<div><div class="k">'+k+'</div><div class="v">'+v+'</div>'+
            (sub ? '<div class="s">'+sub+'</div>' : '')+'</div>';
   }
 
-  function whoisPanel(){
+  /* ---- one punishment ---- */
+  function punBlock(p, staff){
+    var lock  = p.card === 'lock';
+    var label = lock ? 'User lock'
+              : (p.card === 'ban' ? (p.permanent ? 'Permanent Ban' : 'Temporary Ban')
+                                  : cap(p.noun));
+    var live  = !!p.active;
+
+    /* Length is one word, and it is the same word for a lock as for a
+       permanent ban — a lock holds until somebody lifts it, which is what
+       permanent means here. */
+    var length = 'Permanent';
+    if(!p.permanent && p.expires_at && p.issued_at){
+      var d = Math.round((p.expires_at - p.issued_at) / 86400);
+      length = d > 0 ? (d === 1 ? '1 day' : d + ' days')
+                     : Math.max(1, Math.round((p.expires_at - p.issued_at)/3600)) + ' hours';
+    }
+
+    /* The fourth column is whichever end-of-life fact is true. A live
+       temporary ban has a date it stops on; a live permanent one has nothing
+       to say; a lifted one says when, and for staff by whom. */
+    var endK, endV, endS = null;
+    if(p.lifted_at){
+      endK = 'Lifted';
+      endV = stampEsc(p.lifted_at) + ' UTC';
+      endS = escapeHtml(ago(p.lifted_at)) + (staff && p.lifted_by
+              ? ' · by ' + escapeHtml(p.lifted_by) : '');
+    } else if(p.permanent || !p.expires_at){
+      endK = 'Ends'; endV = '<span class="v soft">Only when lifted</span>';
+    } else {
+      endK = live ? 'Ends' : 'Ended';
+      endV = stampEsc(p.expires_at) + ' UTC';
+      endS = escapeHtml(ago(p.expires_at));
+    }
+
+    var showIssuer = staff && p.issued_by;
+    var cells = [
+      fcell('Issued', stampEsc(p.issued_at) + ' UTC', escapeHtml(ago(p.issued_at))),
+      fcell('Length', length, lock ? 'Holds until lifted' : null),
+      fcell(endK, endV, endS)
+    ];
+    if(showIssuer){
+      cells.push(fcell('Issued by',
+        '<span class="grp tone-'+(p.issued_rank|0)+'">'+escapeHtml(p.issued_by)+'</span>'));
+    }
+
+    return '<div class="pun">'+
+      '<div class="pun-h">'+
+        '<span class="kindp '+(lock?'lock':'ban')+'">'+escapeHtml(label)+'</span>'+
+        (p.permanent ? '' : '<span class="lenp">'+escapeHtml(length)+'</span>')+
+        '<span class="statep '+(live?'live':'')+'">'+(live?'Active':'Ended')+'</span>'+
+      '</div>'+
+      '<div class="fg'+(showIssuer?'':' three')+'">'+cells.join('')+'</div>'+
+      '<div class="why"><div class="k">Reason given</div>'+
+        '<div class="b'+(p.reason?'':' soft')+'">'+
+        (p.reason ? escapeHtml(p.reason)
+                  : 'No reason was recorded when this was issued.')+'</div></div>'+
+    '</div>';
+  }
+
+  /* ---- a punishment the UCP does not hold ----
+     The normal case for a forum or Discord appeal, not an error. */
+  function offsiteBlock(plats, staff){
+    var names = plats.map(function(k){ return PLAT[k] || k; });
+    var pills = plats.map(function(k){
+      return '<span class="kindp '+(k === 'discord' ? 'discord' : 'forums')+'">'+
+             escapeHtml(PLAT[k] || k)+'</span>';
+    }).join('');
+    return '<div class="pun"><div class="pun-h">'+pills+
+      '<span class="statep">Not in the UCP</span></div>'+
+      '<div class="offsite"><div class="h">This punishment lives where it was issued</div>'+
+      '<div class="p">The UCP does not record '+escapeHtml(names.join(' or '))+
+        ' punishments — they are issued and lifted on those platforms. '+
+        (staff
+          ? 'Confirm it there before deciding. Accepting the appeal records the decision here; '+
+            'the punishment itself has to be lifted where it was issued.'
+          : 'Staff will check it where it was issued.')+
+      '</div></div></div>';
+  }
+
+  /* ---- the account ----
+     Staff only. A handler reading an appeal has one question after "what
+     does it say": who am I dealing with. Answering it used to mean opening
+     Administrative Search in another tab, and on a Discord or forum ban —
+     where the UCP has no punishment on file — this card said nothing at all.
+
+     Forums and Discord live HERE and only here. They used to appear both in
+     this panel and in a separate "Accounts" block above it. */
+  function accountSection(){
     var w = DATA.whois;
     if(!w) return '';                      // never sent to the appellant
 
     var acc = DATA.accounts || {};
     var fo  = acc.forum || {}, di = acc.discord || {};
-
     var cells = [];
 
-    cells.push(wcell('UCP account',
+    cells.push(fcell('UCP account',
       '<a href="/dashboard/lookup?id='+w.id+'">'+escapeHtml(w.name)+'</a>',
       'Account #'+w.id));
 
-    cells.push(wcell('Group',
+    cells.push(fcell('Group',
       '<span class="grp tone-'+(w.rank|0)+'">'+escapeHtml(w.role)+'</span>',
       w.twofa ? 'Two-step on' : 'Two-step off'));
 
-    cells.push(wcell('Status',
-      w.status === 'locked'  ? '<span class="wflag bad">Locked</span>'
-      : w.status === 'active' ? '<span class="wflag ok">Active</span>'
-      : '<span class="wflag off">'+escapeHtml(cap(w.status))+'</span>',
+    cells.push(fcell('Status',
+      w.status === 'locked'   ? '<span class="dotv bad">Locked</span>'
+      : w.status === 'active' ? '<span class="dotv ok">Active</span>'
+      : '<span class="dotv off">'+escapeHtml(cap(w.status))+'</span>',
       w.created_at ? 'Joined '+escapeHtml(ago(w.created_at)) : null));
 
     /* Last USED the UCP. On an appeal it answers "are they even reading
        this" before a handler writes three paragraphs at somebody who left. */
     var seen = w.last_seen || w.last_login;
-    cells.push(wcell('Last activity',
+    cells.push(fcell('Last activity',
       seen ? escapeHtml(ago(seen)) : '<span class="v soft">Never</span>',
       seen ? escapeHtml(stamp(seen)) + ' UTC' + (w.last_seen ? '' : ' · sign-in') : null));
 
-    /* The forum and Discord accounts, always — not only when the appeal
-       names that platform. A handler judging an in-game ban still wants to
-       know whether the Discord matches the one shouting in #general. */
-    cells.push(wcell('Forums', fo.linked
+    /* Always, not only when the appeal names that platform. A handler judging
+       an in-game ban still wants to know whether the Discord matches the one
+       shouting in #general. */
+    cells.push(fcell('Forums', fo.linked
       ? '<a href="'+escapeHtml(fo.url||'#')+'" target="_blank" rel="noopener noreferrer">'+
         escapeHtml(fo.name || ('Member #'+fo.member_id))+'</a>'
       : '<span class="v soft">Not linked</span>',
       fo.linked && fo.member_id ? 'Member #'+fo.member_id : null));
 
-    cells.push(wcell('Discord', di.linked
+    cells.push(fcell('Discord', di.linked
       ? escapeHtml(di.username)
       : (di.given ? escapeHtml(di.given) : '<span class="v soft">Not linked</span>'),
       di.linked ? 'Verified' : (di.given ? 'Given at sign-up, never verified' : null)));
 
-    /* The record in one cell. Whether this is a first offence or a fifth is
-       the fact most likely to change the verdict. */
+    /* Whether this is a first offence or a fifth is the fact most likely to
+       change the verdict. */
     var r = w.record;
     if(r){
-      var lvl = r.level === 'held' ? 'bad' : (r.level === 'watch' ? 'warn' : 'ok');
-      cells.push(wcell('Record',
-        '<span class="wflag '+lvl+'">'+r.total+(r.total===1?' entry':' entries')+'</span>',
-        r.bans+' bans · '+r.warnings+' warnings · '+r.kicks+' kicks'+
-        (r.active ? ' · '+r.active+' active' : '')));
+      var lvl = r.level === 'held' ? 'bad' : (r.level === 'watch' ? 'warn' : 'off');
+      cells.push(fcell('Record',
+        r.total
+          ? '<span class="dotv '+lvl+'">'+r.total+(r.total===1?' entry':' entries')+'</span>'
+          : '<span class="dotv ok">Clean</span>',
+        r.total
+          ? r.bans+' bans · '+r.warnings+' warnings · '+r.kicks+' kicks'+
+            (r.active ? ' · '+r.active+' active' : '')
+          : 'No bans, warnings or kicks'));
     } else {
-      cells.push(wcell('Record', '<span class="v soft">Not set up</span>',
+      cells.push(fcell('Record', '<span class="v soft">Not set up</span>',
         'The punishment tables have not been migrated.'));
     }
 
     var n = (DATA.history || []).length;
-    cells.push(wcell('Past appeals',
+    cells.push(fcell('Past appeals',
       n ? String(n) : '<span class="v soft">None</span>',
       n ? 'Before this one' : 'This is their first'));
 
-    return '<div class="whois">'+
-      '<div class="whois-h"><span class="t">Who this is</span>'+
-        '<a class="go" href="/dashboard/lookup?id='+w.id+'">Open the full account'+
-        '<svg viewBox="0 0 24 24">'+DAI.out+'</svg></a></div>'+
-      '<div class="wgrid">'+cells.join('')+'</div>'+
-    '</div>';
+    return '<div class="sec"><div class="sec-h"><span class="t">The account</span>'+
+      '<a class="go" href="/dashboard/lookup?id='+w.id+'">Open the full account'+
+      '<svg viewBox="0 0 24 24">'+DAI.out+'</svg></a></div>'+
+      '<div class="fg">'+cells.join('')+'</div></div>';
+  }
+
+  /* ---- characters ----
+     There is no character table yet, so this says so rather than being left
+     out — a staff member who expects it and doesn't find it will assume the
+     player has none. When the game server is linked, the list fills in and
+     nothing about the card moves. */
+  function charactersSection(list){
+    var body = list && list.length
+      ? list.map(function(c){
+          return '<div class="chr'+(c.online?' on':'')+'"><span class="cd"></span>'+
+            '<span class="cl"><span class="cn">'+escapeHtml(c.name)+'</span>'+
+            '<div class="cs">'+escapeHtml(c.played||'')+
+              (c.seen ? ' · '+escapeHtml(c.seen) : '')+'</div></span>'+
+            '<span class="cf">'+escapeHtml(c.faction||'')+
+              (c.rank ? '<div class="cs">'+escapeHtml(c.rank)+'</div>' : '')+'</span>'+
+          '</div>';
+        }).join('')
+      : '<div class="chr-none">Characters aren’t linked to the UCP yet. When the game server '+
+        'is connected, this account’s characters appear here with their faction and playtime — '+
+        'so a handler can see who they play before deciding.</div>';
+
+    return '<div class="sec"><div class="sec-h"><span class="t">Characters</span>'+
+      '<span class="n">'+(list && list.length
+        ? list.length + (list.length === 1 ? ' character' : ' characters')
+        : 'Not linked yet')+'</span></div>'+
+      '<div class="chars">'+body+'</div></div>';
   }
 
   function banCard(){
+    var staff = !!DATA.viewer.staff;
     var ps = DATA.punishments || (DATA.punishment ? [DATA.punishment] : []);
-    /* Nothing attached is the NORMAL case for a forum or Discord appeal —
-       the UCP does not record those. "The record is gone" would be alarming
-       and wrong. */
+    var body;
+
     if(!ps.length){
-      var only = (DATA.platforms||[]).map(function(k){ return PLAT[k] || k; }).join(' and ');
-      return '<div class="card"><div class="card-h"><h3>Ban details</h3>'+
-        '<span class="aside">'+escapeHtml(DATA.user||'')+'</span></div><div class="card-b">'+
-        '<div class="note-a"><span class="si">'+dai('info')+'</span><div>'+
-        '<h4>Nothing recorded in the UCP</h4>'+
-        '<p>This is a '+escapeHtml(only || 'forum or Discord')+' ban, and the UCP does not '+
-        'record those — it lives where it was issued. '+
-        (DATA.viewer.staff
-          ? 'Confirm it there before deciding. Accepting records the decision here; lifting the '+
-            'ban is done where it was issued.'
-          : 'Staff will check it where it was issued.')+'</p>'+
-        '</div></div>'+
-        /* The UCP has no punishment on file, but it knows plenty about the
-           account — and this is exactly the appeal where a handler has the
-           least to go on. */
-        whoisPanel() +
-        '</div></div>';
+      /* Nothing attached is the NORMAL case for a forum or Discord appeal —
+         the UCP does not record those. "The record is gone" would be alarming
+         and wrong. */
+      var plats = (DATA.platforms || []).filter(function(k){ return k !== 'game'; });
+      if(!plats.length) plats = ['forums'];
+      body = '<div class="sec"><div class="sec-h"><span class="t">Under appeal</span></div>'+
+             offsiteBlock(plats, staff)+'</div>';
+    } else {
+      body = '<div class="sec"><div class="sec-h"><span class="t">Under appeal</span>'+
+        (ps.length > 1 ? '<span class="n">'+ps.length+' punishments</span>' : '')+
+        '</div>'+ ps.map(function(p){ return punBlock(p, staff); }).join('') +'</div>';
     }
-
-    var blocks = ps.map(function(p, i){
-      var rows = [
-        ['Issued', stampEsc(p.issued_at) + ' UTC &middot; ' + escapeHtml(ago(p.issued_at))]
-      ];
-      if(!p.permanent) rows.push(['Runs until', stampEsc(p.expires_at) + ' UTC']);
-      rows.push(['Reason', p.reason ? escapeHtml(p.reason)
-                                    : '<span class="v soft">No reason was recorded.</span>']);
-      if(DATA.viewer.staff && p.issued_by) rows.push(['Issued by', escapeHtml(p.issued_by)]);
-      rows.push(['In force', p.active ? 'Yes'
-        : '<span class="v soft">No — lifted ' + escapeHtml(ago(p.lifted_at)) +
-          (p.lifted_by ? ' by ' + escapeHtml(p.lifted_by) : '') + '</span>']);
-
-      return '<div class="punb'+(i ? ' more' : '')+'">'+
-        '<div class="punh">'+escapeHtml(cap(p.noun))+
-          '<span class="pill '+(p.permanent?'perm':'temp')+'">'+
-          (p.permanent ? 'Permanent' : 'Temporary')+'</span></div>'+
-        '<div class="kv">'+ rows.map(function(r){
-          return '<div class="r"><div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div></div>';
-        }).join('') +'</div></div>';
-    }).join('');
-
-    /* The accounts the ban is on.
-       An appeal against a forum or Discord ban is about an account the UCP
-       already knows, and the handler shouldn't have to go and look it up on
-       a page they may not have open, for a name the player may have spelled
-       differently. Only drawn for the platforms this appeal actually names. */
-    var acc = DATA.accounts || {}, want = DATA.platforms || [], lines = [];
-    if(want.indexOf('forums') > -1){
-      var fo = acc.forum || {};
-      lines.push(['BlaineSide Forums', fo.linked
-        ? '<a class="wholink" href="'+escapeHtml(fo.url||'#')+'" target="_blank" '+
-          'rel="noopener noreferrer">'+escapeHtml(fo.name || ('Member #'+fo.member_id))+
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+DAI.out+'</svg></a>'+
-          '<span class="v soft" style="display:inline;font-weight:500"> · #'+fo.member_id+'</span>'
-        : '<span class="v soft">This UCP has never been linked to a forum account.</span>']);
-    }
-    if(want.indexOf('discord') > -1){
-      lines.push(['Discord', acc.discord && acc.discord.linked
-        ? escapeHtml(acc.discord.username) + ' <span class="v soft" '+
-          'style="display:inline;font-weight:500">· verified</span>'
-        : (acc.discord && acc.discord.given
-            ? escapeHtml(acc.discord.given) +
-              ' <span class="v soft" style="display:inline;font-weight:500">· given at '+
-              'sign-up, never verified</span>'
-            : '<span class="v soft">No Discord account on this UCP.</span>')]);
-    }
-    var accHTML = lines.length
-      ? '<div class="punb more"><div class="punh">Accounts</div><div class="kv">'+
-        lines.map(function(r){
-          return '<div class="r"><div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div></div>';
-        }).join('')+'</div></div>'
-      : '';
-
-    /* The old "also ticked X, but nothing on file" note is gone. What the
-       appellant ticked is already on the appeal itself, question 1, a few
-       inches below — and a handler can look up the punishments. Saying it
-       twice added a line of apology to every appeal. */
 
     /* The appellant's name is the thing a handler wants next after reading
        the appeal — their record, their other punishments, their history. It
        links to the lookup. For the appellant it is just their own name. */
     var who = escapeHtml(DATA.user || '');
-    if(DATA.viewer.staff && DATA.user_id){
+    if(staff && DATA.user_id){
       who = '<a class="wholink" href="/dashboard/lookup?id='+DATA.user_id+'">'+who+
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+DAI.out+'</svg></a>';
     }
 
     return '<div class="card"><div class="card-h"><h3>'+
       (ps.length > 1 ? 'Punishments under appeal' : 'Ban details')+'</h3>'+
-      '<span class="aside">'+ who +
-      (ps.length > 1 ? ' · '+ps.length+' punishments' : '')+'</span></div>'+
-      '<div class="card-b">'+ blocks + accHTML +
-
-      /* Characters are listed on the reference design's ban details. There
-         is no character table, so the row says that rather than being left
-         out — a staff member who expects it and doesn't find it will assume
-         the player has none. */
-      '<div class="fieldnote" style="margin-top:14px">Characters aren’t linked to the UCP yet, '+
-      'so none are listed here.</div>'+
-
-      whoisPanel() +
-
+      '<span class="aside">'+ who +'</span></div>'+
+      '<div class="card-b">'+ body +
+        charactersSection(DATA.characters) +
+        (staff ? accountSection() : '')+
       '</div></div>';
   }
 
