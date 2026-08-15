@@ -661,7 +661,11 @@
       'overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
     '.noterow .w{font-size:11px;color:var(--text-dim,#655e51);margin-top:4px}',
     '.notenone{padding:26px 18px;text-align:center;font-size:12.5px;',
-      'color:var(--text-dim,#655e51);line-height:1.6}'
+      'color:var(--text-dim,#655e51);line-height:1.6}',
+    '.notefoot{display:block;text-align:center;padding:12px;font-size:12.5px;font-weight:600;',
+      'color:var(--text-faint,#968e7e);border-top:1px solid var(--rule,#302b25);',
+      'background:var(--charcoal,#121110)}',
+    '.notefoot:hover{color:var(--gold,#e2b65c)}'
   ].join('');
 
   var NOTE_ICONS = {
@@ -740,7 +744,10 @@
     panel.innerHTML =
       '<div class="nh"><b>Notifications</b><span class="n" style="display:none">0</span>' +
       '<button type="button" data-readall>Mark all read</button></div>' +
-      '<div class="notelist"></div>';
+      '<div class="notelist"></div>' +
+      /* Everything, filterable and paged, lives on the dashboard. The panel
+         holds the recent ones; this is the way to the rest. */
+      '<a class="notefoot" href="/dashboard#/notifications">View all notifications</a>';
     wrap.appendChild(panel);
 
     bell.addEventListener('click', function (e) {

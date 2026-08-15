@@ -802,8 +802,8 @@
   .lockpast .lp:hover .lpg{color:var(--parchment)}
   .lockpast .lpmore{font-size:11.5px;color:var(--text-dim);margin-top:9px}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.0">
-<script src="/assets/js/ucp.js?v=2.7.0"></script>
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.1">
+<script src="/assets/js/ucp.js?v=2.7.1"></script>
 </head>
 <body>
 
@@ -847,20 +847,14 @@
       <button class="icon-btn search-mini" title="Search" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
       </button>
-      <div class="notif">
-        <button class="icon-btn" id="bellBtn" title="Notifications">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
-          <span class="dot"></span>
-        </button>
-        <div class="notif-menu" id="notifMenu">
-          <div class="notif-head">
-            <span class="nh-title">Notifications <span class="nh-count" id="nhCount">3</span></span>
-            <button class="nh-clear" id="nhClear">Mark all read</button>
-          </div>
-          <div class="notif-list" id="notifList"></div>
-          <a class="notif-foot" href="#/notifications" id="viewAllNotifs">View all notifications</a>
-        </div>
-      </div>
+      <!-- The bell's panel is built by assets/js/ucp.js, the same one every
+           page gets. This page used to carry its own dropdown, its own
+           styles and twelve hardcoded notifications; the panel now comes
+           from the server and the full list below is what it links to. -->
+      <button class="icon-btn" title="Notifications" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+        <span class="dot"></span>
+      </button>
       <div class="divider"></div>
       <!-- ACCOUNT — rank name shown under the username (in gold).
            admin_rank in the database (0–9); Members (0) show no tag:
@@ -1488,55 +1482,37 @@
     .catch(()=>mountBulletin([]));
 
   /* =====================================================================
-     NOTIFICATIONS  —  edit this array. Shared by the header dropdown and
-     the full notifications page. `read:false` shows as unread (gold dot +
-     tint); the tick button marks an item read. `icon` + `tone` set the
-     left glyph; `sub` (optional) shows extra detail on the full page.
+     NOTIFICATIONS — the full list
+
+     The bell itself is in assets/js/ucp.js and is on every page. What lives
+     here is the page behind it: everything, filterable, paged, and
+     acknowledgeable one at a time.
+
+     This used to be twelve hardcoded rows in an array. They were a
+     convincing demo and a liability — the dropdown showed invented property
+     purchases while the real appeal reply sat unseen.
      ===================================================================== */
-  let NOTIFS = [
-    { id:1, tone:'green', icon:'check',  read:false, when:'14 minutes ago',
-      text:'<b>Marcus Webb</b> was approved', sub:'Your legal faction application was accepted.' },
-    { id:2, tone:'red',   icon:'alert',  read:false, when:'1 hour ago',
-      text:'Report <b>#4821</b> needs your reply', sub:'An admin has requested more information.' },
-    { id:3, tone:'amber', icon:'house',  read:false, when:'3 hours ago',
-      text:'Property purchase confirmed — <b>Grapeseed Ave 14</b>', sub:'$184,000 was deducted from your bank.' },
-    { id:4, tone:'blue',  icon:'clock',  read:true,  when:'Yesterday',
-      text:'Weekly paycheck deposited', sub:'Salary plus faction bonus.' },
-    { id:5, tone:'slate', icon:'chat',   read:true,  when:'Yesterday',
-      text:'New reply in <b>Faction Applications</b>', sub:'Faction Management responded to your thread.' },
-    { id:6, tone:'amber', icon:'house',  read:true,  when:'2 days ago',
-      text:'Rent collected on <b>Paleto Blvd 7</b>', sub:'$3,200 added to your business account.' },
-    { id:7, tone:'green', icon:'check',  read:true,  when:'2 days ago',
-      text:'Character <b>Elena Ruiz</b> name change approved', sub:'Your requested change is now live.' },
-    { id:8, tone:'red',   icon:'alert',  read:true,  when:'3 days ago',
-      text:'Appeal <b>#3390</b> was closed', sub:'Reviewed by Senior Admin — no action taken.' },
-    { id:9, tone:'blue',  icon:'clock',  read:true,  when:'4 days ago',
-      text:'Vehicle insurance renewed', sub:'Coverage extended for 30 days.' },
-    { id:10, tone:'slate',icon:'chat',   read:true,  when:'5 days ago',
-      text:'You were mentioned in <b>Court Records</b>', sub:'A new case references your character.' },
-    { id:11, tone:'amber',icon:'house',  read:true,  when:'6 days ago',
-      text:'Property tax due on <b>Grapeseed Ave 14</b>', sub:'Payment window closes in 3 days.' },
-    { id:12, tone:'green', icon:'check', read:true,  when:'1 week ago',
-      text:'Business permit renewed', sub:'Your license is valid for another quarter.' },
-  ];
-  /* Single notification type — one icon (bell) and one tone for every item. */
   const NOTIF_ICON='<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/>';
   const tickSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>';
 
-  let npFilter='all', npPage=1;
-  const NP_PER_PAGE=8; /* rows per page on the full notifications page */
+  let NOTIFS = [], npFilter='all', npPage=1, npLoaded=false;
+  const NP_PER_PAGE=8;
 
   function unreadCount(){ return NOTIFS.filter(n=>!n.read).length; }
+
+  function npWhen(ts){
+    return (window.UCP && UCP.relTime) ? UCP.relTime(ts) : new Date(ts*1000).toUTCString();
+  }
 
   function rowHTML(n){
     return `
       <div class="np-row ${n.read?'read':'unread'}" data-id="${n.id}">
         <span class="ni-ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${NOTIF_ICON}</svg></span>
-        <span class="ni-body">
-          <span class="ni-t">${esc(n.text)}</span>
-          ${n.sub?`<span class="ni-sub">${esc(n.sub)}</span>`:''}
-          <span class="ni-time">${esc(n.when)}</span>
-        </span>
+        <a class="ni-body" ${n.url?`href="${esc(n.url)}"`:''}>
+          <span class="ni-t">${esc(n.title)}</span>
+          ${n.body?`<span class="ni-sub">${esc(n.body)}</span>`:''}
+          <span class="ni-time">${esc(npWhen(n.at))}${n.actor?' · '+esc(n.actor):''}</span>
+        </a>
         <button class="ni-tick" data-tick="${n.id}" title="${n.read?'Read':'Mark as read'}" ${n.read?'disabled':''}>${tickSVG}</button>
       </div>`;
   }
@@ -1546,7 +1522,6 @@
     if(totalPages<=1){ pager.innerHTML=''; return; }
     const prev=`<button class="pg" data-pg="${npPage-1}" ${npPage===1?'disabled':''} aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>`;
     const next=`<button class="pg" data-pg="${npPage+1}" ${npPage===totalPages?'disabled':''} aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>`;
-    /* build page numbers with gaps for large counts */
     const nums=[]; const add=p=>nums.push(`<button class="pg ${p===npPage?'on':''}" data-pg="${p}">${p}</button>`);
     const gap=()=>nums.push('<span class="pg-gap">…</span>');
     const pages=[];
@@ -1559,27 +1534,11 @@
   }
 
   function renderNotifications(){
-    const u=unreadCount();
-    /* header bell dot + counts */
-    document.querySelector('.notif .dot').style.display = u ? 'block' : 'none';
-    const nhCount=document.getElementById('nhCount');
-    nhCount.textContent=u; nhCount.style.display=u?'inline-block':'none';
-
-    /* dropdown: newest 5 (array is authored newest-first) */
-    const list=document.getElementById('notifList');
-    list.innerHTML = NOTIFS.slice(0,5).map(n=>`
-      <div class="notif-item ${n.read?'read':'unread'}" data-id="${n.id}">
-        <span class="ni-ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${NOTIF_ICON}</svg></span>
-        <span class="ni-body"><span class="ni-t">${esc(n.text)}</span><span class="ni-time">${esc(n.when)}</span></span>
-        <button class="ni-tick" data-tick="${n.id}" title="${n.read?'Read':'Mark as read'}" ${n.read?'disabled':''}>${tickSVG}</button>
-      </div>`).join('');
-
-    /* full page — newest first, paginated */
-    const total=NOTIFS.length;
+    const u=unreadCount(), total=NOTIFS.length;
     document.getElementById('npUnreadCount').textContent=u;
     document.getElementById('npTotalCount').textContent=total;
-    const filtered = NOTIFS.filter(n=> npFilter==='all' ? true : npFilter==='unread' ? !n.read : n.read);
 
+    const filtered = NOTIFS.filter(n=> npFilter==='all' ? true : npFilter==='unread' ? !n.read : n.read);
     const totalPages=Math.max(1,Math.ceil(filtered.length/NP_PER_PAGE));
     if(npPage>totalPages) npPage=totalPages;
     const start=(npPage-1)*NP_PER_PAGE;
@@ -1587,15 +1546,33 @@
 
     const np=document.getElementById('npList');
     np.innerHTML = pageItems.length ? pageItems.map(rowHTML).join('')
-      : `<div class="np-empty">No ${npFilter==='all'?'':npFilter+' '}notifications.</div>`;
+      : `<div class="np-empty">${npLoaded
+          ? (total ? `No ${npFilter} notifications.`
+                   : 'Nothing yet. Replies to your appeals and staff reports turn up here.')
+          : 'Loading…'}</div>`;
     renderPager(totalPages);
   }
 
-  function markRead(id){ const n=NOTIFS.find(x=>x.id===id); if(n){n.read=true;renderNotifications();} }
-  function markAllRead(){ NOTIFS.forEach(n=>n.read=true); renderNotifications(); }
+  function loadNotifications(){
+    return UCP.get('notifications.php?limit=50').then(d=>{
+      npLoaded = true;
+      NOTIFS = (d && d.ok === true && d.notifications) ? d.notifications : [];
+      renderNotifications();
+    }).catch(()=>{ npLoaded = true; renderNotifications(); });
+  }
 
-  /* tick clicks — capture phase so clicks inside the dropdown (which stops
-     propagation to stay open) still reach this handler */
+  /* Marking read here also refreshes the bell, so the badge and the page
+     never disagree about what is unread. */
+  function markRead(id){
+    const n=NOTIFS.find(x=>x.id===id); if(!n || n.read) return;
+    n.read=true; renderNotifications();
+    UCP.post('notification-read.php',{id:id}).then(()=>{ if(UCP.notifications) UCP.notifications(); });
+  }
+  function markAllRead(){
+    NOTIFS.forEach(n=>n.read=true); renderNotifications();
+    UCP.post('notification-read.php',{all:true}).then(()=>{ if(UCP.notifications) UCP.notifications(); });
+  }
+
   document.addEventListener('click',e=>{
     const t=e.target.closest('[data-tick]');
     if(t){ e.preventDefault(); e.stopPropagation();
@@ -1604,7 +1581,6 @@
       markRead(parseInt(t.dataset.tick,10));
     }
   },true);
-  document.getElementById('nhClear').addEventListener('click',e=>{e.stopPropagation();markAllRead();});
   document.getElementById('npClear').addEventListener('click',markAllRead);
 
   /* page filters — reset to page 1 */
@@ -1615,7 +1591,6 @@
     renderNotifications();
   });
 
-  /* pager clicks */
   document.getElementById('npPager').addEventListener('click',e=>{
     const p=e.target.closest('[data-pg]'); if(!p)return;
     npPage=parseInt(p.dataset.pg,10); renderNotifications();
@@ -1631,21 +1606,26 @@
     document.querySelector('.page-title h1').textContent = name==='notifications' ? 'Notifications' : 'Dashboard';
     document.querySelector('.content').scrollTop=0; window.scrollTo(0,0);
   }
-  document.getElementById('viewAllNotifs').addEventListener('click',e=>{e.preventDefault();closeNotif();showPage('notifications');});
-  document.getElementById('notifBack').addEventListener('click',e=>{e.preventDefault();showPage('dashboard');});
+  document.getElementById('notifBack').addEventListener('click',e=>{
+    e.preventDefault(); location.hash=''; showPage('dashboard');
+  });
+
+  /* The bell's "View all notifications" link lands here, and so does anyone
+     who bookmarked it. The list is only fetched when the page is actually
+     opened — the bell already has the recent ones. */
+  function routeFromHash(){
+    const want = (location.hash||'').replace('#/','') === 'notifications';
+    showPage(want ? 'notifications' : 'dashboard');
+    if(want) loadNotifications();
+  }
+  window.addEventListener('hashchange', routeFromHash);
+  routeFromHash();
 
   /* account menu */
   const accBtn=document.querySelector('.account-btn'), accMenu=document.querySelector('.account-menu');
   accMenu.style.display='none';
-  accBtn.addEventListener('click',e=>{e.stopPropagation();closeNotif();accMenu.style.display=accMenu.style.display==='none'?'block':'none';});
-  document.addEventListener('click',()=>{accMenu.style.display='none';closeNotif();});
-
-  /* notification bell dropdown */
-  const bellBtn=document.getElementById('bellBtn'), notifMenu=document.getElementById('notifMenu');
-  notifMenu.style.display='none';
-  function closeNotif(){notifMenu.style.display='none';}
-  bellBtn.addEventListener('click',e=>{e.stopPropagation();accMenu.style.display='none';notifMenu.style.display=notifMenu.style.display==='none'?'block':'none';});
-  notifMenu.addEventListener('click',e=>e.stopPropagation());
+  accBtn.addEventListener('click',e=>{e.stopPropagation();accMenu.style.display=accMenu.style.display==='none'?'block':'none';});
+  document.addEventListener('click',()=>{accMenu.style.display='none';});
 
   /* =====================================================================
      ANNOUNCEMENT BANNER
