@@ -482,16 +482,11 @@
        group below instead — same page, fewer powers, enforced server-side. */
     {label:'Founder',icon:'crown',founder:true,children:[
       {label:'Group Management',href:'/dashboard/groups'}]},
-    /* Question Manager and Response Templates sit HERE rather than under
-       Support Staff on purpose: reviewing applications is the work rank 1
-       does, deciding what every applicant is asked is the policy they work
-       to. api/_applications.php enforces it with BS_APP_MANAGE_RANK. */
-    {label:'Management',icon:'shield',admin:true,children:[
-      {label:'County Bulletin',href:'/dashboard/bulletin'},
-      {label:'Announcements',href:'/dashboard/announcements'},
-      {label:'Question Manager',href:'/dashboard/app-questions'},
-      {label:'Response Templates',href:'/dashboard/app-templates'},
-      {label:'Group Management',href:'/dashboard/groups',notFounder:true}]},
+    /* One button, not five children. Every Management tool now lives on
+       /dashboard/management, which means adding the sixth is a tile on
+       that page rather than another line in a menu everybody scrolls
+       past — and the list of tools stops being duplicated here. */
+    {label:'Management',icon:'shield',admin:true,href:'/dashboard/management'},
     /* Trainee Admin and above — the whole admin ladder, not just Management.
        See BS_ADMIN_MIN_RANK in api/_admin.php, which is what decides. */
     {label:'Administrators',icon:'search',admins:true,children:[
@@ -846,7 +841,7 @@
      The pages keep the markup as a fallback for a browser that never runs
      this; what is drawn here replaces it.
      ===================================================================== */
-  var UCP_VERSION = '2.6.0';
+  var UCP_VERSION = '2.7.0';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
