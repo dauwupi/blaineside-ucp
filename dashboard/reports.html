@@ -1408,6 +1408,10 @@
   .hlist.tight{gap:6px}
   .pager.tight{margin-top:12px;gap:6px}
   .pager.tight .pinfo{font-size:11.5px}
+  /* The conflict note sits above the two-column grid, and `.card + .card`
+     doesn't reach across to it — the grid is not a card. */
+  .apgrid{margin-top:20px}
+  .lookbar + .apgrid{margin-top:0}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.7.3">
 </head>
@@ -2664,6 +2668,24 @@
       (DATA.viewer.staff ? 'Their other reports' : 'Your other reports')+'</h3>'+
       '<span class="aside">'+list.length+'</span></div>'+
       '<div class="card-b"><div class="hlist tight">'+rows+'</div>'+pager+'</div></div>';
+  }
+
+  /* Only Management and Founders can reach a report that names them — a
+     Staff Management holder is refused at the door. So this is not a lock:
+     it is the fact, said out loud, at the top of the page, before they read
+     a word of it. Whether to hand it to somebody else is their judgement;
+     the UCP's job is to make sure it is a judgement they know they are
+     making. */
+  function conflictNote(){
+    if(!DATA.viewer || !DATA.viewer.named) return '';
+    return '<div class="card"><div class="card-b">'+
+      '<div class="note-a bad"><span class="si">'+ai('warn')+'</span><div>'+
+        '<h4>This report names you</h4>'+
+        '<p>You can read and handle it because you are Management — there is no queue above '+
+        'this one to send it to. Everything you do here is in the running log with your name '+
+        'on it, and the person who sent it is never told who decided it.</p>'+
+        '<p>If somebody else can take it, allocate it to them.</p>'+
+      '</div></div></div></div>';
   }
 
   function renderReport(){
