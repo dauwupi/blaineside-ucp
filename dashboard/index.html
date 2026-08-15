@@ -865,7 +865,7 @@
         </div>
         <div class="stat">
           <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3h9l3 3v15H6z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>User applications</div>
-          <div class="num" data-count="126">126</div>
+          <div class="num" id="statApplications" data-count="126">126</div>
         </div>
         <div class="stat">
           <div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 16l1.5-5h11L19 16M5 16h14v3H5zM7 19v1M17 19v1"/><circle cx="8" cy="16" r="0"/></svg>Player vehicles</div>
@@ -1535,8 +1535,9 @@
     document.querySelectorAll('#statStrip .num[data-count]').forEach(countUp);
   }
   /* ===== REAL DATA =====
-     Registered users comes from api/stats.php — a count of UCP accounts that
-     have confirmed their email. The other four tiles have no tables behind
+     Registered users and User applications come from api/stats.php — one
+     count of UCP accounts that confirmed their email, one of applications
+     that were actually sent. The other three tiles have no tables behind
      them yet and keep their designed placeholders until they do.
 
      finishLoading() runs either way: if the call fails, the numbers already
@@ -1553,6 +1554,14 @@
         if(d && d.ok === true && typeof d.users === 'number'){
           var el = document.getElementById('statUsers');
           if(el) el.dataset.count = d.users;
+        }
+        /* Applications only arrived with the application system, so the key
+           is absent on a UCP that has not run the migration — and absent is
+           not zero. The tile keeps its placeholder in that case rather than
+           reporting a number nobody has any reason to believe. */
+        if(d && d.ok === true && typeof d.applications === 'number'){
+          var ae = document.getElementById('statApplications');
+          if(ae) ae.dataset.count = d.applications;
         }
       })
       .catch(function(){})

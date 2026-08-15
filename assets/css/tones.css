@@ -85,28 +85,30 @@
 /* =====================================================================
    SURFACE CONTRAST
 
-   One block, and it governs every card in the UCP.
+   One block, and it governs every box in the UCP.
 
    This file is the LAST stylesheet on every page — the inline <style>
    blocks come before the <link> — so a :root here overrides the copy each
    page declares for itself, without editing fourteen files that would then
    drift apart again.
 
-   The problem it fixes: a card at --charcoal-2 sat about six points of
-   lightness above the page behind it, and its hairline was barely a point
-   above the card. On a bright monitor that reads as one flat surface, and
-   on a dim one the panels disappear entirely — which is what makes a list
-   of boxes hard to tell apart.
+   THE DASHBOARD IS THE REFERENCE. Its panels were always the readable
+   ones, and the reason turned out to be one variable: the dashboard draws
+   its boxes with --border, while every other page draws them with
+   --border-soft, which sat barely a point of lightness above the card it
+   was outlining. Same fill, same radius, invisible edge.
 
-   The step is now roughly twice what it was, in the same hues: nothing
-   here changes the palette, only how far apart the layers sit.
+   So --border-soft is now the same value as --border. Every .card in the
+   UCP gets the dashboard's edge without a single page being edited, and
+   the two names stay because plenty of rules use --border-soft for
+   dividers INSIDE a box, where the distinction may matter again later.
 
      --content-bg   #100f0e   the page          (unchanged)
      --charcoal-2   #201d19   cards             (was #1a1815)
      --charcoal-3   #292520   controls, rows    (was #221f1b)
      --charcoal-4   #35302a   hover, active     (was #2b2723)
-     --border       #38322b   visible edges     (was #26221e)
-     --border-soft  #2c2721   hairlines         (was #1f1c18)
+     --border       #38322b   every box edge    (was #26221e)
+     --border-soft  #38322b   was a hairline    (was #1f1c18)
 
    Anything that wants the old, quieter treatment can still set the
    variable on itself; this only moves the default.
@@ -116,5 +118,5 @@
   --charcoal-3:#292520;
   --charcoal-4:#35302a;
   --border:#38322b;
-  --border-soft:#2c2721;
+  --border-soft:#38322b;
 }
