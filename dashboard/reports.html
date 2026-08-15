@@ -1399,13 +1399,21 @@
   .railnote b{color:var(--text-faint);font-weight:700}
   /* The compact variant of the history list: one line, three columns, and
      the title truncated rather than wrapped. */
-  .hrow.tight{display:flex;align-items:center;gap:11px;padding:9px 12px}
+  /* The same surface as an appeal row on the administrative record —
+     charcoal-3 on a soft border, lifting to charcoal-4 with a gold edge on
+     hover. On the darker fill these rows disappeared into the card. */
+  .hrow.tight{display:flex;align-items:center;gap:11px;padding:11px 13px;
+    background:var(--charcoal-3);border:1px solid var(--border-soft);border-radius:11px;
+    transition:background .13s,border-color .13s}
+  .hrow.tight:hover{background:var(--charcoal-4);border-color:rgba(226,182,92,.26)}
+  .hrow.tight:hover .hid{color:var(--gold)}
+  .hrow.tight:hover .hgo{color:var(--gold)}
   .hrow.tight .ht{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--parchment);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .hrow.tight .hst{flex:none}
   .hrow.tight .hw{flex:none;font-size:11.5px;color:var(--text-dim);white-space:nowrap}
   .hrow.tight .hgo{flex:none}
-  .hlist.tight{gap:6px}
+  .hlist.tight{gap:9px}
   .pager.tight{margin-top:12px;gap:6px}
   .pager.tight .pinfo{font-size:11.5px}
   /* The conflict note sits above the two-column grid, and `.card + .card`

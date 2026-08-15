@@ -901,7 +901,14 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
         'comments'   => appeal_comments($pdo, (int)$a['id'], $staff, $a),
         /* What else this person has appealed. The appellant sees their own
            history; a handler sees the same list with who decided each. */
-        'history'    => appeal_history($pdo, (int)$a['account_id'], (int)$a['id'], $staff),
+        /* Every other appeal this person has made, in exactly the shape
+           the administrative record uses — same function, so the card on
+           this page and the card on the record cannot drift apart. The
+           appeal being read is dropped from it by the page. */
+        'history'    => array_values(array_filter(
+            appeal_record_list($pdo, (int)$a['account_id'], $staff),
+            function ($h) use ($a) { return (int)$h['id'] !== (int)$a['id']; }
+        )),
 
         /* Characters aren't linked to the UCP. The field is reported as
            unavailable rather than omitted, so the page can draw it

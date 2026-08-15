@@ -34,7 +34,10 @@ ok([
     /* Their own past appeals, so the page can offer them a way back to what
        they were told last time — including from the lock screen, which is
        the only page a locked account can reach. */
-    'history'     => appeal_history($pdo, (int)$acc['id']),
+    /* The same shape the administrative record uses, so the card is the
+       same card wherever it appears. Never with the handler's name — this
+       is the appellant's own view. */
+    'history'     => appeal_record_list($pdo, (int)$acc['id'], false),
     'features'    => ['characters' => false],
     'min_words'   => BS_APPEAL_BODY_MIN,
 ]);
