@@ -643,6 +643,34 @@
     border-top:1px solid var(--border-soft);font-size:12.5px;color:var(--text-faint);flex-wrap:wrap}
   .foot input[type=text]{width:58px;text-align:center;padding:8px 6px}
 
+  /* ---- Assist criteria, inside the question editor ---- */
+  /* .asw, not .sw. The page shell already defines .toggle and .sw for the
+     switches on Announcements — 38x22 with their own knob transform — and
+     two rules for one element is how a knob ends up sitting on top of its
+     own label. Named apart so neither has to know about the other. */
+  .atoggle{display:inline-flex;align-items:center;gap:11px;font-size:12.5px;color:var(--text-faint);
+    cursor:pointer;user-select:none}
+  .atoggle .asw{width:34px;height:19px;border-radius:100px;background:var(--charcoal-3);
+    border:1px solid var(--border);position:relative;flex:none;
+    transition:background .15s,border-color .15s}
+  .atoggle .asw::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;
+    border-radius:50%;background:var(--text-dim);transition:left .15s,background .15s}
+  .atoggle.on{color:var(--parchment)}
+  .atoggle.on .asw{background:rgba(226,182,92,.22);border-color:rgba(226,182,92,.45)}
+  .atoggle.on .asw::after{left:17px;background:var(--gold)}
+  .crit{display:flex;align-items:center;gap:10px;background:var(--charcoal);border:1px solid var(--border);
+    border-radius:10px;padding:9px 11px;margin-top:8px}
+  .crit .name{font-size:12.5px;font-weight:600;min-width:170px;flex:none}
+  .crit .words{font-size:11.5px;color:var(--text-dim);flex:1;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .crit .x{color:var(--text-dim);cursor:pointer;flex:none;display:grid;place-items:center;
+    width:22px;height:22px;border-radius:6px}
+  .crit .x:hover{color:#d98a75;background:rgba(193,85,63,.12)}
+  .crit .x svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.2}
+  .critadd{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap}
+  .critadd input{flex:1;min-width:170px}
+  .hint{font-size:11.5px;color:var(--text-dim);line-height:1.6;margin-top:8px}
+
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css">
 </head>
@@ -843,7 +871,7 @@
      usual reason a question comes out of the pool is that it needs a
      rewrite rather than a burial.
      ===================================================================== */
-  var ROWS = [], DRAW = 2, EDITING = 0, OPEN = {}, SHOW_RETIRED = false;
+  var ROWS = [], DRAW = 2, EDITING = 0, OPEN = {}, SHOW_RETIRED = false, ASSIST_OK = false;
 
   function el(id){ return document.getElementById(id); }
   function num(n){ return (n|0).toLocaleString(); }
@@ -857,6 +885,9 @@
     var bits = [];
     if(q.min_chars) bits.push(num(q.min_chars) + ' character minimum');
     bits.push('asked ' + num(q.asked) + ' time' + (q.asked===1?'':'s'));
+    if(q.assist && q.assist_rules && q.assist_rules.length)
+      bits.push('assist: ' + q.assist_rules.length + ' criteri' +
+                (q.assist_rules.length === 1 ? 'on' : 'a'));
     if(q.by) bits.push('added by ' + escapeHtml(q.by));
     return bits.join(' · ');
   }
@@ -877,6 +908,7 @@
         '<div class="flab">Prompt shown to the applicant</div>' +
         '<textarea id="ePrompt" rows="4" placeholder="What they are being asked to write…">' +
           escapeHtml(q.prompt || '') + '</textarea>' +
+        assistEditor(q) +
         '<div class="frow">' +
           '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--text-faint)">' +
           '<input type="text" id="eMin" value="' + (q.min_chars||0) + '" style="width:72px;text-align:center">' +
@@ -912,6 +944,67 @@
     paint('body', html);
   }
 
+  /* =====================================================================
+     ASSIST CRITERIA
+
+     Per question, and off unless somebody sets it up. A question with no
+     criteria draws no panel at all on the review screen, which is how this
+     stays on the two or three questions where it earns its place rather
+     than becoming decoration on all of them.
+
+     Held in EDIT_RULES while the row is open so adding and removing is
+     instant; written with the rest of the question on Save.
+     ===================================================================== */
+  var EDIT_RULES = [], EDIT_ASSIST = false;
+
+  function assistEditor(q){
+    if(!ASSIST_OK) return '';
+    var rows = EDIT_RULES.map(function(r, i){
+      return '<div class="crit"><span class="name">' + escapeHtml(r.label) + '</span>' +
+        '<span class="words">' + escapeHtml(r.words.join(', ')) + '</span>' +
+        '<span class="x" data-critdel="' + i + '" title="Remove">' +
+        '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div>';
+    }).join('');
+
+    return '<div class="flab" style="margin-top:14px">Assist</div>' +
+      '<div class="atoggle' + (EDIT_ASSIST ? ' on' : '') + '" id="eAssist"><span class="asw"></span>' +
+      'Show the assist panel to reviewers on this question</div>' +
+      (EDIT_ASSIST
+        ? '<div class="flab" style="margin-top:13px">Look for</div>' + rows +
+          '<div class="critadd">' +
+            '<input type="text" id="cName" placeholder="What to call it — “Robbing limits”" maxlength="80">' +
+            '<input type="text" id="cWords" placeholder="Words that count as a mention, comma separated">' +
+            '<button class="btn sm" id="cAdd">Add</button></div>' +
+          '<div class="hint">Any one of the words counts as a mention. Matching ignores case and ' +
+          'line breaks, so “chain rob” finds “Chain\u00a0Robbing”. Reviewers are shown which word ' +
+          'matched, because “scam” appears in “I would never scam anyone” too.</div>'
+        : '');
+  }
+
+  function wireAssist(){
+    var t = el('eAssist');
+    if(t) t.addEventListener('click', function(){
+      EDIT_ASSIST = !EDIT_ASSIST;
+      render();
+    });
+    var add = el('cAdd');
+    if(add) add.addEventListener('click', function(){
+      var name = (el('cName').value || '').trim();
+      var words = (el('cWords').value || '').split(',')
+        .map(function(w){ return w.trim(); }).filter(Boolean);
+      if(!name)   return toast('Give the criterion a name.');
+      if(!words.length) return toast('Add at least one word to look for.');
+      EDIT_RULES.push({label:name, words:words});
+      render();
+    });
+    document.querySelectorAll('[data-critdel]').forEach(function(x){
+      x.addEventListener('click', function(){
+        EDIT_RULES.splice(parseInt(this.getAttribute('data-critdel'), 10), 1);
+        render();
+      });
+    });
+  }
+
   function render(){
     var live = ROWS.filter(function(q){ return !q.retired; });
     var pool = live.filter(function(q){ return !q.pinned; }).length;
@@ -939,7 +1032,7 @@
     el('addBtn').addEventListener('click', function(){
       if(!ROWS.some(function(q){ return q.id === 0; }))
         ROWS.unshift({id:0, title:'', prompt:'', min_chars:0, pinned:false, retired:false, asked:0, by:null});
-      EDITING = 0; render();
+      EDITING = 0; EDIT_RULES = []; EDIT_ASSIST = false; render();
       /* A brand new row has id 0, which is also "nothing is being edited" —
          so it is opened explicitly here rather than through EDITING. */
       var first = document.querySelector('.item[data-id="0"]');
@@ -970,11 +1063,19 @@
     document.querySelectorAll('[data-edit]').forEach(function(x){
       x.addEventListener('click', function(e){
         e.stopPropagation();
-        EDITING = parseInt(this.getAttribute('data-edit'), 10); render();
+        EDITING = parseInt(this.getAttribute('data-edit'), 10);
+        var row = ROWS.filter(function(q){ return q.id === EDITING; })[0];
+        /* Copied, not referenced — Cancel has to leave the saved criteria
+           exactly as they were. */
+        EDIT_RULES  = row && row.assist_rules
+          ? row.assist_rules.map(function(r){ return {label:r.label, words:r.words.slice()}; }) : [];
+        EDIT_ASSIST = !!(row && row.assist);
+        render();
       });
     });
 
     wireEditor();
+    wireAssist();
     wireDrag();
   }
 
@@ -1013,7 +1114,8 @@
       UCP.post('app-question-save.php', {
         action:'save', id: row.id || 0,
         title: el('eTitle').value, prompt: el('ePrompt').value,
-        min_chars: parseInt(el('eMin').value, 10) || 0, pinned: row.pinned ? 1 : 0
+        min_chars: parseInt(el('eMin').value, 10) || 0, pinned: row.pinned ? 1 : 0,
+        assist: EDIT_ASSIST ? 1 : 0, assist_rules: EDIT_RULES
       }).then(function(res){
         var d = res.data || {};
         b.disabled = false;
@@ -1063,7 +1165,7 @@
           escapeHtml((d && d.error) || 'Could not load the questions.') + '</p></div></div>';
         return;
       }
-      ROWS = d.rows; DRAW = d.draw; render();
+      ROWS = d.rows; DRAW = d.draw; ASSIST_OK = !!d.assist; render();
     });
   }
 

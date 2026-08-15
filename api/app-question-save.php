@@ -73,16 +73,34 @@ $prompt = trim((string)($in['prompt'] ?? ''));
 $min    = max(0, min(2000, (int)($in['min_chars'] ?? 0)));
 $pinned = !empty($in['pinned']) ? 1 : 0;
 
+/* The assist criteria. Normalised through assist_rules() on the way in as
+   well as on the way out, so nothing malformed can be stored — a rule with
+   no label or no words is not a rule, it is an empty row somebody left
+   behind. */
+$assist = !empty($in['assist']) ? 1 : 0;
+$rules  = assist_rules(json_encode(is_array($in['assist_rules'] ?? null) ? $in['assist_rules'] : []));
+$rulesJson = $rules ? json_encode($rules, JSON_UNESCAPED_UNICODE) : null;
+if (!$rules) $assist = 0;    // switched on with nothing to look for is off
+
 if (mb_strlen($title) < 3)   fail('Give the question a title.', 422);
 if (mb_strlen($title) > 140) fail('That title is too long.', 422);
 if (mb_strlen($prompt) < 10) fail('Write the prompt the applicant will read.', 422);
 
 if ($id > 0) {
-    $pdo->prepare(
-        'UPDATE ucp_app_questions
-            SET title = ?, prompt = ?, min_chars = ?, pinned = ?, updated_at = ?
-          WHERE id = ?'
-    )->execute([$title, $prompt, $min, $pinned, $now, $id]);
+    if (assist_available($pdo)) {
+        $pdo->prepare(
+            'UPDATE ucp_app_questions
+                SET title = ?, prompt = ?, min_chars = ?, pinned = ?,
+                    assist = ?, assist_rules = ?, updated_at = ?
+              WHERE id = ?'
+        )->execute([$title, $prompt, $min, $pinned, $assist, $rulesJson, $now, $id]);
+    } else {
+        $pdo->prepare(
+            'UPDATE ucp_app_questions
+                SET title = ?, prompt = ?, min_chars = ?, pinned = ?, updated_at = ?
+              WHERE id = ?'
+        )->execute([$title, $prompt, $min, $pinned, $now, $id]);
+    }
 } else {
     $next = (int)$pdo->query('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM ucp_app_questions')
                      ->fetchColumn();
@@ -94,6 +112,10 @@ if ($id > 0) {
     )->execute([$title, $prompt, $min, $pinned, $next,
                 (int)$acc['id'], $acc['username'], $now, $now]);
     $id = (int)$pdo->lastInsertId();
+    if (assist_available($pdo)) {
+        $pdo->prepare('UPDATE ucp_app_questions SET assist = ?, assist_rules = ? WHERE id = ?')
+            ->execute([$assist, $rulesJson, $id]);
+    }
 }
 
 $st = $pdo->prepare('SELECT * FROM ucp_app_questions WHERE id = ? LIMIT 1');

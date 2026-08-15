@@ -33,6 +33,7 @@ $pool = 0;
 foreach ($rows as $r) if (!$r['pinned'] && !$r['retired']) $pool++;
 
 ok([
+    'assist' => assist_available($pdo),
     'rows'  => $rows,
     'draw'  => app_draw_count($pdo),
     'pool'  => $pool,

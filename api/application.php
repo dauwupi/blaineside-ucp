@@ -50,6 +50,10 @@ $out['owner']   = $owner;
 $out['staff']   = $staff;
 
 if ($staff) {
+    /* The reading aid, and only here — inside the staff branch, next to
+       the addresses and the history. The applicant's own view of this
+       same application never carries it. */
+    $out['answers']   = assist_attach($pdo, $out['answers']);
     $out['applicant'] = app_applicant($pdo, (int)$app['account_id']);
     $out['ips']       = app_ips_for($pdo, (int)$app['account_id']);
     $out['matches']   = app_ip_matches($pdo, (int)$app['account_id']);

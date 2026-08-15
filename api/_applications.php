@@ -314,7 +314,8 @@ function app_answers(PDO $pdo, int $applicationId): array
     $out = [];
     foreach ($st->fetchAll() as $r) {
         $out[] = [
-            'id'        => (int)$r['id'],
+            'id'          => (int)$r['id'],
+            'question_id' => $r['question_id'] !== null ? (int)$r['question_id'] : null,
             'title'     => $r['question_title'],
             'prompt'    => $r['question_prompt'],
             'min_chars' => (int)$r['min_chars'],
@@ -550,6 +551,8 @@ function app_log(PDO $pdo, int $applicationId, array $acc, string $action, ?stri
 function app_question_out(array $r): array
 {
     return [
+        'assist'       => isset($r['assist']) ? (bool)$r['assist'] : false,
+        'assist_rules' => isset($r['assist_rules']) ? assist_rules($r['assist_rules']) : [],
         'id'         => (int)$r['id'],
         'title'      => $r['title'],
         'prompt'     => $r['prompt'],
@@ -580,3 +583,147 @@ function app_template_out(array $r): array
 }
 
 const APP_TEMPLATE_USES = ['pass' => 'Pass', 'deny' => 'Deny', 'either' => 'Either'];
+
+
+/* ---------------------------------------------------------------------
+   ASSIST
+
+   A reading aid for whoever is reviewing an application. It reports two
+   things about an answer: its shape (length, paragraphs, longest
+   unbroken run) and whether wording the question cares about appears in
+   it — "chain rob", "crime zone", and so on, configured per question in
+   the Question Manager.
+
+   Three things it deliberately is not:
+
+     - a score. Nothing here adds up to a number, and nothing here is
+       shown to the applicant.
+     - a judgement. It matches TEXT. "I would never scam anyone" contains
+       the word scam; a reviewer needs to see that, which is why every hit
+       reports the phrase it matched rather than just a tick.
+     - a gate. A missing phrase blocks nothing and is drawn in grey, not
+       red: an applicant asked to name two rules who names two has done
+       exactly what was asked, and six red crosses beside a correct answer
+       teaches people to ignore the panel.
+
+   Evaluated live against the question's CURRENT criteria rather than a
+   copy stored with the answer. The wording of an answer is a record and
+   is frozen; this is a lens somebody looks through today, and it should
+   improve as the criteria do.
+   --------------------------------------------------------------------- */
+
+/** Are the assist columns there? One migration behind, the panel is off. */
+function assist_available(PDO $pdo): bool
+{
+    static $known = null;
+    if ($known !== null) return $known;
+    try { $pdo->query('SELECT assist FROM ucp_app_questions LIMIT 1'); $known = true; }
+    catch (Throwable $e) { $known = false; }
+    return $known;
+}
+
+/** [{label, words:[...]}, ...] — anything malformed is simply no rules. */
+function assist_rules(?string $json): array
+{
+    if ($json === null || trim($json) === '') return [];
+    $v = json_decode($json, true);
+    if (!is_array($v)) return [];
+    $out = [];
+    foreach ($v as $r) {
+        if (!is_array($r)) continue;
+        $label = trim((string)($r['label'] ?? ''));
+        $words = is_array($r['words'] ?? null) ? $r['words'] : [];
+        $words = array_values(array_filter(array_map(function ($w) {
+            return mb_strtolower(trim((string)$w));
+        }, $words), function ($w) { return $w !== ''; }));
+        if ($label === '' || !$words) continue;
+        $out[] = ['label' => mb_substr($label, 0, 80), 'words' => array_slice($words, 0, 40)];
+    }
+    return array_slice($out, 0, 20);
+}
+
+/**
+ * Look at one answer.
+ *
+ * Matching is a case-insensitive substring on whitespace-collapsed text,
+ * so "chain  rob" in the answer still matches "chain rob" in the rule and
+ * a line break in the middle of a phrase does not hide it.
+ */
+function assist_eval(string $body, array $rules, int $minChars = 0): array
+{
+    $flat = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $body)));
+
+    /* Paragraphs are blank-line separated. An answer typed as one block is
+       one paragraph, which is a fact worth showing on a question that asks
+       for two. */
+    $paras = preg_split('/\R\s*\R/u', trim($body));
+    $paras = array_values(array_filter(array_map('trim', $paras ?: []), function ($p) {
+        return $p !== '';
+    }));
+
+    $longest = 0;
+    foreach ($paras as $p) {
+        $n = count(preg_split('/\s+/u', trim($p)) ?: []);
+        if ($n > $longest) $longest = $n;
+    }
+
+    $checks = [];
+    foreach ($rules as $r) {
+        $hit = null;
+        foreach ($r['words'] as $w) {
+            if ($w !== '' && mb_strpos($flat, $w) !== false) { $hit = $w; break; }
+        }
+        $checks[] = ['label' => $r['label'], 'found' => $hit !== null, 'match' => $hit];
+    }
+
+    $chars = mb_strlen($flat);
+    return [
+        'stats' => [
+            'chars'      => $chars,
+            'min_chars'  => $minChars,
+            'meets_min'  => $minChars <= 0 || $chars >= $minChars,
+            'paragraphs' => max(count($paras), $flat === '' ? 0 : 1),
+            'longest'    => $longest,
+        ],
+        'checks' => $checks,
+        'found'  => count(array_filter($checks, function ($c) { return $c['found']; })),
+        'total'  => count($checks),
+    ];
+}
+
+/**
+ * Attach an assist block to each answer that has criteria behind it.
+ *
+ * STAFF ONLY. Every caller passes answers it already decided the viewer may
+ * see; this adds the lens on top, and api/application.php calls it inside
+ * the same `if ($staff)` that guards the addresses and the history.
+ */
+function assist_attach(PDO $pdo, array $answers): array
+{
+    if (!$answers || !assist_available($pdo)) return $answers;
+
+    $ids = array_values(array_unique(array_filter(array_map(function ($a) {
+        return (int)($a['question_id'] ?? 0);
+    }, $answers))));
+    if (!$ids) return $answers;
+
+    $in = implode(',', array_map('intval', $ids));
+    $cfg = [];
+    foreach ($pdo->query('SELECT id, assist, assist_rules FROM ucp_app_questions WHERE id IN (' . $in . ')')
+                 ->fetchAll() as $q) {
+        if (!(int)$q['assist']) continue;
+        $rules = assist_rules($q['assist_rules']);
+        if ($rules) $cfg[(int)$q['id']] = $rules;
+    }
+    if (!$cfg) return $answers;
+
+    foreach ($answers as &$a) {
+        $qid = (int)($a['question_id'] ?? 0);
+        if (isset($cfg[$qid])) {
+            $a['assist'] = assist_eval((string)($a['body'] ?? ''), $cfg[$qid],
+                                       (int)($a['min_chars'] ?? 0));
+        }
+    }
+    unset($a);
+    return $answers;
+}

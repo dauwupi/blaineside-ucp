@@ -741,6 +741,42 @@
   .answer{background:var(--charcoal);border:1px solid var(--border);border-radius:10px;padding:13px 14px;
     font-size:13px;line-height:1.8;white-space:pre-wrap;margin-top:11px;overflow-wrap:anywhere}
 
+  /* ---- Assist ----
+     A reading aid under an answer, staff only. Collapsed on arrival: on a
+     six-question application it would otherwise be six panels of small
+     print between the reviewer and the next answer. */
+  .assist{margin-top:12px;border:1px solid var(--border);border-radius:12px;
+    background:var(--charcoal);overflow:hidden}
+  .assist .ah{display:flex;align-items:center;gap:9px;padding:11px 14px;cursor:pointer;user-select:none}
+  .assist.open .ah{border-bottom:1px solid var(--border)}
+  .assist .ah .t{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-faint)}
+  .assist .ah .beta{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-dim);border:1px solid var(--border);border-radius:5px;padding:3px 6px}
+  .assist .ah .r{margin-left:auto;font-size:11.5px;color:var(--text-dim);display:flex;
+    align-items:center;gap:8px}
+  .assist .ah .cv{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.2;
+    transition:transform .16s}
+  .assist.open .ah .cv{transform:rotate(180deg)}
+  .assist .ab{display:none;padding:12px 14px}
+  .assist.open .ab{display:block;animation:bsOpen .16s ease-out both}
+  .astats{display:flex;gap:20px;flex-wrap:wrap;padding-bottom:11px;margin-bottom:9px;
+    border-bottom:1px solid var(--border)}
+  .astats .k{font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--text-dim)}
+  .astats .v{font-family:Oswald,sans-serif;font-size:17px;font-weight:600;margin-top:3px;
+    color:var(--parchment);font-variant-numeric:tabular-nums}
+  .astats .v.ok{color:#9dbd77}
+  .astats .v.no{color:#d98a75}
+  .chk{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12.5px;color:var(--text-dim)}
+  .chk svg{width:15px;height:15px;flex:none;fill:none;stroke-width:2.4;stroke:currentColor}
+  .chk.y{color:var(--parchment)}
+  .chk.y svg{stroke:#9dbd77}
+  .chk .why{margin-left:auto;font-size:11px;color:var(--text-dim);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;max-width:45%}
+  .assist .note{font-size:11.5px;color:var(--text-dim);line-height:1.65;padding:10px 14px;
+    border-top:1px solid var(--border);background:var(--charcoal-2)}
+
   .fb{border-radius:12px;padding:14px 16px;background:rgba(193,85,63,.08);border:1px solid rgba(193,85,63,.26)}
   .fb.good{background:rgba(127,160,90,.08);border-color:rgba(127,160,90,.26)}
   .fb h5{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#d98a75;margin-bottom:8px}
@@ -1190,6 +1226,46 @@
         : '<div class="card-b"><div class="empty">This is their first application.</div></div>') + '</div></div>';
   }
 
+  /* Assist. Drawn only when the server sent one, which it does only for
+     staff and only for questions that have criteria behind them — see
+     assist_attach() in api/_applications.php. */
+  var ASSIST_OPEN = {};
+  var TICK = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+  var DASH = '<svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg>';
+
+  function assistBlock(a){
+    var s = a.assist;
+    if(!s) return '';
+    var open = !!ASSIST_OPEN[a.id];
+    var st = s.stats || {};
+
+    var checks = (s.checks || []).map(function(c){
+      return '<div class="chk ' + (c.found ? 'y' : 'n') + '">' + (c.found ? TICK : DASH) +
+        escapeHtml(c.label) +
+        (c.found && c.match ? '<span class="why">“' + escapeHtml(c.match) + '”</span>' : '') +
+        '</div>';
+    }).join('');
+
+    return '<div class="assist' + (open ? ' open' : '') + '">' +
+      '<div class="ah" data-assist="' + a.id + '"><span class="t">Assist</span>' +
+      '<span class="beta">Beta</span><span class="r">' +
+        s.found + ' of ' + s.total + ' found' +
+        (st.min_chars && !st.meets_min
+          ? ' · ' + num(st.chars) + ' characters, under the ' + num(st.min_chars) + ' asked for'
+          : '') +
+      '<svg class="cv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div>' +
+      '<div class="ab">' +
+        '<div class="astats">' +
+          '<div><div class="k">Length</div><div class="v ' +
+            (st.min_chars ? (st.meets_min ? 'ok' : 'no') : '') + '">' + num(st.chars) + '</div></div>' +
+          '<div><div class="k">Paragraphs</div><div class="v">' + num(st.paragraphs) + '</div></div>' +
+          '<div><div class="k">Longest run</div><div class="v">' + num(st.longest) + ' words</div></div>' +
+        '</div>' + checks + '</div>' +
+      '<div class="note">Assist looks for wording, not understanding. A missing line means those ' +
+      'words were not found — it does not mean the answer is wrong, and a tick does not mean it ' +
+      'is right.</div></div>';
+  }
+
   /* Every answer starts closed. An application with three long answers is
      three screens of scrolling before you can see what was asked, and the
      first thing a reviewer does is decide which one to read. */
@@ -1211,7 +1287,8 @@
         (open ? '15l6-6 6 6' : '9l6 6 6-6') + '"/></svg></span></span></div>' +
         (open
           ? '<div class="ibody"><div class="prompt">' + escapeHtml(a.prompt) + '</div>' +
-            '<div class="answer">' + escapeHtml(a.body || '') + '</div></div>'
+            '<div class="answer">' + escapeHtml(a.body || '') + '</div>' +
+            assistBlock(a) + '</div>'
           : '') + '</div>';
     }).join('');
 
@@ -1285,7 +1362,7 @@
   var MEID = 0;
 
   function renderOne(d){
-    VIEW = d; PICKED = null; USED_TMPL = 0; ANS_OPEN = {};
+    VIEW = d; PICKED = null; USED_TMPL = 0; ANS_OPEN = {}; ASSIST_OPEN = {};
     paint('body',
       '<div class="backline"><button class="btn" id="backBtn">' +
         '<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Back to the panel</button>' +
@@ -1310,19 +1387,7 @@
       r.addEventListener('click', function(){ location.hash = 'id=' + this.getAttribute('data-open'); });
     });
 
-    document.querySelectorAll('[data-answer]').forEach(function(h){
-      h.addEventListener('click', function(){
-        var id = parseInt(this.getAttribute('data-answer'), 10);
-        ANS_OPEN[id] = !ANS_OPEN[id];
-        redrawAnswers();
-      });
-    });
-    var ea = el('expandAll');
-    if(ea) ea.addEventListener('click', function(){
-      var open = (VIEW.answers||[]).every(function(a){ return ANS_OPEN[a.id]; });
-      (VIEW.answers||[]).forEach(function(a){ ANS_OPEN[a.id] = !open; });
-      redrawAnswers();
-    });
+    wireAnswers();
 
     var claimBtn = el('claimBtn');
     if(claimBtn) claimBtn.addEventListener('click', function(){ claim('claim'); });
@@ -1365,14 +1430,21 @@
   /* Redraw the answers card ALONE. Re-rendering the whole review would
      throw away whatever is half-written in the feedback box, which is the
      one thing on this page nobody can get back. */
-  function redrawAnswers(){
-    var host = document.getElementById('answersHost');
-    if(!host) return;
-    host.innerHTML = answersCard(VIEW);
+  function wireAnswers(){
     document.querySelectorAll('[data-answer]').forEach(function(h){
       h.addEventListener('click', function(){
         var id = parseInt(this.getAttribute('data-answer'), 10);
         ANS_OPEN[id] = !ANS_OPEN[id];
+        redrawAnswers();
+      });
+    });
+    /* The assist header sits INSIDE the answer body, so its click must not
+       bubble up to the answer header and close the thing it belongs to. */
+    document.querySelectorAll('[data-assist]').forEach(function(h){
+      h.addEventListener('click', function(e){
+        e.stopPropagation();
+        var id = parseInt(this.getAttribute('data-assist'), 10);
+        ASSIST_OPEN[id] = !ASSIST_OPEN[id];
         redrawAnswers();
       });
     });
@@ -1382,6 +1454,13 @@
       (VIEW.answers||[]).forEach(function(a){ ANS_OPEN[a.id] = !open; });
       redrawAnswers();
     });
+  }
+
+  function redrawAnswers(){
+    var host = document.getElementById('answersHost');
+    if(!host) return;
+    host.innerHTML = answersCard(VIEW);
+    wireAnswers();
   }
 
   function claim(action){
