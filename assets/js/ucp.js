@@ -259,8 +259,14 @@
     if (!d || typeof d.rank !== 'number') return;
     var m = { name: d.name || '', role: d.role || 'Member', rank: d.rank | 0,
               teams: Array.isArray(d.teams) ? d.teams.map(String) : [] };
+    /* Carried through only when the server actually sends it. Writing 0
+       into the cache for a UCP that has no ledger would then paint 0 on
+       the next page before the session answers, which is a number nobody
+       asked for. */
+    if (typeof d.credits === 'number') m.credits = d.credits;
     meWrite(m);
     paintMe(m);
+    paintCredits(m);
     initQuickSearch(m.rank);
     renderNav();               // the rank may have just changed the menu
   }
@@ -841,6 +847,98 @@
      The pages keep the markup as a fallback for a browser that never runs
      this; what is drawn here replaces it.
      ===================================================================== */
+
+  /* =====================================================================
+     THE CREDIT BALANCE
+
+     Sits immediately before the account button in the top bar, on every
+     page, drawn from here rather than pasted into fourteen files.
+
+     Nothing else in the bar moves: the search box and the bell keep their
+     places and the account block shifts left by exactly the width of this
+     one.
+
+     There is no credit ledger yet, so the balance reads 0 and comes from
+     whatever api/session.php reports. When a ledger exists, session.php
+     gains a `credits` number and this lights up with no change here.
+     ===================================================================== */
+  var CREDIT_CSS = [
+    '.creditbox{display:flex;align-items:stretch;height:44px;border-radius:10px;',
+      'border:1px solid var(--border,#38322b);background:var(--charcoal-2,#201d19);',
+      'overflow:hidden;flex:none;transition:border-color .15s ease}',
+    '.creditbox:hover{border-color:rgba(226,182,92,.42)}',
+    '.creditbox .cmain{display:flex;align-items:center;gap:10px;padding:0 13px;color:inherit}',
+    '.creditbox .cico{width:19px;height:19px;flex:none;stroke:var(--gold,#e2b65c);fill:none;',
+      'stroke-width:1.7}',
+    '.creditbox .ck{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;',
+      'color:var(--text-dim,#655e51);line-height:1.3;display:block}',
+    '.creditbox .cnum{font-family:Oswald,sans-serif;font-weight:600;font-size:16px;line-height:1.1;',
+      'letter-spacing:.01em;font-variant-numeric:tabular-nums;color:var(--gold,#e2b65c);display:block}',
+    '.creditbox .cplus{width:36px;display:grid;place-items:center;color:var(--text-faint,#968e7e);',
+      'border-left:1px solid var(--border,#38322b);background:var(--charcoal-3,#292520);',
+      'transition:background .15s ease,color .15s ease}',
+    '.creditbox .cplus svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.4}',
+    '.creditbox .cplus:hover{background:rgba(226,182,92,.12);color:var(--gold,#e2b65c)}',
+    '.creditbox a{color:inherit;text-decoration:none}',
+    '.creditbox a:focus-visible{outline:2px solid rgba(226,182,92,.55);outline-offset:-2px}',
+    '@media (max-width:760px){.creditbox .ck{display:none}.creditbox .cmain{padding:0 11px}}',
+    '@media (prefers-reduced-motion:reduce){.creditbox,.creditbox .cplus{transition:none}}'
+  ].join('');
+
+  /* In full to 9,999, then abbreviated from 10,0K. Never wider than five
+     characters, so the box cannot change width as somebody spends.
+     Truncated rather than rounded: a balance that reads higher than it is
+     is the one error nobody forgives. */
+  function creditFormat(n){
+    n = Math.max(0, Math.floor(Number(n) || 0));
+    if (n < 10000) return n.toLocaleString('en-US');
+    var unit = 'K', div = 1000;
+    if (n >= 1000000) { unit = 'M'; div = 1000000; }
+    /* One integer division, then split the digits — NOT floor((v - whole)
+       * 10). 1400000 / 1000000 is 1.4000000000000001 in binary floating
+       point, and that expression turned 1,4M into 1,3M. Tenths are counted
+       here, never subtracted. */
+    var tenths = Math.floor(n / (div / 10));
+    return Math.floor(tenths / 10) + ',' + (tenths % 10) + unit;
+  }
+
+  function initCredits(){
+    var bar = document.querySelector('.topbar');
+    if (!bar || document.querySelector('.creditbox')) return;
+    var acct = bar.querySelector('.account');
+    if (!acct) return;
+
+    if (!document.getElementById('credit-style')) {
+      var st = document.createElement('style');
+      st.id = 'credit-style';
+      st.textContent = CREDIT_CSS;
+      document.head.appendChild(st);
+    }
+
+    var box = document.createElement('div');
+    box.className = 'creditbox';
+    box.innerHTML =
+      '<a class="cmain" href="/dashboard/store" title="Credit Store">' +
+        '<svg class="cico" viewBox="0 0 24 24">' +
+          '<circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/>' +
+          '<path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg>' +
+        '<span><span class="ck">Credits</span>' +
+        '<span class="cnum" id="creditValue">0</span></span></a>' +
+      '<a class="cplus" href="/dashboard/store#credits" aria-label="Buy credits" title="Buy credits">' +
+        '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></a>';
+
+    acct.parentNode.insertBefore(box, acct);
+    paintCredits(meRead());
+  }
+
+  function paintCredits(me){
+    var v = document.getElementById('creditValue');
+    if (!v) return;
+    var n = me && typeof me.credits === 'number' ? me.credits : 0;
+    v.textContent = creditFormat(n);
+    v.setAttribute('title', n.toLocaleString('en-US') + ' credits');
+  }
+
   /* =====================================================================
      THE BRAND MARK
 
@@ -863,7 +961,7 @@
     name.parentNode.replaceChild(a, name);
   }
 
-  var UCP_VERSION = '2.8.0';
+  var UCP_VERSION = '2.9.0';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -920,6 +1018,7 @@
     initNotifications();
     initSideFoot();
     initBrandLink();
+    initCredits();
     // Drawn from the cached rank so the box doesn't flash in and out; the
     // real rank corrects it a moment later via rememberMe() below.
     initQuickSearch(CACHED ? CACHED.rank : 0);
