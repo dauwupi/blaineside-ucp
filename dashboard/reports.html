@@ -1238,14 +1238,6 @@
   .qtable td.who .subline{display:block;font-size:11.5px;color:var(--text-dim);
     font-weight:500;margin-top:3px}
   .sec-h .n .grp{color:var(--tone-text);font-weight:700}
-  /* A plain checkbox with a label beside it. `.chk` is the big pill the
-     appeal form uses for "where were you banned" — a single yes/no beside
-     a textarea is not that, and borrowing it made a note-to-self look like
-     the primary action of the card. */
-  .chkline{display:inline-flex;align-items:center;gap:9px;margin-top:10px;
-    font-size:12.5px;color:var(--text-faint);cursor:pointer;user-select:none}
-  .chkline input{width:15px;height:15px;accent-color:var(--gold);cursor:pointer}
-  .chkline:hover{color:var(--parchment)}
   .card-lede + .card-lede{margin-top:11px}
   /* A row in the queue that names the person reading it. Only Management
      and Founders ever see one, and it is the single most important thing
@@ -1336,8 +1328,8 @@
   .tprevwrap .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
     color:var(--stone);flex:none}
   .tprev{font-size:13.5px;font-weight:600;color:var(--parchment);min-width:0;
-    overflow-wrap:anywhere}
-  .tprev.empty{color:var(--text-dim);font-weight:500;font-style:italic}
+    overflow-wrap:anywhere;background:none;border:0;padding:0;display:inline}
+  .tprev.blank{color:var(--text-dim);font-weight:500;font-style:italic}
 
   /* ---- the rail ---- */
   .tline{display:flex;flex-direction:column}
@@ -1378,6 +1370,31 @@
   .rail .sect{margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
   .sect-t{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
     color:var(--stone);margin-bottom:12px}
+  /* The live character count. Not floated — a float dropped it onto the
+     line below its own sentence and read as a stray number. */
+  .count{font-variant-numeric:tabular-nums}
+  .count.ok{color:var(--text-faint)}
+
+  /* ---- checkboxes ----
+     The native box does not take a colour on a dark control, and the label
+     sat hard against it because a bare <input> has no margin of its own.
+     Drawn instead: a rounded square that fills gold with a tick. */
+  .chkline{display:inline-flex;align-items:center;gap:10px;margin-top:11px;
+    font-size:12.5px;color:var(--text-faint);cursor:pointer;user-select:none;line-height:1.4}
+  .chkline:hover{color:var(--parchment)}
+  .chkline input{position:absolute;opacity:0;width:0;height:0}
+  .chkline .bx{width:16px;height:16px;flex:none;border-radius:5px;
+    border:1.5px solid var(--charcoal-4);background:var(--charcoal);display:grid;
+    place-items:center;transition:.14s}
+  .chkline .bx svg{width:10px;height:10px;stroke-width:3.2;color:#1a1611;opacity:0;
+    transition:.12s}
+  .chkline input:checked + .bx{background:var(--gold);border-color:var(--gold)}
+  .chkline input:checked + .bx svg{opacity:1}
+  .chkline input:focus-visible + .bx{box-shadow:0 0 0 3px rgba(226,182,92,.22)}
+  .chkline span:last-child{min-width:0}
+  /* A Save that belongs to the card rather than to one field inside it.
+     `.panelfield .go` only reaches the ones nested in a field. */
+  .card-b > .go{display:flex;justify-content:flex-end;margin-top:12px}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -1808,7 +1825,9 @@
     var t = document.getElementById('tprev');
     if(t){
       t.textContent = titlePreview();
-      t.className = 'tprev' + (PICKED.length || UNKNOWN ? '' : ' empty');
+      /* .blank, not .empty — `.empty` is the shell's dashed empty-state
+         panel, and borrowing the name wrapped the title in one. */
+      t.className = 'tprev' + (PICKED.length || UNKNOWN ? '' : ' blank');
     }
     /* The unknown question exists only while the answer matters. */
     var uq = document.getElementById('unkq');
@@ -1873,16 +1892,21 @@
         q('Which member of staff is this about?',
           '<div class="pickrow">'+
             '<select class="sel" id="staffSel"><option value="">Choose a staff member…</option>'+
+            /* "I don't know" is an answer to this question, so it belongs
+               in the list of answers rather than beside it as a second
+               control that looks like a link. */
+            '<optgroup label="If you’re not sure">'+
+              '<option value="unknown">I don’t know who it was</option>'+
+            '</optgroup>'+
             staffOpts+'</select>'+
             '<button class="btn sm" type="button" id="staffAdd">'+ai('plus')+'Add</button>'+
           '</div>'+
-          '<button class="linkbtn" type="button" id="unkAdd">'+ai('help')+
-          'I don’t know who it was</button>'+
           '<div id="picked"></div>'+
           '<div class="tprevwrap"><span class="k">Title</span>'+
-          '<span class="tprev empty" id="tprev">Staff Report</span></div>',
-          'The title is written from these names — you don’t type one. Name everyone the report '+
-          'is actually about, up to '+OPTS.limits.staff_max+'.') +
+          '<span class="tprev blank" id="tprev">Staff Report</span></div>',
+          'Everyone from Support Staff to Founder is in that list. The title is written from '+
+          'the names you pick — you don’t type one. Name everyone the report is actually '+
+          'about, up to '+OPTS.limits.staff_max+'.') +
 
         /* Only ever visible when the unknown option is on. A permanently
            present "if you don't know…" box invites the answer. */
@@ -1913,8 +1937,8 @@
           '<textarea class="ta" id="body" maxlength="'+OPTS.limits.body_max+'" '+
           'placeholder="In order, in your own words. Times, names, and what was said."'+
           '></textarea>',
-          '<span class="counter" id="bodyCount">0</span> characters. At least '+
-          OPTS.limits.body_min+'.') +
+          '<span class="count"><span id="bodyCount">0</span> characters — at least '+
+          OPTS.limits.body_min+'.</span>') +
 
         q('What do you want to happen?',
           '<textarea class="ta" id="want" maxlength="'+OPTS.limits.want_max+'" '+
@@ -1949,27 +1973,33 @@
     paintPicked();
 
     var sel = document.getElementById('staffSel');
-    document.getElementById('staffAdd').addEventListener('click', function(){
-      var id = parseInt(sel.value, 10);
-      if(!id) return;
+    function addPicked(){
+      var v = sel.value;
+      if(!v) return;
+      if(v === 'unknown'){
+        if(UNKNOWN){ toast('Already added.'); return; }
+        UNKNOWN = true; sel.value = ''; paintPicked();
+        var u = document.getElementById('unote');
+        if(u) u.focus();
+        return;
+      }
+      var id = parseInt(v, 10);
       if(PICKED.indexOf(id) > -1){ toast('Already named.'); return; }
       if(PICKED.length >= OPTS.limits.staff_max){
         toast('That is as many as one report can name.'); return;
       }
       PICKED.push(id); sel.value = ''; paintPicked();
-    });
-
-    document.getElementById('unkAdd').addEventListener('click', function(){
-      if(UNKNOWN){ toast('Already added.'); return; }
-      UNKNOWN = true; paintPicked();
-      var u = document.getElementById('unote');
-      if(u) u.focus();
-    });
+    }
+    document.getElementById('staffAdd').addEventListener('click', addPicked);
+    /* Picking from the list and then having to find the Add button is one
+       step too many for the thing the page is mostly about. */
+    sel.addEventListener('change', addPicked);
 
     var body = document.getElementById('body'), count = document.getElementById('bodyCount');
     body.addEventListener('input', function(){
       count.textContent = body.value.length;
-      count.className = 'counter' + (body.value.length < OPTS.limits.body_min ? ' low' : '');
+      count.parentNode.className = 'count' +
+        (body.value.length >= OPTS.limits.body_min ? ' ok' : '');
     });
 
     /* An ongoing pattern has no single moment, so the date stops being
@@ -2271,12 +2301,20 @@
     }).catch(function(){ toast('Could not reach the server'); });
   }
 
+  /* The same bar an appeal has: where you came from on the left, and on
+     the staff side the fact that opening this was recorded. Said here
+     rather than discovered later in the log. */
   function backbar(){
-    return '<a class="page-back" href="/dashboard/reports'+
-      (DATA.viewer.staff && !DATA.mine ? '#panel' : '#mine')+'">'+
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
-      '<path d="M15 6l-6 6 6 6"/></svg>'+
-      (DATA.viewer.staff && !DATA.mine ? 'Back to the panel' : 'Back to your reports')+'</a>';
+    var staff = DATA.viewer.staff && !DATA.mine;
+    return '<div class="lookbar">'+
+      '<a class="page-back" href="/dashboard/reports'+(staff ? '#panel' : '#mine')+'">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+        '<path d="M15 6l-6 6 6 6"/></svg>'+
+        (staff ? 'Back to the panel' : 'Back to your reports')+'</a>'+
+      '<span class="grow"></span>'+
+      (staff ? '<span class="lookro">'+ai('lock')+'Staff view · every visit is logged</span>'
+             : '')+
+    '</div>';
   }
 
   /* ---- what the report is about --------------------------------------
@@ -2462,6 +2500,7 @@
             : 'Anything you forgot, or a reply to what has been said.')+'"></textarea>'+
           (d.viewer.staff
             ? '<label class="chkline"><input type="checkbox" id="conly">'+
+              '<span class="bx">'+ai('tick')+'</span>'+
               '<span>Staff only — the reporter never sees this</span></label>'
             : '')+
           '<div class="formfoot" style="margin-top:10px">'+
@@ -2479,27 +2518,41 @@
       '<div class="card-b">'+list+box+'</div></div>';
   }
 
-  /* ---- handling: triage, allocation, verdict. Staff only. ---- */
-  function handlingCard(){
+  /* ---- handling: triage, allocation, verdict. Staff only. ----
+
+     Three cards, not one. They were one panel of stacked fields and the
+     seams between them disappeared: the Save under the allocation looked
+     like it might also save the verdict, and the verdict's Conclude looked
+     like it might also save the allocation. Three boxes with a gap between
+     them says what each button reaches.
+
+     There is no opening-comment field any more. It was a second way to
+     write a comment on a page that already has a comment box, and two
+     places to type the same thing is one place too many.
+     ===================================================================== */
+  function handlingCards(){
     var d = DATA, done = d.status !== 'pending';
 
     function ro(label, value, hint){
       return '<div class="panelfield"><label>'+label+'</label><div class="ro">'+value+'</div>'+
         (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div>';
     }
+    function card(title, body, aside){
+      return '<div class="card"><div class="card-h"><h3>'+title+'</h3>'+
+        (aside ? '<span class="aside">'+aside+'</span>' : '')+
+        '</div><div class="card-b">'+body+'</div></div>';
+    }
 
     if(done){
-      return '<div class="card"><div class="card-h"><h3>Handling</h3>'+
-        '<span class="aside">'+statusPill(d.status)+'</span></div><div class="card-b">'+
+      return card('Handling',
         ro('Category', escapeHtml(d.category_label || '—')) +
         ro('Outcome', escapeHtml(d.outcome_label || '—')) +
-        ro('Decided by', escapeHtml(d.concluded_by || '—'),
-           stamp(d.concluded_at)+' UTC') +
+        ro('Decided by', escapeHtml(d.concluded_by || '—'), stamp(d.concluded_at)+' UTC') +
         ro('Handled by', escapeHtml(d.handler || 'Never allocated'),
            'Fixed once the report was decided.') +
         '<div class="fieldnote">A concluded report can’t be reopened. If the decision was '+
-        'wrong, that is a conversation with Management rather than a button here.</div>'+
-        '</div></div>';
+        'wrong, that is a conversation with Management rather than a button here.</div>',
+        statusPill(d.status));
     }
 
     var cats = (d.categories || []).map(function(c){
@@ -2515,64 +2568,48 @@
         escapeHtml(h.role)+'</option>';
     }).join('');
 
-    return '<div class="card"><div class="card-h"><h3>Handling</h3></div><div class="card-b">'+
+    return card('Triage &amp; allocation',
+        '<div class="panelfield">'+
+          '<label for="cat">Category</label>'+
+          '<select class="sel" id="cat"><option value="">Not triaged</option>'+cats+'</select>'+
+          '<div class="hint">The four categories the reporter was shown, in the same words. '+
+          'Setting one takes this out of the Untriaged tab.</div>'+
+        '</div>'+
+        '<div class="panelfield">'+
+          '<label for="hd">Allocated to</label>'+
+          '<select class="sel" id="hd"><option value="">Nobody</option>'+hands+'</select>'+
+          '<div class="hint">Reports arrive unallocated — there is no obvious owner of a report '+
+          'about a staff member. Anyone on this list can take it, including you.</div>'+
+        '</div>'+
+        '<div class="go"><button class="btn sm" id="allocSave">Save</button></div>')
 
-      /* Triage first, because it is what happens first and what the
-         information panel promised would happen within 24-48 hours. */
-      '<div class="panelfield">'+
-        '<label for="cat">Category</label>'+
-        '<select class="sel" id="cat"><option value="">Not triaged</option>'+cats+'</select>'+
-        '<div class="hint">The four categories on the information page, in the same words. '+
-        'Setting one takes the report out of the Untriaged tab.</div>'+
-      '</div>'+
+    + card('Comments',
+        '<div class="panelfield">'+
+          '<select class="sel" id="cmEn">'+
+            '<option value="1"'+(d.comments_enabled?' selected':'')+'>Open to the reporter'+
+            '</option>'+
+            '<option value="0"'+(!d.comments_enabled?' selected':'')+'>Closed to the reporter'+
+            '</option>'+
+          '</select>'+
+          '<div class="hint">Close them if the thread is going in circles or being used to '+
+          'spam. Staff can still write here either way.</div>'+
+          '<div class="go"><button class="btn sm" id="cmSave">Save</button></div>'+
+        '</div>')
 
-      '<div class="panelfield">'+
-        '<label for="hd">Allocated to</label>'+
-        '<select class="sel" id="hd"><option value="">Nobody</option>'+hands+'</select>'+
-        '<div class="hint">Reports arrive unallocated — there is no obvious owner of a report '+
-        'about a staff member, and handing it to somebody at random is worse than leaving it '+
-        'in the pile. Anyone on this list can take it, including you.</div>'+
-      '</div>'+
-
-      '<div class="panelfield">'+
-        '<label for="cmEn">Comments</label>'+
-        '<select class="sel" id="cmEn">'+
-          '<option value="1"'+(d.comments_enabled?' selected':'')+'>Open to the reporter'+
-          '</option>'+
-          '<option value="0"'+(!d.comments_enabled?' selected':'')+'>Closed to the reporter'+
-          '</option>'+
-        '</select>'+
-        '<div class="hint">Closing stops the reporter replying. Staff can still write here.</div>'+
-      '</div>'+
-
-      '<div class="panelfield">'+
-        '<label for="ocomment">Opening comment</label>'+
-        '<textarea class="ta" id="ocomment" maxlength="4000" style="min-height:90px" '+
-        'placeholder="Tell them it has been picked up, and by which team."></textarea>'+
-        '<label class="chkline"><input type="checkbox" id="oonly">'+
-        '<span>Staff only</span></label>'+
-        '<div class="hint">Optional, but a report allocated in silence looks — to the person '+
-        'who sent it — exactly like a report nobody has read.</div>'+
-        '<div class="go"><button class="btn sm" id="allocSave">Save</button></div>'+
-      '</div>'+
-
-      /* ---- the verdict ---- */
-      '<div class="panelfield">'+
-        '<label for="vout">Conclude this report</label>'+
-        '<select class="sel" id="vcat"><option value="">Category…</option>'+cats+'</select>'+
-        '<select class="sel" id="vout" style="margin-top:9px">'+
-          '<option value="">What was done…</option>'+outs+'</select>'+
-        '<textarea class="ta" id="vcomment" maxlength="4000" style="min-height:110px;'+
-        'margin-top:10px" placeholder="Why. The reporter is shown this, so write it to them."'+
-        '></textarea>'+
-        '<div class="hint">A reason is required. Concluding closes the thread and tells the '+
-        'reporter what was decided — never who decided it.</div>'+
-        '<div class="hint warn">Nothing here punishes anybody. Whatever is done about the '+
-        'staff member happens off this page; the report records what was decided.</div>'+
-        '<div class="go"><button class="btn primary" id="conclude">Conclude</button></div>'+
-      '</div>'+
-
-      '</div></div>';
+    + card('Conclude this report',
+        '<div class="panelfield">'+
+          '<select class="sel" id="vcat"><option value="">Category…</option>'+cats+'</select>'+
+          '<select class="sel" id="vout" style="margin-top:9px">'+
+            '<option value="">What was done…</option>'+outs+'</select>'+
+          '<textarea class="ta" id="vcomment" maxlength="4000" style="min-height:110px;'+
+          'margin-top:10px" placeholder="Why. The reporter is shown this, so write it to '+
+          'them."></textarea>'+
+          '<div class="hint">A reason is required. Concluding closes the thread and tells the '+
+          'reporter what was decided — never who decided it.</div>'+
+          '<div class="hint warn">Nothing here punishes anybody. Whatever is done about the '+
+          'staff member happens off this page; the report records what was decided.</div>'+
+          '<div class="go"><button class="btn primary" id="conclude">Conclude</button></div>'+
+        '</div>');
   }
 
   function logCard(){
@@ -2643,7 +2680,8 @@
       '<div class="apgrid'+(staff?'':' solo')+'">'+
         '<div>'+ aboutCard() + reportCard() + commentsCard() +
           (staff ? '' : historyCard()) +'</div>'+
-        (staff ? '<div>'+ handlingCard() + logCard() + historyCard() +'</div>' : '')+
+        (staff ? '<div class="stack">'+ handlingCards() + logCard() + historyCard() +
+          '</div>' : '')+
       '</div>';
 
     wireReport();
@@ -2666,22 +2704,28 @@
         }).catch(function(){ send.disabled = false; toast('Could not reach the server'); });
     });
 
-    var save = document.getElementById('allocSave');
-    if(save) save.addEventListener('click', function(){
-      var cat = document.getElementById('cat').value;
-      var hd  = document.getElementById('hd').value;
-      var cm  = document.getElementById('cmEn').value === '1';
-      var oc  = document.getElementById('ocomment').value.trim();
-      var oo  = document.getElementById('oonly');
-      save.disabled = true;
-      UCP.post('report-allocate.php', { id: DATA.id, category: cat, handler: hd,
-        comments_enabled: cm, comment: oc, staff_only: !!(oo && oo.checked) })
-        .then(function(res){
+    /* Each card saves only what it holds — see handlingCards(). */
+    function saver(btnId, payload){
+      var b = document.getElementById(btnId);
+      if(!b) return;
+      b.addEventListener('click', function(){
+        b.disabled = true;
+        UCP.post('report-allocate.php', payload()).then(function(res){
           var d = res && res.data ? res.data : {};
-          save.disabled = false;
+          b.disabled = false;
           if(!(d && d.ok)){ toast(d.error || 'Nothing was saved.'); return; }
           DATA = d.report; renderReport(); toast('Saved.');
-        }).catch(function(){ save.disabled = false; toast('Could not reach the server'); });
+        }).catch(function(){ b.disabled = false; toast('Could not reach the server'); });
+      });
+    }
+    saver('allocSave', function(){
+      return { id: DATA.id,
+               category: document.getElementById('cat').value,
+               handler:  document.getElementById('hd').value };
+    });
+    saver('cmSave', function(){
+      return { id: DATA.id,
+               comments_enabled: document.getElementById('cmEn').value === '1' };
     });
 
     var done = document.getElementById('conclude');

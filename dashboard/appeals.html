@@ -2521,15 +2521,26 @@
         (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div>';
     }
 
+    /* One card per thing that can be saved.
+       They were one panel of stacked fields, and the seams between them
+       disappeared: the Save under the comments looked like it might also
+       save the verdict, and Conclude looked like it might also save the
+       handler. Separate boxes with a gap between them say what each button
+       reaches. */
+    function card(title, body, aside){
+      return '<div class="card"><div class="card-h"><h3>'+title+'</h3>'+
+        (aside ? '<span class="aside">'+aside+'</span>' : '')+
+        '</div><div class="card-b">'+body+'</div></div>';
+    }
+
     var out = '';
 
     /* ---- comments ---- */
-    out += done
-      ? ro('Comments', d.comments_enabled ? 'Open to the player' : 'Closed to the player',
+    out += card('Comments', done
+      ? ro('State', d.comments_enabled ? 'Open to the player' : 'Closed to the player',
            'Closed automatically when the appeal was decided.')
       : (v.may_manage ?
         '<div class="panelfield">'+
-          '<label for="cmEn">Comments</label>'+
           '<select class="sel" id="cmEn">'+
             '<option value="1"'+(d.comments_enabled?' selected':'')+'>Open to the player</option>'+
             '<option value="0"'+(!d.comments_enabled?' selected':'')+'>Closed to the player</option>'+
@@ -2537,12 +2548,12 @@
           '<div class="hint">Closing stops the appellant replying. Staff can still write here.</div>'+
           '<div class="go"><button class="btn sm" id="cmSave">Save</button></div>'+
         '</div>'
-        : ro('Comments', d.comments_enabled ? 'Open to the player' : 'Closed to the player',
-             'Only '+escapeHtml(v.manage_rank || 'Senior Admin')+' and above can change this.'));
+        : ro('State', d.comments_enabled ? 'Open to the player' : 'Closed to the player',
+             'Only '+escapeHtml(v.manage_rank || 'Senior Admin')+' and above can change this.')));
 
     /* ---- verdict — pending only ---- */
     if(!done){
-      out +=
+      out += card('Verdict',
         '<div class="panelfield">'+
           '<label for="vd">Verdict</label>'+
           '<select class="sel" id="vd"'+(v.may_conclude?'':' disabled')+'>'+
@@ -2573,20 +2584,19 @@
           (v.why ? '<div class="hint warn">'+escapeHtml(v.why)+'</div>' : '')+
           '<div class="go"><button class="btn primary" id="conclude"'+
           (v.may_conclude?'':' disabled')+'>Conclude</button></div>'+
-        '</div>';
+        '</div>');
     }
 
     /* ---- overturn ----
        Live only on a rejected appeal, for the people who may. Already used?
        Then it is history, and history is a value. */
     if(d.overruled){
-      out += ro('Overturned',
+      out += card('Overturned', ro('Overturned by',
         escapeHtml(d.overruled.by || 'A manager')+' · '+escapeHtml(ago(d.overruled.at)),
-        'The rejection stays on the record above. The reason is in the comments.');
+        'The rejection stays on the record above. The reason is in the comments.'));
     } else if(v.may_overrule){
-      out +=
+      out += card('Overturn this decision',
         '<div class="panelfield">'+
-          '<label>Overturn this decision</label>'+
           '<div class="hint" style="margin-top:0;margin-bottom:9px">The rejection stays on the '+
           'record and the appeal becomes accepted. Whether the punishment comes off is a '+
           'separate call.</div>'+
@@ -2600,16 +2610,15 @@
           'margin-top:10px" placeholder="Why the decision is being overturned. The appellant and '+
           'the administrator who made it both see this."></textarea>'+
           '<div class="go"><button class="btn ok" id="overrule">Overturn</button></div>'+
-        '</div>';
+        '</div>');
     }
 
     /* ---- handler ---- */
-    out += done
-      ? ro('Handler', escapeHtml(d.handler || 'Not assigned'),
+    out += card('Handler', done
+      ? ro('Assigned to', escapeHtml(d.handler || 'Not assigned'),
            'Fixed once the appeal was decided.')
       : (v.may_manage ?
         '<div class="panelfield">'+
-          '<label for="hd">Handler</label>'+
           '<select class="sel" id="hd"><option value="">Not assigned</option>'+
             HANDLERS.map(function(h){
               return '<option value="'+escapeHtml(h.name)+'"'+
@@ -2620,12 +2629,10 @@
           'Reassigning hands the reply and the verdict to somebody else.</div>'+
           '<div class="go"><button class="btn sm" id="hdSave">Change handler</button></div>'+
         '</div>'
-        : ro('Handler', escapeHtml(d.handler || 'Not assigned'),
-             'Only '+escapeHtml(v.manage_rank || 'Senior Admin')+' and above can reassign.'));
+        : ro('Assigned to', escapeHtml(d.handler || 'Not assigned'),
+             'Only '+escapeHtml(v.manage_rank || 'Senior Admin')+' and above can reassign.')));
 
-    return '<div class="card"><div class="card-h"><h3>Handling</h3>'+
-      (done ? '<span class="aside"><span class="pill '+d.status+'">'+d.status+'</span></span>' : '')+
-      '</div><div class="card-b">'+ out +'</div></div>';
+    return out;
   }
 
   function logCard(){

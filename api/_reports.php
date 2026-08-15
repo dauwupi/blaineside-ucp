@@ -320,10 +320,21 @@ function report_is_mine(array $acc, array $r): bool
  */
 function report_staff_options(PDO $pdo, int $exceptId = 0): array
 {
+    /* Support Staff (1) to Founder (9) — the whole ladder above Member.
+     * Nobody is un-reportable; that is the point of the queue, and a list
+     * that quietly stopped below Management would be the UCP deciding for
+     * the reporter who is allowed to have done it.
+     *
+     * Ascending, so the list reads Support Staff first and Founder last.
+     * The reporter is usually looking for somebody junior, and burying
+     * Support under four admin groups makes the common case the long one.
+     *
+     * Locked accounts stay in the list. Somebody suspended pending a
+     * decision is exactly who a second report might be about. */
     $st = $pdo->query(
         'SELECT id, username, admin_rank FROM ucp_accounts
-          WHERE admin_rank >= 1 AND status = \'active\'
-          ORDER BY admin_rank DESC, username ASC'
+          WHERE admin_rank BETWEEN 1 AND 9
+          ORDER BY admin_rank ASC, username ASC'
     );
     $out = [];
     foreach ($st->fetchAll() as $r) {
