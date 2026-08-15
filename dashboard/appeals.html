@@ -533,6 +533,43 @@
     padding:2px 8px;border-radius:100px}
   @media (max-width:680px){ .qtabs{grid-template-columns:1fr} }
 
+  /* =====================================================================
+     WHO THIS IS — the account panel on an appeal
+
+     Staff only. A handler reading an appeal has one question after "what
+     does it say": who am I dealing with. Answering it used to mean opening
+     Administrative Search in another tab, and on a Discord or forum ban —
+     where the UCP has no punishment on file — this card said nothing at all.
+     ===================================================================== */
+  .whois{margin-top:16px;border-top:1px solid var(--rule);padding-top:15px}
+  .whois-h{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    margin-bottom:12px}
+  .whois-h .t{font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--stone)}
+  .whois-h .go{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
+    color:var(--text-faint);transition:color .13s}
+  .whois-h .go:hover{color:var(--gold)}
+  .whois-h .go svg{width:12px;height:12px;stroke-width:2.2;fill:none;stroke:currentColor}
+  .wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
+    background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+  .wcell{background:var(--charcoal-2);padding:11px 14px 12px;min-width:0}
+  .wcell .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--stone)}
+  .wcell .v{font-size:13px;font-weight:600;color:var(--parchment);margin-top:5px;line-height:1.4;
+    overflow-wrap:anywhere}
+  .wcell .v.soft{color:var(--text-dim);font-weight:500;font-style:italic}
+  .wcell .s{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4}
+  .wcell .v a{color:var(--parchment);border-bottom:1px solid var(--charcoal-4)}
+  .wcell .v a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+  .wcell .grp{color:var(--tone-text)}
+  .wflag{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;
+    padding:2px 9px;border-radius:100px;white-space:nowrap}
+  .wflag::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+  .wflag.ok{color:#9ec178;background:rgba(127,160,90,.1);border:1px solid rgba(127,160,90,.3)}
+  .wflag.bad{color:#dfa294;background:rgba(193,85,63,.1);border:1px solid rgba(193,85,63,.32)}
+  .wflag.warn{color:#e3bd72;background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.3)}
+  .wflag.off{color:var(--stone);background:var(--charcoal-3);border:1px solid var(--border)}
+
   /* ---- the queue's filter strip ---- */
   .qfilters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
   .qfilters .qtab{display:inline-flex;align-items:center;gap:9px;padding:10px 16px;
@@ -1967,6 +2004,83 @@
      one block per punishment inside one card rather than one card each —
      they are one thing being decided, and stacking cards would suggest
      otherwise. */
+  /* One cell of the account panel. */
+  function wcell(k, v, sub){
+    return '<div class="wcell"><div class="k">'+k+'</div><div class="v">'+v+'</div>'+
+           (sub ? '<div class="s">'+sub+'</div>' : '')+'</div>';
+  }
+
+  function whoisPanel(){
+    var w = DATA.whois;
+    if(!w) return '';                      // never sent to the appellant
+
+    var acc = DATA.accounts || {};
+    var fo  = acc.forum || {}, di = acc.discord || {};
+
+    var cells = [];
+
+    cells.push(wcell('UCP account',
+      '<a href="/dashboard/lookup?id='+w.id+'">'+escapeHtml(w.name)+'</a>',
+      'Account #'+w.id));
+
+    cells.push(wcell('Group',
+      '<span class="grp tone-'+(w.rank|0)+'">'+escapeHtml(w.role)+'</span>',
+      w.twofa ? 'Two-step on' : 'Two-step off'));
+
+    cells.push(wcell('Status',
+      w.status === 'locked'  ? '<span class="wflag bad">Locked</span>'
+      : w.status === 'active' ? '<span class="wflag ok">Active</span>'
+      : '<span class="wflag off">'+escapeHtml(cap(w.status))+'</span>',
+      w.created_at ? 'Joined '+escapeHtml(ago(w.created_at)) : null));
+
+    /* Last USED the UCP. On an appeal it answers "are they even reading
+       this" before a handler writes three paragraphs at somebody who left. */
+    var seen = w.last_seen || w.last_login;
+    cells.push(wcell('Last activity',
+      seen ? escapeHtml(ago(seen)) : '<span class="v soft">Never</span>',
+      seen ? escapeHtml(stamp(seen)) + ' UTC' + (w.last_seen ? '' : ' · sign-in') : null));
+
+    /* The forum and Discord accounts, always — not only when the appeal
+       names that platform. A handler judging an in-game ban still wants to
+       know whether the Discord matches the one shouting in #general. */
+    cells.push(wcell('Forums', fo.linked
+      ? '<a href="'+escapeHtml(fo.url||'#')+'" target="_blank" rel="noopener noreferrer">'+
+        escapeHtml(fo.name || ('Member #'+fo.member_id))+'</a>'
+      : '<span class="v soft">Not linked</span>',
+      fo.linked && fo.member_id ? 'Member #'+fo.member_id : null));
+
+    cells.push(wcell('Discord', di.linked
+      ? escapeHtml(di.username)
+      : (di.given ? escapeHtml(di.given) : '<span class="v soft">Not linked</span>'),
+      di.linked ? 'Verified' : (di.given ? 'Given at sign-up, never verified' : null)));
+
+    /* The record in one cell. Whether this is a first offence or a fifth is
+       the fact most likely to change the verdict. */
+    var r = w.record;
+    if(r){
+      var lvl = r.level === 'held' ? 'bad' : (r.level === 'watch' ? 'warn' : 'ok');
+      cells.push(wcell('Record',
+        '<span class="wflag '+lvl+'">'+r.total+(r.total===1?' entry':' entries')+'</span>',
+        r.bans+' bans · '+r.warnings+' warnings · '+r.kicks+' kicks'+
+        (r.active ? ' · '+r.active+' active' : '')));
+    } else {
+      cells.push(wcell('Record', '<span class="v soft">Not set up</span>',
+        'The punishment tables have not been migrated.'));
+    }
+
+    var n = (DATA.history || []).length;
+    cells.push(wcell('Past appeals',
+      n ? String(n) : '<span class="v soft">None</span>',
+      n ? 'Before this one' : 'This is their first'));
+
+    return '<div class="whois">'+
+      '<div class="whois-h"><span class="t">Who this is</span>'+
+        '<a class="go" href="/dashboard/lookup?id='+w.id+'">Open the full account'+
+        '<svg viewBox="0 0 24 24">'+DAI.out+'</svg></a></div>'+
+      '<div class="wgrid">'+cells.join('')+'</div>'+
+    '</div>';
+  }
+
   function banCard(){
     var ps = DATA.punishments || (DATA.punishment ? [DATA.punishment] : []);
     /* Nothing attached is the NORMAL case for a forum or Discord appeal —
@@ -1984,7 +2098,12 @@
           ? 'Confirm it there before deciding. Accepting records the decision here; lifting the '+
             'ban is done where it was issued.'
           : 'Staff will check it where it was issued.')+'</p>'+
-        '</div></div></div></div>';
+        '</div></div>'+
+        /* The UCP has no punishment on file, but it knows plenty about the
+           account — and this is exactly the appeal where a handler has the
+           least to go on. */
+        whoisPanel() +
+        '</div></div>';
     }
 
     var blocks = ps.map(function(p, i){
@@ -2066,6 +2185,8 @@
          the player has none. */
       '<div class="fieldnote" style="margin-top:14px">Characters aren’t linked to the UCP yet, '+
       'so none are listed here.</div>'+
+
+      whoisPanel() +
 
       '</div></div>';
   }

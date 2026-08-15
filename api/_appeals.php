@@ -29,6 +29,7 @@
 
 require_once __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_punish.php';
+require_once __DIR__ . '/_sessions.php';
 require_once __DIR__ . '/_teams.php';
 
 /** Support Staff and above work the appeal queue — see api/_queues.php. */
@@ -705,9 +706,10 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
      * they must not see. Rank is not a reason to see your own file. */
     $staff = appeal_is_staff($acc) && !$mine;
 
-    $owner = null; $accounts = null;
+    $owner = null; $accounts = null; $whois = null;
     $st = $pdo->prepare(
-        'SELECT username, forum_member_id, discord, discord_username, discord_linked_at
+        'SELECT id, username, admin_rank, status, created_at, last_login, totp_enabled,
+                forum_member_id, discord, discord_username, discord_linked_at
            FROM ucp_accounts WHERE id = ? LIMIT 1'
     );
     $st->execute([(int)$a['account_id']]);
@@ -742,6 +744,71 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
                                ? (int)$row['discord_linked_at'] : null,
             ],
         ];
+
+        /* Who this person IS, for the handler.
+         *
+         * A handler reading an appeal has one question after "what does it
+         * say": who am I dealing with. Answering it used to mean opening
+         * Administrative Search in another tab, finding the account, and
+         * coming back — and on a Discord or forum ban, where the UCP has no
+         * punishment on file, this card previously said nothing at all.
+         *
+         * Staff only, and everything in it is a fact the same person could
+         * read on the lookup page a click away. The point is not the access,
+         * it is not making them go and get it. */
+        if ($staff) {
+            $created = strtotime((string)$row['created_at']) ?: null;
+            $login   = $row['last_login'] !== null
+                        ? (strtotime((string)$row['last_login']) ?: null) : null;
+
+            /* Last used the UCP, not last signed in — a remembered browser
+               signs in once and stays signed in for months. */
+            $seen = null;
+            try {
+                if (sessions_available($pdo)) {
+                    $q = $pdo->prepare(
+                        'SELECT MAX(last_seen) FROM ucp_sessions
+                          WHERE account_id = ? AND revoked_at IS NULL'
+                    );
+                    $q->execute([(int)$row['id']]);
+                    $v = $q->fetchColumn();
+                    if ($v !== null && $v !== false) $seen = (int)$v;
+                }
+            } catch (Throwable $e) { /* no sessions table */ }
+
+            /* The record, summarised. Enough to know whether this is a first
+               offence or the fifth, without leaving the appeal. */
+            $rec = null;
+            try {
+                $r = record_for($pdo, (int)$row['id'], true, $acc);
+                if (!empty($r['available'])) {
+                    $rec = [
+                        'total'    => (int)$r['summary']['total'],
+                        'active'   => (int)$r['summary']['active'],
+                        'bans'     => (int)$r['summary']['bans'],
+                        'warnings' => (int)$r['summary']['warnings'],
+                        'kicks'    => (int)$r['summary']['kicks'],
+                        'locks'    => (int)($r['counts']['lock'] ?? 0),
+                        'level'    => (string)$r['summary']['level'],
+                        'last_at'  => $r['summary']['last_at'],
+                    ];
+                }
+            } catch (Throwable $e) { /* punishments not migrated */ }
+
+            $whois = [
+                'id'          => (int)$row['id'],
+                'name'        => (string)$row['username'],
+                'rank'        => (int)$row['admin_rank'],
+                'role'        => rank_name((int)$row['admin_rank']),
+                'status'      => (string)$row['status'],
+                'created_at'  => $created,
+                'member_days' => $created ? (int)floor((time() - $created) / 86400) : null,
+                'last_seen'   => $seen,
+                'last_login'  => $login,
+                'twofa'       => !empty($row['totp_enabled']),
+                'record'      => $rec,
+            ];
+        }
     }
 
     $ps = appeal_punishments($pdo, $a);
@@ -779,6 +846,9 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
         }, $ps),
         'punishment' => $ps ? punish_out($ps[0], $showIssuer) : null,
         'accounts'   => $accounts,
+        /* Staff only — null for the appellant, so there is no route by which
+           their own page could draw it. */
+        'whois'      => $whois,
 
         /* Platforms the appellant ticked that have nothing on file. Worth
            saying out loud: it is usually a misread of the question, and a
