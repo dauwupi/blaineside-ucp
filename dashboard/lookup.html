@@ -436,6 +436,23 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .link-body .s .lic{color:var(--stone);font-weight:500}
 
 /* ---- your account: a stacked key/value list, not a boxed grid ---- */
+/* ---- the Account column ----
+   Label left, value right, one line each. It was label on one line and value
+   on the next with a rule between every pair: seven facts became fourteen
+   lines and about 520px of column, most of it empty down the right-hand
+   side. Two columns halve that and give the card a straight edge to scan.
+
+   Read-only view only. The player's own profile does not have this column. */
+.acct-kv{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0}
+.acct-kv + .acct-kv{border-top:1px solid var(--rule)}
+.acct-kv .k{font-size:11.5px;color:var(--text-faint);font-weight:500;flex:none}
+.acct-kv .v{font-size:12.5px;font-weight:600;text-align:right;min-width:0;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+/* `.sub` is the sidebar's collapsed submenu (max-height:0), so the second
+   half of a value is `.acct-sub` — the same name here swallowed it whole. */
+.acct-kv .v .acct-sub{display:block;font-size:11px;font-weight:500;color:var(--text-dim);
+  margin-top:1px;font-variant-numeric:normal}
+
 .kv{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:12px 0}
 .kv + .kv{border-top:1px solid var(--rule)}
 .kv .k{font-size:12.5px;color:var(--text-faint);font-weight:500;flex:none}
@@ -1940,31 +1957,40 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     }
 
     /* ---- Account ---- */
-    var created = parseUTC(d.created_at), last = parseUTC(d.last_login);
-    var teams = (d.teams || []).map(function(t){ return t.label; });
+    var created = parseUTC(d.created_at);
+
+    /* Last activity, not last sign-in. A remembered browser signs in once and
+       stays signed in for months, so last_login on a player who is here every
+       day can be a date from last spring — which reads as though they have
+       gone. The server sends the newest last_seen across their live sessions;
+       last_login is the fallback for a UCP without the sessions table, and
+       the row says which of the two it is showing. */
+    var seen  = d.last_seen ? new Date(d.last_seen * 1000) : null;
+    var login = parseUTC(d.last_login);
+    var act   = seen || login;
+
     var rows = [
       ['Account ID',   '#'+d.id, null],
       ['Group',        d.role || 'Member', null],
       ['Status',       d.status === 'suspended' ? 'Banned'
                        : d.status.charAt(0).toUpperCase()+d.status.slice(1), null],
       ['Member since', created ? shortDate(created) : '—',
-        d.member_days != null ? n(d.member_days)+' days' : null],
-      ['Last log in', last ? hhmm(last) : '—', last ? ago(last) : 'never logged in'],
+        d.member_days != null ? n(d.member_days)+(d.member_days === 1 ? ' day' : ' days') : null],
+      ['Last activity', act ? hhmm(act) : '—',
+        act ? ago(act) + (seen ? '' : ' · sign-in') : 'never used the UCP'],
       ['Two-step',     d.twofa.enabled ? 'On' : 'Off', null]
     ];
 
-    /* Sub-groups sit under the group because they modify it. Shown only for
-       the ranks that can hold them — on a Member's account the row would be
-       a permanent "None" answering a question nobody asked. */
-    if(d.rank >= 3 && d.rank <= 7){
-      rows.splice(2, 0, ['Sub-groups', teams.length ? teams.join(', ') : 'None', null]);
-    } else if(teams.length){
-      rows.splice(2, 0, ['Sub-groups', teams.join(', '), null]);
-    }
+    /* Sub-groups are deliberately not here. They are a property of the staff
+       team rather than of the account, they are already shown against the
+       name at the top of the page, and a row of comma-separated labels was
+       the one value in this column that could not sit on its own line. */
     $('acctRows').innerHTML = rows.map(function(r){
-      return '<div class="row"><div class="row-l"><div class="k">'+esc(r[0])+'</div>'+
-             '<div class="v">'+esc(r[1])+'</div></div>'+
-             (r[2] ? '<div class="row-r"><span class="sub">'+esc(r[2])+'</span></div>' : '')+
+      return '<div class="acct-kv">'+
+               '<span class="k">'+esc(r[0])+'</span>'+
+               '<span class="v">'+esc(r[1])+
+                 (r[2] ? '<span class="acct-sub">'+esc(r[2])+'</span>' : '')+
+               '</span>'+
              '</div>';
     }).join('');
   }

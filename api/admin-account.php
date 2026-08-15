@@ -148,6 +148,29 @@ ok([
     'member_days' => $createdTs ? (int)floor((time() - $createdTs) / 86400) : null,
     'last_login'  => $t['last_login'],
 
+    /* When they last USED the UCP, not when they last signed in.
+     *
+     * A remembered browser can sign in once and stay signed in for months,
+     * so last_login on an active player is often a date from a long time ago
+     * and reads as if they have gone. The newest last_seen across their live
+     * sessions is the fact an administrator actually wants: is this person
+     * still around.
+     *
+     * Falls back to last_login where the sessions table has not been
+     * migrated, or where every session has aged out. */
+    'last_seen'   => (function () use ($pdo, $t) {
+        try {
+            if (!sessions_available($pdo)) return null;
+            $q = $pdo->prepare(
+                'SELECT MAX(last_seen) FROM ucp_sessions
+                  WHERE account_id = ? AND revoked_at IS NULL'
+            );
+            $q->execute([(int)$t['id']]);
+            $v = $q->fetchColumn();
+            return $v !== null && $v !== false ? (int)$v : null;
+        } catch (Throwable $e) { return null; }
+    })(),
+
     // On/off only. Whether an account is protected is an administrative
     // fact; the secret behind it is not, and never leaves the database.
     'twofa' => ['enabled' => !empty($t['totp_enabled']) && !empty($t['totp_secret'])],
