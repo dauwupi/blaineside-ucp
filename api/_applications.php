@@ -77,10 +77,15 @@ function app_ips_available(PDO $pdo): bool
 /* ---------------------------------------------------------------------
    Who may open the panel.
 
-   Rank 1 and up. Deliberately NOT a sub-group: Support Staff is a rank on
-   the ladder, and this is the work that rank exists to do.
+   Rank 1 and up, and nothing else. Deliberately NOT a sub-group: Support
+   Staff is a rank on the ladder and reading applications is the work that
+   rank exists to do, so there is nobody the ladder leaves out.
+
+   The second argument is accepted and ignored. Every caller has a handle
+   and passes it; taking it would mean editing six files to remove an
+   argument that costs nothing.
    --------------------------------------------------------------------- */
-function app_may_panel(array $acc): bool
+function app_may_panel(array $acc, ?PDO $pdo = null): bool
 {
     return (int)$acc['admin_rank'] >= BS_APP_PANEL_RANK;
 }
@@ -121,7 +126,7 @@ function app_may_act(PDO $pdo, array $acc, array $app): bool
     $me   = (int)$acc['id'];
     $rank = (int)$acc['admin_rank'];
 
-    if (!app_may_panel($acc)) return false;
+    if (!app_may_panel($acc, $pdo)) return false;
     if ($rank >= BS_APP_OVERRIDE_RANK) return true;
     if (app_has_staff_management($pdo, $me)) return true;
 
@@ -139,17 +144,23 @@ function app_claim_stale(array $app): bool
 }
 
 /** Sub-group lookup, guarded — the table arrives with a later migration. */
-function app_has_staff_management(PDO $pdo, int $id): bool
+function app_has_team(PDO $pdo, int $id, string $key): bool
 {
     static $cache = [];
-    if (isset($cache[$id])) return $cache[$id];
+    $k = $id . '|' . $key;
+    if (isset($cache[$k])) return $cache[$k];
     $has = false;
     try {
         require_once __DIR__ . '/_teams.php';
-        $has = has_team($pdo, $id, 'staff_management');
+        $has = has_team($pdo, $id, $key);
     } catch (Throwable $e) {
     }
-    return $cache[$id] = $has;
+    return $cache[$k] = $has;
+}
+
+function app_has_staff_management(PDO $pdo, int $id): bool
+{
+    return app_has_team($pdo, $id, 'staff_management');
 }
 
 

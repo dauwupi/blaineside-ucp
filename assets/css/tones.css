@@ -74,29 +74,47 @@
    the fill gives one construction that works for all ten, and reads better
    on a dark page besides.
    --------------------------------------------------------------------- */
-
-/* CENTRING NOTE — why line-height is 1 and why there is a text-indent.
-   Two things push the label off-centre inside the pill and both are
-   invisible until you measure it:
-
-   1. Vertical. The label is uppercase, so it uses none of the space the
-      font reserves below the baseline for descenders. A line-height above
-      1 splits the leftover leading evenly above and below the LINE, not
-      the CAPS, so the caps ride high. Inter's own metrics happen to be
-      symmetric about the cap band at line-height:1 (ascent 1984, descent
-      494, cap height 1490 — the gap above the caps and the gap below the
-      baseline are both 279 units), so setting it to exactly 1 centres the
-      caps for free. Padding then sets the pill's height.
-   2. Horizontal. letter-spacing adds its space AFTER every character,
-      including the last one, so a tracked label always sits a touch left
-      of centre. Nudging the text right by half of one letter-space puts
-      the glyph run back in the middle.
-
-   Both fixes are in units of em, so they hold at any font-size. */
-.gchip{display:inline-flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:800;
-  letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border-radius:100px;
-  white-space:nowrap;line-height:1;text-indent:.05em;
+.gchip{display:inline-flex;align-items:center;font-size:10px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:100px;
+  white-space:nowrap;line-height:1.35;
   color:var(--tone-text);
   background:color-mix(in srgb, var(--tone) 17%, transparent);
   border:1px solid color-mix(in srgb, var(--tone) 44%, transparent)}
+
+
+/* =====================================================================
+   SURFACE CONTRAST
+
+   One block, and it governs every card in the UCP.
+
+   This file is the LAST stylesheet on every page — the inline <style>
+   blocks come before the <link> — so a :root here overrides the copy each
+   page declares for itself, without editing fourteen files that would then
+   drift apart again.
+
+   The problem it fixes: a card at --charcoal-2 sat about six points of
+   lightness above the page behind it, and its hairline was barely a point
+   above the card. On a bright monitor that reads as one flat surface, and
+   on a dim one the panels disappear entirely — which is what makes a list
+   of boxes hard to tell apart.
+
+   The step is now roughly twice what it was, in the same hues: nothing
+   here changes the palette, only how far apart the layers sit.
+
+     --content-bg   #100f0e   the page          (unchanged)
+     --charcoal-2   #201d19   cards             (was #1a1815)
+     --charcoal-3   #292520   controls, rows    (was #221f1b)
+     --charcoal-4   #35302a   hover, active     (was #2b2723)
+     --border       #38322b   visible edges     (was #26221e)
+     --border-soft  #2c2721   hairlines         (was #1f1c18)
+
+   Anything that wants the old, quieter treatment can still set the
+   variable on itself; this only moves the default.
+   ===================================================================== */
+:root{
+  --charcoal-2:#201d19;
+  --charcoal-3:#292520;
+  --charcoal-4:#35302a;
+  --border:#38322b;
+  --border-soft:#2c2721;
+}

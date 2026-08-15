@@ -37,7 +37,7 @@ if (!$app) fail('That application no longer exists.', 404);
 
 $me    = (int)$acc['id'];
 $owner = (int)$app['account_id'] === $me;
-$staff = app_may_panel($acc);
+$staff = app_may_panel($acc, $pdo);
 
 if (!$owner && !$staff) fail('That isn\'t your application.', 403);
 /* A draft belongs to nobody but its author until it is sent. */

@@ -24,7 +24,7 @@ throttle('application_claim', 30);
 $pdo = db();
 $acc = current_account($pdo);
 
-if (!app_may_panel($acc)) {
+if (!app_may_panel($acc, $pdo)) {
     json_out(['ok' => false, 'error' => app_panel_reason()], 403);
 }
 if (!applications_available($pdo)) {
