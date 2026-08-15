@@ -598,7 +598,8 @@
     letter-spacing:.1em;text-transform:uppercase;text-indent:.05em;line-height:1;padding:5px 10px;
     border-radius:7px;border:1px solid var(--border);background:var(--charcoal-3);color:var(--text-dim)}
   .mark.on{color:var(--gold);border-color:rgba(226,182,92,.34);background:rgba(226,182,92,.08)}
-  .ibody{padding:0 16px 16px 56px;border-top:1px solid var(--border-soft)}
+  .ibody{padding:0 16px 16px 56px;border-top:1px solid var(--border-soft);
+    animation:bsOpen .16s ease-out both}
   .ibody .prompt{font-size:12.5px;color:var(--text-faint);line-height:1.75;padding-top:14px;max-width:92ch}
   .ibody textarea{margin-top:11px}
   textarea,input[type=text]{width:100%;background:var(--charcoal);border:1px solid var(--border);
@@ -826,6 +827,31 @@
   renderSidebar(SIDEBAR);
 
   /* =====================================================================
+     PAINT
+
+     Every one of these pages starts with a placeholder and replaces it
+     the moment the server answers. Swapping innerHTML is instant, which
+     is exactly what makes it read as a flicker rather than as loading.
+
+     paint() does the same swap and eases the new content in. The keyframes
+     live in assets/css/tones.css so the whole UCP shares them, and they
+     are disabled under prefers-reduced-motion.
+
+     Use it for a view ARRIVING — a first load, a route change, a reload
+     after an action. Do NOT use it for a redraw in place, such as opening
+     one row of a list: fading the whole panel because one row moved is
+     more distracting than the instant redraw it replaced.
+     ===================================================================== */
+  function paint(host, html){
+    if (typeof host === 'string') host = document.getElementById(host);
+    if (!host) return;
+    host.innerHTML = html;
+    host.classList.remove('bs-in');
+    void host.offsetWidth;          // restart the animation
+    host.classList.add('bs-in');
+  }
+
+  /* =====================================================================
      SESSION
 
      Every dashboard page does this identically: confirm there is a session,
@@ -1039,8 +1065,8 @@
     var d = DATA, h = '';
 
     if(!d.available){
-      el('body').innerHTML = '<div class="card"><div class="card-b"><p class="lede">' +
-        escapeHtml(d.why || 'Applications aren\'t switched on yet.') + '</p></div></div>';
+      paint('body', '<div class="card"><div class="card-b"><p class="lede">' +
+        escapeHtml(d.why || 'Applications aren\'t switched on yet.') + '</p></div></div>');
       return;
     }
 
@@ -1085,7 +1111,7 @@
             'menu on the left. Every one of them is read by a person.') +
         '</div>';
 
-      el('body').innerHTML = h;
+      paint('body', h);
       var ci = el('copyIp');
       if(ci) ci.addEventListener('click', function(e){
         e.preventDefault();
@@ -1113,7 +1139,7 @@
             (denied ? 'Start another application' : 'Start your application') + '</button></div></div>' +
           '<div class="split" style="margin-top:16px"><div>' + historyCard(d.history) + '</div>' +
           '<div>' + nextCard() + '</div></div>';
-      el('body').innerHTML = h;
+      paint('body', h);
       wireFeedback(); wireHistory();
       el('startBtn').addEventListener('click', startApplication);
       return;
@@ -1145,7 +1171,7 @@
         '</div></div>' +
       '</div><div>' + historyCard(d.history) + nextCard() + '</div></div>';
 
-    el('body').innerHTML = h;
+    paint('body', h);
     wireFeedback(); wireHistory();
 
     if(!readonly){

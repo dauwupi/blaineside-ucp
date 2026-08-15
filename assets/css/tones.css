@@ -120,3 +120,54 @@
   --border:#38322b;
   --border-soft:#38322b;
 }
+
+
+/* =====================================================================
+   MOTION
+
+   Three small transitions, defined once for every page.
+
+   The flicker they fix is not a rendering bug — it is honest redrawing
+   made visible. A dashboard page paints from what it already knows, asks
+   the server, and paints again; a panel swaps a "Loading…" line for a
+   screenful of cards. Both are correct, and both look like a stutter
+   because the swap is instantaneous.
+
+   So: content that has just replaced a placeholder eases in, a menu that
+   genuinely changed after the server answered eases in, and a panel that
+   expands slides rather than appears. Nothing here delays anything —
+   every animation runs on content that is already in the DOM.
+
+   All of it is off under prefers-reduced-motion, which is the setting
+   somebody turns on precisely because movement like this makes them ill.
+   ===================================================================== */
+@keyframes bsFade{
+  from{opacity:0}
+  to  {opacity:1}
+}
+@keyframes bsIn{
+  from{opacity:0;transform:translateY(5px)}
+  to  {opacity:1;transform:none}
+}
+@keyframes bsOpen{
+  from{opacity:0;transform:translateY(-4px)}
+  to  {opacity:1;transform:none}
+}
+
+/* A view arriving in place of a placeholder. */
+.bs-in{animation:bsIn .24s cubic-bezier(.22,.61,.36,1) both}
+/* Something redrawn in place — the sidebar after the session confirms. */
+.bs-fade{animation:bsFade .28s ease both}
+/* A fold or an accordion body. */
+.bs-open{animation:bsOpen .16s ease-out both}
+
+/* The menu itself: hover and the open/closed chevron, so nothing about
+   the sidebar moves instantly. */
+#nav .nav-item{transition:background .15s ease,color .15s ease}
+#nav .nav-item .chev{transition:transform .18s cubic-bezier(.22,.61,.36,1)}
+#nav a{transition:color .15s ease,background .15s ease}
+
+@media (prefers-reduced-motion:reduce){
+  .bs-in,.bs-fade,.bs-open{animation:none}
+  #nav .nav-item,#nav .nav-item .chev,#nav a{transition:none}
+}

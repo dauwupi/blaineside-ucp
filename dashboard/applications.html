@@ -676,7 +676,8 @@
   .fold .foldh .chev{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;transition:transform .16s}
   .fold.open .foldh .chev{transform:rotate(180deg)}
   .fold .foldb{display:none}
-  .fold.open .foldb{display:block;border-top:1px solid var(--border-soft)}
+  .fold.open .foldb{display:block;border-top:1px solid var(--border-soft);
+    animation:bsOpen .17s ease-out both}
 
   .fg{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border-soft);
     border:1px solid var(--border-soft);border-radius:12px;overflow:hidden}
@@ -716,7 +717,8 @@
     font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums}
   .ihead .tx b{display:block;font-size:13.5px;font-weight:600}
   .ihead .r{margin-left:auto;flex:none;display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:11.5px}
-  .ibody{padding:0 16px 16px 56px;border-top:1px solid var(--border-soft)}
+  .ibody{padding:0 16px 16px 56px;border-top:1px solid var(--border-soft);
+    animation:bsOpen .16s ease-out both}
   .ibody .prompt{font-size:12.5px;color:var(--text-faint);line-height:1.75;padding-top:14px}
   .ihead[data-answer]{cursor:pointer;user-select:none}
   .ihead .cnt{font-size:11.5px;color:var(--text-dim)}
@@ -848,6 +850,31 @@
     MY_TEAMS         = me.teams || [];
   })();
   renderSidebar(SIDEBAR);
+
+  /* =====================================================================
+     PAINT
+
+     Every one of these pages starts with a placeholder and replaces it
+     the moment the server answers. Swapping innerHTML is instant, which
+     is exactly what makes it read as a flicker rather than as loading.
+
+     paint() does the same swap and eases the new content in. The keyframes
+     live in assets/css/tones.css so the whole UCP shares them, and they
+     are disabled under prefers-reduced-motion.
+
+     Use it for a view ARRIVING — a first load, a route change, a reload
+     after an action. Do NOT use it for a redraw in place, such as opening
+     one row of a list: fading the whole panel because one row moved is
+     more distracting than the instant redraw it replaced.
+     ===================================================================== */
+  function paint(host, html){
+    if (typeof host === 'string') host = document.getElementById(host);
+    if (!host) return;
+    host.innerHTML = html;
+    host.classList.remove('bs-in');
+    void host.offsetWidth;          // restart the animation
+    host.classList.add('bs-in');
+  }
 
   /* =====================================================================
      SESSION
@@ -1028,13 +1055,13 @@
   }
 
   function renderQueue(d){
-    el('body').innerHTML =
+    paint('body',
       '<div class="qhead">' +
       '<span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
       '<path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span>' +
       '<div><h1>Application Panel</h1><p>Claim one to review it. While you hold it nobody else can ' +
       'decide it or write the feedback — except Staff Management, Management and Founders, who can ' +
-      'take it over.</p></div></div>' + queueHTML(d);
+      'take it over.</p></div></div>' + queueHTML(d));
 
     var f = el('filter'); if(f){ f.value = Q.filter; f.addEventListener('change', function(){
       Q.filter = this.value; Q.page = 1; loadQueue(); }); }
@@ -1240,7 +1267,7 @@
 
   function renderOne(d){
     VIEW = d; PICKED = null; USED_TMPL = 0; ANS_OPEN = {};
-    el('body').innerHTML =
+    paint('body',
       '<div class="backline"><button class="btn" id="backBtn">' +
         '<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Back to the panel</button>' +
         '<div style="font-size:12.5px;color:var(--text-dim)">Application <b style="color:var(--parchment)">#' +
@@ -1250,7 +1277,7 @@
       '<div class="split"><div>' +
         applicantCard(d) + historyCard(d.history) +
         '<div id="answersHost">' + answersCard(d) + '</div>' +
-      '</div><div>' + decisionCard(d) + '</div></div>';
+      '</div><div>' + decisionCard(d) + '</div></div>');
 
     el('backBtn').addEventListener('click', function(){ location.hash = ''; });
 

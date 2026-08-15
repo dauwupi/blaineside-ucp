@@ -583,12 +583,20 @@
     items = items || w.SIDEBAR || NAV;
 
     /* Redrawing an unchanged menu closes every group the reader had open,
-       which is what made the sub-menus snap shut a second after landing. */
-    var sig = rank + '|' + teams.join(',') + '|' + (items === NAV ? '' : 'custom');
-    if (sig === navDrawn && host.children.length) return;
-    navDrawn = sig;
+       which is what made the sub-menus snap shut a second after landing.
 
-    host.innerHTML = items.filter(function (it) {
+       The signature used to be the rank and the sub-groups. That is not
+       enough: the first paint runs on the CACHED rank and the second on
+       whatever api/session.php answers, and when the cache is empty — a
+       first visit, or a browser that has just been cleared — those two
+       differ even though the menu they produce is usually identical. The
+       result was a visible redraw a beat after landing on every page.
+
+       So the signature is now the MARKUP. Build it, compare it, and only
+       touch the DOM when it actually differs. When it does differ — the
+       Administration section appearing for staff — the new menu fades in
+       rather than snapping. */
+    var html = items.filter(function (it) {
       return navMayItem(it, rank, teams);
     }).map(function (it) {
       if (it.heading) return '<div class="nav-heading">' + esc(it.heading) + '</div>';
@@ -609,6 +617,20 @@
         navIcon(it.icon, 'i') + '<span class="lbl">' + esc(it.label) + '</span></' + tag + '>' +
         '</div>';
     }).join('');
+
+    if (html === navDrawn && host.children.length) return;
+
+    /* Only the SECOND and later paints fade. The first one is the page
+       arriving, and fading it in on top of everything else arriving reads
+       as the page being slow rather than as a transition. */
+    var again = navDrawn !== '';
+    navDrawn = html;
+    host.innerHTML = html;
+    if (again) {
+      host.classList.remove('bs-fade');
+      void host.offsetWidth;      // restart the animation
+      host.classList.add('bs-fade');
+    }
 
     /* The current page's own entry, marked. Every page used to do this by
        hand or not at all. */
@@ -824,7 +846,7 @@
      The pages keep the markup as a fallback for a browser that never runs
      this; what is drawn here replaces it.
      ===================================================================== */
-  var UCP_VERSION = '2.5.3';
+  var UCP_VERSION = '2.6.0';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

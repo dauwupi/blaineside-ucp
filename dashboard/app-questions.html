@@ -628,7 +628,8 @@
     border:1px solid var(--border);background:var(--charcoal-3);color:var(--text-faint);cursor:pointer}
   .ib:hover{color:var(--parchment);border-color:var(--charcoal-4)}
   .ib svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
-  .ibody{padding:0 16px 16px 72px;border-top:1px solid var(--border-soft)}
+  .ibody{padding:0 16px 16px 72px;border-top:1px solid var(--border-soft);
+    animation:bsOpen .16s ease-out both}
   .ibody .pad{padding-top:14px}
   .ibody p{font-size:12.5px;color:var(--text-faint);line-height:1.75;max-width:92ch;white-space:pre-wrap}
   .item.editing{border-color:rgba(226,182,92,.42);background:rgba(226,182,92,.035)}
@@ -765,6 +766,31 @@
   renderSidebar(SIDEBAR);
 
   /* =====================================================================
+     PAINT
+
+     Every one of these pages starts with a placeholder and replaces it
+     the moment the server answers. Swapping innerHTML is instant, which
+     is exactly what makes it read as a flicker rather than as loading.
+
+     paint() does the same swap and eases the new content in. The keyframes
+     live in assets/css/tones.css so the whole UCP shares them, and they
+     are disabled under prefers-reduced-motion.
+
+     Use it for a view ARRIVING — a first load, a route change, a reload
+     after an action. Do NOT use it for a redraw in place, such as opening
+     one row of a list: fading the whole panel because one row moved is
+     more distracting than the instant redraw it replaced.
+     ===================================================================== */
+  function paint(host, html){
+    if (typeof host === 'string') host = document.getElementById(host);
+    if (!host) return;
+    host.innerHTML = html;
+    host.classList.remove('bs-in');
+    void host.offsetWidth;          // restart the animation
+    host.classList.add('bs-in');
+  }
+
+  /* =====================================================================
      SESSION
 
      Every dashboard page does this identically: confirm there is a session,
@@ -869,11 +895,21 @@
       '</div>';
   }
 
+  /* The list is re-rendered on every toggle and every save, so it must not
+     fade each time — that would make opening one row look like the page
+     reloading. Only the first arrival eases in. */
+  var LIST_PAINTED = false;
+  function paintList(html){
+    if (LIST_PAINTED) { el('body').innerHTML = html; return; }
+    LIST_PAINTED = true;
+    paint('body', html);
+  }
+
   function render(){
     var live = ROWS.filter(function(q){ return !q.retired; });
     var pool = live.filter(function(q){ return !q.pinned; }).length;
 
-    el('body').innerHTML =
+    paintList(
       '<div class="card"><div class="card-h"><h3>Questions</h3><div class="r">' +
         '<button class="btn sm" id="toggleRetired">' +
           (SHOW_RETIRED ? 'Hide retired' : 'Show retired') + '</button>' +
@@ -887,7 +923,7 @@
         'from the pool, on top of the pinned ones. ' +
         '<span style="color:var(--text-dim)">' + pool + ' in the pool</span>' +
         '<button class="btn sm" id="drawSave" style="margin-left:auto">Save</button></div>' +
-      '</div></div>';
+      '</div></div>');
 
     wire();
   }
