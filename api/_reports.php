@@ -199,6 +199,28 @@ function reports_missing_reason(): string
     return 'Staff reports aren\'t switched on yet. The report tables have not been migrated.';
 }
 
+/**
+ * Has docs/migration-reports-unknown.sql been run?
+ *
+ * The two `unknown` columns arrived after the first release, and a site
+ * that deployed the files without the ALTER would have had every submission
+ * fail on an INSERT naming columns that aren't there — a whole feature
+ * broken by a column two reports in a hundred use. Asked once per request,
+ * and the caller writes the shorter INSERT when the answer is no.
+ */
+function reports_has_unknown(PDO $pdo): bool
+{
+    static $known = null;
+    if ($known !== null) return $known;
+    try {
+        $pdo->query('SELECT unknown, unknown_note FROM ucp_reports LIMIT 1');
+        $known = true;
+    } catch (Throwable $e) {
+        $known = false;
+    }
+    return $known;
+}
+
 
 /* =====================================================================
    WHO MAY DO WHAT

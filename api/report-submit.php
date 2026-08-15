@@ -131,15 +131,30 @@ if ($at === null && $freq === 'once') {
     fail('Give the date and time of the incident, in server time.', 422);
 }
 
-$now = time();
-$pdo->prepare(
-    'INSERT INTO ucp_reports
-        (account_id, title, channel, incident_at, frequency, witnesses, body,
-         outcome_wanted, unknown, unknown_note, status, comments_enabled, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'pending\', 1, ?, ?)'
-)->execute([(int)$acc['id'], $title, $channel, $at, $freq,
-            $witness !== '' ? mb_substr($witness, 0, 255) : null,
-            $body, $want, $unknown ? 1 : 0, $unote !== '' ? $unote : null, $now, $now]);
+$now  = time();
+$cols = '(account_id, title, channel, incident_at, frequency, witnesses, body, outcome_wanted, ';
+$vals = '(?, ?, ?, ?, ?, ?, ?, ?, ';
+$args = [(int)$acc['id'], $title, $channel, $at, $freq,
+         $witness !== '' ? mb_substr($witness, 0, 255) : null, $body, $want];
+
+/* The unknown columns only exist once the follow-up ALTER has run. Without
+   them the report is still filed — the note goes on the end of what they
+   asked for rather than being lost, which is a worse copy of the same fact
+   but a far better outcome than refusing the report. */
+if (reports_has_unknown($pdo)) {
+    $cols .= 'unknown, unknown_note, ';
+    $vals .= '?, ?, ';
+    $args[] = $unknown ? 1 : 0;
+    $args[] = $unote !== '' ? $unote : null;
+} elseif ($unknown && $unote !== '') {
+    $args[7] = $want . "\n\n[Reported against an unknown staff member]\n" . $unote;
+}
+
+$cols .= 'status, comments_enabled, created_at, updated_at)';
+$vals .= '\'pending\', 1, ?, ?)';
+$args[] = $now; $args[] = $now;
+
+$pdo->prepare('INSERT INTO ucp_reports ' . $cols . ' VALUES ' . $vals)->execute($args);
 
 $id = (int)$pdo->lastInsertId();
 

@@ -1409,7 +1409,7 @@
   .pager.tight{margin-top:12px;gap:6px}
   .pager.tight .pinfo{font-size:11.5px}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.2">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.3">
 </head>
 <body>
 
@@ -1492,7 +1492,7 @@
   </div>
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-<script src="/assets/js/ucp.js?v=2.7.2"></script>
+<script src="/assets/js/ucp.js?v=2.7.3"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.
@@ -2019,9 +2019,21 @@
       btn.disabled = true;
       UCP.post('report-submit.php', payload).then(function(res){
         var d = res && res.data ? res.data : {};
-        if(!(d && d.ok)){ btn.disabled = false; toast(d.error || 'That didn’t send.'); return; }
+        if(!(d && d.ok)){
+          btn.disabled = false;
+          /* The server's own words. A blank body with a status is a fault
+             rather than a refusal, and saying which is which is the
+             difference between "fix your form" and "tell a Founder". */
+          toast(d.error || (res && res.status >= 500
+            ? 'The server errored on that (' + res.status + '). Tell a Founder.'
+            : 'That didn’t send.'));
+          return;
+        }
         window.location.href = '/dashboard/reports?id=' + d.id;
-      }).catch(function(){ btn.disabled = false; toast('Could not reach the server'); });
+      }).catch(function(e){
+        btn.disabled = false;
+        toast('Could not reach the server' + (e && e.message ? ' — ' + e.message : ''));
+      });
     });
   }
 

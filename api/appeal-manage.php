@@ -41,7 +41,11 @@ $st->execute([$id]);
 $a = $st->fetch();
 if (!$a) fail('There is no appeal with that number.', 404);
 
-if ((int)$acc['id'] === (int)$a['account_id']) {
+/* Their own appeal. Management and Founders are the exception — they sit
+   above the queue rather than inside it, and there is nothing above them to
+   send it to. See appeal_sees_own_as_staff() in _appeals.php; the page
+   marks the conflict and the log carries their name. */
+if ((int)$acc['id'] === (int)$a['account_id'] && !appeal_sees_own_as_staff($acc)) {
     json_out(['ok' => false, 'error' => 'You can\'t manage your own appeal.'], 403);
 }
 
@@ -75,7 +79,12 @@ if (array_key_exists('handler', $in)) {
         if ((int)$t['admin_rank'] < BS_APPEAL_STAFF_RANK) {
             fail($t['username'] . ' isn\'t staff, so they can\'t be given an appeal.', 422);
         }
-        if ((int)$t['id'] === (int)$a['account_id']) {
+        /* Handing an appeal to the person who filed it. Refused, unless
+           that person is Management or a Founder taking their own — which
+           is the one case where it is the honest answer rather than a
+           mistake. */
+        if ((int)$t['id'] === (int)$a['account_id']
+            && (int)$t['admin_rank'] < BS_APPEAL_SELF_RANK) {
             fail('Somebody can\'t handle their own appeal.', 422);
         }
 
