@@ -667,8 +667,17 @@
     width:22px;height:22px;border-radius:6px}
   .crit .x:hover{color:#d98a75;background:rgba(193,85,63,.12)}
   .crit .x svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.2}
-  .critadd{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap}
-  .critadd input{flex:1;min-width:170px}
+  /* Compact, and sized to what goes in them. These inherit the page's
+     input rule, which is built for a prompt textarea — 44px tall and half
+     the row wide for a two-word label like "Robbing limits" is a lot of
+     furniture for very little text, and it pushed Add off the edge. */
+  .critadd{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;align-items:center}
+  .critadd input[type=text]{padding:8px 11px;font-size:12.5px;border-radius:9px}
+  .critadd .cn{width:200px;flex:none}
+  .critadd .cw{flex:1;min-width:220px}
+  .crit{padding:8px 11px}
+  .crit .name{min-width:150px;font-size:12px}
+  .crit .words{font-size:11px}
   .hint{font-size:11.5px;color:var(--text-dim);line-height:1.6;margin-top:8px}
 
 </style>
@@ -972,8 +981,10 @@
       (EDIT_ASSIST
         ? '<div class="flab" style="margin-top:13px">Look for</div>' + rows +
           '<div class="critadd">' +
-            '<input type="text" id="cName" placeholder="What to call it — “Robbing limits”" maxlength="80">' +
-            '<input type="text" id="cWords" placeholder="Words that count as a mention, comma separated">' +
+            '<input type="text" class="cn" id="cName" placeholder="Name — “Robbing limits”" ' +
+            'maxlength="80">' +
+            '<input type="text" class="cw" id="cWords" ' +
+            'placeholder="Words that count, comma separated">' +
             '<button class="btn sm" id="cAdd">Add</button></div>' +
           '<div class="hint">Any one of the words counts as a mention. Matching ignores case and ' +
           'line breaks, so “chain rob” finds “Chain\u00a0Robbing”. Reviewers are shown which word ' +
