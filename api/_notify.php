@@ -25,6 +25,16 @@ const BS_NOTE_KEEP = 60;
 /** A burst inside this window collapses onto one row. */
 const BS_NOTE_DEDUPE_WINDOW = 21600;      // 6 hours
 
+/**
+ * How long a notification lives.
+ *
+ * Two weeks, read or unread. A notification is a nudge towards something
+ * that still exists — the appeal, the report, the thread — and after a
+ * fortnight the nudge has either worked or been overtaken. The thing it
+ * pointed at is still there; only the pointer expires.
+ */
+const BS_NOTE_MAX_AGE = 1209600;          // 14 days
+
 function notes_available(PDO $pdo): bool
 {
     static $known = null;
@@ -116,9 +126,22 @@ function notify_all(PDO $pdo, array $accountIds, string $area, string $kind,
     }
 }
 
-/** Keep the newest BS_NOTE_KEEP. Nobody scrolls to notification 200. */
+/**
+ * Housekeeping: drop anything past fourteen days, then keep the newest
+ * BS_NOTE_KEEP of what is left. Nobody scrolls to notification 200.
+ *
+ * Called on every write and on every read of the list, which is often —
+ * and is meant to be. A sweep that only runs on a cron is a sweep that
+ * stops running the first time the cron is forgotten, and both queries are
+ * indexed and delete nothing at all on the overwhelming majority of calls.
+ */
 function notes_trim(PDO $pdo, int $accountId): void
 {
+    try {
+        $pdo->prepare('DELETE FROM ucp_notifications WHERE account_id = ? AND created_at < ?')
+            ->execute([$accountId, time() - BS_NOTE_MAX_AGE]);
+    } catch (Throwable $e) { /* see below */ }
+
     try {
         $st = $pdo->prepare(
             'SELECT id FROM ucp_notifications WHERE account_id = ?
@@ -133,10 +156,37 @@ function notes_trim(PDO $pdo, int $accountId): void
     } catch (Throwable $e) { /* trimming is housekeeping, never load-bearing */ }
 }
 
-/** Newest first, unread included. */
+/**
+ * Delete one, or everything.
+ *
+ * Deleting is not the same as marking read and the page offers both: a
+ * tick says "I have dealt with this and want to keep the record", a delete
+ * says "this is not worth the space". Scoped to the caller's own rows in
+ * the WHERE clause, so there is no id anybody can send that reaches
+ * somebody else's notification.
+ */
+function notes_delete(PDO $pdo, int $accountId, ?int $id = null): int
+{
+    if (!notes_available($pdo)) return 0;
+    try {
+        if ($id === null) {
+            $st = $pdo->prepare('DELETE FROM ucp_notifications WHERE account_id = ?');
+            $st->execute([$accountId]);
+        } else {
+            $st = $pdo->prepare('DELETE FROM ucp_notifications WHERE id = ? AND account_id = ?');
+            $st->execute([$id, $accountId]);
+        }
+        return $st->rowCount();
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/** Newest first, unread included. Sweeps expired rows on the way past. */
 function notes_list(PDO $pdo, int $accountId, int $limit = 20): array
 {
     if (!notes_available($pdo)) return [];
+    notes_trim($pdo, $accountId);
     try {
         $st = $pdo->prepare(
             'SELECT * FROM ucp_notifications WHERE account_id = ?
