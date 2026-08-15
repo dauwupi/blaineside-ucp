@@ -615,6 +615,11 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   background:radial-gradient(120% 90% at 88% -20%,rgba(226,182,92,.07),transparent 62%)}
 .cert.held::before{background:radial-gradient(120% 90% at 88% -20%,rgba(193,85,63,.1),transparent 62%)}
 .cert + .card,.cert + *{margin-top:20px}
+/* The kind cards live in their own wrapper, so `.card + .card` never fires
+   between the last card above them — Previous appeals on the player's view,
+   the Scratchpad on the staff view — and the first of them. */
+#recCards{margin-top:20px}
+#recCards > .card + .card{margin-top:20px}
 
 /* The banner. This page's one job in a screenshot is to be unambiguous at
    thumbnail size, where the words are gone but the colour is not. */
@@ -813,8 +818,15 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .notes{margin-top:8px}
 /* `.note` is already a callout component on the lookup page, so the
    Scratchpad's own rows are `.pnote`. */
-.pnote{padding:15px 0 14px}
-.pnote + .pnote{border-top:1px solid var(--rule)}
+/* Each note is boxed. Hairline-separated rows are right for the record,
+   where every entry has the same shape and the eye is scanning a column —
+   but a note is a paragraph of somebody's prose, and a run of them with only
+   a rule between was one wall of text with names in it. */
+.pnote{padding:13px 15px 14px;border-radius:11px;
+  background:var(--charcoal);border:1px solid var(--border)}
+.pnote + .pnote{margin-top:9px}
+.pnote.deleting{padding-left:15px;margin-left:0;border-radius:11px;
+  border-color:rgba(193,85,63,.35)}
 .note-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12px;
   color:var(--text-faint);font-variant-numeric:tabular-nums}
 .note-h b{color:var(--parchment);font-weight:700;font-size:12.5px}
