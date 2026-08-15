@@ -567,100 +567,10 @@
 
   /* ANNOUNCEMENT BANNER — full-width, centered */
 
-  /* NOTIFICATION BELL DROPDOWN */
-  .notif{position:relative}
-  .notif-menu{position:absolute;right:0;top:calc(100% + 12px);width:352px;
-    background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;
-    box-shadow:0 26px 54px -18px rgba(0,0,0,.82);z-index:60;overflow:hidden}
-  .notif-head{display:flex;align-items:center;justify-content:space-between;padding:15px 16px 13px;
-    border-bottom:1px solid var(--border-soft)}
-  .nh-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
-  .nh-count{font-size:11px;font-weight:700;color:#1a1206;background:var(--gold);padding:1px 8px;border-radius:100px}
-  .nh-clear{background:none;border:none;font-family:inherit;font-size:12px;font-weight:600;
-    color:var(--text-faint);cursor:pointer;transition:.13s}
-  .nh-clear:hover{color:var(--gold)}
-  .notif-list{max-height:360px;overflow-y:auto;padding:6px}
-  .notif-item{display:flex;align-items:flex-start;gap:12px;padding:11px 12px;border-radius:10px;
-    position:relative;transition:.13s}
-  .notif-item:hover{background:var(--charcoal-3)}
-  .notif-item.unread{background:rgba(212,146,58,.05)}
-  .ni-ico{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;
-    background:var(--charcoal-3);border:1px solid var(--border)}
-  .ni-ico svg{width:16px;height:16px}
-  .ni-ico.green{color:var(--ok)} .ni-ico.red{color:var(--danger)}
-  .ni-ico.amber{color:var(--gold)} .ni-ico.blue{color:#7f9bd9} .ni-ico.slate{color:#a8afd4}
-  .ni-body{flex:1;min-width:0}
-  .ni-t{font-size:13px;font-weight:500;color:var(--parchment);line-height:1.45;display:block}
-  .ni-t b{color:var(--gold);font-weight:700}
-  .ni-time{font-size:11px;color:var(--text-dim);margin-top:3px;display:block}
-  .ni-un{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none;margin-top:5px}
-  .notif-foot{display:block;text-align:center;padding:13px;font-size:12.5px;font-weight:600;
-    color:var(--text-faint);border-top:1px solid var(--border-soft);transition:.13s}
-  .notif-foot:hover{color:var(--gold);background:var(--charcoal-3)}
-
-  /* tick button (mark read) shared by dropdown + page */
-  .ni-tick{flex:none;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
-    background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;
-    transition:.14s;margin-top:3px}
-  .ni-tick svg{width:14px;height:14px;stroke-width:2.4}
-  .ni-tick:hover{border-color:var(--ok);color:var(--ok);background:rgba(127,160,90,.1)}
-  .notif-item.read .ni-tick,.np-row.read .ni-tick{border-color:var(--ok);color:var(--ok);
-    background:rgba(127,160,90,.14);cursor:default}
-  .notif-item.read .ni-t,.np-row.read .ni-t{color:var(--text-faint)}
-  .notif-item.read .ni-t b,.np-row.read .ni-t b{color:var(--text-faint)}
-
-  /* ===== FULL NOTIFICATIONS PAGE ===== */
-  .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
-    color:var(--text-faint);margin-bottom:18px;transition:.14s}
-  .page-back:hover{color:var(--parchment)}
-  .page-back svg{width:16px;height:16px}
-  .np-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
-  .np-title{font-size:22px;font-weight:700;letter-spacing:-.02em}
-  .np-sub{font-size:13px;color:var(--text-faint);margin-top:3px}
-  .np-clear{background:var(--charcoal-2);border:1px solid var(--border);border-radius:9px;
-    padding:9px 14px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text-faint);
-    cursor:pointer;transition:.14s}
-  .np-clear:hover{color:var(--parchment);background:var(--charcoal-3)}
-  .np-filters{display:flex;gap:6px;margin-bottom:18px}
-  .np-filter{background:var(--charcoal-2);border:1px solid var(--border);border-radius:100px;
-    padding:8px 16px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text-faint);
-    cursor:pointer;transition:.14s}
-  .np-filter:hover{color:var(--parchment)}
-  .np-filter.active{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
-  .np-list{padding:6px}
-  .np-row{display:flex;align-items:flex-start;gap:14px;padding:15px 14px;border-radius:11px;transition:.13s}
-  .np-row + .np-row{border-top:1px solid var(--border-soft)}
-  .np-row:hover{background:var(--charcoal-3)}
-  .np-row.unread{background:rgba(212,146,58,.045)}
-  .np-row .ni-ico{width:38px;height:38px}
-  .np-row .ni-ico svg{width:17px;height:17px}
-  .np-row .ni-body{flex:1;min-width:0}
-  .np-row .ni-t{font-size:14px;font-weight:500;line-height:1.5}
-  .np-row .ni-sub{font-size:12.5px;color:var(--text-dim);margin-top:2px;line-height:1.45}
-  .np-row .ni-time{font-size:11.5px;color:var(--text-dim);margin-top:5px}
-  .np-empty{padding:50px 20px;text-align:center;color:var(--text-dim);font-size:13.5px}
-
-  /* pager — centered */
-  .np-pager{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:18px}
-  .np-pager .pg{min-width:34px;height:34px;padding:0 10px;display:grid;place-items:center;border-radius:9px;
-    background:var(--charcoal-2);border:1px solid var(--border);color:var(--text-faint);
-    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
-  .np-pager .pg:hover:not(:disabled){color:var(--parchment);background:var(--charcoal-3)}
-  .np-pager .pg.on{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
-  .np-pager .pg:disabled{opacity:.4;cursor:not-allowed}
-  .np-pager .pg svg{width:15px;height:15px;stroke-width:2.2}
-  .np-pager .pg-gap{color:var(--text-dim);padding:0 2px;font-size:13px}
-
-  @media (max-width:760px){
-    .np-head{flex-direction:column;align-items:flex-start;gap:10px}
-  }
-
-  @media (max-width:760px){
-    .notif-menu{position:fixed;left:10px;right:10px;top:60px;width:auto;
-      background:var(--charcoal-2);max-height:calc(100dvh - 80px);display:flex;flex-direction:column}
-    .notif-menu .notif-list{flex:1;max-height:none}
-    .notif-menu .notif-foot{background:var(--charcoal-2)}
-  }
+  /* The bell's panel is styled by assets/js/ucp.js, and the full list has
+     its own page. Both used to be here — markup, styles and twelve
+     hardcoded rows — which is why the panel and the page could disagree
+     about what was unread. */
 
   /* mobile-only controls — hidden on desktop */
   .hamburger{display:none}
@@ -802,8 +712,8 @@
   .lockpast .lp:hover .lpg{color:var(--parchment)}
   .lockpast .lpmore{font-size:11.5px;color:var(--text-dim);margin-top:9px}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.1">
-<script src="/assets/js/ucp.js?v=2.7.1"></script>
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.2">
+<script src="/assets/js/ucp.js?v=2.7.2"></script>
 </head>
 <body>
 
@@ -994,29 +904,10 @@
 
       </div><!-- /page-dashboard -->
 
-      <!-- ===== NOTIFICATIONS PAGE ===== -->
-      <div class="page" id="page-notifications" style="display:none">
-        <a class="page-back" id="notifBack" href="#/">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-          Back to dashboard
-        </a>
-        <div class="np-head">
-          <div>
-            <h2 class="np-title">Notifications</h2>
-            <p class="np-sub"><span id="npUnreadCount">3</span> unread of <span id="npTotalCount">5</span></p>
-          </div>
-          <button class="np-clear" id="npClear">Mark all read</button>
-        </div>
-        <div class="np-filters" id="npFilters">
-          <button class="np-filter active" data-filter="all">All</button>
-          <button class="np-filter" data-filter="unread">Unread</button>
-          <button class="np-filter" data-filter="read">Read</button>
-        </div>
-        <div class="panel">
-          <div class="np-list" id="npList"></div>
-        </div>
-        <div class="np-pager" id="npPager"></div>
-      </div>
+      <!-- The full notifications list is its own page now:
+           /dashboard/notifications. It lived here as a hash route with its
+           own styles and its own copy of the rendering; one document is
+           easier to keep true than two. -->
 
     </main>
   </div>
@@ -1481,145 +1372,11 @@
     })
     .catch(()=>mountBulletin([]));
 
-  /* =====================================================================
-     NOTIFICATIONS — the full list
-
-     The bell itself is in assets/js/ucp.js and is on every page. What lives
-     here is the page behind it: everything, filterable, paged, and
-     acknowledgeable one at a time.
-
-     This used to be twelve hardcoded rows in an array. They were a
-     convincing demo and a liability — the dropdown showed invented property
-     purchases while the real appeal reply sat unseen.
-     ===================================================================== */
-  const NOTIF_ICON='<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/>';
-  const tickSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>';
-
-  let NOTIFS = [], npFilter='all', npPage=1, npLoaded=false;
-  const NP_PER_PAGE=8;
-
-  function unreadCount(){ return NOTIFS.filter(n=>!n.read).length; }
-
-  function npWhen(ts){
-    return (window.UCP && UCP.relTime) ? UCP.relTime(ts) : new Date(ts*1000).toUTCString();
+  /* Anyone who bookmarked the old hash route lands on the page that
+     replaced it rather than on a dashboard that ignores them. */
+  if((location.hash||'').replace('#/','') === 'notifications'){
+    window.location.replace('/dashboard/notifications');
   }
-
-  function rowHTML(n){
-    return `
-      <div class="np-row ${n.read?'read':'unread'}" data-id="${n.id}">
-        <span class="ni-ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${NOTIF_ICON}</svg></span>
-        <a class="ni-body" ${n.url?`href="${esc(n.url)}"`:''}>
-          <span class="ni-t">${esc(n.title)}</span>
-          ${n.body?`<span class="ni-sub">${esc(n.body)}</span>`:''}
-          <span class="ni-time">${esc(npWhen(n.at))}${n.actor?' · '+esc(n.actor):''}</span>
-        </a>
-        <button class="ni-tick" data-tick="${n.id}" title="${n.read?'Read':'Mark as read'}" ${n.read?'disabled':''}>${tickSVG}</button>
-      </div>`;
-  }
-
-  function renderPager(totalPages){
-    const pager=document.getElementById('npPager');
-    if(totalPages<=1){ pager.innerHTML=''; return; }
-    const prev=`<button class="pg" data-pg="${npPage-1}" ${npPage===1?'disabled':''} aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>`;
-    const next=`<button class="pg" data-pg="${npPage+1}" ${npPage===totalPages?'disabled':''} aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>`;
-    const nums=[]; const add=p=>nums.push(`<button class="pg ${p===npPage?'on':''}" data-pg="${p}">${p}</button>`);
-    const gap=()=>nums.push('<span class="pg-gap">…</span>');
-    const pages=[];
-    for(let i=1;i<=totalPages;i++){
-      if(i===1||i===totalPages||Math.abs(i-npPage)<=1) pages.push(i);
-    }
-    let last=0;
-    pages.forEach(p=>{ if(p-last>1) gap(); add(p); last=p; });
-    pager.innerHTML = prev + nums.join('') + next;
-  }
-
-  function renderNotifications(){
-    const u=unreadCount(), total=NOTIFS.length;
-    document.getElementById('npUnreadCount').textContent=u;
-    document.getElementById('npTotalCount').textContent=total;
-
-    const filtered = NOTIFS.filter(n=> npFilter==='all' ? true : npFilter==='unread' ? !n.read : n.read);
-    const totalPages=Math.max(1,Math.ceil(filtered.length/NP_PER_PAGE));
-    if(npPage>totalPages) npPage=totalPages;
-    const start=(npPage-1)*NP_PER_PAGE;
-    const pageItems=filtered.slice(start,start+NP_PER_PAGE);
-
-    const np=document.getElementById('npList');
-    np.innerHTML = pageItems.length ? pageItems.map(rowHTML).join('')
-      : `<div class="np-empty">${npLoaded
-          ? (total ? `No ${npFilter} notifications.`
-                   : 'Nothing yet. Replies to your appeals and staff reports turn up here.')
-          : 'Loading…'}</div>`;
-    renderPager(totalPages);
-  }
-
-  function loadNotifications(){
-    return UCP.get('notifications.php?limit=50').then(d=>{
-      npLoaded = true;
-      NOTIFS = (d && d.ok === true && d.notifications) ? d.notifications : [];
-      renderNotifications();
-    }).catch(()=>{ npLoaded = true; renderNotifications(); });
-  }
-
-  /* Marking read here also refreshes the bell, so the badge and the page
-     never disagree about what is unread. */
-  function markRead(id){
-    const n=NOTIFS.find(x=>x.id===id); if(!n || n.read) return;
-    n.read=true; renderNotifications();
-    UCP.post('notification-read.php',{id:id}).then(()=>{ if(UCP.notifications) UCP.notifications(); });
-  }
-  function markAllRead(){
-    NOTIFS.forEach(n=>n.read=true); renderNotifications();
-    UCP.post('notification-read.php',{all:true}).then(()=>{ if(UCP.notifications) UCP.notifications(); });
-  }
-
-  document.addEventListener('click',e=>{
-    const t=e.target.closest('[data-tick]');
-    if(t){ e.preventDefault(); e.stopPropagation();
-      t.classList.add('just-read');
-      setTimeout(()=>t.classList.remove('just-read'),340);
-      markRead(parseInt(t.dataset.tick,10));
-    }
-  },true);
-  document.getElementById('npClear').addEventListener('click',markAllRead);
-
-  /* page filters — reset to page 1 */
-  document.getElementById('npFilters').addEventListener('click',e=>{
-    const f=e.target.closest('.np-filter'); if(!f)return;
-    npFilter=f.dataset.filter; npPage=1;
-    document.querySelectorAll('.np-filter').forEach(x=>x.classList.toggle('active',x===f));
-    renderNotifications();
-  });
-
-  document.getElementById('npPager').addEventListener('click',e=>{
-    const p=e.target.closest('[data-pg]'); if(!p)return;
-    npPage=parseInt(p.dataset.pg,10); renderNotifications();
-    window.scrollTo({top:0,behavior:'smooth'});
-  });
-
-  renderNotifications();
-
-  /* ---- simple routing: dashboard <-> notifications ---- */
-  function showPage(name){
-    document.getElementById('page-dashboard').style.display   = name==='notifications' ? 'none' : '';
-    document.getElementById('page-notifications').style.display = name==='notifications' ? 'block' : 'none';
-    document.querySelector('.page-title h1').textContent = name==='notifications' ? 'Notifications' : 'Dashboard';
-    document.querySelector('.content').scrollTop=0; window.scrollTo(0,0);
-  }
-  document.getElementById('notifBack').addEventListener('click',e=>{
-    e.preventDefault(); location.hash=''; showPage('dashboard');
-  });
-
-  /* The bell's "View all notifications" link lands here, and so does anyone
-     who bookmarked it. The list is only fetched when the page is actually
-     opened — the bell already has the recent ones. */
-  function routeFromHash(){
-    const want = (location.hash||'').replace('#/','') === 'notifications';
-    showPage(want ? 'notifications' : 'dashboard');
-    if(want) loadNotifications();
-  }
-  window.addEventListener('hashchange', routeFromHash);
-  routeFromHash();
 
   /* account menu */
   const accBtn=document.querySelector('.account-btn'), accMenu=document.querySelector('.account-menu');

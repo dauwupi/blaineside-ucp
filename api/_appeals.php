@@ -209,7 +209,7 @@ function appeal_conclude_block(PDO $pdo, array $acc, array $appeal, ?array $puni
        the appeal against it — they are the default handler, because they are
        the one who knows what happened. If a second opinion is wanted, a
        Senior Admin reassigns it. */
-    return appeal_may_act($acc, $appeal)
+    return appeal_may_act($pdo, $acc, $appeal)
         ? null
         : 'This appeal is being handled by ' . ($appeal['handler_name'] ?: 'someone else')
         . '. ' . rank_name(BS_APPEAL_MANAGE_RANK) . ' and above can take it over.';
@@ -218,17 +218,33 @@ function appeal_conclude_block(PDO $pdo, array $acc, array $appeal, ?array $puni
 /**
  * May this staff member act on this appeal — comment on it, or decide it?
  *
- * The handler, or Senior Admin and above. Not every member of staff who can
- * open it: an appeal is a conversation between one player and one handler,
- * and four people answering at once is worse for the appellant than a slow
- * reply. Anyone else reads it, and takes it up with the handler.
+ * The handler, always. Otherwise: Management, Founders, and anyone holding
+ * the Staff Management sub-group, who speak on any appeal by default
+ * because overseeing how appeals are handled is the job.
+ *
+ * Everybody else reads it and takes it up with the handler. That is the
+ * point of the restriction rather than an accident of it: an appeal is a
+ * conversation between one player and one handler, and four administrators
+ * answering at once is worse for the appellant than a slow reply.
+ *
+ * Note this is narrower than reassigning (Senior Admin and above). A Senior
+ * Admin who thinks an appeal is being handled badly hands it to somebody
+ * else — including themselves — rather than talking over the handler.
  */
-function appeal_may_act(array $acc, array $appeal): bool
+function appeal_may_act(PDO $pdo, array $acc, array $appeal): bool
 {
     if (!appeal_is_staff($acc)) return false;
-    if ((int)$acc['id'] === (int)$appeal['account_id']) return false;
+
+    /* Their own appeal. Management and Founders are the exception, for the
+       same reason they are everywhere else — there is no queue above them. */
+    if ((int)$acc['id'] === (int)$appeal['account_id'] && !appeal_sees_own_as_staff($acc)) {
+        return false;
+    }
+
     if ((int)($appeal['handler_id'] ?? 0) === (int)$acc['id']) return true;
-    return (int)$acc['admin_rank'] >= BS_APPEAL_MANAGE_RANK;
+    if ((int)$acc['admin_rank'] >= BS_APPEAL_SELF_RANK) return true;
+
+    return function_exists('has_team') && has_team($pdo, (int)$acc['id'], 'staff_management');
 }
 
 /** May they reassign it, or change who may reply? Senior Admin and above. */
@@ -906,7 +922,7 @@ function appeal_out(PDO $pdo, array $a, array $acc): array
             'own'          => $mine,
             'may_conclude' => $block === null,
             'why'          => $block,
-            'may_comment'  => appeal_may_act($acc, $a),
+            'may_comment'  => appeal_may_act($pdo, $acc, $a),
             'may_manage'   => appeal_may_manage($acc),
             'is_handler'   => (int)($a['handler_id'] ?? 0) === (int)$acc['id'],
             'manage_rank'  => rank_name(BS_APPEAL_MANAGE_RANK),

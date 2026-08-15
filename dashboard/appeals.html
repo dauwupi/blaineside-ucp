@@ -1157,7 +1157,7 @@
   .hrow .hgo svg{width:15px;height:15px;stroke-width:2.2}
   .hrow:hover .hgo{color:var(--parchment)}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.1">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.7.2">
 </head>
 <body>
 
@@ -1241,7 +1241,7 @@
   </div>
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-<script src="/assets/js/ucp.js?v=2.7.1"></script>
+<script src="/assets/js/ucp.js?v=2.7.2"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.
@@ -2393,18 +2393,21 @@
        than leaving a missing box: "where did the reply field go" is a
        support question, and it has a one-line answer. */
     /* Who may write, and why not. Staff who can OPEN an appeal are not all
-       staff who may speak on it — that is the handler, or Senior Admin and
-       above. Every closed state is explained rather than leaving a missing
-       box: "where did the reply field go" is a support question with a
-       one-line answer. */
+       staff who may speak on it — the handler, or Management, Founders and
+       Staff Management, who oversee how appeals are handled. Every closed
+       state is explained rather than leaving a missing box: "where did the
+       reply field go" is a support question with a one-line answer. */
     var canWrite = staff
       ? d.viewer.may_comment
       : (d.status === 'pending' && d.comments_enabled);
     var closed = !canWrite
       ? (staff
-          ? (d.handler ? d.handler + ' is handling this appeal. ' +
-                         (d.viewer.manage_rank || 'Senior Admin') + ' and above can reply on any.'
-                       : 'This appeal isn’t assigned to you.')
+          ? (d.handler
+              ? escapeHtml(d.handler)+' is handling this appeal. Management, Founders and '+
+                'Staff Management can reply on any; '+
+                escapeHtml(d.viewer.manage_rank || 'Senior Admin')+' and above can reassign it.'
+              : 'This appeal isn’t assigned to anybody yet. '+
+                escapeHtml(d.viewer.manage_rank || 'Senior Admin')+' and above can take it.')
           : d.status !== 'pending'
             ? 'This appeal has been decided, so it’s closed to replies.'
             : 'Comments have been closed on this appeal by staff.')

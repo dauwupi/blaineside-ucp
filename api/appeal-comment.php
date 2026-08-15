@@ -45,11 +45,13 @@ if (!appeal_may_view($acc, $a)) {
    staff-only comment on their own case, or bypass a closed thread.
  *
  * And READING an appeal is not the same as speaking on it. Anyone from
- * Support Staff up can open the queue; only the handler, or Senior Admin and
- * above, may write. An appeal answered by four people at once is worse for
- * the appellant than a slow one. */
-$staff = appeal_is_staff($acc) && (int)$acc['id'] !== (int)$a['account_id'];
-$mayAct = appeal_may_act($acc, $a);
+ * Support Staff up can open the queue; only the handler — or Management,
+ * Founders and Staff Management, who oversee how appeals are handled — may
+ * write. An appeal answered by four people at once is worse for the
+ * appellant than a slow one. */
+$staff = appeal_is_staff($acc)
+         && ((int)$acc['id'] !== (int)$a['account_id'] || appeal_sees_own_as_staff($acc));
+$mayAct = appeal_may_act($pdo, $acc, $a);
 
 if ($staff && !$mayAct) {
     json_out([
@@ -57,7 +59,9 @@ if ($staff && !$mayAct) {
         'error' => ($a['handler_name']
                     ? $a['handler_name'] . ' is handling this appeal. '
                     : 'This appeal isn\'t assigned to you. ')
-                 . rank_name(BS_APPEAL_MANAGE_RANK) . ' and above can reply on any appeal.',
+                 . 'Management, Founders and Staff Management can reply on any appeal; '
+                 . rank_name(BS_APPEAL_MANAGE_RANK) . ' and above can reassign it to '
+                 . 'themselves.',
     ], 403);
 }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BlaineSide — Staff Reports</title>
+<title>BlaineSide — Notifications</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='23' fill='%23121110'/%3E%3Ctext x='50' y='70' font-family='Oswald,sans-serif' font-size='60' font-weight='700' fill='%23e2b65c' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1408,6 +1408,36 @@
   .hlist.tight{gap:6px}
   .pager.tight{margin-top:12px;gap:6px}
   .pager.tight .pinfo{font-size:11.5px}
+
+  /* ---- the notification list ---- */
+  .nlist{display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:12px;
+    overflow:hidden}
+  .nrow{display:flex;align-items:flex-start;gap:14px;padding:14px 15px;background:var(--charcoal);
+    cursor:pointer;transition:.13s}
+  .nrow + .nrow{border-top:1px solid var(--rule)}
+  .nrow:hover{background:var(--charcoal-3)}
+  /* Unread is a tint and a weight, not a colour: a list where every unread
+     row is gold is a list where nothing stands out. */
+  .nrow.unread{background:rgba(226,182,92,.04)}
+  .nrow .nic{flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:10px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-dim)}
+  .nrow.unread .nic{color:#e3bd72;background:rgba(226,182,92,.1);
+    border-color:rgba(226,182,92,.28)}
+  .nrow .nic svg{width:15px;height:15px;stroke-width:2}
+  .nrow .nb{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+  .nrow .nt{font-size:13.5px;font-weight:500;color:var(--text-faint);line-height:1.45}
+  .nrow.unread .nt{color:var(--parchment);font-weight:700}
+  .nrow .ns{font-size:12.5px;color:var(--text-dim);line-height:1.5;text-wrap:pretty}
+  .nrow .nw{font-size:11.5px;color:var(--text-dim);margin-top:2px}
+  .ntick{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;
+    border:1px solid var(--border);background:var(--charcoal-2);color:var(--text-dim);
+    cursor:pointer;transition:.14s}
+  .ntick svg{width:14px;height:14px;stroke-width:2.6}
+  .ntick:hover:not(:disabled){color:var(--ok);border-color:rgba(127,160,90,.45);
+    background:rgba(127,160,90,.1)}
+  .ntick:disabled{color:var(--ok);border-color:rgba(127,160,90,.3);
+    background:rgba(127,160,90,.08);cursor:default}
+  .pager{margin-top:14px}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.7.2">
 </head>
@@ -1439,7 +1469,7 @@
       <button class="icon-btn hamburger" id="menuToggle" aria-label="Open menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <div class="page-title"><h1>Staff Reports</h1></div>
+      <div class="page-title"><h1>Notifications</h1></div>
       <div class="spacer"></div>
       <div class="searchbox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -1474,18 +1504,15 @@
 
     <main class="content">
       <div class="ahead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 21V4h13l-2.5 4L18 12H5"/></svg></span>
+        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
         <div class="tx">
-          <h1>Staff Reports</h1>
-          <!-- Says who handles it and, more usefully, who does NOT: the single
-               most common reason people don't report a staff member is not
-               knowing whether that person will read it. -->
-          <p>A report about the conduct of a member of staff, read by Staff Management and the
-            Management Team — never by the person it is about.</p>
+          <h1>Notifications</h1>
+          <p>Everything the UCP has told you, oldest still here at the bottom. Opening one takes
+            you to what it is about; the tick marks it read without going anywhere.</p>
         </div>
       </div>
 
-      <div class="qtabs" id="qtabs" role="tablist" aria-label="Staff Reports views"></div>
+      <div class="qtabs" id="qtabs" role="tablist" aria-label="Notification filters"></div>
       <div id="qbody"></div>
 
     </main>
@@ -1534,1305 +1561,191 @@
   renderSidebar(SIDEBAR);
 
   /* =====================================================================
-     STAFF REPORTS
+     NOTIFICATIONS — the full list
 
-     Three views behind one page, chosen by the hash so the sidebar can
-     link to any of them:
+     The bell in the top bar is built by assets/js/ucp.js and is on every
+     page. This is the page behind it, and it is the ONLY copy: the
+     dashboard used to carry its own list, its own styles and twelve
+     hardcoded rows. One document, the same reasoning as the sidebar.
 
-       #submit   what a report is for, then the form   — everyone
-       #mine     what I have reported before           — everyone
-       #panel    the queue                             — Management, Founders,
-                                                         Staff Management
-
-     A fourth view — one report — is reached with ?id=123 rather than being
-     a page of its own, exactly as an appeal is. Everything about staff
-     reports lives in this file, so the next thing added has one obvious
-     place to go.
-
-     Which views exist for the person looking is decided by
-     api/queues.php, not by this file reading a rank. The endpoints check
-     again on every request regardless; nothing here is a permission.
+     Everything here is drawn from the components this stylesheet already
+     has — cards, filter pills, the row list, the chevron pager — so the
+     page inherits every future change to them rather than restating them.
      ===================================================================== */
-  var VIEWS = [
-    { key:'submit', label:'Submit a Staff Report', icon:'pen',
-      note:'Report the conduct of a member of staff.' },
-    { key:'mine',   label:'My Staff Reports', icon:'doc',
-      note:'What you have reported, and what was decided.' },
-    { key:'panel',  label:'Staff Report Panel', icon:'shield', staff:true,
-      note:'Triage, allocate and decide reports about staff.' }
-  ];
-  var VIEW = 'submit', GATE = null, OPTS = null;
+  var NOTES = [], NFILTER = 'all', NPAGE = 1, NPER = 10, NLOADED = false;
 
-  var ID = parseInt(new URLSearchParams(location.search).get('id') || '0', 10) || 0;
-
-  var AI = {
-    lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
-    warn:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>',
-    info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  var NI = {
+    appeal:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/>'+
+           '<path d="M15 14l4.5 4.5"/>',
+    report:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    system:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
     tick:'<path d="M20 6L9 17l-5-5"/>',
-    x:'<path d="M6 6l12 12M18 6L6 18"/>',
-    plus:'<path d="M12 5v14M5 12h14"/>',
-    open:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
-    chev:'<path d="M9 6l6 6-6 6"/>',
-    shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9.5 12l2 2 3.5-4"/>',
-    doc:'<path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5"/>',
-    link:'<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
-    msg:'<path d="M4 5h16v11H8l-4 3z"/>',
-    flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
-    help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6v.2"/><path d="M12 17h.01"/>',
-    pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
-    search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
-    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 1.5"/>'
+    chev:'<path d="M9 6l6 6-6 6"/>'
   };
-  function ai(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+AI[n]+'</svg>'; }
+  function ni(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+NI[n]+'</svg>'; }
 
-  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function stamp(ts){
-    if(!ts) return '—';
-    var d = new Date(ts*1000), p = function(x){ return String(x).padStart(2,'0'); };
-    return MON[d.getUTCMonth()]+' '+p(d.getUTCDate())+', '+d.getUTCFullYear()+
-           ' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes());
-  }
-  function stampEsc(ts){ return escapeHtml(stamp(ts)); }
-  function ago(ts){
-    if(!ts) return '—';
+  function nWhen(ts){
     if(window.UCP && UCP.relTime) return UCP.relTime(ts);
-    return stamp(ts);
+    var d = new Date(ts*1000), p = function(x){ return String(x).padStart(2,'0'); };
+    return p(d.getUTCDate())+'/'+p(d.getUTCMonth()+1)+'/'+d.getUTCFullYear();
   }
-  function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 
-  /* ---- tabs ---------------------------------------------------------- */
-  function renderTabs(){
-    var host = document.getElementById('qtabs');
+  function nUnread(){ return NOTES.filter(function(n){ return !n.read; }).length; }
 
-    var shown = VIEWS.filter(function(v){
-      var st = GATE && GATE.views ? GATE.views[v.key] : null;
-      return !st || st.may;
-    });
-    if(!shown.length) shown = [VIEWS[0]];
-
-    host.className = 'qtabs' + (shown.length === 1 ? ' solo' : '') +
-                     (shown.length === 3 ? ' three' : '');
-    host.innerHTML = shown.map(function(v){
-      var on = v.key === VIEW;
-      return '<button class="qtab'+(v.staff && !on ? ' staff' : '')+'" role="tab" '+
-             'data-view="'+v.key+'" aria-selected="'+(on?'true':'false')+'">'+
-               '<span class="ai">'+ai(v.icon)+'</span>'+
-               '<span class="at">'+
-                 '<span class="an">'+escapeHtml(v.label)+
-                   (v.staff ? '<span class="smark">Staff</span>' : '')+'</span>'+
-                 '<span class="ad">'+escapeHtml(v.note)+'</span>'+
-               '</span>'+
-             '</button>';
-    }).join('');
-    Array.prototype.forEach.call(host.querySelectorAll('[data-view]'), function(b){
-      b.addEventListener('click', function(){ go(b.getAttribute('data-view'), true); });
+  function nFiltered(){
+    return NOTES.filter(function(n){
+      return NFILTER === 'all' ? true : (NFILTER === 'unread' ? !n.read : n.read);
     });
   }
 
-  function refused(label, why){
-    return '<div class="card"><div class="card-b">'+
-      '<div class="note-a bad"><span class="si">'+ai('lock')+'</span><div>'+
-        '<h4>'+escapeHtml(label)+' isn’t open to you</h4>'+
-        '<p>'+escapeHtml(why||'')+'</p>'+
-        '<p>If you think that is wrong, speak to Staff Management rather than the '+
-        'administrator who sent you here.</p></div></div></div></div>';
-  }
-
-  /* =====================================================================
-     SUBMIT
-
-     There is no information page any more, and that is the point. It was a
-     wall you had to read and dismiss before the form appeared — and nobody
-     reads a wall they can dismiss. Everything it said is now in the column
-     on the right, where it is still in front of you while you are writing:
-     the four categories are visible at the moment you are deciding whether
-     your thing is misconduct or a punishment appeal, rather than two
-     screens earlier.
-
-     The form is what the page IS.
-     ===================================================================== */
-  var PICKED = [];        // account ids of the staff being reported
-  var UNKNOWN = false;    // "I don't know who it was"
-  var EVN = 0;
-
-  /* ---- the sidebar ----
-     A column of cards on the page background, not one tinted panel welded
-     to the side of the form. The tint was a second surface colour inside a
-     card that already had one, and the seam showed where they met. Cards
-     with headers and a gap between them are what the rest of this page is
-     made of; the rail should not be the one thing that isn't.
-     ===================================================================== */
-  function asideHTML(){
-    function card(title, body){
-      return '<div class="card"><div class="card-h"><h3>'+title+'</h3></div>'+
-             '<div class="card-b">'+body+'</div></div>';
-    }
-
-    var steps = [
-      [1,'You send it','It goes to Staff Management. The staff member is never told who is '+
-        'handling it.'],
-      [0,'Reviewed in 24–48 hours','Placed under review and put into one of four categories.'],
-      [0,'Decided','You are told what was decided and why — never who decided it.']
-    ].map(function(t){
-      return '<div class="tstep'+(t[0]?' on':'')+'"><span class="d"></span><span class="b">'+
-        '<div class="t">'+escapeHtml(t[1])+'</div>'+
-        '<div class="s">'+escapeHtml(t[2])+'</div></span></div>';
-    }).join('');
-
-    var cats = [
-      ['c1','Misconduct','A broken rule or staff policy, or conduct below the server’s '+
-        'standards.'],
-      ['c2','Punishment appeal','A punishment reduced or removed, rather than conduct '+
-        'reported.'],
-      ['c3','Subteam','Duties inside a sub-team. Goes to its leader or the line manager.'],
-      ['c4','Rejected','Spam, backseat moderation, or filed for somebody else. Not reviewed.']
-    ].map(function(c){
-      return '<div class="cat '+c[0]+'"><div class="n">'+escapeHtml(c[1])+'</div>'+
-             '<p>'+escapeHtml(c[2])+'</p></div>';
-    }).join('');
-
-    /* The week-long wait belongs to the timeline it is about, not to a
-       third card of its own. As a card it was a header over one paragraph
-       — the only thing on the page shaped that way, which is why it looked
-       borrowed from somewhere else. */
-    var slow = '<div class="railnote"><span class="i">'+ai('clock')+'</span><div>'+
-      '<b>Heard nothing for a week?</b> Some reports are slower because of who is involved. '+
-      'Speak to a member of Staff Management directly rather than sending it again.'+
-      '</div></div>';
-
-    return '<div class="rail"><div class="sticky">'+
-      card('What happens next', '<div class="tline">'+steps+'</div>' + slow) +
-      card('The four categories', '<div class="cats">'+cats+'</div>') +
-    '</div></div>';
-  }
-
-  /* ---- who it is about ----
-     Redesigned from a pill. A pill had to carry a name, a group and a
-     remove button in one line of 12px text, and all three ended up
-     competing at the same size — the name no bigger than the group it was
-     in. These are rows: name first at the weight of a name, group under it,
-     remove on the far right where it can be hit. */
-  function pickedHTML(){
-    if(!PICKED.length && !UNKNOWN){
-      return '<div class="picked none">Nobody named yet.</div>';
-    }
-    var by = {};
-    (OPTS.staff||[]).forEach(function(s){ by[s.id] = s; });
-
-    var rows = PICKED.map(function(id){
-      var s = by[id]; if(!s) return '';
-      return '<div class="prow"><span class="pd tone-'+(s.rank|0)+'"></span>'+
-        '<span class="pb"><span class="pn">'+escapeHtml(s.name)+'</span>'+
-        '<span class="pg tone-'+(s.rank|0)+'">'+escapeHtml(s.group)+'</span></span>'+
-        '<button type="button" class="px" data-drop="'+id+'" aria-label="Remove '+
-        escapeHtml(s.name)+'">'+ai('x')+'</button></div>';
-    }).join('');
-
-    if(UNKNOWN){
-      rows += '<div class="prow unk"><span class="pd"></span>'+
-        '<span class="pb"><span class="pn">An unknown staff member</span>'+
-        '<span class="pg">You’ll be asked what you do know</span></span>'+
-        '<button type="button" class="px" data-drop="unknown" aria-label="Remove">'+
-        ai('x')+'</button></div>';
-    }
-    return '<div class="picked">'+rows+'</div>';
-  }
-
-  /* The title is not asked for. It is this, and it updates as names go in —
-     shown rather than typed, so the reporter can see exactly what lands in
-     the queue without being able to write "staff report" into it. */
-  function titlePreview(){
-    var by = {};
-    (OPTS.staff||[]).forEach(function(s){ by[s.id] = s; });
-    var parts = PICKED.map(function(id){ return by[id] ? by[id].name : null; })
-                      .filter(Boolean);
-    if(UNKNOWN) parts.push('an unknown staff member');
-    if(!parts.length) return 'Staff Report';
-    var list;
-    if(parts.length > 4){
-      list = parts.slice(0,3).join(', ') + ' and ' + (parts.length - 3) + ' others';
-    } else {
-      var last = parts.pop();
-      list = parts.length ? parts.join(', ') + ' and ' + last : last;
-    }
-    return 'Staff Report — ' + list;
-  }
-
-  function paintPicked(){
-    var host = document.getElementById('picked');
-    if(!host) return;
-    host.innerHTML = pickedHTML();
-    Array.prototype.forEach.call(host.querySelectorAll('[data-drop]'), function(b){
-      b.addEventListener('click', function(){
-        var v = b.getAttribute('data-drop');
-        if(v === 'unknown') UNKNOWN = false;
-        else PICKED = PICKED.filter(function(x){ return x !== parseInt(v,10); });
-        paintPicked();
-      });
-    });
-
-    var t = document.getElementById('tprev');
-    if(t){
-      t.textContent = titlePreview();
-      /* .blank, not .empty — `.empty` is the shell's dashed empty-state
-         panel, and borrowing the name wrapped the title in one. */
-      t.className = 'tprev' + (PICKED.length || UNKNOWN ? '' : ' blank');
-    }
-    /* The unknown question exists only while the answer matters. */
-    var uq = document.getElementById('unkq');
-    if(uq) uq.hidden = !UNKNOWN;
-    renumber();
-  }
-
-  /* The numbers are on the questions you can see. A hidden question that
-     still holds its place makes the form skip from 1 to 3, which reads as
-     a question that failed to load. */
-  function renumber(){
-    var qs = document.querySelectorAll('.pane .q'), n = 0;
-    Array.prototype.forEach.call(qs, function(q){
-      if(q.hidden) return;
-      n++;
-      var b = q.querySelector('.qn b');
-      if(b) b.textContent = n + '.';
-    });
-  }
-
-  function evRow(){
-    var i = ++EVN;
-    return '<div class="evrow" data-ev="'+i+'">'+
-      '<span class="ic">'+ai('link')+'</span>'+
-      '<div class="eb">'+
-        '<input class="ti" data-url placeholder="https://…">'+
-        '<input class="ti sm" data-note maxlength="190" '+
-        'placeholder="What this shows (optional)">'+
-      '</div>'+
-      '<button class="evx" type="button" data-evdrop aria-label="Remove">'+ai('x')+
-      '</button></div>';
-  }
-
-  function formHTML(){
-    var groups = [], seen = {};
-    (OPTS.staff||[]).forEach(function(s){
-      if(!seen[s.group]){ seen[s.group] = []; groups.push(s.group); }
-      seen[s.group].push(s);
-    });
-    var staffOpts = groups.map(function(g){
-      return '<optgroup label="'+escapeHtml(g)+'">'+ seen[g].map(function(s){
-        return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>';
-      }).join('') +'</optgroup>';
-    }).join('');
-
-    var chans = (OPTS.channels||[]).map(function(c){
-      return '<option value="'+escapeHtml(c.key)+'">'+escapeHtml(c.label)+'</option>';
-    }).join('');
-    var freqs = (OPTS.frequencies||[]).map(function(f){
-      return '<option value="'+escapeHtml(f.key)+'">'+escapeHtml(f.label)+'</option>';
-    }).join('');
-
-    var n = 0;
-    function q(label, body, hint, id){
-      n++;
-      return '<div class="q"'+(id ? ' id="'+id+'" hidden' : '')+'>'+
-        '<div class="qn"><b>'+n+'.</b>'+label+'</div>'+
-        '<div class="qbody">'+body+
-        (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div></div>';
-    }
-
-    return '<div class="split">'+
-      '<div class="card"><div class="card-h"><h3>Submit a Staff Report</h3>'+
-      '<span class="aside">Goes to Staff Management · '+
-      (OPTS.open_max - OPTS.open)+' of '+OPTS.open_max+' slots free</span></div>'+
-      '<div class="card-b pane">'+
-        '<p class="lede">Staff Management and the Management Team read every report, and hold '+
-        'staff to the highest standards. Report a member of staff who breaks a rule, is abusive '+
-        'towards you, or makes a decision you disagree with — speak to them first unless it is '+
-        'direct misconduct, and if it is about a ban, appeal it and let that conclude before it '+
-        'comes here.</p>'+
-
-        '<div class="qs">'+
-
-        q('Which member of staff is this about?',
-          '<div class="pickrow">'+
-            '<select class="sel" id="staffSel"><option value="">Choose a staff member…</option>'+
-            /* "I don't know" is an answer to this question, so it belongs
-               in the list of answers rather than beside it as a second
-               control that looks like a link. */
-            '<optgroup label="If you’re not sure">'+
-              '<option value="unknown">I don’t know who it was</option>'+
-            '</optgroup>'+
-            staffOpts+'</select>'+
-            '<button class="btn sm" type="button" id="staffAdd">'+ai('plus')+'Add</button>'+
-          '</div>'+
-          '<div id="picked"></div>'+
-          '<div class="tprevwrap"><span class="k">Title</span>'+
-          '<span class="tprev blank" id="tprev">Staff Report</span></div>',
-          'Everyone from Support Staff to Founder is in that list. The title is written from '+
-          'the names you pick — you don’t type one. Name everyone the report is actually '+
-          'about, up to '+OPTS.limits.staff_max+'.') +
-
-        /* Only ever visible when the unknown option is on. A permanently
-           present "if you don't know…" box invites the answer. */
-        q('What do you know about who it was?',
-          '<textarea class="ta" id="unote" maxlength="'+OPTS.limits.body_max+'" '+
-          'style="min-height:100px" placeholder="Roughly when and where, what they were doing, '+
-          'anything they said, what their name looked like. Anything that narrows it down."'+
-          '></textarea>',
-          'Staff Management can check who was on duty at a given time — but only if there is a '+
-          'time and a place to check. Without something to go on there is nothing to look into.',
-          'unkq') +
-
-        q('When and where did this happen?',
-          '<div class="frow">'+
-            '<div><label class="flab" for="when">Date and time (server time, UTC)</label>'+
-              '<input class="ti" type="datetime-local" id="when"></div>'+
-            '<div><label class="flab" for="freq">Once, or ongoing?</label>'+
-              '<select class="sel" id="freq">'+freqs+'</select></div>'+
-            '<div><label class="flab" for="chan">Where</label>'+
-              '<select class="sel" id="chan">'+chans+'</select></div>'+
-          '</div>',
-          '<span id="whenHint">The clock at the top of this page is server time.</span>') +
-
-        q('Anyone else involved, or any witnesses',
-          '<input class="ti" id="wit" maxlength="255" placeholder="John Doe, Jane Doe">') +
-
-        q('What happened?',
-          '<textarea class="ta" id="body" maxlength="'+OPTS.limits.body_max+'" '+
-          'placeholder="In order, in your own words. Times, names, and what was said."'+
-          '></textarea>',
-          '<span class="count"><span id="bodyCount">0</span> characters — at least '+
-          OPTS.limits.body_min+'.</span>') +
-
-        q('What do you want to happen?',
-          '<textarea class="ta" id="want" maxlength="'+OPTS.limits.want_max+'" '+
-          'style="min-height:84px" placeholder="An apology, a decision reversed, the record '+
-          'corrected — say what would settle this."></textarea>',
-          'A report with no asked-for outcome leaves Staff Management guessing what would '+
-          'settle it.') +
-
-        q('Evidence',
-          '<div id="evs"></div>'+
-          '<button class="btn sm" type="button" id="evAdd" style="margin-top:11px">'+
-          ai('plus')+'Add a link</button>',
-          'Links only — upload the file somewhere first and paste the link. A clip, screenshot '+
-          'or chatlog carries far more weight than a description of one.') +
-
-        '</div>'+
-
-        '<div class="formfoot">'+
-          '<p><b>A report can’t be edited once it is sent.</b> Anything you think of afterwards '+
-          'goes in a comment on the report, timestamped rather than folded into what you '+
-          'originally wrote. Knowingly submitting false information can itself be acted on.</p>'+
-          '<button class="btn primary" type="button" id="send">'+ai('flag')+
-          'Submit Report</button>'+
-        '</div>'+
-      '</div></div>'+
-
-      asideHTML() +
+  function nRow(n){
+    /* The whole row is the link, and the tick is a button inside it —
+       acknowledging something is not the same as going to read it, and one
+       control that did both would make the list unusable for whichever of
+       the two you didn't mean. */
+    return '<div class="nrow'+(n.read ? '' : ' unread')+'" data-id="'+n.id+'"'+
+      (n.url ? ' data-url="'+escapeHtml(n.url)+'"' : '')+'>'+
+      '<span class="nic">'+ni(NI[n.area] ? n.area : 'system')+'</span>'+
+      '<span class="nb">'+
+        '<span class="nt">'+escapeHtml(n.title)+'</span>'+
+        (n.body ? '<span class="ns">'+escapeHtml(n.body)+'</span>' : '')+
+        '<span class="nw">'+escapeHtml(nWhen(n.at))+
+          (n.actor ? ' · '+escapeHtml(n.actor) : '')+'</span>'+
+      '</span>'+
+      '<button class="ntick" type="button" data-tick="'+n.id+'"'+(n.read ? ' disabled' : '')+
+        ' aria-label="'+(n.read ? 'Read' : 'Mark as read')+'">'+ni('tick')+'</button>'+
     '</div>';
   }
 
-  function wireForm(){
-    paintPicked();
-
-    var sel = document.getElementById('staffSel');
-    function addPicked(){
-      var v = sel.value;
-      if(!v) return;
-      if(v === 'unknown'){
-        if(UNKNOWN){ toast('Already added.'); return; }
-        UNKNOWN = true; sel.value = ''; paintPicked();
-        var u = document.getElementById('unote');
-        if(u) u.focus();
-        return;
-      }
-      var id = parseInt(v, 10);
-      if(PICKED.indexOf(id) > -1){ toast('Already named.'); return; }
-      if(PICKED.length >= OPTS.limits.staff_max){
-        toast('That is as many as one report can name.'); return;
-      }
-      PICKED.push(id); sel.value = ''; paintPicked();
-    }
-    document.getElementById('staffAdd').addEventListener('click', addPicked);
-    /* Picking from the list and then having to find the Add button is one
-       step too many for the thing the page is mostly about. */
-    sel.addEventListener('change', addPicked);
-
-    var body = document.getElementById('body'), count = document.getElementById('bodyCount');
-    body.addEventListener('input', function(){
-      count.textContent = body.value.length;
-      count.parentNode.className = 'count' +
-        (body.value.length >= OPTS.limits.body_min ? ' ok' : '');
-    });
-
-    /* An ongoing pattern has no single moment, so the date stops being
-       required the second they say so — and the hint says which it is
-       rather than silently accepting a blank. */
-    var freq = document.getElementById('freq'), hint = document.getElementById('whenHint');
-    function freqSaid(){
-      hint.textContent = freq.value === 'continuous'
-        ? 'Roughly when it started is enough for something ongoing. The clock at the top of '+
-          'this page is server time.'
-        : 'Required for a one-off. The clock at the top of this page is server time.';
-    }
-    freq.addEventListener('change', freqSaid); freqSaid();
-
-    var evs = document.getElementById('evs');
-    function addEv(){
-      evs.insertAdjacentHTML('beforeend', evRow());
-      var row = evs.lastElementChild;
-      row.querySelector('[data-evdrop]').addEventListener('click', function(){ row.remove(); });
-    }
-    document.getElementById('evAdd').addEventListener('click', function(){
-      if(evs.children.length >= OPTS.limits.evidence_max){
-        toast('That is as much evidence as one report can carry.'); return;
-      }
-      addEv();
-    });
-    addEv();
-
-    document.getElementById('send').addEventListener('click', function(){
-      var btn = this;
-      var when = document.getElementById('when').value;
-      var u = document.getElementById('unote');
-      var payload = {
-        staff:   PICKED,
-        unknown: UNKNOWN,
-        unknown_note: UNKNOWN && u ? u.value.trim() : '',
-        channel: document.getElementById('chan').value,
-        frequency: freq.value,
-        /* datetime-local carries no timezone, and the label says server
-           time — so it is read AS UTC rather than as the reader's own
-           clock, which is what makes "accurate to server time" true rather
-           than a hope. */
-        incident_at: when ? Math.floor(Date.parse(when + ':00Z') / 1000) : '',
-        witnesses: document.getElementById('wit').value.trim(),
-        body: body.value.trim(),
-        outcome_wanted: document.getElementById('want').value.trim(),
-        evidence: Array.prototype.map.call(
-          document.querySelectorAll('#evs .evrow'), function(r){
-            return { url: r.querySelector('[data-url]').value.trim(),
-                     note: r.querySelector('[data-note]').value.trim() };
-          }).filter(function(e){ return e.url !== ''; })
-      };
-
-      btn.disabled = true;
-      UCP.post('report-submit.php', payload).then(function(res){
-        var d = res && res.data ? res.data : {};
-        if(!(d && d.ok)){ btn.disabled = false; toast(d.error || 'That didn’t send.'); return; }
-        window.location.href = '/dashboard/reports?id=' + d.id;
-      }).catch(function(){ btn.disabled = false; toast('Could not reach the server'); });
-    });
-  }
-
-  function renderSubmit(){
-    var host = document.getElementById('qbody');
-    if(!OPTS){ host.innerHTML = ''; return; }
-
-    if(!OPTS.may){
-      host.innerHTML = '<div class="card"><div class="card-b">'+
-        '<div class="note-a"><span class="si">'+ai('info')+'</span><div>'+
-          '<h4>You can’t send another report yet</h4>'+
-          '<p>'+escapeHtml(OPTS.why || '')+'</p>'+
-          '<div class="acts"><a class="btn primary" href="/dashboard/reports#mine">'+
-          ai('doc')+'See your reports</a></div>'+
-        '</div></div></div></div>';
-      return;
-    }
-
-    host.innerHTML = formHTML();
-    wireForm();
-  }
-
-  /* =====================================================================
-     MY STAFF REPORTS
-
-     An index, not a thread. Status, when, who it was about, and a link.
-     For the reporter this is the answer to "what did they say last time",
-     which is the commonest reason the same report arrives twice.
-     ===================================================================== */
-  var MINE = null;
-
-  function statusPill(s){
-    var label = s === 'pending' ? 'Under review' : cap(s);
-    return '<span class="pill '+(s === 'pending' ? 'pending'
-           : (s === 'rejected' ? 'rejected' : 'accepted'))+'">'+escapeHtml(label)+'</span>';
-  }
-
-  function renderMine(){
-    var host = document.getElementById('qbody');
-    if(!MINE){ host.innerHTML = ''; return; }
-
-    if(MINE.error){
-      host.innerHTML = '<div class="card"><div class="card-h"><h3>Your staff reports</h3></div>'+
-        '<div class="card-b"><div class="note-a bad"><span class="si">'+ai('warn')+
-        '</span><div><h4>Your reports couldn’t be loaded</h4>'+
-        '<p>'+escapeHtml(MINE.error)+'</p></div></div></div></div>';
-      return;
-    }
-
-    if(!MINE.reports.length){
-      host.innerHTML = '<div class="card"><div class="card-h"><h3>Your staff reports</h3></div>'+
-        '<div class="card-b"><div class="note-a"><span class="si">'+ai('info')+'</span><div>'+
-        '<h4>You haven’t reported anybody</h4>'+
-        '<p>Which is the ordinary state of affairs. If something has happened, the form is one '+
-        'click away and Staff Management read every report that arrives.</p>'+
-        '<div class="acts"><a class="btn primary" href="/dashboard/reports#submit">'+
-        ai('pen')+'Submit a Staff Report</a></div>'+
-        '</div></div></div></div>';
-      return;
-    }
-
-    var rows = MINE.reports.map(function(r){
-      return '<a class="hrow" href="/dashboard/reports?id='+r.id+'">'+
-        '<span class="hst">'+statusPill(r.status)+'</span>'+
-        '<span class="hmain">'+
-          '<span class="ht">'+escapeHtml(r.title)+'</span>'+
-          '<span class="hs">'+
-            (r.staff.length ? 'About '+escapeHtml(r.staff.join(', '))+' · ' : '')+
-            'Sent '+escapeHtml(stamp(r.created))+' UTC'+
-            (r.concluded ? ' · decided '+escapeHtml(ago(r.concluded)) : ' · still open')+
-            (r.category ? ' · '+escapeHtml(r.category) : '')+
-            (r.outcome ? ' · '+escapeHtml(r.outcome) : '')+
-          '</span>'+
-        '</span>'+
-        '<span class="hgo">'+ai('chev')+'</span>'+
-      '</a>';
-    }).join('');
-
-    host.innerHTML = '<div class="card"><div class="card-h"><h3>Your staff reports</h3>'+
-      '<span class="aside">'+MINE.reports.length+
-      (MINE.reports.length === 1 ? ' report' : ' reports')+'</span></div>'+
-      '<div class="card-b">'+
-        '<p class="card-lede" style="margin-bottom:10px">Everything you have reported, and '+
-        'what was decided. Open one to read the reason again, or to add something you '+
-        'forgot.</p>'+
-        '<div class="hlist">'+rows+'</div>'+
-      '</div></div>';
-  }
-
-  /* =====================================================================
-     THE PANEL
-
-     Reports naming the person looking are not in this list, in any tab, in
-     any count. That is done on the server — see api/reports.php — because
-     a filter applied here would be one view-source away from being no
-     filter at all.
-     ===================================================================== */
-  var Q = { tab:'untriaged', q:'', page:1, per:10 }, QDATA = null, QTIMER = null;
-
-  function renderPanel(){
-    var host = document.getElementById('qbody');
-
-    if(!QDATA){
-      host.innerHTML = '<div class="card"><div class="card-b">'+
-        '<div class="fieldnote" style="margin-top:14px">Loading the queue…</div>'+
-        '</div></div>';
-      return;
-    }
-    var d = QDATA;
-
-    /* The filter strip has its own class. `.qtabs` above the page is the
-       three half-page view buttons; sharing the name would turn
-       "Untriaged 3 · Not allocated 4" into a grid of cards. */
-    var tabs = d.tabs.map(function(t){
-      return '<button class="qtab" data-qtab="'+t.key+'" aria-selected="'+
-        (t.key === d.tab ? 'true' : 'false')+'">'+escapeHtml(t.label)+
-        ' <span class="pill '+(t.key === 'concluded' ? 'accepted' : 'pending')+'">'+
-        t.count+'</span></button>';
-    }).join('');
-
-    var rows = d.reports.length ? d.reports.map(function(r){
-      return '<tr>'+
-        '<td class="num"><a class="view" href="/dashboard/reports?id='+r.id+'">View (#'+r.id+
-          ')</a></td>'+
-        '<td class="who">'+escapeHtml(r.title)+
-          (r.names_me ? '<span class="youtag">Names you</span>' : '')+
-          '<span class="subline">'+(r.staff.length
-            ? 'About '+escapeHtml(r.staff.join(', '))
-            : 'Nobody named')+'</span></td>'+
-        '<td class="'+(r.user ? 'who' : 'gone')+'">'+
-          escapeHtml(r.user || 'The user no longer exists')+'</td>'+
-        '<td class="'+(r.category ? '' : 'gone')+'">'+
-          escapeHtml(r.category || 'Not triaged')+'</td>'+
-        '<td class="'+(r.handler ? '' : 'gone')+'">'+
-          escapeHtml(r.handler || 'Not allocated')+'</td>'+
-        '<td>'+statusPill(r.status)+'</td>'+
-        '<td class="num">'+escapeHtml(stamp(r.created))+'</td>'+
-      '</tr>';
-    }).join('') : '';
-
-    var body = rows
-      ? '<div class="qwrap"><table class="qtable"><thead><tr>'+
-        '<th>#</th><th>Report</th><th>From</th><th>Category</th><th>Allocated to</th>'+
-        '<th>Status</th><th>Sent</th>'+
-        '</tr></thead><tbody>'+rows+'</tbody></table></div>' + pagerHTML(d)
-      : '<div class="blank"><span class="ei">'+ai('doc')+'</span>'+
-        '<h4>Nothing here</h4><p>'+(d.q
-          ? 'No report matches “'+escapeHtml(d.q)+'” in this tab.'
-          : 'This tab is empty. Nothing is waiting on you.')+'</p></div>';
-
-    host.innerHTML =
-      '<div class="qfilters">'+tabs+'</div>'+
-      '<div class="card"><div class="card-b">'+
-        '<div class="qbar">'+
-          '<div class="qsearch">'+ai('search')+
-            '<input class="ti" id="qq" placeholder="Filter by title, reporter or staff member…" '+
-            'value="'+escapeHtml(d.q)+'"></div>'+
-          '<span class="grow"></span>'+
-          /* Said out loud rather than left to be noticed. A queue that
-             silently hides rows is one somebody eventually calls a bug. */
-          '<span class="lookro">'+ai(d.blind ? 'lock' : 'warn')+
-          (d.blind ? 'Reports naming you are hidden'
-                   : 'Reports naming you are shown, and marked')+'</span>'+
-          '<label class="perpage">Show'+
-            '<select class="sel" id="qper">'+
-              [10,25,50,100].map(function(n){
-                return '<option value="'+n+'"'+(n === d.per ? ' selected' : '')+'>'+n+'</option>';
-              }).join('')+
-            '</select>per page</label>'+
-        '</div>'+ body +
-      '</div></div>';
-
-    Array.prototype.forEach.call(host.querySelectorAll('[data-qtab]'), function(b){
-      b.addEventListener('click', function(){
-        Q.tab = b.getAttribute('data-qtab'); Q.page = 1; loadQueue();
-      });
-    });
-    var qq = document.getElementById('qq');
-    qq.addEventListener('input', function(){
-      clearTimeout(QTIMER);
-      QTIMER = setTimeout(function(){ Q.q = qq.value.trim(); Q.page = 1; loadQueue(); }, 260);
-    });
-    document.getElementById('qper').addEventListener('change', function(){
-      Q.per = +this.value; Q.page = 1; loadQueue();
-    });
-    Array.prototype.forEach.call(host.querySelectorAll('[data-page]'), function(b){
-      b.addEventListener('click', function(){
-        Q.page = +b.getAttribute('data-page'); loadQueue(); window.scrollTo(0,0);
-      });
-    });
-  }
-
-  /* First, last, and a window either side of where you are — the same
-     control as a player's administrative record, chevrons and all, so the
-     two tables page the same way. */
-  function pagerHTML(d){
-    var info = '<span class="pinfo">'+d.total+(d.total === 1 ? ' report' : ' reports')+
-      (d.pages > 1 ? ' · page '+d.page+' of '+d.pages : '')+'</span>';
-    if(d.pages <= 1) return '<div class="pager">'+info+'</div>';
-
+  function nPager(pages){
+    if(pages <= 1) return '';
     var out = [], seen = {};
-    function push(n){
-      if(n < 1 || n > d.pages || seen[n]) return; seen[n] = 1;
-      out.push('<button class="pg'+(n === d.page ? ' on' : '')+'" data-page="'+n+'"'+
-               (n === d.page ? ' aria-current="true"' : '')+'>'+n+'</button>');
+    function push(p){
+      if(p < 1 || p > pages || seen[p]) return; seen[p] = 1;
+      out.push('<button class="pg'+(p === NPAGE ? ' on' : '')+'" data-np="'+p+'">'+p+'</button>');
     }
     push(1);
-    if(d.page - 2 > 2) out.push('<span class="pg-gap">…</span>');
-    for(var i = d.page - 1; i <= d.page + 1; i++) push(i);
-    if(d.page + 2 < d.pages - 1) out.push('<span class="pg-gap">…</span>');
-    push(d.pages);
+    if(NPAGE - 2 > 2) out.push('<span class="pg-gap">…</span>');
+    for(var i = NPAGE - 1; i <= NPAGE + 1; i++) push(i);
+    if(NPAGE + 2 < pages - 1) out.push('<span class="pg-gap">…</span>');
+    push(pages);
 
-    return '<div class="pager">'+ info +
-      '<button class="pg" data-page="'+(d.page-1)+'"'+(d.page <= 1 ? ' disabled' : '')+
+    return '<div class="pager">'+
+      '<button class="pg" data-np="'+(NPAGE-1)+'"'+(NPAGE <= 1 ? ' disabled' : '')+
         ' aria-label="Previous page">'+
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
         '<path d="M15 6l-6 6 6 6"/></svg></button>'+
       out.join('')+
-      '<button class="pg" data-page="'+(d.page+1)+'"'+(d.page >= d.pages ? ' disabled' : '')+
-        ' aria-label="Next page">'+
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
-        '<path d="M9 6l6 6-6 6"/></svg></button>'+
+      '<button class="pg" data-np="'+(NPAGE+1)+'"'+(NPAGE >= pages ? ' disabled' : '')+
+        ' aria-label="Next page">'+ni('chev')+'</button>'+
     '</div>';
   }
 
-  function loadQueue(){
-    return UCP.get('reports.php?tab='+encodeURIComponent(Q.tab)+
-                   '&q='+encodeURIComponent(Q.q)+'&page='+Q.page+'&per='+Q.per)
-      .then(function(d){
-        if(!(d && d.ok === true)){
-          document.getElementById('qbody').innerHTML =
-            refused('The Staff Report Panel', (d && d.error) || '');
-          return;
-        }
-        QDATA = d; renderPanel();
-      }).catch(function(){ toast('Could not reach the server'); });
-  }
+  function renderNotes(){
+    var host = document.getElementById('qbody');
+    var unread = nUnread(), all = nFiltered();
+    var pages = Math.max(1, Math.ceil(all.length / NPER));
+    if(NPAGE > pages) NPAGE = pages;
+    var slice = all.slice((NPAGE - 1) * NPER, NPAGE * NPER);
 
-  /* =====================================================================
-     ONE REPORT
-     ===================================================================== */
-  var DATA = null;
-
-  function loadReport(){
-    return UCP.get('report.php?id='+ID).then(function(d){
-      document.getElementById('qtabs').innerHTML = '';
-      if(!(d && d.ok === true && d.report)){
-        document.querySelector('.page-title h1').textContent = 'Staff Report';
-        document.getElementById('qbody').innerHTML =
-          refused('This report', (d && d.error) || 'That report could not be opened.');
-        return;
-      }
-      DATA = d.report;
-      renderReport();
-    }).catch(function(){ toast('Could not reach the server'); });
-  }
-
-  /* The same bar an appeal has: where you came from on the left, and on
-     the staff side the fact that opening this was recorded. Said here
-     rather than discovered later in the log. */
-  function backbar(){
-    var staff = DATA.viewer.staff && !DATA.mine;
-    return '<div class="lookbar">'+
-      '<a class="page-back" href="/dashboard/reports'+(staff ? '#panel' : '#mine')+'">'+
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
-        '<path d="M15 6l-6 6 6 6"/></svg>'+
-        (staff ? 'Back to the panel' : 'Back to your reports')+'</a>'+
-      '<span class="grow"></span>'+
-      (staff ? '<span class="lookro">'+ai('lock')+'Staff view · every visit is logged</span>'
-             : '')+
-    '</div>';
-  }
-
-  /* ---- what the report is about --------------------------------------
-     The same fact grid the ban-details card uses, for the same reason: a
-     handler reading three reports in a row should not have to relearn
-     where the facts are between them. */
-  function fcell(k, v, sub){
-    return '<div><div class="k">'+k+'</div><div class="v">'+v+'</div>'+
-           (sub ? '<div class="s">'+sub+'</div>' : '')+'</div>';
-  }
-
-  function aboutCard(){
-    var d = DATA;
-
-    var subs = d.subjects.length
-      ? d.subjects.map(function(s){
-          return '<span class="grp tone-'+(s.rank|0)+'">'+escapeHtml(s.name)+'</span>'+
-                 (s.gone ? ' <span class="v soft">(no longer staff)</span>' : '');
-        }).join(', ')
-      : '<span class="v soft">Nobody named</span>';
-
-    /* An unknown subject is a name in this cell, not a blank one. A handler
-       scanning the grid needs to see "nobody knows" as an answer rather
-       than as a rendering failure. */
-    var names = d.subjects.map(function(s){ return escapeHtml(s.name); });
-    var roles = d.subjects.map(function(s){ return s.role || 'No longer here'; });
-    if(d.unknown){ names.push('An unknown staff member'); roles.push('Not identified'); }
-
-    var cells = [
-      fcell('Reported', names.join(', ') || '—', roles.join(' · ')),
-      fcell('Where', escapeHtml(d.channel_label), escapeHtml(d.frequency_label)),
-      fcell('Incident', d.incident_at
-            ? stampEsc(d.incident_at) + ' UTC'
-            : '<span class="v soft">Ongoing</span>',
-            d.incident_at ? escapeHtml(ago(d.incident_at)) : 'No single moment given'),
-      fcell('Sent', stampEsc(d.created_at) + ' UTC', escapeHtml(ago(d.created_at)))
-    ];
-
-    /* Triage and outcome are facts about the report, so they sit in the
-       same grid as the rest of them rather than in a status bar of their
-       own. Untriaged says so — it is the state the queue is worked on. */
-    cells.push(fcell('Category', d.category_label
-      ? escapeHtml(d.category_label)
-      : '<span class="v soft">Not triaged yet</span>',
-      d.category_label ? null : 'Staff Management categorise within 24–48 hours'));
-
-    cells.push(fcell('Outcome', d.outcome_label
-      ? '<span class="dotv '+(d.outcome === 'action' ? 'ok'
-          : (d.outcome === 'rejected' ? 'bad' : 'off'))+'">'+escapeHtml(d.outcome_label)+
-        '</span>'
-      : '<span class="v soft">Still open</span>',
-      d.concluded_at ? 'Decided '+escapeHtml(ago(d.concluded_at)) : null));
-
-    if(d.viewer.staff){
-      cells.push(fcell('Allocated to', d.handler
-        ? escapeHtml(d.handler)
-        : '<span class="v soft">Nobody yet</span>',
-        d.allocated_at ? escapeHtml(ago(d.allocated_at)) : 'Reports arrive unallocated'));
-      cells.push(fcell('Witnesses', d.witnesses
-        ? escapeHtml(d.witnesses) : '<span class="v soft">None given</span>'));
-    } else {
-      cells.push(fcell('Witnesses', d.witnesses
-        ? escapeHtml(d.witnesses) : '<span class="v soft">None given</span>'));
-      cells.push(fcell('Status', statusPill(d.status),
-        d.status === 'pending' ? 'With Staff Management' : null));
-    }
-
-    return '<div class="card"><div class="card-h"><h3>'+escapeHtml(d.title)+'</h3>'+
-      '<span class="aside">Report #'+d.id+'</span></div>'+
-      '<div class="card-b">'+
-        '<div class="sec"><div class="sec-h"><span class="t">'+
-          (d.status === 'pending' ? 'Under review' : 'Decided')+'</span>'+
-          '<span class="n">'+subs+'</span></div>'+
-          '<div class="fg">'+cells.join('')+'</div>'+
-        '</div>'+
-        (d.viewer.staff ? reporterSection() : '')+
-      '</div></div>';
-  }
-
-  /* ---- who sent it. Staff only. ---- */
-  function reporterSection(){
-    var r = DATA.reporter;
-    if(!r) return '<div class="sec"><div class="sec-h"><span class="t">The reporter</span>'+
-      '</div><div class="fieldnote" style="margin-top:0">That account has since been '+
-      'removed. The report stands as a record of what was said.</div></div>';
-
-    var n = (DATA.history || []).length;
-    var cells = [
-      fcell('UCP account', '<a href="/dashboard/lookup?id='+r.id+'">'+escapeHtml(r.name)+'</a>',
-            'Account #'+r.id),
-      fcell('Group', '<span class="grp tone-'+(r.rank|0)+'">'+escapeHtml(r.role)+'</span>',
-            r.created_at ? 'Joined '+escapeHtml(ago(r.created_at)) : null),
-      fcell('Status', r.status === 'active'
-            ? '<span class="dotv ok">Active</span>'
-            : '<span class="dotv bad">'+escapeHtml(cap(r.status))+'</span>'),
-      /* Whether this is a first report or a ninth is the fact most likely
-         to change how the rest of it reads — in either direction. */
-      fcell('Reports filed', n ? String(n + 1) : '1',
-            n ? n+' before this one' : 'This is their first')
-    ];
-
-    return '<div class="sec"><div class="sec-h"><span class="t">The reporter</span>'+
-      '<a class="go" href="/dashboard/lookup?id='+r.id+'">Open the full account'+
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+AI.open+'</svg></a></div>'+
-      '<div class="fg">'+cells.join('')+'</div></div>';
-  }
-
-  /* ---- the report as submitted ---- */
-  function reportCard(){
-    var d = DATA;
-    var ev = d.evidence.length
-      ? '<div class="evlist">'+d.evidence.map(function(e){
-          return '<div class="evitem"><span class="ic">'+ai('link')+'</span><div class="b">'+
-            '<a href="'+escapeHtml(e.url)+'" target="_blank" rel="noopener noreferrer">'+
-            escapeHtml(e.url)+'</a>'+
-            (e.note ? '<div class="nt">'+escapeHtml(e.note)+'</div>' : '')+
-          '</div></div>';
-        }).join('')+'</div>'
-      : '<div class="a none">No evidence was attached.</div>';
-
-    return '<div class="card"><div class="card-h"><h3>The report</h3>'+
-      '<span class="aside">'+escapeHtml(d.channel_label)+' · '+
-      escapeHtml(d.frequency_label)+'</span></div><div class="card-b">'+
-
-      '<div class="ansq"><div class="n"><b>1.</b>What happened?</div>'+
-        '<div class="a text">'+escapeHtml(d.body)+'</div></div>'+
-
-      (d.unknown
-        ? '<div class="ansq"><div class="n"><b>2.</b>What do they know about who it was?</div>'+
-          '<div class="a text">'+escapeHtml(d.unknown_note || '')+'</div></div>'
-        : '')+
-
-      '<div class="ansq"><div class="n"><b>'+(d.unknown?3:2)+'.</b>What do you want to happen?'+
-        '</div>'+
-        (d.outcome_wanted
-          ? '<div class="a text">'+escapeHtml(d.outcome_wanted)+'</div>'
-          : '<div class="a none">Nothing was asked for.</div>')+'</div>'+
-
-      '<div class="ansq"><div class="n"><b>'+(d.unknown?4:3)+'.</b>Evidence</div>'+
-        '<div class="a">'+ev+'</div></div>'+
-
-      (d.status !== 'pending' ? verdictNote() : '')+
-      '</div></div>';
-  }
-
-  function verdictNote(){
-    var d = DATA, good = d.status === 'concluded';
-    return '<div style="margin-top:6px"><div class="note-a '+(good?'good':'bad')+'">'+
-      '<span class="si">'+ai(good?'tick':'warn')+'</span><div>'+
-      '<h4>'+escapeHtml(d.category_label || 'Report')+' — '+
-      escapeHtml(d.outcome_label || cap(d.status))+'</h4>'+
-      '<p>Decided '+escapeHtml(ago(d.concluded_at))+
-      /* Rule 3: the reporter is told what was decided, never who decided
-         it. `concluded_by` is null in their copy, so this sentence is
-         simply shorter for them rather than being a different sentence. */
-      (d.concluded_by ? ' by <b>'+escapeHtml(d.concluded_by)+'</b>' : '')+
-      '. The reason is in the comments below.</p>'+
-      '</div></div></div>';
-  }
-
-  /* ---- comments ---- */
-  function commentsCard(){
-    var d = DATA;
-    var list = d.comments.length ? d.comments.map(function(c){
-      var mark = c.mark === 'verdict' ? 'The decision'
-               : (c.mark === 'opening' ? 'Opening comment' : null);
-      return '<div class="cm'+(c.staff_only ? ' staffonly' : '')+
-        (c.mark ? ' marked' : '')+'">'+
-        '<div class="h"><b>'+escapeHtml(c.author)+'</b>'+
-          (c.staff ? '<span class="ctag staff">Staff</span>' : '')+
-          (c.staff_only ? '<span class="ctag only">Staff only</span>' : '')+
-          (mark ? '<span class="ctag mark">'+escapeHtml(mark)+'</span>' : '')+
-          '<span class="when">'+stampEsc(c.at)+' UTC</span></div>'+
-        '<div class="body">'+escapeHtml(c.body)+'</div></div>';
-    }).join('') : '<div class="fieldnote" style="margin-top:0">Nothing has been said yet.</div>';
-
-    var may = d.viewer.staff || (d.mine && d.comments_enabled && d.status === 'pending');
-    var box = may
-      ? '<div style="margin-top:14px">'+
-          '<textarea class="ta" id="cbody" maxlength="4000" style="min-height:96px" '+
-          'placeholder="'+(d.viewer.staff
-            ? 'Reply to the reporter, or leave a note for Staff Management.'
-            : 'Anything you forgot, or a reply to what has been said.')+'"></textarea>'+
-          (d.viewer.staff
-            ? '<label class="chkline"><input type="checkbox" id="conly">'+
-              '<span class="bx">'+ai('tick')+'</span>'+
-              '<span>Staff only — the reporter never sees this</span></label>'
-            : '')+
-          '<div class="formfoot" style="margin-top:10px">'+
-            '<button class="btn primary" id="csend">'+ai('msg')+'Post</button></div>'+
-        '</div>'
-      : '<div class="fieldnote">'+
-        (d.status !== 'pending'
-          ? 'This report has been decided, so the thread is closed. If something new has '+
-            'happened, that is a new report rather than an addition to this one.'
-          : 'Comments on this report have been closed by Staff Management.')+'</div>';
-
-    return '<div class="card"><div class="card-h"><h3>Comments</h3>'+
-      '<span class="aside">'+d.comments.length+
-      (d.comments.length === 1 ? ' comment' : ' comments')+'</span></div>'+
-      '<div class="card-b">'+list+box+'</div></div>';
-  }
-
-  /* ---- handling: triage, allocation, verdict. Staff only. ----
-
-     Three cards, not one. They were one panel of stacked fields and the
-     seams between them disappeared: the Save under the allocation looked
-     like it might also save the verdict, and the verdict's Conclude looked
-     like it might also save the allocation. Three boxes with a gap between
-     them says what each button reaches.
-
-     There is no opening-comment field any more. It was a second way to
-     write a comment on a page that already has a comment box, and two
-     places to type the same thing is one place too many.
-     ===================================================================== */
-  function handlingCards(){
-    var d = DATA, done = d.status !== 'pending';
-
-    function ro(label, value, hint){
-      return '<div class="panelfield"><label>'+label+'</label><div class="ro">'+value+'</div>'+
-        (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div>';
-    }
-    function card(title, body, aside){
-      return '<div class="card"><div class="card-h"><h3>'+title+'</h3>'+
-        (aside ? '<span class="aside">'+aside+'</span>' : '')+
-        '</div><div class="card-b">'+body+'</div></div>';
-    }
-
-    if(done){
-      return card('Handling',
-        ro('Category', escapeHtml(d.category_label || '—')) +
-        ro('Outcome', escapeHtml(d.outcome_label || '—')) +
-        ro('Decided by', escapeHtml(d.concluded_by || '—'), stamp(d.concluded_at)+' UTC') +
-        ro('Handled by', escapeHtml(d.handler || 'Never allocated'),
-           'Fixed once the report was decided.') +
-        '<div class="fieldnote">A concluded report can’t be reopened. If the decision was '+
-        'wrong, that is a conversation with Management rather than a button here.</div>',
-        statusPill(d.status));
-    }
-
-    var cats = (d.categories || []).map(function(c){
-      return '<option value="'+escapeHtml(c.key)+'"'+
-        (d.category === c.key ? ' selected' : '')+'>'+escapeHtml(c.label)+'</option>';
-    }).join('');
-    var outs = (d.outcomes || []).map(function(o){
-      return '<option value="'+escapeHtml(o.key)+'">'+escapeHtml(o.label)+'</option>';
-    }).join('');
-    var hands = (d.handlers || []).map(function(h){
-      return '<option value="'+escapeHtml(h.name)+'"'+
-        (d.handler === h.name ? ' selected' : '')+'>'+escapeHtml(h.name)+' · '+
-        escapeHtml(h.role)+'</option>';
+    var tabs = [['all','All',NOTES.length],
+                ['unread','Unread',unread],
+                ['read','Read',NOTES.length - unread]].map(function(t){
+      return '<button class="qtab" data-nf="'+t[0]+'" aria-selected="'+
+        (t[0] === NFILTER ? 'true' : 'false')+'">'+t[1]+
+        ' <span class="pill '+(t[0] === 'unread' ? 'pending' : 'accepted')+'">'+t[2]+
+        '</span></button>';
     }).join('');
 
-    return card('Triage &amp; allocation',
-        '<div class="panelfield">'+
-          '<label for="cat">Category</label>'+
-          '<select class="sel" id="cat"><option value="">Not triaged</option>'+cats+'</select>'+
-          '<div class="hint">The four categories the reporter was shown, in the same words. '+
-          'Setting one takes this out of the Untriaged tab.</div>'+
-        '</div>'+
-        '<div class="panelfield">'+
-          '<label for="hd">Allocated to</label>'+
-          '<select class="sel" id="hd"><option value="">Nobody</option>'+hands+'</select>'+
-          '<div class="hint">Reports arrive unallocated — there is no obvious owner of a report '+
-          'about a staff member. Anyone on this list can take it, including you.</div>'+
-        '</div>'+
-        '<div class="go"><button class="btn sm" id="allocSave">Save</button></div>')
+    var body = slice.length
+      ? '<div class="nlist">'+slice.map(nRow).join('')+'</div>' + nPager(pages)
+      : '<div class="blank"><span class="ei">'+ni('system')+'</span><h4>'+
+        (NLOADED ? 'Nothing here' : 'Loading…')+'</h4><p>'+
+        (!NLOADED ? 'One moment.'
+          : NOTES.length ? 'No '+NFILTER+' notifications.'
+          : 'Replies to your appeals and staff reports turn up here, along with anything '+
+            'allocated to you.')+'</p></div>';
 
-    + card('Comments',
-        '<div class="panelfield">'+
-          '<select class="sel" id="cmEn">'+
-            '<option value="1"'+(d.comments_enabled?' selected':'')+'>Open to the reporter'+
-            '</option>'+
-            '<option value="0"'+(!d.comments_enabled?' selected':'')+'>Closed to the reporter'+
-            '</option>'+
-          '</select>'+
-          '<div class="hint">Close them if the thread is going in circles or being used to '+
-          'spam. Staff can still write here either way.</div>'+
-          '<div class="go"><button class="btn sm" id="cmSave">Save</button></div>'+
-        '</div>')
+    host.innerHTML =
+      '<div class="qfilters">'+tabs+'</div>'+
+      '<div class="card"><div class="card-h"><h3>Everything</h3>'+
+        '<span class="aside">'+unread+' unread of '+NOTES.length+'</span></div>'+
+        '<div class="card-b">'+
+          (unread ? '<div class="formfoot" style="margin-top:0;padding-top:0;border-top:0;'+
+                    'justify-content:flex-end">'+
+                    '<button class="btn sm" id="readall">Mark all read</button></div>' : '')+
+          body +
+        '</div></div>';
 
-    + card('Conclude this report',
-        '<div class="panelfield">'+
-          '<select class="sel" id="vcat"><option value="">Category…</option>'+cats+'</select>'+
-          '<select class="sel" id="vout" style="margin-top:9px">'+
-            '<option value="">What was done…</option>'+outs+'</select>'+
-          '<textarea class="ta" id="vcomment" maxlength="4000" style="min-height:110px;'+
-          'margin-top:10px" placeholder="Why. The reporter is shown this, so write it to '+
-          'them."></textarea>'+
-          '<div class="hint">A reason is required. Concluding closes the thread and tells the '+
-          'reporter what was decided — never who decided it.</div>'+
-          '<div class="hint warn">Nothing here punishes anybody. Whatever is done about the '+
-          'staff member happens off this page; the report records what was decided.</div>'+
-          '<div class="go"><button class="btn primary" id="conclude">Conclude</button></div>'+
-        '</div>');
-  }
-
-  function logCard(){
-    var rows = (DATA.log || []).length ? DATA.log.map(function(l){
-      var act = l.action !== 'viewed';
-      return '<div class="logrow'+(act?' act':'')+'"><span class="dot"></span><div>'+
-        '<span class="t">'+stampEsc(l.at)+'</span> <b>'+escapeHtml(l.actor)+'</b> '+
-        escapeHtml(l.action === 'viewed' ? 'opened the report.' : (l.detail || l.action))+
-      '</div></div>';
-    }).join('') : '<div class="fieldnote">Nothing yet.</div>';
-
-    return '<div class="card"><div class="card-h"><h3>Running log</h3>'+
-      '<span class="aside">Staff only</span></div>'+
-      '<div class="card-b"><div class="log">'+rows+'</div>'+
-      '<div class="fieldnote">Repeat visits by the same person within an hour are counted '+
-      'once.</div></div></div>';
-  }
-
-  /* ---- their other reports ----
-     One line each, and paged.
-
-     It was three lines a row with the title wrapping, which is fine for a
-     person who has reported somebody twice and unreadable for one who has
-     done it sixty times — and sixty is exactly the case where this card
-     matters most, because the volume IS the finding. Status, title, when,
-     five to a page.
-     ===================================================================== */
-  var HPAGE = 1, HPER = 5;
-
-  function historyCard(){
-    var list = DATA.history || [];
-    if(!list.length) return '';
-
-    var pages = Math.max(1, Math.ceil(list.length / HPER));
-    if(HPAGE > pages) HPAGE = pages;
-    var slice = list.slice((HPAGE - 1) * HPER, HPAGE * HPER);
-
-    var rows = slice.map(function(h){
-      return '<a class="hrow tight" href="/dashboard/reports?id='+h.id+'" '+
-        'title="'+escapeHtml(h.title)+'">'+
-        '<span class="hst">'+statusPill(h.status)+'</span>'+
-        '<span class="ht">'+escapeHtml(h.title)+'</span>'+
-        '<span class="hw">'+escapeHtml(h.concluded_at ? ago(h.concluded_at)
-                                                      : ago(h.created_at))+'</span>'+
-        '<span class="hgo">'+ai('chev')+'</span></a>';
-    }).join('');
-
-    var pager = '';
-    if(pages > 1){
-      pager = '<div class="pager tight">'+
-        '<span class="pinfo">Page '+HPAGE+' of '+pages+'</span>'+
-        '<button class="pg" data-hp="'+(HPAGE-1)+'"'+(HPAGE <= 1 ? ' disabled' : '')+
-          ' aria-label="Previous page"><svg viewBox="0 0 24 24" fill="none" '+
-          'stroke="currentColor"><path d="M15 6l-6 6 6 6"/></svg></button>'+
-        '<button class="pg" data-hp="'+(HPAGE+1)+'"'+(HPAGE >= pages ? ' disabled' : '')+
-          ' aria-label="Next page"><svg viewBox="0 0 24 24" fill="none" '+
-          'stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>'+
-      '</div>';
-    }
-
-    return '<div class="card"><div class="card-h"><h3>'+
-      (DATA.viewer.staff ? 'Their other reports' : 'Your other reports')+'</h3>'+
-      '<span class="aside">'+list.length+'</span></div>'+
-      '<div class="card-b"><div class="hlist tight">'+rows+'</div>'+pager+'</div></div>';
-  }
-
-  function renderReport(){
-    var staff = DATA.viewer.staff;
-    document.body.classList.toggle('appeal-solo', !staff);
-    document.body.classList.add('appeal-wide');
-    var head = document.querySelector('.ahead');
-    if(head) head.style.display = 'none';
-    document.querySelector('.page-title h1').textContent = 'Staff Report #'+DATA.id;
-    document.title = 'BlaineSide — Staff Report #'+DATA.id;
-
-    document.getElementById('qbody').innerHTML =
-      backbar() + conflictNote() +
-      '<div class="apgrid'+(staff?'':' solo')+'">'+
-        '<div>'+ aboutCard() + reportCard() + commentsCard() +
-          (staff ? '' : historyCard()) +'</div>'+
-        (staff ? '<div class="stack">'+ handlingCards() + logCard() + historyCard() +
-          '</div>' : '')+
-      '</div>';
-
-    wireReport();
-  }
-
-  function wireReport(){
-    var send = document.getElementById('csend');
-    if(send) send.addEventListener('click', function(){
-      var ta = document.getElementById('cbody'), only = document.getElementById('conly');
-      var body = ta.value.trim();
-      if(!body){ toast('Write something first.'); return; }
-      send.disabled = true;
-      UCP.post('report-comment.php',
-        { id: DATA.id, body: body, staff_only: !!(only && only.checked) })
-        .then(function(res){
-          var d = res && res.data ? res.data : {};
-          send.disabled = false;
-          if(!(d && d.ok)){ toast(d.error || 'That didn’t post.'); return; }
-          DATA = d.report; renderReport();
-        }).catch(function(){ send.disabled = false; toast('Could not reach the server'); });
-    });
-
-    /* Each card saves only what it holds — see handlingCards(). */
-    function saver(btnId, payload){
-      var b = document.getElementById(btnId);
-      if(!b) return;
+    Array.prototype.forEach.call(host.querySelectorAll('[data-nf]'), function(b){
       b.addEventListener('click', function(){
-        b.disabled = true;
-        UCP.post('report-allocate.php', payload()).then(function(res){
-          var d = res && res.data ? res.data : {};
-          b.disabled = false;
-          if(!(d && d.ok)){ toast(d.error || 'Nothing was saved.'); return; }
-          DATA = d.report; renderReport(); toast('Saved.');
-        }).catch(function(){ b.disabled = false; toast('Could not reach the server'); });
+        NFILTER = b.getAttribute('data-nf'); NPAGE = 1; renderNotes();
       });
-    }
-    saver('allocSave', function(){
-      return { id: DATA.id,
-               category: document.getElementById('cat').value,
-               handler:  document.getElementById('hd').value };
     });
-    saver('cmSave', function(){
-      return { id: DATA.id,
-               comments_enabled: document.getElementById('cmEn').value === '1' };
-    });
-
-    Array.prototype.forEach.call(document.querySelectorAll('[data-hp]'), function(b){
+    Array.prototype.forEach.call(host.querySelectorAll('[data-np]'), function(b){
       b.addEventListener('click', function(){
-        HPAGE = +b.getAttribute('data-hp'); renderReport();
+        NPAGE = +b.getAttribute('data-np'); renderNotes(); window.scrollTo(0,0);
       });
     });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-tick]'), function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        markRead(+b.getAttribute('data-tick'));
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll('.nrow[data-url]'), function(r){
+      r.addEventListener('click', function(){
+        var id = +r.getAttribute('data-id');
+        markRead(id, true);
+        window.location.href = r.getAttribute('data-url');
+      });
+    });
+    var ra = document.getElementById('readall');
+    if(ra) ra.addEventListener('click', markAllRead);
+  }
 
-    var done = document.getElementById('conclude');
-    if(done) done.addEventListener('click', function(){
-      var cat = document.getElementById('vcat').value;
-      var out = document.getElementById('vout').value;
-      var why = document.getElementById('vcomment').value.trim();
-      if(!cat){ toast('Choose which kind of report this is.'); return; }
-      if(!out){ toast('Choose what was done about it.'); return; }
-      if(!why){ toast('Write the reason. The reporter is shown it.'); return; }
-      done.disabled = true;
-      UCP.post('report-verdict.php',
-        { id: DATA.id, category: cat, outcome: out, comment: why })
-        .then(function(res){
-          var d = res && res.data ? res.data : {};
-          done.disabled = false;
-          if(!(d && d.ok)){ toast(d.error || 'That didn’t save.'); return; }
-          DATA = d.report; renderReport(); toast(d.message || 'Concluded.');
-        }).catch(function(){ done.disabled = false; toast('Could not reach the server'); });
+  /* Marked here AND on the bell, so the badge and the list never disagree
+     about what is unread. */
+  function markRead(id, quiet){
+    var n = null;
+    for(var i=0;i<NOTES.length;i++) if(NOTES[i].id === id) n = NOTES[i];
+    if(!n || n.read) return;
+    n.read = true;
+    if(!quiet) renderNotes();
+    UCP.post('notification-read.php', { id: id }).then(function(){
+      if(UCP.notifications) UCP.notifications();
     });
   }
 
-  /* =====================================================================
-     ROUTING
-
-     The hash IS the view, so the sidebar, the tab bar and the back button
-     all go through one path rather than three that can disagree.
-     ===================================================================== */
-  function go(key, push){
-    var known = false;
-    for(var i=0;i<VIEWS.length;i++) if(VIEWS[i].key === key) known = true;
-    if(!known) key = 'submit';
-
-    /* Arrived at a view they can't open: the body explains the refusal in
-       the server's words, and the tab for it isn't drawn. */
-    var st = GATE && GATE.views ? GATE.views[key] : null;
-    VIEW = key;
-    if(push && history.replaceState) history.replaceState(null, '', location.pathname+'#'+key);
-
-    var v = null;
-    for(var j=0;j<VIEWS.length;j++) if(VIEWS[j].key === key) v = VIEWS[j];
-    document.querySelector('.page-title h1').textContent = v ? v.label : 'Staff Reports';
-
-    renderTabs();
-
-    if(st && !st.may){
-      document.getElementById('qbody').innerHTML = refused(v ? v.label : 'That view', st.why);
-      return;
-    }
-
-    if(key === 'panel'){ renderPanel(); loadQueue(); return; }
-    if(key === 'mine'){
-      renderMine();
-      if(!MINE) UCP.get('report-mine.php').then(function(d){
-        /* The server's own words when it refuses, rather than a toast that
-           says "could not reach the server" for something it plainly
-           reached. An empty list and a failure are different states and
-           used to look identical. */
-        if(!(d && d.ok === true)){
-          MINE = { reports: [], error: (d && d.error) || null };
-        } else {
-          MINE = d;
-        }
-        renderMine();
-      }).catch(function(){
-        MINE = { reports: [], error: 'The server did not answer. Try again in a moment.' };
-        renderMine();
-      });
-      return;
-    }
-    renderSubmit();
+  function markAllRead(){
+    NOTES.forEach(function(n){ n.read = true; });
+    renderNotes();
+    UCP.post('notification-read.php', { all: true }).then(function(){
+      if(UCP.notifications) UCP.notifications();
+    });
   }
 
-  window.addEventListener('hashchange', function(){
-    if(ID) return;
-    go((location.hash||'').replace('#',''), false);
-  });
+  function loadNotes(){
+    return UCP.get('notifications.php?limit=50').then(function(d){
+      NLOADED = true;
+      NOTES = (d && d.ok === true && d.notifications) ? d.notifications : [];
+      renderNotes();
+    }).catch(function(){ NLOADED = true; renderNotes(); });
+  }
+
+  renderNotes();
 
   UCP.get('session.php').then(function(d){
     if(!d || d.authenticated !== true){
-      window.location.replace('/login?return='+
-        encodeURIComponent('/dashboard/reports'+(ID ? '?id='+ID : '')));
+      window.location.replace('/login?return='+encodeURIComponent('/dashboard/notifications'));
       return;
     }
     var an = document.getElementById('acctName'), ar = document.getElementById('acctRole');
     if(an) an.textContent = d.name || '';
     if(ar) ar.textContent = d.role || 'Member';
     if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
-
-    var was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
-    IS_ADMINISTRATOR = (d.rank|0) >= 3;
-    IS_MANAGER       = (d.rank|0) >= 8;
-    IS_FOUNDER       = (d.rank|0) >= 9;
-    MY_RANK          = d.rank | 0;
-    MY_TEAMS         = d.teams || [];
-    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was)
-      renderSidebar(SIDEBAR);
-
-    if(ID) return loadReport();
-
-    return Promise.all([UCP.get('queues.php'), UCP.get('report-options.php')])
-      .then(function(r){
-        var q = r[0], o = r[1];
-        if(q && q.ok === true && q.queues){
-          for(var i=0;i<q.queues.length;i++) if(q.queues[i].key === 'reports') GATE = q.queues[i];
-        }
-        OPTS = (o && o.ok === true) ? o
-             : { may:false, why:(o && o.error) || 'Staff reports could not be loaded.',
-                 staff:[], channels:[], frequencies:[], limits:{} };
-        go((location.hash||'').replace('#',''), false);
-      });
+    return loadNotes();
   }).catch(function(){ toast('Could not reach the server'); });
-
 
   /* ===== ACCOUNT MENU ===== */
   (function(){

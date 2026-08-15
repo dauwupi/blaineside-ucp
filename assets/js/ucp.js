@@ -747,7 +747,7 @@
       '<div class="notelist"></div>' +
       /* Everything, filterable and paged, lives on the dashboard. The panel
          holds the recent ones; this is the way to the rest. */
-      '<a class="notefoot" href="/dashboard#/notifications">View all notifications</a>';
+      '<a class="notefoot" href="/dashboard/notifications">View all notifications</a>';
     wrap.appendChild(panel);
 
     bell.addEventListener('click', function (e) {
