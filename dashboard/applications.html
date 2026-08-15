@@ -711,6 +711,12 @@
   .ihead .r{margin-left:auto;flex:none;display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:11.5px}
   .ibody{padding:0 16px 16px 56px;border-top:1px solid var(--border-soft)}
   .ibody .prompt{font-size:12.5px;color:var(--text-faint);line-height:1.75;padding-top:14px}
+  .ihead[data-answer]{cursor:pointer;user-select:none}
+  .ihead .cnt{font-size:11.5px;color:var(--text-dim)}
+  .ihead .cnt .short{color:#d98a75;font-weight:700}
+  .ib{width:29px;height:29px;flex:none;border-radius:8px;display:grid;place-items:center;
+    border:1px solid var(--border);background:var(--charcoal-3);color:var(--text-faint)}
+  .ib svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
   .answer{background:var(--charcoal);border:1px solid var(--border);border-radius:10px;padding:13px 14px;
     font-size:13px;line-height:1.8;white-space:pre-wrap;margin-top:11px;overflow-wrap:anywhere}
 
@@ -910,6 +916,10 @@
     return n + (s[(v-20)%10] || s[v] || s[0]);
   }
   function num(n){ return (n|0).toLocaleString(); }
+  /* The database stores these lowercase ('active', 'locked'). They are
+     labels here, so they are capitalised here rather than in the column —
+     the value is the fact, the capital is presentation. */
+  function cap(s){ s = String(s || ''); return s ? s.charAt(0).toUpperCase() + s.slice(1) : '—'; }
 
   /* ---------------- the queue ---------------- */
   function statCards(c){
@@ -1063,7 +1073,7 @@
       'shared houses and mobile networks do it too — but it is worth a look before you decide.</p>' +
       '<div class="hits">' + d.matches.map(function(m){
         return '<span class="hit">' + escapeHtml(m.name) +
-               (m.status && m.status !== 'active' ? ' · ' + escapeHtml(m.status) : '') +
+               (m.status && m.status !== 'active' ? ' · ' + escapeHtml(cap(m.status)) : '') +
                ' · last seen ' + ago(m.last_seen) + '</span>';
       }).join('') + '</div></div></div>';
   }
@@ -1091,10 +1101,13 @@
         cell('Submitted', ago(d.submitted_at)) +
         cell('Handled by', d.claimed ? escapeHtml(d.claimed.id === MEID ? 'You' : d.claimed.name) +
              ', since ' + ago(d.claimed.at) : '<span class="free">Nobody yet</span>') +
-        cell('This attempt', nth(d.attempt) + ' of ' + ((d.applicant && d.applicant.decided || 0) + 1)) +
+        /* Just which attempt this is. There is no cap on how many times
+           somebody may apply, so "3rd of 3" states a total that does not
+           exist and goes stale the moment they apply again. */
+        cell('This attempt', nth(d.attempt)) +
         cell('Punishments', a.punishments === null || a.punishments === undefined
              ? 'Not available' : (a.punishments ? num(a.punishments) + ' on record' : 'None on record')) +
-        cell('Account status', escapeHtml(a.status||'—')) +
+        cell('Account status', escapeHtml(cap(a.status))) +
         cell('Last login', a.last_login ? escapeHtml(String(a.last_login).replace('T',' ')) : '—') +
       '</div>' +
       '<div class="flab">Addresses seen</div>' + ips +
@@ -1123,18 +1136,35 @@
         : '<div class="card-b"><div class="empty">This is their first application.</div></div>') + '</div></div>';
   }
 
+  /* Every answer starts closed. An application with three long answers is
+     three screens of scrolling before you can see what was asked, and the
+     first thing a reviewer does is decide which one to read. */
+  var ANS_OPEN = {};
+
   function answersCard(d){
+    var n = (d.answers||[]).length;
+    var allOpen = n > 0 && (d.answers||[]).every(function(a){ return ANS_OPEN[a.id]; });
+
     var items = (d.answers||[]).map(function(a, i){
-      return '<div class="item"><div class="ihead"><span class="idx">' + (i+1) + '</span>' +
+      var open = !!ANS_OPEN[a.id];
+      return '<div class="item"><div class="ihead" data-answer="' + a.id + '">' +
+        '<span class="idx">' + (i+1) + '</span>' +
         '<span class="tx"><b>' + escapeHtml(a.title) + '</b></span>' +
-        '<span class="r">' + a.words + ' word' + (a.words===1?'':'s') +
-        (a.min_words ? ' · ' + a.min_words + ' asked for' : '') + '</span></div>' +
-        '<div class="ibody"><div class="prompt">' + escapeHtml(a.prompt) + '</div>' +
-        '<div class="answer">' + escapeHtml(a.body || '') + '</div></div></div>';
+        '<span class="r"><span class="cnt">' + num(a.chars) + ' character' + (a.chars===1?'':'s') +
+        (a.min_chars ? ' · ' + num(a.min_chars) + ' asked for' : '') +
+        (a.min_chars && a.chars < a.min_chars ? ' · <b class="short">under</b>' : '') + '</span>' +
+        '<span class="ib"><svg viewBox="0 0 24 24"><path d="M6 ' +
+        (open ? '15l6-6 6 6' : '9l6 6 6-6') + '"/></svg></span></span></div>' +
+        (open
+          ? '<div class="ibody"><div class="prompt">' + escapeHtml(a.prompt) + '</div>' +
+            '<div class="answer">' + escapeHtml(a.body || '') + '</div></div>'
+          : '') + '</div>';
     }).join('');
+
     return '<div class="card"><div class="card-h"><h3>Answers</h3>' +
-      '<div class="r"><span class="pill draft">' + (d.answers||[]).length + ' question' +
-      ((d.answers||[]).length===1?'':'s') + '</span></div></div>' +
+      '<div class="r"><button class="btn sm" id="expandAll">' +
+      (allOpen ? 'Collapse all' : 'Expand all') + '</button>' +
+      '<span class="pill draft">' + n + ' question' + (n===1?'':'s') + '</span></div></div>' +
       '<div class="card-b"><div class="items">' + items + '</div></div></div>';
   }
 
@@ -1155,10 +1185,18 @@
 
     var mine  = d.claimed && d.claimed.id === MEID;
     var held  = d.claimed && !mine && !d.claimed.stale;
-    var opts  = (d.templates||[]).map(function(t){
-      return '<option value="' + t.id + '">' + escapeHtml(t.title) +
-             (t.use_for !== 'either' ? '  (' + t.use_for + ')' : '') + '</option>';
-    }).join('');
+    /* Grouped by outcome rather than labelled '(deny)' in brackets. A
+       reviewer picking from a flat list can drop an acceptance into a
+       denial without noticing; a group heading makes that a wrong section
+       rather than a missed suffix. */
+    function group(kind, label){
+      var rows = (d.templates||[]).filter(function(t){ return t.use_for === kind; });
+      if(!rows.length) return '';
+      return '<optgroup label="' + label + '">' + rows.map(function(t){
+        return '<option value="' + t.id + '">' + escapeHtml(t.title) + '</option>';
+      }).join('') + '</optgroup>';
+    }
+    var opts = group('pass', 'Pass') + group('deny', 'Deny') + group('either', 'Either');
 
     return '<div class="card"><div class="card-h"><h3>Your decision</h3><div class="r">' +
       (d.claimed
@@ -1193,7 +1231,7 @@
   var MEID = 0;
 
   function renderOne(d){
-    VIEW = d; PICKED = null; USED_TMPL = 0;
+    VIEW = d; PICKED = null; USED_TMPL = 0; ANS_OPEN = {};
     el('body').innerHTML =
       '<div class="backline"><button class="btn" id="backBtn">' +
         '<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Back to the panel</button>' +
@@ -1202,7 +1240,8 @@
         ago(d.submitted_at) + '</div></div>' +
       warnCard(d) +
       '<div class="split"><div>' +
-        applicantCard(d) + historyCard(d.history) + answersCard(d) +
+        applicantCard(d) + historyCard(d.history) +
+        '<div id="answersHost">' + answersCard(d) + '</div>' +
       '</div><div>' + decisionCard(d) + '</div></div>';
 
     el('backBtn').addEventListener('click', function(){ location.hash = ''; });
@@ -1215,6 +1254,20 @@
     });
     document.querySelectorAll('[data-open]').forEach(function(r){
       r.addEventListener('click', function(){ location.hash = 'id=' + this.getAttribute('data-open'); });
+    });
+
+    document.querySelectorAll('[data-answer]').forEach(function(h){
+      h.addEventListener('click', function(){
+        var id = parseInt(this.getAttribute('data-answer'), 10);
+        ANS_OPEN[id] = !ANS_OPEN[id];
+        redrawAnswers();
+      });
+    });
+    var ea = el('expandAll');
+    if(ea) ea.addEventListener('click', function(){
+      var open = (VIEW.answers||[]).every(function(a){ return ANS_OPEN[a.id]; });
+      (VIEW.answers||[]).forEach(function(a){ ANS_OPEN[a.id] = !open; });
+      redrawAnswers();
     });
 
     var claimBtn = el('claimBtn');
@@ -1253,6 +1306,28 @@
 
     var dec = el('decideBtn');
     if(dec) dec.addEventListener('click', decide);
+  }
+
+  /* Redraw the answers card ALONE. Re-rendering the whole review would
+     throw away whatever is half-written in the feedback box, which is the
+     one thing on this page nobody can get back. */
+  function redrawAnswers(){
+    var host = document.getElementById('answersHost');
+    if(!host) return;
+    host.innerHTML = answersCard(VIEW);
+    document.querySelectorAll('[data-answer]').forEach(function(h){
+      h.addEventListener('click', function(){
+        var id = parseInt(this.getAttribute('data-answer'), 10);
+        ANS_OPEN[id] = !ANS_OPEN[id];
+        redrawAnswers();
+      });
+    });
+    var ea = el('expandAll');
+    if(ea) ea.addEventListener('click', function(){
+      var open = (VIEW.answers||[]).every(function(a){ return ANS_OPEN[a.id]; });
+      (VIEW.answers||[]).forEach(function(a){ ANS_OPEN[a.id] = !open; });
+      redrawAnswers();
+    });
   }
 
   function claim(action){

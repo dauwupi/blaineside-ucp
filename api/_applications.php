@@ -9,7 +9,7 @@
  * Three ideas hold the rest together:
  *
  *  1. An application is a SNAPSHOT. ucp_app_answers stores a copy of the
- *     question's title, prompt and word minimum, not just its id. Questions
+ *     question's title, prompt and length minimum, not just its id. Questions
  *     get rewritten and retired; a two-year-old application must still show
  *     what it actually asked. This is why questions are retired rather than
  *     deleted, and why nothing here joins answers back to the live question.
@@ -28,6 +28,8 @@
 const BS_APP_PANEL_RANK = 1;
 /** Rank that overrides somebody else's claim. Staff Management does too. */
 const BS_APP_OVERRIDE_RANK = 8;
+/** Rank that may edit the questions and the saved responses. */
+const BS_APP_MANAGE_RANK = 8;
 /** A claim this old is treated as abandoned and can be taken by anyone. */
 const BS_APP_CLAIM_IDLE = 7200;
 /** Drafts older than this are swept. */
@@ -88,10 +90,22 @@ function app_panel_reason(): string
     return 'The Application Panel is for Support Staff and above.';
 }
 
-/** Question Manager and Response Templates: the same audience as the panel. */
+/**
+ * Question Manager and Response Templates: Management and above.
+ *
+ * Deliberately NOT the same gate as the panel. Reviewing an application is
+ * the work Support Staff do; deciding what every applicant is asked, and
+ * what the standard replies say, sets the policy they work to. One is a
+ * queue, the other is the rules of the queue.
+ */
 function app_may_manage(array $acc): bool
 {
-    return (int)$acc['admin_rank'] >= BS_APP_PANEL_RANK;
+    return (int)$acc['admin_rank'] >= BS_APP_MANAGE_RANK;
+}
+
+function app_manage_reason(): string
+{
+    return 'Setting the questions and the saved responses is for Management and Founders.';
 }
 
 /**
@@ -265,14 +279,14 @@ function app_start_draft(PDO $pdo, int $accountId): int
     $ins = $pdo->prepare(
         'INSERT INTO ucp_app_answers
            (application_id, question_id, question_title, question_prompt,
-            min_words, pinned, sort_order, body)
+            min_chars, pinned, sort_order, body)
          VALUES (?, ?, ?, ?, ?, ?, ?, NULL)'
     );
     $i = 0;
     foreach ($qs as $q) {
         $ins->execute([
             $id, (int)$q['id'], $q['title'], $q['prompt'],
-            (int)$q['min_words'], (int)$q['pinned'], ++$i,
+            (int)$q['min_chars'], (int)$q['pinned'], ++$i,
         ]);
     }
     return $id;
@@ -282,7 +296,7 @@ function app_start_draft(PDO $pdo, int $accountId): int
 function app_answers(PDO $pdo, int $applicationId): array
 {
     $st = $pdo->prepare(
-        'SELECT id, question_id, question_title, question_prompt, min_words, pinned, sort_order, body
+        'SELECT id, question_id, question_title, question_prompt, min_chars, pinned, sort_order, body
            FROM ucp_app_answers WHERE application_id = ? ORDER BY sort_order, id'
     );
     $st->execute([$applicationId]);
@@ -292,21 +306,30 @@ function app_answers(PDO $pdo, int $applicationId): array
             'id'        => (int)$r['id'],
             'title'     => $r['question_title'],
             'prompt'    => $r['question_prompt'],
-            'min_words' => (int)$r['min_words'],
+            'min_chars' => (int)$r['min_chars'],
             'pinned'    => (bool)$r['pinned'],
             'order'     => (int)$r['sort_order'],
             'body'      => $r['body'],
-            'words'     => app_words((string)$r['body']),
+            'chars'     => app_chars((string)$r['body']),
         ];
     }
     return $out;
 }
 
-/** Word count the same way everywhere, so the page and the server agree. */
-function app_words(string $s): int
+/**
+ * Character count, the same way everywhere, so the page and the server
+ * agree on whether an answer is long enough.
+ *
+ * Characters rather than words because a word count is trivially gamed —
+ * "a a a a a" is five words — and because mb_strlen() counts what the
+ * applicant can see themselves in the box.
+ *
+ * Runs of whitespace collapse to one and the ends are trimmed, so a
+ * minimum cannot be met with newlines.
+ */
+function app_chars(string $s): int
 {
-    $s = trim(preg_replace('/\s+/u', ' ', $s));
-    return $s === '' ? 0 : count(explode(' ', $s));
+    return mb_strlen(trim(preg_replace('/\s+/u', ' ', $s)));
 }
 
 
@@ -519,7 +542,7 @@ function app_question_out(array $r): array
         'id'         => (int)$r['id'],
         'title'      => $r['title'],
         'prompt'     => $r['prompt'],
-        'min_words'  => (int)$r['min_words'],
+        'min_chars'  => (int)$r['min_chars'],
         'pinned'     => (bool)$r['pinned'],
         'retired'    => (bool)$r['retired'],
         'order'      => (int)$r['sort_order'],

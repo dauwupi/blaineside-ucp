@@ -24,7 +24,7 @@ $pdo = db();
 $acc = current_account($pdo);
 
 if (!app_may_manage($acc)) {
-    json_out(['ok' => false, 'error' => app_panel_reason()], 403);
+    json_out(['ok' => false, 'error' => app_manage_reason()], 403);
 }
 if (!applications_available($pdo)) {
     json_out(['ok' => false, 'error' => applications_missing_reason()], 409);

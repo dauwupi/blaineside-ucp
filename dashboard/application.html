@@ -660,6 +660,18 @@
   .state p{font-size:12.5px;color:var(--text-faint);margin-top:2px;max-width:80ch}
   .state .act{margin-left:auto;flex:none}
 
+  .arow.open{cursor:pointer;transition:background .13s,border-color .13s}
+  .arow.open:hover{background:var(--charcoal-4);border-color:rgba(226,182,92,.26)}
+  .arow .go{width:14px;height:14px;stroke:currentColor;fill:none;flex:none}
+  .ihead[data-q]{cursor:pointer;user-select:none}
+  .ihead .cnt{font-size:11.5px;color:var(--text-dim)}
+  .ib{width:29px;height:29px;flex:none;border-radius:8px;display:grid;place-items:center;
+    border:1px solid var(--border);background:var(--charcoal-3);color:var(--text-faint)}
+  .ib svg{width:14px;height:14px}
+  .answer{background:var(--charcoal);border:1px solid var(--border);border-radius:10px;padding:13px 14px;
+    font-size:13px;line-height:1.8;white-space:pre-wrap;margin-top:11px;overflow-wrap:anywhere}
+  .backline{display:flex;align-items:center;gap:11px;margin-bottom:16px;flex-wrap:wrap}
+  .backline .btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2}
   .lede{font-size:12.5px;color:var(--text-faint);line-height:1.75}
   .empty{border:1px dashed var(--border);border-radius:12px;padding:26px 18px;text-align:center;
     color:var(--text-dim);font-size:12.5px}
@@ -856,7 +868,10 @@
     if(!ts) return '—';
     return new Date(ts*1000).toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'});
   }
-  function words(s){ s=(s||'').replace(/\s+/g,' ').trim(); return s? s.split(' ').length : 0; }
+  /* Characters, counted the same way api/_applications.php does: runs of
+     whitespace collapse to one and the ends are trimmed, so a minimum
+     cannot be met with newlines. */
+  function chars(s){ return (s||'').replace(/\s+/g,' ').trim().length; }
 
   /* ---------- feedback, however long it turns out to be ---------- */
   function feedbackCard(app){
@@ -869,6 +884,15 @@
   }
   /* The "read all" control is only drawn when the text actually overflows —
      otherwise every short note carries a link that does nothing. */
+  function wireHistory(){
+    document.querySelectorAll('[data-open]').forEach(function(r){
+      r.addEventListener('click', function(){ location.hash = 'id=' + this.getAttribute('data-open'); });
+      r.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); this.click(); }
+      });
+    });
+  }
+
   function wireFeedback(root){
     (root || document).querySelectorAll('.fb').forEach(function(fb){
       var body = fb.querySelector('.body'), more = fb.querySelector('[data-more]');
@@ -883,15 +907,19 @@
   }
 
   /* ---------- history ---------- */
+  /* A row, not a row plus its feedback. The feedback lives inside the
+     attempt — one wall of text per page rather than one per row, and the
+     list stays a list. */
   function historyCard(list){
     var rows = (list || []).map(function(h){
       var cls = h.status === 'passed' ? 'pass' : (h.status === 'denied' ? 'fail' : 'pend');
       var lab = h.status === 'passed' ? 'Passed' : (h.status === 'denied' ? 'Denied' : 'Waiting');
-      return '<div>' +
-        '<div class="arow"><span class="pill ' + cls + '">' + lab + '</span>' +
-          '<span>Attempt ' + h.attempt + '</span>' +
-          '<span class="r">' + shortDate(h.decided && h.decided.at ? h.decided.at : h.submitted_at) + '</span></div>' +
-        feedbackCard(h) + '</div>';
+      return '<div class="arow open" data-open="' + h.id + '" role="link" tabindex="0">' +
+        '<span class="pill ' + cls + '">' + lab + '</span>' +
+        '<span>Attempt ' + h.attempt + '</span>' +
+        '<span class="r">' + shortDate(h.decided && h.decided.at ? h.decided.at : h.submitted_at) +
+        '<svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">' +
+        '<path d="M9 6l6 6-6 6"/></svg></span></div>';
     }).join('');
     return '<div class="card"><div class="card-h"><h3>Your previous attempts</h3>' +
       '<div class="r"><span class="pill draft">' + (list||[]).length + '</span></div></div>' +
@@ -916,7 +944,7 @@
       (readonly
         ? '<div class="prompt" style="color:var(--parchment);white-space:pre-wrap">' +
             escapeHtml(a.body || '') + '</div>'
-        : '<textarea rows="6" data-answer="' + a.id + '" data-min="' + a.min_words + '" ' +
+        : '<textarea rows="6" data-answer="' + a.id + '" data-min="' + a.min_chars + '" ' +
             'placeholder="Your answer…">' + escapeHtml(a.body || '') + '</textarea>' +
           '<div class="count" data-count="' + a.id + '"></div>') +
       '</div></div>';
@@ -926,9 +954,11 @@
     var ta  = document.querySelector('[data-answer="' + id + '"]');
     var out = document.querySelector('[data-count="' + id + '"]');
     if(!ta || !out) return;
-    var n = words(ta.value), min = parseInt(ta.getAttribute('data-min'), 10) || 0;
+    var n = chars(ta.value), min = parseInt(ta.getAttribute('data-min'), 10) || 0;
     out.className = 'count' + (min ? (n >= min ? ' ok' : (n ? ' short' : '')) : '');
-    out.textContent = min ? (n + ' / ' + min + ' words minimum') : (n + ' word' + (n===1?'':'s'));
+    out.textContent = min
+      ? (n.toLocaleString() + ' / ' + min.toLocaleString() + ' characters minimum')
+      : (n.toLocaleString() + ' character' + (n===1?'':'s'));
   }
 
   function setSaved(text, cls){
@@ -982,7 +1012,7 @@
           '<div class="act"><span class="pill pass">Passed ' + shortDate(d.current && d.current.decided ? d.current.decided.at : null) + '</span></div></div>' +
           '<div style="margin-top:16px">' + historyCard(d.history) + '</div>';
       el('body').innerHTML = h;
-      wireFeedback();
+      wireFeedback(); wireHistory();
       return;
     }
 
@@ -999,7 +1029,7 @@
           '<div class="split" style="margin-top:16px"><div>' + historyCard(d.history) + '</div>' +
           '<div>' + nextCard() + '</div></div>';
       el('body').innerHTML = h;
-      wireFeedback();
+      wireFeedback(); wireHistory();
       el('startBtn').addEventListener('click', startApplication);
       return;
     }
@@ -1031,7 +1061,7 @@
       '</div><div>' + historyCard(d.history) + nextCard() + '</div></div>';
 
     el('body').innerHTML = h;
-    wireFeedback();
+    wireFeedback(); wireHistory();
 
     if(!readonly){
       document.querySelectorAll('[data-answer]').forEach(function(ta){
@@ -1070,6 +1100,83 @@
       .catch(function(){ if(b) b.disabled = false; toast('Could not reach the server'); });
   }
 
+  /* =====================================================================
+     ONE PAST ATTEMPT
+
+     Reached from the history list. Read-only, every answer collapsed, and
+     the feedback shown in full — this is the page somebody opens BECAUSE
+     they want to read the feedback, so it is not clipped here.
+     ===================================================================== */
+  var ONE = null, ONE_OPEN = {};
+
+  function oneItem(a, i){
+    var open = !!ONE_OPEN[a.id];
+    return '<div class="item"><div class="ihead" data-q="' + a.id + '">' +
+      '<span class="idx">' + (i+1) + '</span>' +
+      '<span class="tx"><b>' + escapeHtml(a.title) + '</b></span>' +
+      '<span class="r"><span class="cnt">' + a.chars.toLocaleString() + ' character' +
+        (a.chars === 1 ? '' : 's') + '</span>' +
+      '<span class="ib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+      '<path d="M6 ' + (open ? '15l6-6 6 6' : '9l6 6 6-6') + '"/></svg></span></span></div>' +
+      (open
+        ? '<div class="ibody"><div class="prompt">' + escapeHtml(a.prompt) + '</div>' +
+          '<div class="answer">' + escapeHtml(a.body || '') + '</div></div>'
+        : '') + '</div>';
+  }
+
+  function renderOne(d){
+    ONE = d;
+    var good = d.status === 'passed';
+    var cls  = good ? 'pass' : (d.status === 'denied' ? 'fail' : 'pend');
+    var lab  = good ? 'Passed' : (d.status === 'denied' ? 'Denied' : 'Waiting');
+
+    el('body').innerHTML =
+      '<div class="backline"><button class="btn" id="backBtn">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">' +
+      '<path d="M15 6l-6 6 6 6"/></svg>Back</button>' +
+      '<span class="pill ' + cls + '">' + lab + '</span>' +
+      '<span style="font-size:12.5px;color:var(--text-dim)">Attempt ' + d.attempt +
+      ' · sent ' + shortDate(d.submitted_at) + '</span></div>' +
+      (d.feedback
+        ? '<div class="card"><div class="card-h"><h3>Feedback</h3></div><div class="card-b">' +
+          '<div class="fb' + (good ? ' good' : '') + '"><h5>What you were told</h5>' +
+          '<div class="body open">' + escapeHtml(d.feedback) + '</div></div></div></div>'
+        : '') +
+      '<div class="card"><div class="card-h"><h3>What you sent</h3>' +
+      '<div class="r"><span class="pill draft">' + (d.answers||[]).length + ' question' +
+      ((d.answers||[]).length === 1 ? '' : 's') + '</span></div></div>' +
+      '<div class="card-b"><div class="items">' +
+      (d.answers||[]).map(oneItem).join('') + '</div></div></div>';
+
+    el('backBtn').addEventListener('click', function(){ location.hash = ''; });
+    document.querySelectorAll('[data-q]').forEach(function(h){
+      h.addEventListener('click', function(){
+        var id = parseInt(this.getAttribute('data-q'), 10);
+        ONE_OPEN[id] = !ONE_OPEN[id];
+        renderOne(ONE);
+      });
+    });
+  }
+
+  function loadOne(id){
+    UCP.get('application.php?id=' + id).then(function(d){
+      if(!d || !d.ok){
+        el('body').innerHTML = '<div class="card"><div class="card-b"><p class="lede">' +
+          escapeHtml((d && d.error) || 'Could not open that application.') + '</p></div></div>';
+        return;
+      }
+      ONE_OPEN = {};
+      renderOne(d);
+    });
+  }
+
+  function route(){
+    var m = (location.hash || '').match(/id=(\d+)/);
+    if(m) loadOne(parseInt(m[1], 10));
+    else   load();
+  }
+  window.addEventListener('hashchange', route);
+
   function load(){
     UCP.get('application-mine.php').then(function(d){
       if(!d || !d.ok){
@@ -1097,7 +1204,7 @@
     if(document.visibilityState === 'hidden' && DIRTY) saveNow(true);
   });
 
-  load();
+  route();
 
   /* ===== ACCOUNT MENU ===== */
   (function(){

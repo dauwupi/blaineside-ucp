@@ -2,7 +2,7 @@
 /**
  * POST /api/app-question-save.php
  * Body: one of
- *   { action:"save",    id?, title, prompt, min_words, pinned }
+ *   { action:"save",    id?, title, prompt, min_chars, pinned }
  *   { action:"retire",  id, retired:bool }
  *   { action:"reorder", order:[id,id,...] }
  *   { action:"draw",    draw:int }
@@ -28,7 +28,7 @@ $pdo = db();
 $acc = current_account($pdo);
 
 if (!app_may_manage($acc)) {
-    json_out(['ok' => false, 'error' => app_panel_reason()], 403);
+    json_out(['ok' => false, 'error' => app_manage_reason()], 403);
 }
 if (!applications_available($pdo)) {
     json_out(['ok' => false, 'error' => applications_missing_reason()], 409);
@@ -70,7 +70,7 @@ if ($action === 'retire') {
 $id     = (int)($in['id'] ?? 0);
 $title  = trim((string)($in['title'] ?? ''));
 $prompt = trim((string)($in['prompt'] ?? ''));
-$min    = max(0, min(2000, (int)($in['min_words'] ?? 0)));
+$min    = max(0, min(2000, (int)($in['min_chars'] ?? 0)));
 $pinned = !empty($in['pinned']) ? 1 : 0;
 
 if (mb_strlen($title) < 3)   fail('Give the question a title.', 422);
@@ -80,7 +80,7 @@ if (mb_strlen($prompt) < 10) fail('Write the prompt the applicant will read.', 4
 if ($id > 0) {
     $pdo->prepare(
         'UPDATE ucp_app_questions
-            SET title = ?, prompt = ?, min_words = ?, pinned = ?, updated_at = ?
+            SET title = ?, prompt = ?, min_chars = ?, pinned = ?, updated_at = ?
           WHERE id = ?'
     )->execute([$title, $prompt, $min, $pinned, $now, $id]);
 } else {
@@ -88,7 +88,7 @@ if ($id > 0) {
                      ->fetchColumn();
     $pdo->prepare(
         'INSERT INTO ucp_app_questions
-           (title, prompt, min_words, pinned, retired, sort_order,
+           (title, prompt, min_chars, pinned, retired, sort_order,
             created_by, created_by_name, created_at, updated_at)
          VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)'
     )->execute([$title, $prompt, $min, $pinned, $next,

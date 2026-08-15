@@ -719,9 +719,16 @@
      panel: the announcement board sits directly above it, and two loud
      boxes stacked on top of each other means neither is read.
      --------------------------------------------------------------------- */
-  .appnote{display:flex;align-items:center;gap:15px;background:var(--charcoal-2);
-    border:1px solid var(--border-soft);border-left:3px solid var(--amber);border-radius:14px;
-    padding:15px 18px;margin-bottom:20px}
+  /* No margin-bottom. `.page` is a flex column with gap:22px, so a margin
+     here ADDED to that gap and left more space under the card than above
+     it. The gap alone spaces it, identically on both sides.
+
+     No left rail either, and a warmer fill than a plain card: on a page
+     built out of --charcoal-2 panels, a --charcoal-2 notice reads as one
+     more panel. The tint is what separates it, not a stripe. */
+  .appnote{display:flex;align-items:center;gap:15px;
+    background:linear-gradient(90deg,rgba(212,146,58,.10),rgba(212,146,58,.045));
+    border:1px solid rgba(212,146,58,.30);border-radius:14px;padding:15px 18px}
   .appnote .ic{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;
     background:rgba(212,146,58,.11);border:1px solid rgba(212,146,58,.26)}
   .appnote .ic svg{width:17px;height:17px;stroke:var(--gold);fill:none;stroke-width:1.9}

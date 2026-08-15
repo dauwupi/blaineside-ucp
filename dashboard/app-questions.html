@@ -706,7 +706,7 @@
           <h1>Question Manager</h1>
           <p>Pinned questions are asked on every application. The rest sit in a pool, and each new
              application draws from it at random — so two people applying on the same day rarely get
-             the same set.</p>
+             the same set. A minimum is counted in characters, not words: "a a a a a" is five words.</p>
         </div>
       </div>
       <div id="body"><div class="empty">Loading…</div></div>
@@ -814,7 +814,7 @@
 
   function meta(q){
     var bits = [];
-    if(q.min_words) bits.push(q.min_words + ' word minimum');
+    if(q.min_chars) bits.push(num(q.min_chars) + ' character minimum');
     bits.push('asked ' + num(q.asked) + ' time' + (q.asked===1?'':'s'));
     if(q.by) bits.push('added by ' + escapeHtml(q.by));
     return bits.join(' · ');
@@ -838,8 +838,8 @@
           escapeHtml(q.prompt || '') + '</textarea>' +
         '<div class="frow">' +
           '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--text-faint)">' +
-          '<input type="text" id="eMin" value="' + (q.min_words||0) + '" style="width:60px;text-align:center">' +
-          ' word minimum</label>' +
+          '<input type="text" id="eMin" value="' + (q.min_chars||0) + '" style="width:72px;text-align:center">' +
+          ' character minimum</label>' +
           '<button class="btn sm" id="ePin">' + (q.pinned ? 'Unpin' : 'Pin this') + '</button>' +
           (q.id ? '<button class="btn sm" id="eRetire">' + (q.retired ? 'Restore' : 'Retire') + '</button>' : '') +
           '<button class="btn sm" id="eCancel" style="margin-left:auto">Cancel</button>' +
@@ -887,7 +887,7 @@
   function wire(){
     el('addBtn').addEventListener('click', function(){
       if(!ROWS.some(function(q){ return q.id === 0; }))
-        ROWS.unshift({id:0, title:'', prompt:'', min_words:0, pinned:false, retired:false, asked:0, by:null});
+        ROWS.unshift({id:0, title:'', prompt:'', min_chars:0, pinned:false, retired:false, asked:0, by:null});
       EDITING = 0; render();
       /* A brand new row has id 0, which is also "nothing is being edited" —
          so it is opened explicitly here rather than through EDITING. */
@@ -962,7 +962,7 @@
       UCP.post('app-question-save.php', {
         action:'save', id: row.id || 0,
         title: el('eTitle').value, prompt: el('ePrompt').value,
-        min_words: parseInt(el('eMin').value, 10) || 0, pinned: row.pinned ? 1 : 0
+        min_chars: parseInt(el('eMin').value, 10) || 0, pinned: row.pinned ? 1 : 0
       }).then(function(res){
         var d = res.data || {};
         b.disabled = false;

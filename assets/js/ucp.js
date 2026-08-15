@@ -482,9 +482,15 @@
        group below instead — same page, fewer powers, enforced server-side. */
     {label:'Founder',icon:'crown',founder:true,children:[
       {label:'Group Management',href:'/dashboard/groups'}]},
+    /* Question Manager and Response Templates sit HERE rather than under
+       Support Staff on purpose: reviewing applications is the work rank 1
+       does, deciding what every applicant is asked is the policy they work
+       to. api/_applications.php enforces it with BS_APP_MANAGE_RANK. */
     {label:'Management',icon:'shield',admin:true,children:[
       {label:'County Bulletin',href:'/dashboard/bulletin'},
       {label:'Announcements',href:'/dashboard/announcements'},
+      {label:'Question Manager',href:'/dashboard/app-questions'},
+      {label:'Response Templates',href:'/dashboard/app-templates'},
       {label:'Group Management',href:'/dashboard/groups',notFounder:true}]},
     /* Trainee Admin and above — the whole admin ladder, not just Management.
        See BS_ADMIN_MIN_RANK in api/_admin.php, which is what decides. */
@@ -494,9 +500,7 @@
        exists to do, so it is a rank gate rather than a sub-group — see
        BS_APP_PANEL_RANK in api/_applications.php, which is what decides. */
     {label:'Support Staff',icon:'lifebuoy',min:1,children:[
-      {label:'Application Panel',href:'/dashboard/applications'},
-      {label:'Question Manager',href:'/dashboard/app-questions'},
-      {label:'Response Templates',href:'/dashboard/app-templates'}]},
+      {label:'Application Panel',href:'/dashboard/applications'}]},
     {heading:'Reports, Appeals & Refunds'},
     /* Everyone submits; who may open a PANEL is the only thing that varies,
        and it is `min` (a rank) OR `team` (a sub-group that opens it at any
@@ -820,7 +824,7 @@
      The pages keep the markup as a fallback for a browser that never runs
      this; what is drawn here replaces it.
      ===================================================================== */
-  var UCP_VERSION = '2.5.0';
+  var UCP_VERSION = '2.5.1';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

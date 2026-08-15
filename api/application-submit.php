@@ -6,8 +6,8 @@
  * Sends the draft. Saves one last time first, so nothing typed in the
  * final two seconds is lost between the autosave and the button.
  *
- * The word minimums are enforced HERE as well as on the page. The page
- * counts words to be helpful; this counts them because the page can be
+ * The minimums are enforced HERE as well as on the page. The page
+ * counts characters to be helpful; this counts them because the page can be
  * edited by anyone with developer tools open, and a one-word application
  * costs a Support Staff member a review slot either way.
  */
@@ -53,12 +53,12 @@ if (!$rows) fail('This application has no questions on it. Start a new one.', 40
 
 foreach ($rows as $i => $a) {
     $n = $i + 1;
-    if ($a['words'] === 0) {
+    if ($a['chars'] === 0) {
         fail('Question ' . $n . ' (' . $a['title'] . ') hasn\'t been answered.', 422);
     }
-    if ($a['min_words'] > 0 && $a['words'] < $a['min_words']) {
+    if ($a['min_chars'] > 0 && $a['chars'] < $a['min_chars']) {
         fail('Question ' . $n . ' (' . $a['title'] . ') needs at least '
-             . $a['min_words'] . ' words. You have written ' . $a['words'] . '.', 422);
+             . $a['min_chars'] . ' characters. You have written ' . $a['chars'] . '.', 422);
     }
 }
 
