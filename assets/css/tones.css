@@ -74,9 +74,29 @@
    the fill gives one construction that works for all ten, and reads better
    on a dark page besides.
    --------------------------------------------------------------------- */
-.gchip{display:inline-flex;align-items:center;font-size:10px;font-weight:800;
-  letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:100px;
-  white-space:nowrap;line-height:1.35;
+
+/* CENTRING NOTE — why line-height is 1 and why there is a text-indent.
+   Two things push the label off-centre inside the pill and both are
+   invisible until you measure it:
+
+   1. Vertical. The label is uppercase, so it uses none of the space the
+      font reserves below the baseline for descenders. A line-height above
+      1 splits the leftover leading evenly above and below the LINE, not
+      the CAPS, so the caps ride high. Inter's own metrics happen to be
+      symmetric about the cap band at line-height:1 (ascent 1984, descent
+      494, cap height 1490 — the gap above the caps and the gap below the
+      baseline are both 279 units), so setting it to exactly 1 centres the
+      caps for free. Padding then sets the pill's height.
+   2. Horizontal. letter-spacing adds its space AFTER every character,
+      including the last one, so a tracked label always sits a touch left
+      of centre. Nudging the text right by half of one letter-space puts
+      the glyph run back in the middle.
+
+   Both fixes are in units of em, so they hold at any font-size. */
+.gchip{display:inline-flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border-radius:100px;
+  white-space:nowrap;line-height:1;text-indent:.05em;
   color:var(--tone-text);
   background:color-mix(in srgb, var(--tone) 17%, transparent);
   border:1px solid color-mix(in srgb, var(--tone) 44%, transparent)}

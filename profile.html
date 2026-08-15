@@ -245,9 +245,12 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
    Nothing is filled with gold any more: a solid fill needs dark ink for
    amber and stone and white ink for Support Staff's red, which is what
    made this badge a different component from the chips beside it. */
-.rank{display:inline-flex;align-items:center;font-size:10.5px;font-weight:800;
-  letter-spacing:.1em;text-transform:uppercase;padding:5px 11px;border-radius:100px;
-  white-space:nowrap;line-height:1.35;
+/* line-height:1 and the text-indent are the centring fix — see the
+   CENTRING NOTE above .gchip in assets/css/tones.css for why. */
+.rank{display:inline-flex;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;padding:7px 11px;border-radius:100px;
+  white-space:nowrap;line-height:1;text-indent:.05em;
   color:var(--tone-text,#9a9082);
   background:color-mix(in srgb, var(--tone,#7d7365) 17%, transparent);
   border:1px solid color-mix(in srgb, var(--tone,#7d7365) 44%, transparent)}
