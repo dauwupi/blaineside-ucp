@@ -572,13 +572,17 @@
   .qhead h1{font-size:23px;font-weight:700;letter-spacing:-.02em}
   .qhead p{font-size:13.5px;color:var(--text-faint);margin-top:4px;max-width:none}
 
-  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  /* grid-auto-rows:1fr is what keeps the second row the same height as the
+     first. Without it every row sizes to its own tallest tile, so one
+     two-line description made row one taller than row two. */
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;grid-auto-rows:1fr}
   @media (max-width:1240px){ .grid{grid-template-columns:repeat(3,1fr)} }
   @media (max-width:900px){  .grid{grid-template-columns:repeat(2,1fr)} }
   @media (max-width:560px){  .grid{grid-template-columns:1fr} }
 
-  .tile{display:block;background:var(--charcoal-2);border:1px solid var(--border);border-radius:12px;
-    padding:15px 16px;cursor:pointer;transition:border-color .15s,background .15s;color:inherit}
+  .tile{display:flex;flex-direction:column;background:var(--charcoal-2);border:1px solid var(--border);
+    border-radius:12px;padding:15px 16px;cursor:pointer;color:inherit;
+    transition:border-color .15s,background .15s}
   .tile:hover{border-color:rgba(226,182,92,.42);background:var(--charcoal-3)}
   .tile:focus-visible{outline:2px solid rgba(226,182,92,.55);outline-offset:2px}
   .tile .top{display:flex;align-items:center;gap:11px}
@@ -590,7 +594,26 @@
   .tile .go{margin-left:auto;width:14px;height:14px;stroke:#4a443b;fill:none;stroke-width:2.3;
     transition:transform .15s,stroke .15s}
   .tile:hover .go{stroke:var(--gold);transform:translateX(2px)}
-  .tile p{font-size:12px;color:var(--text-faint);line-height:1.6;margin-top:10px}
+  /* flex:1 pushes the meta line to the bottom of every tile, so the meta
+     lines align across a row however long the description runs. */
+  .tile p{font-size:12px;color:var(--text-faint);line-height:1.6;margin-top:10px;flex:1}
+  .tile .meta{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:10px;
+    border-top:1px solid var(--border-soft);font-size:11px;color:var(--text-dim);
+    font-weight:600;letter-spacing:.02em}
+  .tile .meta s{width:5px;height:5px;border-radius:50%;background:var(--charcoal-4);
+    text-decoration:none;flex:none}
+  .tile .meta .who{color:var(--text-faint)}
+
+  /* ---- search ---- */
+  .searchrow{display:flex;align-items:center;gap:11px;margin-bottom:16px;flex-wrap:wrap}
+  .sbox{position:relative;flex:1;min-width:240px;max-width:420px}
+  .sbox svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;
+    stroke:var(--text-dim);fill:none;stroke-width:2}
+  .sbox input{width:100%;background:var(--charcoal-2);border:1px solid var(--border);border-radius:10px;
+    color:var(--parchment);font:inherit;font-size:13px;padding:11px 13px 11px 38px}
+  .sbox input:focus{outline:none;border-color:rgba(226,182,92,.45)}
+  .sbox input::placeholder{color:var(--text-dim)}
+  .scount{font-size:12px;color:var(--text-dim)}
 
   .card{background:var(--charcoal-2);border:1px solid var(--border-soft);border-radius:14px}
   .card-b{padding:22px}
@@ -806,17 +829,45 @@
     people:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>'
   };
 
+  /* `where` is the honest answer to "what does this actually change?" —
+     the thing a reader is really asking when they hesitate over a tile.
+     `find` is extra search terms that are not in the title or the text:
+     what somebody would type looking for this rather than what we call it. */
   var TOOLS = [
     {icon:'bulletin',  min:8, title:'County Bulletin',
-     href:'/dashboard/bulletin',       blurb:'Events and notices on the dashboard board.'},
+     href:'/dashboard/bulletin',
+     blurb:'The rolling board on the dashboard. Events, notices and updates, each with an ' +
+           'image, a tag and a place in the slot order.',
+     where:'Dashboard', who:'Everyone sees it',
+     find:'event events notice notices news post posts slide slides carousel board bulletin'},
+
     {icon:'megaphone', min:8, title:'Announcements',
-     href:'/dashboard/announcements',  blurb:'The banner across the top of every page.'},
+     href:'/dashboard/announcements',
+     blurb:'The banner across the top of every page. One live at a time, and the loudest thing ' +
+           'in the UCP — used for downtime and rule changes.',
+     where:'Every page', who:'Everyone sees it',
+     find:'announce announcement banner alert notice downtime maintenance broadcast message'},
+
     {icon:'question',  min:8, title:'Question Manager',
-     href:'/dashboard/app-questions',  blurb:'What every applicant is asked.'},
+     href:'/dashboard/app-questions',
+     blurb:'What every applicant is asked. Pinned questions, the random pool, character ' +
+           'minimums, and how many are drawn per application.',
+     where:'New player applications', who:'Applicants see it',
+     find:'question questions scenario scenarios pinned pool draw minimum apply application applicant applicants prompt'},
+
     {icon:'template',  min:8, title:'Response Templates',
-     href:'/dashboard/app-templates',  blurb:'Saved replies for application feedback.'},
+     href:'/dashboard/app-templates',
+     blurb:'The saved replies Support Staff drop into application feedback. Inserted and then ' +
+           'edited — never sent on their own.',
+     where:'Application feedback', who:'Support Staff use it',
+     find:'template templates reply replies response responses canned saved feedback deny denial pass accept application'},
+
     {icon:'people',    min:8, title:'Group Management',
-     href:'/dashboard/groups',         blurb:'Ranks and sub-groups.'}
+     href:'/dashboard/groups',
+     blurb:'Ranks and sub-groups. Who is Support Staff, who is an Admin, and who holds ' +
+           'Staff Management.',
+     where:'Staff accounts', who:'Staff only',
+     find:'rank ranks group groups role roles permission permissions promote demote subgroup subgroups staff team member members'}
   ];
 
   function el(id){ return document.getElementById(id); }
@@ -827,13 +878,39 @@
         (ICONS[t.icon] || '') + '</svg></span>' +
       '<h3>' + escapeHtml(t.title) + '</h3>' +
       '<svg class="go" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>' +
-      '<p>' + escapeHtml(t.blurb) + '</p></a>';
+      '<p>' + escapeHtml(t.blurb) + '</p>' +
+      '<div class="meta"><span class="who">' + escapeHtml(t.where) + '</span>' +
+      '<s></s><span>' + escapeHtml(t.who) + '</span></div></a>';
+  }
+
+  var MINE = [], Q = '';
+
+  function matches(t, q){
+    if(!q) return true;
+    var hay = (t.title + ' ' + t.blurb + ' ' + t.where + ' ' + t.who + ' ' + t.find).toLowerCase();
+    /* Every word has to appear somewhere, in any order — so "application
+       templates" finds Response Templates, and so does "deny reply". */
+    return q.split(/\s+/).every(function(w){ return hay.indexOf(w) > -1; });
+  }
+
+  function grid(){
+    var hits = MINE.filter(function(t){ return matches(t, Q); });
+    if(!hits.length){
+      return '<div class="empty">Nothing here matches “' + escapeHtml(Q) + '”.</div>';
+    }
+    return '<div class="grid">' + hits.map(tile).join('') + '</div>';
+  }
+
+  function paintCount(){
+    var c = el('scount'); if(!c) return;
+    var n = MINE.filter(function(t){ return matches(t, Q); }).length;
+    c.textContent = Q ? n + ' of ' + MINE.length + ' shown' : MINE.length + ' tools';
   }
 
   function render(rank){
-    var mine = TOOLS.filter(function(t){ return rank >= t.min; });
+    MINE = TOOLS.filter(function(t){ return rank >= t.min; });
 
-    if(!mine.length){
+    if(!MINE.length){
       /* Somebody who typed the URL. Say who the page is for rather than
          drawing an empty grid that reads as broken. */
       paint('body', '<div class="card"><div class="card-b"><p class="lede">' +
@@ -842,7 +919,24 @@
       return;
     }
 
-    paint('body', '<div class="grid">' + mine.map(tile).join('') + '</div>');
+    paint('body',
+      '<div class="searchrow"><div class="sbox">' +
+        '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>' +
+        '<input type="text" id="q" placeholder="Search Management…" autocomplete="off" ' +
+        'value="' + escapeHtml(Q) + '"></div>' +
+        '<span class="scount" id="scount"></span></div>' +
+      '<div id="gridhost">' + grid() + '</div>');
+
+    paintCount();
+
+    var q = el('q');
+    if(q) q.addEventListener('input', function(){
+      Q = this.value.trim().toLowerCase();
+      /* Redraw the grid alone. Re-rendering the whole view would take the
+         focus out of the box being typed in. */
+      el('gridhost').innerHTML = grid();
+      paintCount();
+    });
   }
 
   /* Draw from the cached rank first so the tiles are there on the first
