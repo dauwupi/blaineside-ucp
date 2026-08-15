@@ -461,95 +461,800 @@
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 
-  /* The card shell, same as the lookup and profile pages. Announcements
-     draws its own list rows and never needed it, so it isn't in the shell
-     this page was cut from. */
+  /* =====================================================================
+     BAN APPEALS — shared styles for the queue, the form and one appeal.
+
+     Card shell first: the announcements page this shell is cut from draws
+     its own list rows and never needed .card.
+     ===================================================================== */
   .card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;
     box-shadow:0 20px 44px -30px rgba(0,0,0,.9);overflow:hidden}
   .card + .card{margin-top:20px}
   .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
     padding:17px 22px 15px;border-bottom:1px solid var(--rule)}
   .card-h h3{font-size:15.5px;font-weight:700;letter-spacing:-.015em}
-  .card-b{padding:6px 22px 18px}
-  /* =====================================================================
-     REPORTS, APPEALS & REFUNDS — one area, three or fewer views.
+  .card-h .aside{font-size:12.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+  .card-b{padding:16px 22px 20px}
+  .card-lede{font-size:13px;color:var(--text-faint);line-height:1.65;text-wrap:pretty}
 
-     Nothing here is built. That is the whole design problem: an area that
-     is coming soon can either be hidden until it works, or it can be shown
-     honestly. Hiding it means nobody knows it is coming and staff keep
-     answering the same question in Discord. Showing an empty table means
-     "you have no refund requests", which is a different and worse lie.
+  /* ---- the heading ----
+     Oswald in caps, the same face and treatment as BLAINESIDE in the sidebar,
+     so the page title reads as part of the brand rather than as bolder body
+     text. All white — the change of face already separates it from the
+     sentence underneath, so a second colour would be saying it twice.
 
-     So each view states what it will ask for, what happens afterwards, and
-     that it is not switched on — and the page never draws a form, a table
-     or a count it cannot stand behind.
-     ===================================================================== */
-  .qhead{display:flex;align-items:flex-start;gap:16px;margin-bottom:22px}
-  .qhead .qi{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:13px;
+     The icon is centred on the block. Aligned to the first line it read as
+     though it belonged to the title and the sentence below was something
+     else. */
+  .ahead{display:flex;align-items:center;gap:17px;margin-bottom:22px}
+  .ahead .qi{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:13px;
     background:var(--charcoal-3);border:1px solid var(--border);color:var(--gold)}
-  .qhead .qi svg{width:21px;height:21px;stroke-width:1.8}
-  .qhead h1{font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
-  .qhead p{font-size:13.5px;color:var(--text-faint);line-height:1.6;margin-top:6px;
-    max-width:66ch;text-wrap:pretty}
+  .ahead .qi svg{width:23px;height:23px;stroke-width:1.8}
+  .ahead .tx{flex:1;min-width:0}
+  .ahead h1{font-family:'Oswald',sans-serif;font-size:33px;font-weight:600;letter-spacing:.055em;
+    text-transform:uppercase;line-height:1.05;color:var(--parchment)}
+  .ahead p{font-size:13.5px;color:var(--text-faint);line-height:1.65;margin-top:8px;
+    text-wrap:pretty}
 
-  /* The view switcher. The sidebar links straight to a view, so this is a
-     second way to the same place rather than the only one. */
-  .qtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
-  .qtab{display:inline-flex;align-items:center;gap:9px;padding:10px 16px;border-radius:11px;
-    border:1px solid var(--border);background:var(--charcoal-2);color:var(--text-dim);
-    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
-  .qtab:hover{background:var(--charcoal-3);color:var(--parchment)}
-  .qtab[aria-selected="true"]{background:var(--charcoal-4);color:var(--parchment);
-    border-color:rgba(226,182,92,.34);box-shadow:0 1px 0 rgba(0,0,0,.35)}
-  .qtab .lk{display:inline-grid;place-items:center;width:15px;height:15px;flex:none;
+  /* ---- the two views ----
+     Half the page each. The panel is not drawn at all for somebody who
+     cannot open it: a greyed control tells them a door exists and then
+     refuses to say anything else about it, which is worse than the door not
+     being there. Everything about who may open it is decided by
+     api/queues.php; this only draws the answer. */
+  .qtabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  .qtabs.solo{grid-template-columns:1fr}
+  .qtab{display:flex;align-items:center;gap:13px;text-align:left;padding:15px 18px;
+    border-radius:13px;border:1px solid var(--border);background:var(--charcoal-2);
+    font-family:inherit;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
+  .qtab:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .qtab .ai{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:10px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint);
+    transition:.15s}
+  .qtab .ai svg{width:18px;height:18px;stroke-width:1.9}
+  .qtab .at{min-width:0;flex:1}
+  .qtab .an{font-size:14px;font-weight:700;color:var(--parchment);display:flex;align-items:center;
+    gap:9px;flex-wrap:wrap;line-height:1.3}
+  .qtab .ad{font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.45}
+  .qtab[aria-selected="true"]{background:var(--charcoal-3);border-color:rgba(226,182,92,.42)}
+  .qtab[aria-selected="true"]::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,var(--gold),var(--amber))}
+  .qtab[aria-selected="true"] .ai{background:rgba(226,182,92,.12);
+    border-color:rgba(226,182,92,.34);color:var(--gold)}
+  /* the staff side, when it is not the one you are on */
+  .qtab.staff{border-color:rgba(226,182,92,.26);
+    background:linear-gradient(140deg,rgba(226,182,92,.055),var(--charcoal-2) 62%)}
+  .qtab.staff .ai{color:var(--gold);background:rgba(226,182,92,.1);
+    border-color:rgba(226,182,92,.26)}
+  .qtab.staff:hover{border-color:rgba(226,182,92,.45)}
+  .qtab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .smark{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:#e3bd72;background:rgba(226,182,92,.11);border:1px solid rgba(226,182,92,.3);
+    padding:2px 8px;border-radius:100px}
+  @media (max-width:680px){ .qtabs{grid-template-columns:1fr} }
+
+  /* =====================================================================
+     BAN DETAILS — one design
+
+     This card used to be three different shapes doing the same job: a stack
+     of label-over-value rows for the punishment, a second stack for the
+     accounts, and a grid for the account panel — with Forums and Discord
+     turning up in two of them. It is now one card, sections inside it, and
+     one fact-grid component used by every section.
+     ===================================================================== */
+  .sec + .sec{margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    margin-bottom:12px}
+  .sec-h .t{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--stone)}
+  .sec-h .n{font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+  .sec-h .go{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
+    color:var(--text-faint);transition:color .13s}
+  .sec-h .go:hover{color:var(--gold)}
+  .sec-h .go svg{width:12px;height:12px;stroke-width:2.2;fill:none;stroke:currentColor}
+
+  /* The fact grid. Used for a punishment AND for the account.
+     Four fixed columns, not auto-fit: both grids have a multiple of four
+     cells, so the rows come out full — auto-fit left dead cells hanging off
+     the end of the account grid. */
+  .fg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+  .fg > div{background:var(--charcoal-2);padding:11px 14px 12px;min-width:0}
+  .fg .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--stone)}
+  .fg .v{font-size:13px;font-weight:600;color:var(--parchment);margin-top:5px;line-height:1.4;
+    overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+  .fg .v.soft{color:var(--text-dim);font-weight:500;font-style:italic}
+  .fg .s{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4}
+  .fg .v a{color:var(--parchment);border-bottom:1px solid var(--charcoal-4)}
+  .fg .v a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+  .fg .grp{color:var(--tone-text)}
+  /* The appellant is not told who issued it, so their grid is three across.
+     Left at four it ended on a dead cell. */
+  .fg.three{grid-template-columns:repeat(3,1fr)}
+
+  /* A value carrying a state is coloured text with a dot, not a pill. Two
+     pills floating in a grid of plain values read as buttons and made those
+     cells louder than the facts around them. */
+  .dotv{display:inline-flex;align-items:center;gap:8px}
+  .dotv::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;
+    flex:none}
+  .dotv.ok{color:#9ec178} .dotv.bad{color:#e0917f} .dotv.warn{color:#e3bd72}
+  .dotv.off{color:var(--stone)}
+
+  /* ---- one punishment ---- */
+  .pun + .pun{margin-top:14px}
+  .pun-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  /* The pill says which of the two a ban is. "Ban · 14 DAYS" made the reader
+     work the kind out from the length, and a permanent one had no length to
+     work it out from. */
+  .kindp{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;
+    padding:5px 12px;border-radius:100px;white-space:nowrap;
+    border:1px solid var(--rule);background:var(--charcoal);color:var(--text-faint)}
+  .kindp::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;
+    flex:none}
+  .kindp.ban {color:#d98a78;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+  .kindp.lock{color:#b3a894;border-color:rgba(157,147,132,.34);background:rgba(157,147,132,.1)}
+  .kindp.discord{color:#93a7cb;border-color:rgba(110,130,175,.34);background:rgba(110,130,175,.11)}
+  .kindp.forums{color:#9fb0a0;border-color:rgba(120,150,120,.32);background:rgba(120,150,120,.1)}
+  .lenp{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--text-dim)}
+  .statep{margin-left:auto;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:100px;
+    white-space:nowrap;border:1px solid var(--rule);background:var(--charcoal);color:var(--stone)}
+  .statep.live{color:#e79187;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+
+  /* ---- the reason, as the thing it is: what somebody wrote ---- */
+  .why{margin-top:11px;padding:12px 15px;border-radius:11px;background:var(--charcoal-3);
+    border:1px solid var(--border-soft)}
+  .why .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--stone)}
+  .why .b{font-size:13.5px;color:var(--parchment);line-height:1.6;margin-top:5px;
+    overflow-wrap:anywhere;text-wrap:pretty;white-space:pre-wrap}
+  .why .b.soft{color:var(--text-dim);font-style:italic;white-space:normal}
+
+  /* ---- nothing on file ---- */
+  .offsite{padding:13px 15px;border-radius:12px;border:1px solid rgba(226,182,92,.24);
+    background:rgba(226,182,92,.05)}
+  .offsite .h{font-size:13px;font-weight:700;color:#e3bd72}
+  .offsite .p{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
+    text-wrap:pretty}
+
+  /* ---- characters ----
+     Designed now, empty now. When the game server is linked this fills in
+     and nothing about the card moves. */
+  .chars{border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+  .chr{display:flex;align-items:center;gap:14px;padding:11px 15px;background:var(--charcoal-2)}
+  .chr + .chr{border-top:1px solid var(--rule)}
+  .chr .cd{width:7px;height:7px;border-radius:50%;flex:none;background:var(--stone)}
+  .chr.on .cd{background:var(--ok);box-shadow:0 0 0 3px rgba(127,160,90,.15)}
+  .chr .cl{min-width:0;flex:1}
+  .chr .cn{font-size:13.5px;font-weight:700;color:var(--parchment);min-width:0}
+  .chr .cs{font-size:11px;color:var(--text-dim);margin-top:2px}
+  .chr .cf{font-size:12px;color:var(--text-faint);margin-left:auto;text-align:right;
+    white-space:nowrap}
+  .chr-none{padding:15px 16px;background:var(--charcoal-2);font-size:12.5px;
+    color:var(--text-dim);line-height:1.6;text-wrap:pretty}
+
+  @media (max-width:900px){ .fg,.fg.three{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:520px){
+    .fg,.fg.three{grid-template-columns:1fr}
+    .statep{margin-left:0}
+  }
+
+  /* ---- the queue's filter strip ---- */
+  .qfilters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .qfilters .qtab{display:inline-flex;align-items:center;gap:9px;padding:10px 16px;
+    border-radius:11px;border:1px solid var(--border);background:var(--charcoal-2);
+    color:var(--text-dim);font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
+  .qfilters .qtab:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .qfilters .qtab[aria-selected="true"]{background:var(--charcoal-4);color:var(--parchment);
+    border-color:rgba(226,182,92,.34)}
+  .qfilters .qtab::before{display:none}
+
+  /* =====================================================================
+     THE RULES GATE — redesigned.
+
+     It was a wall: four headings, some paragraphs, two bulleted lists and a
+     red box, all the same weight, all the same colour. Nothing told you
+     where to look and nothing told you when you were done, so people
+     scrolled past it to the button — which is exactly the failure the page
+     exists to prevent.
+
+     Now it has shape. Four sections, each visually a different KIND of
+     thing: a checklist you can scan, two panels you pick between, three
+     rule cards, and one red panel that means stop. You can tell them apart
+     without reading them, which is what makes the reading happen.
+     ===================================================================== */
+  .gate{display:flex;flex-direction:column;gap:26px}
+
+  .gsec > h4{display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--text-dim);margin-bottom:13px}
+  .gsec > h4::after{content:'';flex:1;height:1px;background:var(--rule)}
+  .gsec > .lede{font-size:13.5px;color:var(--text-faint);line-height:1.65;margin-bottom:14px;
+    text-wrap:pretty}
+
+  /* 1. the checklist — scannable, one glance tells you if you qualify */
+  .gchecks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  @media (max-width:820px){ .gchecks{grid-template-columns:1fr} }
+  .gcheck{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border);font-size:12.5px;
+    color:var(--parchment);line-height:1.5;text-wrap:pretty}
+  .gcheck .m{flex:none;width:19px;height:19px;display:grid;place-items:center;border-radius:6px;
+    margin-top:0;background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.34);
+    color:#9fae8d}
+  .gcheck .m svg{width:11px;height:11px;stroke-width:3}
+
+  /* 2. two panels — you are in one situation or the other, so pick */
+  .gsplit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  @media (max-width:820px){ .gsplit{grid-template-columns:1fr} }
+  .gcase{padding:16px 18px;border-radius:12px;background:var(--charcoal);
+    border:1px solid var(--border)}
+  .gcase h5{font-size:13.5px;font-weight:700;color:var(--parchment);
+    display:flex;align-items:center;gap:9px}
+  .gcase h5 .ic{width:24px;height:24px;flex:none;display:grid;place-items:center;
+    border-radius:7px;background:var(--charcoal-3);border:1px solid var(--border);
+    color:var(--gold)}
+  .gcase h5 .ic svg{width:13px;height:13px;stroke-width:2}
+  .gcase p{font-size:12.5px;color:var(--text-faint);line-height:1.65;margin-top:10px;
+    text-wrap:pretty}
+  .gcase .tip{margin-top:11px;padding-top:11px;border-top:1px solid var(--rule);
+    font-size:12px;color:var(--text-dim);line-height:1.55}
+  .gcase .tip b{color:#cbb07a;font-weight:700}
+
+  /* 3. the rules — three cards, each one thing that ends an appeal */
+  .grules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  @media (max-width:980px){ .grules{grid-template-columns:1fr} }
+  .grule{padding:15px 17px;border-radius:12px;background:var(--charcoal);
+    border:1px solid var(--border)}
+  .grule .t{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;
+    color:var(--parchment)}
+  .grule .t .ic{width:22px;height:22px;flex:none;display:grid;place-items:center;
+    border-radius:7px;background:var(--charcoal-3);border:1px solid var(--border);
     color:var(--text-faint)}
-  .qtab .lk svg{width:13px;height:13px;stroke-width:2.1}
+  .grule .t .ic svg{width:12px;height:12px;stroke-width:2.2}
+  .grule p{font-size:12px;color:var(--text-faint);line-height:1.6;margin-top:9px;
+    text-wrap:pretty}
 
-  .qgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
-  @media (max-width:1040px){ .qgrid{grid-template-columns:1fr} }
+  /* 4. stop */
+  .gstop{padding:17px 19px;border-radius:12px;background:rgba(193,85,63,.07);
+    border:1px solid rgba(193,85,63,.32)}
+  .gstop .h{display:flex;align-items:center;gap:10px}
+  .gstop .h .ic{width:26px;height:26px;flex:none;display:grid;place-items:center;
+    border-radius:8px;background:rgba(193,85,63,.11);border:1px solid rgba(193,85,63,.32);
+    color:#d29b8d}
+  .gstop .h .ic svg{width:14px;height:14px;stroke-width:2.2}
+  .gstop .h h5{font-size:13.5px;font-weight:700;color:#dfa294}
+  .gstop > p{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:9px}
+  .gstop .items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;
+    margin-top:14px;padding-top:14px;border-top:1px solid rgba(193,85,63,.22)}
+  @media (max-width:820px){ .gstop .items{grid-template-columns:1fr} }
+  .gstop .items > div{display:flex;gap:10px;align-items:flex-start}
+  .gstop .items .x{flex:none;width:17px;height:17px;display:grid;place-items:center;
+    border-radius:5px;background:rgba(193,85,63,.13);border:1px solid rgba(193,85,63,.3);
+    color:#d29b8d;margin-top:1px}
+  .gstop .items .x svg{width:9px;height:9px;stroke-width:3.4}
+  .gstop .items b{display:block;font-size:12.5px;font-weight:700;color:var(--parchment)}
+  .gstop .items span{display:block;font-size:12px;color:var(--text-faint);line-height:1.55;
+    margin-top:2px;text-wrap:pretty}
 
-  .qwhat{font-size:14.5px;font-weight:600;color:var(--parchment);line-height:1.5;
-    padding-top:16px}
-  .qsteps{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:0}
-  .qsteps li{display:flex;gap:13px;padding:13px 0;font-size:13px;color:var(--text-faint);
+  .gatefoot{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap;
+    margin-top:4px;padding-top:18px;border-top:1px solid var(--rule)}
+  .gatefoot .agree{margin-right:auto;font-size:12.5px;color:var(--text-faint);
     line-height:1.6;text-wrap:pretty}
-  .qsteps li + li{border-top:1px solid var(--rule)}
-  .qsteps .n{flex:none;width:21px;height:21px;display:grid;place-items:center;border-radius:7px;
-    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-dim);
-    font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px}
-  .qafter{margin-top:16px;padding:14px 16px;border-radius:11px;background:var(--charcoal);
-    border:1px solid var(--border);font-size:12.5px;color:var(--text-faint);line-height:1.65;
-    text-wrap:pretty}
-  .qafter b{color:var(--parchment);font-weight:600}
 
-  /* The status panel. Amber, not red: nothing is wrong, it just isn't here
-     yet. The refusal panel below it is the one that gets a colour. */
-  .qstate{display:flex;align-items:flex-start;gap:12px;padding:15px 17px;border-radius:12px;
+  /* ---- the form ---- */
+  .q{padding:16px 0}
+  .q + .q{border-top:1px solid var(--rule)}
+  .q > .qlab{font-size:13.5px;color:var(--parchment);line-height:1.55;text-wrap:pretty}
+  .q > .qlab b{font-weight:700;margin-right:5px}
+  /* No measure cap. 74ch is a reading measure for prose; these are one-line
+     instructions in a wide card, and capping them folded lines that had
+     room to sit flat. */
+  .q > .qhint{font-size:12.5px;color:var(--text-dim);line-height:1.6;margin-top:6px;
+    text-wrap:pretty}
+  .q .qbody{margin-top:13px}
+
+  .checks{display:flex;gap:10px;flex-wrap:wrap}
+  .chk{display:inline-flex;align-items:center;gap:10px;padding:11px 16px;border-radius:11px;
+    border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim);
+    font-size:13px;font-weight:600;cursor:pointer;transition:.14s;font-family:inherit}
+  .chk:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
+  .chk .bx{width:16px;height:16px;flex:none;border-radius:5px;border:1.5px solid var(--charcoal-4);
+    display:grid;place-items:center;transition:.14s}
+  .chk .bx svg{width:11px;height:11px;stroke-width:3;color:var(--charcoal-2);opacity:0}
+  .chk.on{color:var(--parchment);border-color:rgba(226,182,92,.4);background:rgba(226,182,92,.07)}
+  .chk.on .bx{background:var(--gold);border-color:var(--gold)}
+  .chk.on .bx svg{opacity:1}
+  .chk:disabled{opacity:.42;cursor:not-allowed}
+  .chk .no{font-size:11px;font-weight:500;color:var(--text-dim)}
+
+  .sel,.ta,.ti{width:100%;font-family:inherit;font-size:13.5px;color:var(--parchment);
+    background:var(--charcoal);border:1px solid var(--border);border-radius:11px;
+    padding:12px 14px;transition:.14s}
+  .ta{min-height:190px;line-height:1.7;resize:vertical}
+  .sel:focus,.ta:focus,.ti:focus{outline:none;border-color:rgba(226,182,92,.5);
+    box-shadow:0 0 0 3px rgba(226,182,92,.09)}
+  .sel:disabled,.ta:disabled,.ti:disabled{opacity:.5;cursor:not-allowed}
+  .ta::placeholder,.ti::placeholder{color:var(--text-dim)}
+  .fieldnote{font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.55}
+  .fieldnote.bad{color:#dfa294}
+  .counter{float:right;font-variant-numeric:tabular-nums}
+
+  .evrow{display:flex;gap:10px;align-items:flex-start;margin-top:10px}
+  .evrow .ti{flex:1}
+  .evrow .url{flex:1.4}
+  .evx{flex:none;width:38px;height:41px;display:grid;place-items:center;border-radius:10px;
+    border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim);
+    cursor:pointer;transition:.14s}
+  .evx:hover{color:#dfa294;border-color:rgba(193,85,63,.4)}
+  .evx svg{width:15px;height:15px;stroke-width:2}
+
+  /* ---- notices ---- */
+  .note-a{display:flex;align-items:flex-start;gap:13px;padding:16px 18px;border-radius:12px;
     background:rgba(226,182,92,.06);border:1px solid rgba(226,182,92,.26)}
-  .qstate .si{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:9px;
+  .note-a.bad{background:rgba(193,85,63,.07);border-color:rgba(193,85,63,.32)}
+  .note-a.good{background:rgba(127,160,90,.07);border-color:rgba(127,160,90,.3)}
+  .note-a .si{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
     background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.3);color:#e3bd72}
-  .qstate .si svg{width:15px;height:15px;stroke-width:2}
-  .qstate h4{font-size:13.5px;font-weight:700;color:#e3bd72}
-  .qstate p{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
+  .note-a.bad .si{background:rgba(193,85,63,.1);border-color:rgba(193,85,63,.3);color:#d29b8d}
+  .note-a.good .si{background:rgba(127,160,90,.1);border-color:rgba(127,160,90,.3);color:#9fae8d}
+  .note-a .si svg{width:16px;height:16px;stroke-width:2}
+  .note-a h4{font-size:14px;font-weight:700;color:#e3bd72}
+  .note-a.bad h4{color:#dfa294}
+  .note-a.good h4{color:#a8bb92}
+  /* 64ch was a reading measure borrowed from body copy. These are one or
+     two sentences inside a full-width card, and capping them folds a line
+     that had room to sit flat. */
+  .note-a p{font-size:13px;color:var(--text-faint);line-height:1.65;margin-top:5px;
+    text-wrap:pretty}
+  .note-a .acts{margin-top:13px;display:flex;gap:10px;flex-wrap:wrap}
+
+  /* ---- status pills ---- */
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:100px;
+    white-space:nowrap;line-height:1.35}
+  .pill.pending {color:#e3bd72;background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.32)}
+  .pill.accepted{color:#9fae8d;background:rgba(127,160,90,.11);border:1px solid rgba(127,160,90,.32)}
+  .pill.rejected{color:#d29b8d;background:rgba(193,85,63,.1);border:1px solid rgba(193,85,63,.34)}
+  .pill.perm    {color:#d29b8d;background:rgba(193,85,63,.1);border:1px solid rgba(193,85,63,.34)}
+  .pill.temp    {color:#e3bd72;background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.32)}
+
+  /* ---- the queue table ---- */
+  .qbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 0 16px}
+  .qbar .grow{flex:1}
+  .qsearch{position:relative;min-width:260px;flex:1;max-width:420px}
+  .qsearch svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;
+    height:15px;stroke-width:2;color:var(--text-dim);pointer-events:none}
+  .qsearch input{width:100%;padding-left:38px}
+  .perpage{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;color:var(--text-faint)}
+  .perpage select{width:auto;padding:9px 12px}
+
+  .qtable{width:100%;border-collapse:collapse}
+  .qtable th{text-align:left;font-size:11px;font-weight:800;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--text-dim);padding:0 14px 11px;white-space:nowrap}
+  .qtable td{padding:13px 14px;font-size:13px;color:var(--text-faint);
+    border-top:1px solid var(--rule);vertical-align:middle}
+  .qtable tr:hover td{background:rgba(255,255,255,.014)}
+  .qtable td.who{color:var(--parchment);font-weight:600}
+  .qtable td.gone{font-style:italic;color:var(--text-dim);font-weight:400}
+  .qtable td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .qtable .view{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;
+    border:1px solid var(--border);background:var(--charcoal);color:var(--parchment);
+    font-size:12px;font-weight:600;transition:.14s;white-space:nowrap}
+  .qtable .view:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .qwrap{overflow-x:auto}
+
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;
+    padding-top:16px;margin-top:4px;border-top:1px solid var(--rule)}
+  .pager .pinfo{margin-right:auto;font-size:12.5px;color:var(--text-dim)}
+  .pager button{min-width:34px;height:34px;padding:0 10px;border-radius:9px;
+    border:1px solid var(--border);background:var(--charcoal);color:var(--text-faint);
+    font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.14s}
+  .pager button:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
+  .pager button[aria-current="true"]{background:var(--charcoal-4);color:var(--parchment);
+    border-color:rgba(226,182,92,.34)}
+  .pager button:disabled{opacity:.36;cursor:not-allowed}
+  .pager .gap{color:var(--text-dim);padding:0 2px}
+
+  /* ---- buttons ---- */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:10px 17px;border-radius:10px;border:1px solid var(--border);background:var(--charcoal);
+    color:var(--text-faint);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    transition:.14s;white-space:nowrap}
+  .btn:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn svg{width:15px;height:15px;stroke-width:2}
+  /* Flat. The gold used to be a gradient with a lift and a glow on hover and
+     a brightness filter on top of that — four things happening on one press,
+     which read as the button flickering rather than responding. One solid
+     colour, one slightly lighter colour on hover, nothing else. */
+  .btn.primary{background:var(--gold);border-color:var(--gold);color:#1a1408}
+  .btn.primary:hover:not(:disabled){background:#e8c06a;border-color:#e8c06a;color:#1a1408}
+  .btn.primary:active:not(:disabled){background:var(--gold)}
+  .btn.danger{color:#dfa294;border-color:rgba(193,85,63,.4);background:rgba(193,85,63,.08)}
+  .btn.danger:hover:not(:disabled){background:rgba(193,85,63,.14);color:#e8b5a8}
+  .btn.ok{color:#a8bb92;border-color:rgba(127,160,90,.4);background:rgba(127,160,90,.08)}
+  .btn.ok:hover:not(:disabled){background:rgba(127,160,90,.14);color:#bccfa6}
+  .btn.sm{padding:7px 12px;font-size:12px}
+
+  .blank{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+    padding:52px 20px}
+  .blank .ei{width:52px;height:52px;display:grid;place-items:center;border-radius:15px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-dim)}
+  .blank .ei svg{width:23px;height:23px;stroke-width:1.7}
+  .blank h4{font-size:15.5px;font-weight:700;color:var(--parchment)}
+  .blank p{font-size:13px;color:var(--text-faint);max-width:48ch;line-height:1.65;
     text-wrap:pretty}
 
-  .qno{display:flex;align-items:flex-start;gap:13px;padding:16px 18px;border-radius:12px;
-    background:rgba(193,85,63,.07);border:1px solid rgba(193,85,63,.32)}
-  .qno .si{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
-    background:rgba(193,85,63,.1);border:1px solid rgba(193,85,63,.3);color:#d29b8d}
-  .qno .si svg{width:16px;height:16px;stroke-width:2}
-  .qno h4{font-size:14px;font-weight:700;color:#dfa294}
-  .qno p{font-size:13px;color:var(--text-faint);line-height:1.65;margin-top:5px;
-    max-width:62ch;text-wrap:pretty}
-  .qno .who{color:var(--parchment);font-weight:600}
+  /* ---- how an appeal works ----
+     The refusal state is the one most players see: the great majority have
+     nothing to appeal and arrive here to find out how it works, or because
+     something happened and they don't yet know what. A single red box
+     saying "you can't" answers a question they didn't ask and leaves them
+     going to Discord for the one they did.
 
-  .qmeta{display:flex;flex-direction:column}
-  .qmeta .row{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
-    padding:13px 0;font-size:13px}
-  .qmeta .row + .row{border-top:1px solid var(--rule)}
-  .qmeta .k{color:var(--text-faint);font-size:12.5px}
-  .qmeta .v{color:var(--parchment);font-weight:600;text-align:right}
-  .qmeta .v.off{color:var(--text-dim);font-weight:500}
+     So the page keeps the status line and then explains the process: the
+     four stages, what is and isn't appealable, and what an appeal has to
+     contain. All of it is true whether or not they can use it today. */
+  .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+  @media (max-width:1000px){ .flow{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:620px){ .flow{grid-template-columns:1fr} }
+
+  .stp{position:relative;padding:0 20px 4px 0}
+  .stp + .stp{padding-left:20px}
+  /* The rail runs behind the numbers and stops at the last one, so the
+     sequence reads as a track rather than four unrelated boxes. */
+  /* --rule is a divider inside a card and all but vanishes on this
+     background; the rail has to be readable as a track. */
+  .stp::before{content:'';position:absolute;left:0;right:0;top:15px;height:1px;
+    background:var(--charcoal-4);z-index:0}
+  .stp:first-child::before{left:15px}
+  .stp:last-child::before{right:auto;width:15px}
+  @media (max-width:1000px){
+    .stp:nth-child(2)::before{right:auto;width:15px}
+    .stp:nth-child(3)::before{left:15px}
+  }
+  @media (max-width:620px){ .stp::before{display:none} }
+
+  .stp .n{position:relative;z-index:1;width:30px;height:30px;display:grid;place-items:center;
+    border-radius:50%;background:var(--charcoal-2);border:1px solid var(--charcoal-4);
+    color:var(--text-faint);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stp.gold .n{background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.4);color:#e3bd72}
+  .stp h5{font-size:13.5px;font-weight:700;color:var(--parchment);margin-top:13px}
+  .stp p{font-size:12.5px;color:var(--text-faint);line-height:1.65;margin-top:7px;
+    text-wrap:pretty}
+
+  /* ---- what can and can't be appealed ---- */
+  .canlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px}
+  @media (max-width:760px){ .canlist{grid-template-columns:1fr} }
+  .canlist .col h5{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-dim);padding-bottom:11px}
+  .canrow{display:flex;align-items:flex-start;gap:11px;padding:11px 0;font-size:13px;
+    color:var(--parchment);line-height:1.5}
+  .canrow + .canrow{border-top:1px solid var(--rule)}
+  .canrow .m{flex:none;width:19px;height:19px;display:grid;place-items:center;border-radius:6px;
+    margin-top:1px}
+  .canrow .m svg{width:11px;height:11px;stroke-width:3}
+  .canrow.yes .m{background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.34);
+    color:#9fae8d}
+  .canrow.no .m{background:rgba(193,85,63,.11);border:1px solid rgba(193,85,63,.32);
+    color:#d29b8d}
+  .canrow.no{color:var(--text-faint)}
+  .canrow .s{display:block;font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.55;
+    font-weight:400}
+
+  .asks{display:flex;flex-direction:column}
+  .askrow{display:flex;gap:13px;padding:12px 0;font-size:13px;color:var(--text-faint);
+    line-height:1.6;text-wrap:pretty}
+  .askrow + .askrow{border-top:1px solid var(--rule)}
+  .askrow .qn{flex:none;width:22px;color:var(--text-dim);font-weight:800;font-size:12px;
+    font-variant-numeric:tabular-nums}
+  .askrow b{color:var(--parchment);font-weight:600}
+
+  /* When the appeal has no staff column the grid narrows; the bar above it
+     narrows to match, or a wide header sits over a narrow body. */
+  body.appeal-solo .lookbar{max-width:900px}
+
+  /* ---- the appeal is the widest view on this page ----
+     Two columns of dense fact beside a panel of controls. The site's usual
+     1180px left the staff column at 340, which is where "Concluded 21
+     minutes ago by testtest" broke onto three lines and the whole panel
+     read as squeezed. Only while an appeal is open — the queue and the
+     rules are prose and stay at the normal width. */
+  body.appeal-wide .content{max-width:1560px}
+  body.appeal-wide .apgrid{grid-template-columns:minmax(0,1fr) 400px}
+  @media (max-width:1320px){
+    body.appeal-wide .apgrid{grid-template-columns:1fr}
+  }
+  /* No staff column.
+     `body.appeal-wide .apgrid` is one specificity point heavier than
+     `.apgrid.solo`, so the wide rule was winning on the appellant's own
+     appeal too: a 400px staff column that has nothing in it, and their
+     appeal squeezed into whatever was left. Stated at the same weight as
+     the wide rule, and after it, so it wins.
+
+     Centred rather than left-aligned — one column of text hard against the
+     left edge of a wide page reads as a layout that failed to load. */
+  body.appeal-solo .content{max-width:1180px}
+  body.appeal-solo .apgrid{grid-template-columns:minmax(0,1fr);max-width:940px;margin:0 auto}
+  body.appeal-solo .lookbar{max-width:940px;margin-left:auto;margin-right:auto}
+
+  /* ---- one appeal ---- */
+  .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
+    color:var(--text-faint);text-decoration:none;transition:.14s}
+  .page-back:hover{color:var(--parchment)}
+  .page-back svg{width:16px;height:16px;flex:none;stroke-width:2}
+  .lookbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;
+    margin-bottom:20px;border-radius:12px;background:var(--charcoal-2);
+    border:1px solid var(--border-soft)}
+  .lookbar .grow{flex:1}
+  /* A class rule with display beats the browser's [hidden] rule, so an
+     element hidden with the attribute stays visible unless this is said.
+     That is how the staff-only "every visit is logged" badge ended up on
+     the appellant's own appeal. */
+  .lookro[hidden]{display:none}
+  .lookro{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;
+    letter-spacing:.02em;color:#e3bd72;background:rgba(226,182,92,.08);
+    border:1px solid rgba(226,182,92,.3);border-radius:100px;padding:5px 12px;white-space:nowrap}
+  .lookro svg{width:13px;height:13px;stroke-width:2.2;flex:none}
+
+  /* Two columns for staff, one for the appellant — the right-hand column is
+     entirely staff apparatus, so for a player there is nothing to put in it
+     and a 340px hole beside their own appeal reads as something missing. */
+  .apgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+  .apgrid.solo{grid-template-columns:minmax(0,1fr);max-width:900px}
+  @media (max-width:1180px){ .apgrid{grid-template-columns:1fr} }
+
+  .kv{display:flex;flex-direction:column;gap:0}
+  .kv .r{padding:12px 0;font-size:13px}
+  .kv .r + .r{border-top:1px solid var(--rule)}
+  .kv .k{font-size:12px;color:var(--text-dim);letter-spacing:.01em}
+  .kv .v{color:var(--parchment);font-weight:600;margin-top:4px;text-wrap:pretty}
+  .kv .v.soft{color:var(--text-faint);font-weight:500}
+
+  .ansq{padding:16px 0}
+  .ansq + .ansq{border-top:1px solid var(--rule)}
+  .ansq .n{font-size:13px;color:var(--text-faint);line-height:1.55;text-wrap:pretty}
+  .ansq .n b{color:var(--parchment);font-weight:700;margin-right:5px}
+  .ansq .a{margin-top:11px}
+  .ansq .a.text{font-size:13.5px;color:var(--parchment);line-height:1.75;white-space:pre-wrap;
+    padding:15px 17px;border-radius:11px;background:var(--charcoal);
+    border:1px solid var(--border);text-wrap:pretty}
+  .ansq .a.none{font-size:13px;color:var(--text-dim);font-style:italic}
+  .rochk{display:inline-flex;align-items:center;gap:9px;margin-right:16px;font-size:13px;
+    color:var(--text-dim)}
+  .rochk.on{color:var(--parchment);font-weight:600}
+  .rochk .bx{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--charcoal-4);
+    display:grid;place-items:center}
+  .rochk.on .bx{background:var(--gold);border-color:var(--gold)}
+  .rochk .bx svg{width:10px;height:10px;stroke-width:3.2;color:var(--charcoal-2);opacity:0}
+  .rochk.on .bx svg{opacity:1}
+
+  .evlist{display:flex;flex-direction:column;gap:8px}
+  .evitem{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border)}
+  .evitem .ic{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:8px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint)}
+  .evitem .ic svg{width:14px;height:14px;stroke-width:2}
+  .evitem .b{min-width:0;flex:1}
+  .evitem a{color:#cbb07a;font-size:13px;font-weight:600;word-break:break-all}
+  .evitem a:hover{text-decoration:underline}
+  .evitem .nt{font-size:12.5px;color:var(--text-faint);margin-top:4px;line-height:1.55}
+
+  /* ---- comments ---- */
+  .cm{border-radius:12px;border:1px solid var(--border);background:var(--charcoal);
+    overflow:hidden}
+  .cm + .cm{margin-top:11px}
+  .cm .h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 15px;
+    background:var(--charcoal-3);border-bottom:1px solid var(--border);font-size:12.5px;
+    color:var(--text-faint)}
+  .cm .h b{color:var(--parchment);font-weight:700}
+  .cm .h .when{margin-left:auto;color:var(--text-dim);font-size:12px}
+  .cm .body{padding:14px 16px;font-size:13.5px;color:var(--parchment);line-height:1.7;
+    white-space:pre-wrap;text-wrap:pretty}
+  .cm.staffonly{border-color:rgba(193,85,63,.3)}
+  .cm.staffonly .h{background:rgba(193,85,63,.09);border-bottom-color:rgba(193,85,63,.24)}
+  /* Named .ctag, not .tag.
+     The shell this page is built from already owns `.tag` — it is the badge
+     on a bulletin's image, and it is position:absolute. Reusing the name
+     lifted every comment's Staff / Staff only pill out of its comment and
+     stacked them all in the top-left corner of the page. */
+  .ctag{display:inline-flex;align-items:center;font-size:9.5px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:100px;
+    line-height:1.5;position:static}
+  .ctag.staff{color:#9fae8d;background:rgba(127,160,90,.12);border:1px solid rgba(127,160,90,.3)}
+  .ctag.only {color:#d29b8d;background:rgba(193,85,63,.12);border:1px solid rgba(193,85,63,.34)}
+
+  .composer{margin-top:16px}
+  .composer .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:11px}
+  .composer .row .grow{flex:1}
+
+  /* A switch, not a tick-box: which of the two audiences a comment is going
+     to is the single most consequential choice on this page, and it should
+     not look like a checkbox you skim past. */
+  .aud{display:inline-flex;border-radius:10px;border:1px solid var(--border);
+    background:var(--charcoal);overflow:hidden}
+  .aud button{padding:8px 14px;border:0;background:transparent;color:var(--text-dim);
+    font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.14s}
+  .aud button:hover{color:var(--parchment)}
+  .aud button.on{background:var(--charcoal-4);color:var(--parchment)}
+  .aud button.on[data-aud="staff"]{background:rgba(193,85,63,.16);color:#dfa294}
+
+  /* ---- the staff panel ---- */
+  .panelfield + .panelfield{margin-top:18px;padding-top:18px;border-top:1px solid var(--rule)}
+  .panelfield label{display:block;font-size:12px;font-weight:700;color:var(--text-dim);
+    letter-spacing:.02em;margin-bottom:9px}
+  .panelfield .go{display:flex;justify-content:flex-end;margin-top:10px}
+  .panelfield .hint{font-size:12px;color:var(--text-dim);line-height:1.6;margin-top:9px;
+    text-wrap:pretty}
+  .panelfield .hint.warn{color:#c9a06a}
+
+  .log{display:flex;flex-direction:column;max-height:520px;overflow:auto}
+  .logrow{display:flex;gap:11px;padding:11px 0;font-size:12.5px;color:var(--text-faint);
+    line-height:1.55}
+  .logrow + .logrow{border-top:1px solid var(--rule)}
+  .logrow .dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--charcoal-4);
+    margin-top:6px}
+  .logrow.act .dot{background:#c9a06a}
+  .logrow b{color:var(--parchment);font-weight:600}
+  .logrow .t{color:var(--text-dim);font-variant-numeric:tabular-nums}
+
+  /* ---- condensed ----
+     The appeal page ran to a screen and a half of air before the reply box.
+     Everything below tightens the rhythm without changing the type sizes:
+     a handler reads three of these in a row and should not have to scroll
+     each one twice. */
+  .card-b{padding:14px 22px 18px}
+  .kv .r{padding:10px 0}
+  .kv .v{margin-top:3px}
+  .ansq{padding:13px 0}
+  .ansq .a{margin-top:9px}
+  .ansq .a.text{padding:13px 15px;line-height:1.65}
+  .panelfield + .panelfield{margin-top:15px;padding-top:15px}
+  .panelfield .hint{margin-top:7px}
+  .logrow{padding:9px 0}
+  .cm .body{padding:12px 15px}
+  .apgrid{gap:18px}
+
+  /* The appellant's name in the card header, as a link to their record. */
+  .wholink{display:inline-flex;align-items:center;gap:6px;color:#cbb07a;font-weight:600}
+  .wholink:hover{color:var(--gold);text-decoration:underline}
+  .wholink svg{width:12px;height:12px;stroke-width:2.2;flex:none;opacity:.7}
+
+  /* A field somebody may read but not change. Reads as a value, not as a
+     disabled control they should keep trying to click. */
+  .panelfield .ro{font-size:13.5px;font-weight:600;color:var(--parchment);
+    padding:11px 14px;border-radius:11px;background:var(--charcoal);
+    border:1px solid var(--border)}
+
+  /* The two comments that settled the appeal: the verdict, and the overrule
+     that reversed it. Bordered rather than merely badged — on a long thread
+     the badge is the thing you're scanning for, and a tinted edge finds it
+     from the scrollbar. */
+  .ctag.verdict {color:#e3bd72;background:rgba(226,182,92,.11);border:1px solid rgba(226,182,92,.34)}
+  .ctag.overrule{color:#9fae8d;background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.36)}
+  .cm.is-verdict {border-color:rgba(226,182,92,.3)}
+  .cm.is-verdict .h{background:rgba(226,182,92,.07);border-bottom-color:rgba(226,182,92,.22)}
+  .cm.is-overrule{border-color:rgba(127,160,90,.32)}
+  .cm.is-overrule .h{background:rgba(127,160,90,.08);border-bottom-color:rgba(127,160,90,.24)}
+
+  /* Long unbroken strings — a pasted log line, a URL, or somebody leaning on
+     one key — have nothing to wrap at, so they ran straight out of the box.
+     pre-wrap keeps the author's line breaks; these let the browser break
+     mid-word when there is no other option. */
+  .ansq .a.text,
+  .cm .body{overflow-wrap:anywhere;word-break:break-word}
+
+  /* ---- past appeals ---- */
+  .hlist{display:flex;flex-direction:column;gap:8px}
+  .hrow{display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border);transition:.14s}
+  .hrow:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .hrow .hst{flex:none}
+  .hrow .hmain{flex:1;min-width:0}
+  .hrow .ht{display:block;font-size:13px;font-weight:600;color:var(--parchment)}
+  .hrow .hs{display:block;font-size:12px;color:var(--text-faint);margin-top:3px;
+    line-height:1.5;text-wrap:pretty}
+  .hrow .hgo{flex:none;color:var(--text-dim);display:grid;place-items:center}
+  .hrow .hgo svg{width:15px;height:15px;stroke-width:2.2}
+  .hrow:hover .hgo{color:var(--parchment)}
+
+  /* =====================================================================
+     STAFF REPORTS — the bits this page adds
+
+     Everything above is shared with Ban Appeals, because the two pages do
+     the same shape of work and a handler moving between them should not
+     have to relearn where anything is. What follows is only what a report
+     needs and an appeal doesn't: a staff picker, a wider question grid,
+     and a third view button.
+     ===================================================================== */
+
+  /* Three views, not two. At two the buttons are halves; at three they are
+     thirds, and below 900px they stack rather than leaving a runt. */
+  .qtabs.three{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:980px){ .qtabs.three{grid-template-columns:1fr} }
+
+  /* The form reuses the appeal form's controls; these are the aliases for
+     the two names this page uses for them. */
+  .inp{width:100%;font-family:inherit;font-size:13.5px;color:var(--parchment);
+    background:var(--charcoal);border:1px solid var(--border);border-radius:11px;
+    padding:12px 14px;transition:.14s}
+  .inp:focus{outline:none;border-color:rgba(226,182,92,.5);
+    box-shadow:0 0 0 3px rgba(226,182,92,.09)}
+  .inp:disabled{opacity:.5;cursor:not-allowed}
+  .inp::placeholder{color:var(--text-dim)}
+  .inp.sm{font-size:12.5px;padding:10px 13px}
+  .q > .qn{font-size:13.5px;color:var(--parchment);line-height:1.55;text-wrap:pretty}
+  .q > .qn b{font-weight:700;margin-right:5px}
+  .q .hint{font-size:12.5px;color:var(--text-dim);line-height:1.6;margin-top:8px;
+    text-wrap:pretty}
+
+  /* ---- the staff picker ----
+     A list, not a text box. Typing a name meant getting it exactly right,
+     and getting it wrong meant a report filed against nobody — which is a
+     report no one can be allocated and no one can answer. Grouped by group
+     because the reporter often knows the rank and not the spelling. */
+  .pickrow{display:flex;gap:10px;align-items:center}
+  .pickrow .sel{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+  .chip{display:inline-flex;align-items:center;gap:9px;padding:7px 8px 7px 13px;
+    border-radius:100px;background:var(--charcoal-3);border:1px solid var(--charcoal-4);
+    font-size:12.5px;color:var(--text-faint)}
+  .chip b{color:var(--parchment);font-weight:700}
+  .chip .cg{font-size:11px;color:var(--text-dim)}
+  .chip .cx{width:20px;height:20px;flex:none;display:grid;place-items:center;border-radius:50%;
+    border:0;background:transparent;color:var(--text-dim);cursor:pointer;transition:.14s}
+  .chip .cx:hover{color:#dfa294;background:rgba(193,85,63,.14)}
+  .chip .cx svg{width:11px;height:11px;stroke-width:2.6}
+  .chip-none{font-size:12.5px;color:var(--text-dim);font-style:italic}
+
+  /* Three short answers on one line. They are read together — when, how
+     often, and where — so they are asked together. */
+  .frow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media (max-width:820px){ .frow{grid-template-columns:1fr} }
+  .flab{display:block;font-size:11px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--stone);margin-bottom:7px}
+
+  /* ---- evidence rows ---- */
+  .evrow .ic{width:32px;height:41px;flex:none;display:grid;place-items:center;
+    color:var(--text-dim)}
+  .evrow .ic svg{width:15px;height:15px;stroke-width:2}
+  .evrow .eb{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+  .btn.icon{flex:none;width:38px;height:41px;padding:0}
+  .btn.icon svg{width:15px;height:15px;stroke-width:2}
+
+  .formfoot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;
+    margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
+
+  /* The opening comment and the decision are marked in the thread. Both
+     read differently from an ordinary reply: "we are looking at this" in
+     the middle of a thread is a remark, and the same words marked as the
+     opening comment are the acknowledgement the reporter was waiting for. */
+  .ctag.mark{color:#e3bd72;background:rgba(226,182,92,.11);
+    border:1px solid rgba(226,182,92,.34)}
+  .cm.marked{border-color:rgba(226,182,92,.3)}
+
+  /* ---- the queue ---- */
+  .qtable td.who .subline{display:block;font-size:11.5px;color:var(--text-dim);
+    font-weight:500;margin-top:3px}
+  .sec-h .n .grp{color:var(--tone-text);font-weight:700}
+  /* A plain checkbox with a label beside it. `.chk` is the big pill the
+     appeal form uses for "where were you banned" — a single yes/no beside
+     a textarea is not that, and borrowing it made a note-to-self look like
+     the primary action of the card. */
+  .chkline{display:inline-flex;align-items:center;gap:9px;margin-top:10px;
+    font-size:12.5px;color:var(--text-faint);cursor:pointer;user-select:none}
+  .chkline input{width:15px;height:15px;accent-color:var(--gold);cursor:pointer}
+  .chkline:hover{color:var(--parchment)}
+  .card-lede + .card-lede{margin-top:11px}
+  /* A row in the queue that names the person reading it. Only Management
+     and Founders ever see one, and it is the single most important thing
+     about that row — so it is said on the row, not left to be discovered
+     after they open it. */
+  .youtag{display:inline-block;margin-left:9px;font-size:9.5px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;padding:2px 8px;border-radius:100px;
+    color:#dfa294;background:rgba(193,85,63,.12);border:1px solid rgba(193,85,63,.34);
+    vertical-align:middle}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
@@ -615,12 +1320,15 @@
     </header>
 
     <main class="content">
-
-      <div class="qhead">
+      <div class="ahead">
         <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 21V4h13l-2.5 4L18 12H5"/></svg></span>
-        <div>
+        <div class="tx">
           <h1>Staff Reports</h1>
-          <p>A report about the conduct of a member of staff, handled away from the staff team it concerns.</p>
+          <!-- Says who handles it and, more usefully, who does NOT: the single
+               most common reason people don't report a staff member is not
+               knowing whether that person will read it. -->
+          <p>A report about the conduct of a member of staff, read by Staff Management and the
+            Management Team — never by the person it is about.</p>
         </div>
       </div>
 
@@ -629,7 +1337,6 @@
 
     </main>
   </div>
-
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
 <script src="/assets/js/ucp.js?v=2.5.1"></script>
@@ -670,10 +1377,11 @@
     /* One page decides which view you get — a sub-menu would be two clicks
        to the same place. */
     {label:'Ban Appeals',icon:'gavel',href:'/dashboard/appeals'},
-    {label:'Staff Reports',icon:'flag',children:[
-      {label:'Submit a Staff Report',href:'/dashboard/reports#submit'},
-      {label:'Staff Report Panel',href:'/dashboard/reports#panel',min:8,team:'staff_management'},
-    ]},
+    /* One button, like Ban Appeals. The page behind it already offers the
+       three views as half-page buttons, and a sub-menu was two clicks to
+       the same place — plus a second copy of the panel's rank gate to keep
+       in step with api/_queues.php. */
+    {label:'Staff Reports',icon:'flag',href:'/dashboard/reports'},
     {label:'Asset Transfers',icon:'swap',children:[
       {label:'Submit an Asset Transfer',href:'/dashboard/transfers#submit'},
       {label:'My Asset Transfers',href:'/dashboard/transfers#mine'},
@@ -754,148 +1462,1148 @@
   /* =====================================================================
      STAFF REPORTS
 
-     Three things this page will not do:
+     Three views behind one page, chosen by the hash so the sidebar can
+     link to any of them:
 
-       - draw a form that cannot submit,
-       - draw an empty list that reads as "you have none",
-       - decide for itself who may open the staff panel.
+       #submit   what a report is for, then the form   — everyone
+       #mine     what I have reported before           — everyone
+       #panel    the queue                             — Management, Founders,
+                                                         Staff Management
 
-     The last one matters most. api/queues.php answers it, this page asks,
-     and when the answer is no it says who the view IS for rather than
-     pretending the link was never there. Somebody who typed the URL
-     deserves a sentence, not a blank page.
+     A fourth view — one report — is reached with ?id=123 rather than being
+     a page of its own, exactly as an appeal is. Everything about staff
+     reports lives in this file, so the next thing added has one obvious
+     place to go.
+
+     Which views exist for the person looking is decided by
+     api/queues.php, not by this file reading a rank. The endpoints check
+     again on every request regardless; nothing here is a permission.
      ===================================================================== */
-  var AREA  = "reports";
   var VIEWS = [
-  {
-    "key": "submit",
-    "label": "Submit a Staff Report",
-    "what": "Report a member of staff.",
-    "steps": [
-      "Who, and when.",
-      "What happened, in your words.",
-      "Evidence — a clip or screenshot carries far more weight than a description."
-    ],
-    "after": "It goes straight to Staff Management. No administrator can see a report about themselves, or about the team they sit in."
-  },
-  {
-    "key": "panel",
-    "label": "Staff Report Panel",
-    "what": "Reports about staff, and what was done about them.",
-    "steps": [
-      "Open a report, read the evidence, and see what else has been said about that person.",
-      "Record an outcome, whether that is no action, a word, or something heavier.",
-      "The reporter is told it was dealt with — never who dealt with it."
-    ],
-    "after": "Management, the Founder, or anyone holding Staff Management. A report about a member of staff cannot be visible to the staff being reported on — the same rule Administrative Search follows."
-  }
-];
-  var STATE = null;                      // api/queues.php, for this area
-  var VIEW  = VIEWS[0].key;
+    { key:'submit', label:'Submit a Staff Report', icon:'pen',
+      note:'Report the conduct of a member of staff.' },
+    { key:'mine',   label:'My Staff Reports', icon:'doc',
+      note:'What you have reported, and what was decided.' },
+    { key:'panel',  label:'Staff Report Panel', icon:'shield', staff:true,
+      note:'Triage, allocate and decide reports about staff.' }
+  ];
+  var VIEW = 'submit', GATE = null, OPTS = null;
 
-  function vBy(k){ for(var i=0;i<VIEWS.length;i++) if(VIEWS[i].key === k) return VIEWS[i]; return null; }
+  var ID = parseInt(new URLSearchParams(location.search).get('id') || '0', 10) || 0;
 
-  var QI = {
+  var AI = {
     lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
-    build:'<path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.3-2.3z"/>',
-    chev:'<path d="M9 6l6 6-6 6"/>'
+    warn:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    tick:'<path d="M20 6L9 17l-5-5"/>',
+    x:'<path d="M6 6l12 12M18 6L6 18"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    open:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    chev:'<path d="M9 6l6 6-6 6"/>',
+    shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9.5 12l2 2 3.5-4"/>',
+    doc:'<path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5"/>',
+    link:'<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
+    msg:'<path d="M4 5h16v11H8l-4 3z"/>',
+    flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
   };
-  function qsvg(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+QI[n]+'</svg>'; }
+  function ai(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+AI[n]+'</svg>'; }
 
-  /* ---- the view switcher ----
-     Rebuilt whenever the server answer lands, because a view the caller may
-     not open is not drawn as a disabled tab — it is not a tab. The tab bar
-     is navigation; the refusal belongs on the page they asked for, where it
-     can explain itself. */
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function stamp(ts){
+    if(!ts) return '—';
+    var d = new Date(ts*1000), p = function(x){ return String(x).padStart(2,'0'); };
+    return MON[d.getUTCMonth()]+' '+p(d.getUTCDate())+', '+d.getUTCFullYear()+
+           ' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes());
+  }
+  function stampEsc(ts){ return escapeHtml(stamp(ts)); }
+  function ago(ts){
+    if(!ts) return '—';
+    if(window.UCP && UCP.relTime) return UCP.relTime(ts);
+    return stamp(ts);
+  }
+  function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+
+  /* ---- tabs ---------------------------------------------------------- */
   function renderTabs(){
     var host = document.getElementById('qtabs');
-    host.innerHTML = VIEWS.filter(function(v){
-      var st = STATE && STATE.views ? STATE.views[v.key] : null;
-      return !st || st.may || v.key === VIEW;      // keep the one being refused
-    }).map(function(v){
-      var st = STATE && STATE.views ? STATE.views[v.key] : null;
-      var no = st && !st.may;
-      return '<button class="qtab" role="tab" data-view="'+v.key+'" '+
-             'aria-selected="'+(v.key === VIEW ? 'true' : 'false')+'">'+
-             (no ? '<span class="lk">'+qsvg('lock')+'</span>' : '') +
-             escapeHtml(v.label)+'</button>';
+
+    var shown = VIEWS.filter(function(v){
+      var st = GATE && GATE.views ? GATE.views[v.key] : null;
+      return !st || st.may;
+    });
+    if(!shown.length) shown = [VIEWS[0]];
+
+    host.className = 'qtabs' + (shown.length === 1 ? ' solo' : '') +
+                     (shown.length === 3 ? ' three' : '');
+    host.innerHTML = shown.map(function(v){
+      var on = v.key === VIEW;
+      return '<button class="qtab'+(v.staff && !on ? ' staff' : '')+'" role="tab" '+
+             'data-view="'+v.key+'" aria-selected="'+(on?'true':'false')+'">'+
+               '<span class="ai">'+ai(v.icon)+'</span>'+
+               '<span class="at">'+
+                 '<span class="an">'+escapeHtml(v.label)+
+                   (v.staff ? '<span class="smark">Staff</span>' : '')+'</span>'+
+                 '<span class="ad">'+escapeHtml(v.note)+'</span>'+
+               '</span>'+
+             '</button>';
     }).join('');
     Array.prototype.forEach.call(host.querySelectorAll('[data-view]'), function(b){
       b.addEventListener('click', function(){ go(b.getAttribute('data-view'), true); });
     });
   }
 
-  function renderView(){
-    var v = vBy(VIEW), host = document.getElementById('qbody');
-    if(!v) return;
-    document.querySelector('.page-title h1').textContent = v.label;
-    document.title = 'BlaineSide \u2014 ' + v.label;
+  function refused(label, why){
+    return '<div class="card"><div class="card-b">'+
+      '<div class="note-a bad"><span class="si">'+ai('lock')+'</span><div>'+
+        '<h4>'+escapeHtml(label)+' isn’t open to you</h4>'+
+        '<p>'+escapeHtml(why||'')+'</p>'+
+        '<p>If you think that is wrong, speak to Staff Management rather than the '+
+        'administrator who sent you here.</p></div></div></div></div>';
+  }
 
-    var st = STATE && STATE.views ? STATE.views[v.key] : null;
+  /* =====================================================================
+     WHAT A STAFF REPORT IS
 
-    /* Refused. Say who it is for, in the server's words — the page does not
-       get to invent a rule the endpoint doesn't have. */
-    if(st && !st.may){
-      host.innerHTML =
-        '<div class="card"><div class="card-b" style="padding-top:18px">' +
-          '<div class="qno"><span class="si">'+qsvg('lock')+'</span><div>' +
-            '<h4>'+escapeHtml(v.label)+' isn\u2019t open to you</h4>' +
-            '<p>'+escapeHtml(st.why || '')+'</p>' +
-            '<p>If you think that is wrong, speak to Staff Management rather than the ' +
-            'administrator who sent you here.</p>' +
-          '</div></div>' +
-        '</div></div>';
+     The information panel, and it is not decoration. Most reports that
+     waste Staff Management's time are one of four things: a decision the
+     reporter never raised with the person who made it, a ban appeal filed
+     in the wrong queue, a report filed on somebody else's behalf, or a
+     report with nothing attached. All four are cheap to prevent here and
+     expensive to unpick afterwards, so this comes before the form and the
+     form does not exist until it has been read.
+     ===================================================================== */
+  var AGREED = false;
+
+  function infoHTML(){
+    var cats = [
+      ['Misconduct Report', 'Conduct not up to the standards of the server. Also a broken '+
+        'server rule, a broken staff policy, or anything that would be considered illegal.'],
+      ['Punishment Appeal', 'A punishment being appealed to be reduced — admin jail down to a '+
+        'warning — or removed because the record is not up to standard.'],
+      ['Subteam Report', 'Only about duties performed inside a sub-team. These are handed to '+
+        'the sub-team leader or the line manager.'],
+      ['Rejected Report', 'Outside these guidelines, spam, backseat moderation, or filed on '+
+        'somebody else’s behalf. Rejected reports are not reviewed.']
+    ];
+    return '<div class="card"><div class="card-h"><h3>Staff Report Information</h3></div>'+
+      '<div class="card-b">'+
+      '<p class="card-lede">Staff Reports are handled by the Staff Management Team and the '+
+        'Management Team. We take all staff reports seriously, and we hold our staff to the '+
+        'highest standards.</p>'+
+      '<p class="card-lede">Once the report reaches us it is placed under review. Within the '+
+        'first 24–48 hours it is put into one of these categories:</p>'+
+      '<div class="asks">'+ cats.map(function(c){
+        return '<div class="askrow"><span class="qn">'+ai('flag')+'</span><span>'+
+          '<b>'+escapeHtml(c[0])+'</b><br>'+escapeHtml(c[1])+'</span></div>';
+      }).join('') +'</div>'+
+      '<div class="fieldnote" style="margin-top:14px">Staff Management aim to conclude every '+
+      'report in reasonable time, but the people involved make some slower than others. If you '+
+      'have heard nothing for a week, speak to a member of Staff Management directly.</div>'+
+      '</div></div>';
+  }
+
+  function whenHTML(){
+    var when = [
+      'They break a rule — in game, on the forums, or on Discord.',
+      'They make a decision involving you that you disagree with. Speak to them first unless '+
+        'you believe it is direct misconduct; if you can’t resolve it, report it here.',
+      'If it is about a ban, the ban appeal must be made and concluded before this comes to '+
+        'Staff Management.',
+      'They are abusive or disrespectful towards you.',
+      'Any other misconduct not listed here.'
+    ];
+    var need = [
+      'The staff member, or members, you are reporting.',
+      'Anyone else involved, and the names of any witnesses.',
+      'The date and time, accurate to server time.',
+      'Whether it happened once or is still happening.',
+      'A chatlog, screenshot or recording. Evidence carries far more weight than a description.',
+      'What happened, and what you want done about it.'
+    ];
+    return '<div class="card"><div class="card-h"><h3>Before you send it</h3></div>'+
+      '<div class="card-b">'+
+      '<p class="card-lede">A staff report can be made when a member of staff:</p>'+
+      '<div class="asks">'+ when.map(function(t,i){
+        return '<div class="askrow"><span class="qn">'+(i+1)+'</span><span>'+escapeHtml(t)+
+               '</span></div>'; }).join('') +'</div>'+
+      '<p class="card-lede" style="margin-top:18px">Have all of this ready. Anything missing '+
+        'delays the report, or gets it rejected for not carrying enough to act on:</p>'+
+      '<div class="asks">'+ need.map(function(t){
+        return '<div class="askrow"><span class="qn">'+ai('tick')+'</span><span>'+
+               escapeHtml(t)+'</span></div>'; }).join('') +'</div>'+
+      '</div></div>';
+  }
+
+  /* ---- the gate: read it, then the form appears ---- */
+  function gateHTML(){
+    return infoHTML() + whenHTML() +
+      '<div class="card"><div class="card-b">'+
+        '<div class="note-a"><span class="si">'+ai('info')+'</span><div>'+
+          '<h4>Ready?</h4>'+
+          '<p>A report can’t be edited once it is sent — anything you think of afterwards goes '+
+          'in a comment on the report itself, where it is timestamped rather than quietly '+
+          'folded into what you originally wrote.</p>'+
+          '<div class="acts"><button class="btn primary" id="begin">'+ai('pen')+
+          'Begin Report</button></div>'+
+        '</div></div>'+
+      '</div></div>';
+  }
+
+  /* =====================================================================
+     THE FORM
+     ===================================================================== */
+  var PICKED = [];      // account ids of the staff being reported
+  var EVN = 0;
+
+  function staffPickerHTML(){
+    var groups = [], seen = {};
+    (OPTS.staff||[]).forEach(function(s){
+      if(!seen[s.group]){ seen[s.group] = []; groups.push(s.group); }
+      seen[s.group].push(s);
+    });
+    var opts = groups.map(function(g){
+      return '<optgroup label="'+escapeHtml(g)+'">'+ seen[g].map(function(s){
+        return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>';
+      }).join('') +'</optgroup>';
+    }).join('');
+
+    return '<div class="q"><div class="qn"><b>2.</b>Which member of staff is this about?</div>'+
+      '<div class="qbody">'+
+        (opts
+          ? '<div class="pickrow">'+
+              '<select class="sel" id="staffSel"><option value="">Choose a staff member…'+
+              '</option>'+opts+'</select>'+
+              '<button class="btn sm" type="button" id="staffAdd">'+ai('plus')+'Add</button>'+
+            '</div>'+
+            '<div class="chips" id="chips"></div>'+
+            '<div class="hint">Name everyone the report is actually about — up to '+
+            (OPTS.limits.staff_max)+'. Two administrators in the same situation is one '+
+            'report, not two.</div>'
+          : '<div class="fieldnote bad">There are no staff accounts to report. That is almost '+
+            'certainly a fault rather than good news — tell a Founder.</div>')+
+      '</div></div>';
+  }
+
+  function formHTML(){
+    var chans = (OPTS.channels||[]).map(function(c){
+      return '<option value="'+escapeHtml(c.key)+'">'+escapeHtml(c.label)+'</option>';
+    }).join('');
+    var freqs = (OPTS.frequencies||[]).map(function(f){
+      return '<option value="'+escapeHtml(f.key)+'">'+escapeHtml(f.label)+'</option>';
+    }).join('');
+
+    return '<div class="card"><div class="card-h"><h3>Staff Report</h3>'+
+      '<span class="aside">Sent to Staff Management</span></div><div class="card-b">'+
+
+      '<div class="q"><div class="qn"><b>1.</b>Title</div>'+
+        '<div class="qbody"><input class="inp" id="title" maxlength="'+OPTS.limits.title_max+'" '+
+        'placeholder="What the report is about, in one line"></div></div>'+
+
+      staffPickerHTML() +
+
+      '<div class="q"><div class="qn"><b>3.</b>When and where did this happen?</div>'+
+        '<div class="qbody"><div class="frow">'+
+          '<div><label class="flab" for="when">Date and time (server time, UTC)</label>'+
+            '<input class="inp" type="datetime-local" id="when"></div>'+
+          '<div><label class="flab" for="freq">Once, or ongoing?</label>'+
+            '<select class="sel" id="freq">'+freqs+'</select></div>'+
+          '<div><label class="flab" for="chan">Where</label>'+
+            '<select class="sel" id="chan">'+chans+'</select></div>'+
+        '</div>'+
+        '<div class="hint" id="whenHint">The clock at the top of this page is server time. '+
+        'An ongoing pattern doesn’t need an exact moment — pick roughly when it started.</div>'+
+        '</div></div>'+
+
+      '<div class="q"><div class="qn"><b>4.</b>Character</div>'+
+        '<div class="qbody"><select class="sel" disabled><option>Characters aren’t linked to '+
+        'the UCP yet</option></select>'+
+        '<div class="hint">This fills in when the game server is connected. Until then, put '+
+        'the character name in the report itself.</div></div></div>'+
+
+      '<div class="q"><div class="qn"><b>5.</b>Anyone else involved, or any witnesses</div>'+
+        '<div class="qbody"><input class="inp" id="wit" maxlength="255" '+
+        'placeholder="John Doe, Jane Doe"></div></div>'+
+
+      '<div class="q"><div class="qn"><b>6.</b>What happened?</div>'+
+        '<div class="qbody"><textarea class="ta" id="body" maxlength="'+OPTS.limits.body_max+'" '+
+        'placeholder="In order, in your own words. Times, names, and what was said."></textarea>'+
+        '<div class="hint"><span class="counter" id="bodyCount">0</span> characters. At least '+
+        OPTS.limits.body_min+'.</div></div></div>'+
+
+      '<div class="q"><div class="qn"><b>7.</b>What do you want to happen?</div>'+
+        '<div class="qbody"><textarea class="ta" id="want" maxlength="'+OPTS.limits.want_max+'" '+
+        'style="min-height:96px" placeholder="An apology, a decision reversed, the record '+
+        'corrected — say what would settle this."></textarea>'+
+        '<div class="hint">A report with no asked-for outcome leaves Staff Management guessing '+
+        'what would settle it.</div></div></div>'+
+
+      '<div class="q"><div class="qn"><b>8.</b>Evidence</div>'+
+        '<div class="qbody" id="evs"></div>'+
+        '<div class="qbody"><button class="btn sm" type="button" id="evAdd">'+ai('plus')+
+        'Add a link</button>'+
+        '<div class="hint">Links only — screenshots, recordings, chatlogs or a forum post. '+
+        'Upload the file somewhere first and paste the link. Evidence carries far more weight '+
+        'than a description of it.</div></div></div>'+
+
+      '<div class="fieldnote" style="margin-top:18px">By sending this you confirm the '+
+      'information is accurate to the best of your knowledge and that the evidence is of what '+
+      'actually happened, rather than recreated or edited. Knowingly submitting false '+
+      'information to Staff Management can itself be acted on.</div>'+
+      '<div class="fieldnote">The contents of this report and its evidence may be shown to '+
+      'Management and to the staff member while it is looked into. Nobody is prejudiced for '+
+      'making a report, and that protection is the point of the queue.</div>'+
+      '<div class="fieldnote">A report can’t be edited once it is sent. Anything further goes '+
+      'in a comment on the report.</div>'+
+
+      '<div class="formfoot">'+
+        '<button class="btn" type="button" id="back">Back</button>'+
+        '<button class="btn primary" type="button" id="send">'+ai('flag')+
+        'Submit Report</button>'+
+      '</div>'+
+      '</div></div>';
+  }
+
+  function chipsHTML(){
+    if(!PICKED.length) return '<div class="chip-none">Nobody named yet.</div>';
+    var by = {};
+    (OPTS.staff||[]).forEach(function(s){ by[s.id] = s; });
+    return PICKED.map(function(id){
+      var s = by[id]; if(!s) return '';
+      return '<span class="chip"><b>'+escapeHtml(s.name)+'</b>'+
+        '<span class="cg">'+escapeHtml(s.group)+'</span>'+
+        '<button type="button" class="cx" data-drop="'+id+'" aria-label="Remove">'+
+        ai('x')+'</button></span>';
+    }).join('');
+  }
+
+  function paintChips(){
+    var host = document.getElementById('chips');
+    if(!host) return;
+    host.innerHTML = chipsHTML();
+    Array.prototype.forEach.call(host.querySelectorAll('[data-drop]'), function(b){
+      b.addEventListener('click', function(){
+        var id = parseInt(b.getAttribute('data-drop'), 10);
+        PICKED = PICKED.filter(function(x){ return x !== id; });
+        paintChips();
+      });
+    });
+  }
+
+  function evRow(){
+    var i = ++EVN;
+    return '<div class="evrow" data-ev="'+i+'">'+
+      '<span class="ic">'+ai('link')+'</span>'+
+      '<div class="eb">'+
+        '<input class="inp" data-url placeholder="https://…">'+
+        '<input class="inp sm" data-note maxlength="190" '+
+        'placeholder="What this shows (optional)">'+
+      '</div>'+
+      '<button class="btn icon" type="button" data-evdrop aria-label="Remove">'+ai('x')+
+      '</button></div>';
+  }
+
+  function wireGate(){
+    var b = document.getElementById('begin');
+    if(b) b.addEventListener('click', function(){
+      AGREED = true; renderSubmit();
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  }
+
+  function wireForm(){
+    paintChips();
+
+    var sel = document.getElementById('staffSel'), add = document.getElementById('staffAdd');
+    if(add) add.addEventListener('click', function(){
+      var id = parseInt(sel.value, 10);
+      if(!id) return;
+      if(PICKED.indexOf(id) > -1){ toast('Already named.'); return; }
+      if(PICKED.length >= OPTS.limits.staff_max){
+        toast('That is as many as one report can name.'); return;
+      }
+      PICKED.push(id); sel.value = ''; paintChips();
+    });
+
+    var body = document.getElementById('body'), count = document.getElementById('bodyCount');
+    if(body) body.addEventListener('input', function(){
+      count.textContent = body.value.length;
+      count.className = 'counter' + (body.value.length < OPTS.limits.body_min ? ' low' : '');
+    });
+
+    /* An ongoing pattern has no single moment, so the date stops being
+       required the second they say so — and says which it is rather than
+       silently accepting a blank. */
+    var freq = document.getElementById('freq'), hint = document.getElementById('whenHint');
+    function freqSaid(){
+      if(!freq) return;
+      hint.textContent = freq.value === 'continuous'
+        ? 'Roughly when it started is enough for an ongoing pattern. The clock at the top of '+
+          'this page is server time.'
+        : 'Required for a one-off. The clock at the top of this page is server time.';
+    }
+    if(freq) freq.addEventListener('change', freqSaid);
+    freqSaid();
+
+    var evs = document.getElementById('evs');
+    function addEv(){
+      evs.insertAdjacentHTML('beforeend', evRow());
+      var row = evs.lastElementChild;
+      row.querySelector('[data-evdrop]').addEventListener('click', function(){ row.remove(); });
+    }
+    document.getElementById('evAdd').addEventListener('click', function(){
+      if(evs.children.length >= OPTS.limits.evidence_max){
+        toast('That is as much evidence as one report can carry.'); return;
+      }
+      addEv();
+    });
+    addEv();
+
+    document.getElementById('back').addEventListener('click', function(){
+      AGREED = false; renderSubmit(); window.scrollTo({top:0, behavior:'smooth'});
+    });
+
+    document.getElementById('send').addEventListener('click', function(){
+      var btn = this;
+      var when = document.getElementById('when').value;
+      var payload = {
+        title:  document.getElementById('title').value.trim(),
+        staff:  PICKED,
+        channel: document.getElementById('chan').value,
+        frequency: freq.value,
+        /* datetime-local has no timezone, and the label says server time —
+           so it is read AS UTC rather than as the reader's own clock, which
+           is what makes "accurate to server time" true rather than a hope. */
+        incident_at: when ? Math.floor(Date.parse(when + ':00Z') / 1000) : '',
+        witnesses: document.getElementById('wit').value.trim(),
+        body: document.getElementById('body').value.trim(),
+        outcome_wanted: document.getElementById('want').value.trim(),
+        evidence: Array.prototype.map.call(
+          document.querySelectorAll('#evs .evrow'), function(r){
+            return { url: r.querySelector('[data-url]').value.trim(),
+                     note: r.querySelector('[data-note]').value.trim() };
+          }).filter(function(e){ return e.url !== ''; })
+      };
+
+      btn.disabled = true;
+      UCP.post('report-submit.php', payload).then(function(res){
+        var d = res && res.data ? res.data : {};
+        if(!(d && d.ok)){ btn.disabled = false; toast(d.error || 'That didn’t send.'); return; }
+        window.location.href = '/dashboard/reports?id=' + d.id;
+      }).catch(function(){ btn.disabled = false; toast('Could not reach the server'); });
+    });
+  }
+
+  function renderSubmit(){
+    var host = document.getElementById('qbody');
+    if(!OPTS){ host.innerHTML = ''; return; }
+
+    if(!OPTS.may){
+      host.innerHTML = '<div class="card"><div class="card-b">'+
+        '<div class="note-a"><span class="si">'+ai('info')+'</span><div>'+
+          '<h4>You can’t send another report yet</h4>'+
+          '<p>'+escapeHtml(OPTS.why || '')+'</p>'+
+          '<div class="acts"><a class="btn primary" href="/dashboard/reports#mine">'+
+          ai('doc')+'See your reports</a></div>'+
+        '</div></div></div></div>' + infoHTML();
       return;
     }
 
-    var steps = v.steps.map(function(t, i){
-      return '<li><span class="n">'+(i+1)+'</span><span>'+escapeHtml(t)+'</span></li>';
+    host.innerHTML = AGREED ? formHTML() : gateHTML();
+    if(AGREED) wireForm(); else wireGate();
+  }
+
+  /* =====================================================================
+     MY STAFF REPORTS
+
+     An index, not a thread. Status, when, who it was about, and a link.
+     For the reporter this is the answer to "what did they say last time",
+     which is the commonest reason the same report arrives twice.
+     ===================================================================== */
+  var MINE = null;
+
+  function statusPill(s){
+    var label = s === 'pending' ? 'Under review' : cap(s);
+    return '<span class="pill '+(s === 'pending' ? 'pending'
+           : (s === 'rejected' ? 'rejected' : 'accepted'))+'">'+escapeHtml(label)+'</span>';
+  }
+
+  function renderMine(){
+    var host = document.getElementById('qbody');
+    if(!MINE){ host.innerHTML = ''; return; }
+
+    if(!MINE.reports.length){
+      host.innerHTML = '<div class="card"><div class="card-h"><h3>Your staff reports</h3></div>'+
+        '<div class="card-b"><div class="note-a"><span class="si">'+ai('info')+'</span><div>'+
+        '<h4>You haven’t reported anybody</h4>'+
+        '<p>Which is the ordinary state of affairs. If something has happened, the form is one '+
+        'click away and Staff Management read every report that arrives.</p>'+
+        '<div class="acts"><a class="btn primary" href="/dashboard/reports#submit">'+
+        ai('pen')+'Submit a Staff Report</a></div>'+
+        '</div></div></div></div>';
+      return;
+    }
+
+    var rows = MINE.reports.map(function(r){
+      return '<a class="hrow" href="/dashboard/reports?id='+r.id+'">'+
+        '<span class="hst">'+statusPill(r.status)+'</span>'+
+        '<span class="hmain">'+
+          '<span class="ht">'+escapeHtml(r.title)+'</span>'+
+          '<span class="hs">'+
+            (r.staff.length ? 'About '+escapeHtml(r.staff.join(', '))+' · ' : '')+
+            'Sent '+escapeHtml(stamp(r.created))+' UTC'+
+            (r.concluded ? ' · decided '+escapeHtml(ago(r.concluded)) : ' · still open')+
+            (r.category ? ' · '+escapeHtml(r.category) : '')+
+            (r.outcome ? ' · '+escapeHtml(r.outcome) : '')+
+          '</span>'+
+        '</span>'+
+        '<span class="hgo">'+ai('chev')+'</span>'+
+      '</a>';
     }).join('');
 
-    host.innerHTML =
-      '<div class="qgrid">' +
-        '<div class="card"><div class="card-h"><h3>'+escapeHtml(v.label)+'</h3></div>' +
-          '<div class="card-b">' +
-            '<p class="qwhat">'+escapeHtml(v.what)+'</p>' +
-            '<ul class="qsteps">'+steps+'</ul>' +
-            '<div class="qafter">'+escapeHtml(v.after)+'</div>' +
-          '</div></div>' +
-        '<div>' +
-          '<div class="qstate"><span class="si">'+qsvg('build')+'</span><div>' +
-            '<h4>Not switched on yet</h4>' +
-            '<p>'+escapeHtml((STATE && STATE.why) || 'This isn\u2019t switched on yet.')+' ' +
-            'Nothing is stored and nothing is sent from this page. Until it opens, ' +
-            'raise it with staff the way you do now.</p>' +
-          '</div></div>' +
-          '<div class="card" style="margin-top:20px"><div class="card-h"><h3>Who this is for</h3></div>' +
-            '<div class="card-b"><div class="qmeta">'+
-              VIEWS.map(function(x){
-                var s2 = STATE && STATE.views ? STATE.views[x.key] : null;
-                var may = !s2 || s2.may;
-                return '<div class="row"><span class="k">'+escapeHtml(x.label)+'</span>' +
-                       '<span class="v'+(may ? '' : ' off')+'">'+(may ? 'You' : 'Not you')+'</span></div>';
-              }).join('') +
-            '</div></div></div>' +
-        '</div>' +
-      '</div>';
+    host.innerHTML = '<div class="card"><div class="card-h"><h3>Your staff reports</h3>'+
+      '<span class="aside">'+MINE.reports.length+
+      (MINE.reports.length === 1 ? ' report' : ' reports')+'</span></div>'+
+      '<div class="card-b">'+
+        '<p class="card-lede" style="margin-bottom:10px">Everything you have reported, and '+
+        'what was decided. Open one to read the reason again, or to add something you '+
+        'forgot.</p>'+
+        '<div class="hlist">'+rows+'</div>'+
+      '</div></div>';
   }
 
-  /* The hash IS the view: the sidebar links to /dashboard/reports#panel, so
-     arriving, switching tabs and using the back button all go through one
-     path rather than three that can disagree. */
-  function go(key, push){
-    if(!vBy(key)) key = VIEWS[0].key;
-    VIEW = key;
-    if(push && history.replaceState) history.replaceState(null, '', location.pathname + '#' + key);
-    renderTabs(); renderView();
+  /* =====================================================================
+     THE PANEL
+
+     Reports naming the person looking are not in this list, in any tab, in
+     any count. That is done on the server — see api/reports.php — because
+     a filter applied here would be one view-source away from being no
+     filter at all.
+     ===================================================================== */
+  var Q = { tab:'untriaged', q:'', page:1, per:10 }, QDATA = null, QTIMER = null;
+
+  function renderPanel(){
+    var host = document.getElementById('qbody');
+
+    if(!QDATA){
+      host.innerHTML = '<div class="card"><div class="card-b">'+
+        '<div class="fieldnote" style="margin-top:14px">Loading the queue…</div>'+
+        '</div></div>';
+      return;
+    }
+    var d = QDATA;
+
+    /* The filter strip has its own class. `.qtabs` above the page is the
+       three half-page view buttons; sharing the name would turn
+       "Untriaged 3 · Not allocated 4" into a grid of cards. */
+    var tabs = d.tabs.map(function(t){
+      return '<button class="qtab" data-qtab="'+t.key+'" aria-selected="'+
+        (t.key === d.tab ? 'true' : 'false')+'">'+escapeHtml(t.label)+
+        ' <span class="pill '+(t.key === 'concluded' ? 'accepted' : 'pending')+'">'+
+        t.count+'</span></button>';
+    }).join('');
+
+    var rows = d.reports.length ? d.reports.map(function(r){
+      return '<tr>'+
+        '<td class="num"><a class="view" href="/dashboard/reports?id='+r.id+'">View (#'+r.id+
+          ')</a></td>'+
+        '<td class="who">'+escapeHtml(r.title)+
+          (r.names_me ? '<span class="youtag">Names you</span>' : '')+
+          '<span class="subline">'+(r.staff.length
+            ? 'About '+escapeHtml(r.staff.join(', '))
+            : 'Nobody named')+'</span></td>'+
+        '<td class="'+(r.user ? 'who' : 'gone')+'">'+
+          escapeHtml(r.user || 'The user no longer exists')+'</td>'+
+        '<td class="'+(r.category ? '' : 'gone')+'">'+
+          escapeHtml(r.category || 'Not triaged')+'</td>'+
+        '<td class="'+(r.handler ? '' : 'gone')+'">'+
+          escapeHtml(r.handler || 'Not allocated')+'</td>'+
+        '<td>'+statusPill(r.status)+'</td>'+
+        '<td class="num">'+escapeHtml(stamp(r.created))+'</td>'+
+      '</tr>';
+    }).join('') : '';
+
+    var body = rows
+      ? '<div class="qwrap"><table class="qtable"><thead><tr>'+
+        '<th>#</th><th>Report</th><th>From</th><th>Category</th><th>Allocated to</th>'+
+        '<th>Status</th><th>Sent</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody></table></div>' + pagerHTML(d)
+      : '<div class="blank"><span class="ei">'+ai('doc')+'</span>'+
+        '<h4>Nothing here</h4><p>'+(d.q
+          ? 'No report matches “'+escapeHtml(d.q)+'” in this tab.'
+          : 'This tab is empty. Nothing is waiting on you.')+'</p></div>';
+
+    host.innerHTML =
+      '<div class="qfilters">'+tabs+'</div>'+
+      '<div class="card"><div class="card-b">'+
+        '<div class="qbar">'+
+          '<div class="qsearch">'+ai('search')+
+            '<input class="ti" id="qq" placeholder="Filter by title, reporter or staff member…" '+
+            'value="'+escapeHtml(d.q)+'"></div>'+
+          '<span class="grow"></span>'+
+          /* Said out loud rather than left to be noticed. A queue that
+             silently hides rows is one somebody eventually calls a bug. */
+          '<span class="lookro">'+ai(d.blind ? 'lock' : 'warn')+
+          (d.blind ? 'Reports naming you are hidden'
+                   : 'Reports naming you are shown, and marked')+'</span>'+
+          '<label class="perpage">Show'+
+            '<select class="sel" id="qper">'+
+              [10,25,50,100].map(function(n){
+                return '<option value="'+n+'"'+(n === d.per ? ' selected' : '')+'>'+n+'</option>';
+              }).join('')+
+            '</select>per page</label>'+
+        '</div>'+ body +
+      '</div></div>';
+
+    Array.prototype.forEach.call(host.querySelectorAll('[data-qtab]'), function(b){
+      b.addEventListener('click', function(){
+        Q.tab = b.getAttribute('data-qtab'); Q.page = 1; loadQueue();
+      });
+    });
+    var qq = document.getElementById('qq');
+    qq.addEventListener('input', function(){
+      clearTimeout(QTIMER);
+      QTIMER = setTimeout(function(){ Q.q = qq.value.trim(); Q.page = 1; loadQueue(); }, 260);
+    });
+    document.getElementById('qper').addEventListener('change', function(){
+      Q.per = +this.value; Q.page = 1; loadQueue();
+    });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-page]'), function(b){
+      b.addEventListener('click', function(){
+        Q.page = +b.getAttribute('data-page'); loadQueue(); window.scrollTo(0,0);
+      });
+    });
   }
+
+  /* First, last, and a window either side of where you are — the same
+     control the appeal queue uses, because it is the same job. */
+  function pagerHTML(d){
+    if(d.pages <= 1){
+      return '<div class="pager"><span class="pinfo">'+d.total+
+             (d.total === 1 ? ' report' : ' reports')+'</span></div>';
+    }
+    var out = [], seen = {};
+    function push(n){
+      if(n < 1 || n > d.pages || seen[n]) return; seen[n] = 1;
+      out.push('<button data-page="'+n+'"'+(n === d.page ? ' aria-current="true"' : '')+'>'+
+               n+'</button>');
+    }
+    push(1);
+    if(d.page - 2 > 2) out.push('<span class="gap">…</span>');
+    for(var i = d.page - 1; i <= d.page + 1; i++) push(i);
+    if(d.page + 2 < d.pages - 1) out.push('<span class="gap">…</span>');
+    push(d.pages);
+    return '<div class="pager"><span class="pinfo">'+d.total+
+      (d.total === 1 ? ' report' : ' reports')+' · page '+d.page+' of '+d.pages+'</span>'+
+      '<button data-page="'+(d.page-1)+'"'+(d.page <= 1 ? ' disabled' : '')+'>Previous</button>'+
+      out.join('')+
+      '<button data-page="'+(d.page+1)+'"'+(d.page >= d.pages ? ' disabled' : '')+
+      '>Next</button></div>';
+  }
+
+  function loadQueue(){
+    return UCP.get('reports.php?tab='+encodeURIComponent(Q.tab)+
+                   '&q='+encodeURIComponent(Q.q)+'&page='+Q.page+'&per='+Q.per)
+      .then(function(d){
+        if(!(d && d.ok === true)){
+          document.getElementById('qbody').innerHTML =
+            refused('The Staff Report Panel', (d && d.error) || '');
+          return;
+        }
+        QDATA = d; renderPanel();
+      }).catch(function(){ toast('Could not reach the server'); });
+  }
+
+  /* =====================================================================
+     ONE REPORT
+     ===================================================================== */
+  var DATA = null;
+
+  function loadReport(){
+    return UCP.get('report.php?id='+ID).then(function(d){
+      document.getElementById('qtabs').innerHTML = '';
+      if(!(d && d.ok === true && d.report)){
+        document.querySelector('.page-title h1').textContent = 'Staff Report';
+        document.getElementById('qbody').innerHTML =
+          refused('This report', (d && d.error) || 'That report could not be opened.');
+        return;
+      }
+      DATA = d.report;
+      renderReport();
+    }).catch(function(){ toast('Could not reach the server'); });
+  }
+
+  function backbar(){
+    return '<a class="page-back" href="/dashboard/reports'+
+      (DATA.viewer.staff && !DATA.mine ? '#panel' : '#mine')+'">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+      '<path d="M15 6l-6 6 6 6"/></svg>'+
+      (DATA.viewer.staff && !DATA.mine ? 'Back to the panel' : 'Back to your reports')+'</a>';
+  }
+
+  /* ---- what the report is about --------------------------------------
+     The same fact grid the ban-details card uses, for the same reason: a
+     handler reading three reports in a row should not have to relearn
+     where the facts are between them. */
+  function fcell(k, v, sub){
+    return '<div><div class="k">'+k+'</div><div class="v">'+v+'</div>'+
+           (sub ? '<div class="s">'+sub+'</div>' : '')+'</div>';
+  }
+
+  function aboutCard(){
+    var d = DATA;
+
+    var subs = d.subjects.length
+      ? d.subjects.map(function(s){
+          return '<span class="grp tone-'+(s.rank|0)+'">'+escapeHtml(s.name)+'</span>'+
+                 (s.gone ? ' <span class="v soft">(no longer staff)</span>' : '');
+        }).join(', ')
+      : '<span class="v soft">Nobody named</span>';
+
+    var cells = [
+      fcell('Reported', d.subjects.map(function(s){ return escapeHtml(s.name); }).join(', ')
+            || '—',
+            d.subjects.map(function(s){ return s.role || 'No longer here'; }).join(' · ')),
+      fcell('Where', escapeHtml(d.channel_label), escapeHtml(d.frequency_label)),
+      fcell('Incident', d.incident_at
+            ? stampEsc(d.incident_at) + ' UTC'
+            : '<span class="v soft">Ongoing</span>',
+            d.incident_at ? escapeHtml(ago(d.incident_at)) : 'No single moment given'),
+      fcell('Sent', stampEsc(d.created_at) + ' UTC', escapeHtml(ago(d.created_at)))
+    ];
+
+    /* Triage and outcome are facts about the report, so they sit in the
+       same grid as the rest of them rather than in a status bar of their
+       own. Untriaged says so — it is the state the queue is worked on. */
+    cells.push(fcell('Category', d.category_label
+      ? escapeHtml(d.category_label)
+      : '<span class="v soft">Not triaged yet</span>',
+      d.category_label ? null : 'Staff Management categorise within 24–48 hours'));
+
+    cells.push(fcell('Outcome', d.outcome_label
+      ? '<span class="dotv '+(d.outcome === 'action' ? 'ok'
+          : (d.outcome === 'rejected' ? 'bad' : 'off'))+'">'+escapeHtml(d.outcome_label)+
+        '</span>'
+      : '<span class="v soft">Still open</span>',
+      d.concluded_at ? 'Decided '+escapeHtml(ago(d.concluded_at)) : null));
+
+    if(d.viewer.staff){
+      cells.push(fcell('Allocated to', d.handler
+        ? escapeHtml(d.handler)
+        : '<span class="v soft">Nobody yet</span>',
+        d.allocated_at ? escapeHtml(ago(d.allocated_at)) : 'Reports arrive unallocated'));
+      cells.push(fcell('Witnesses', d.witnesses
+        ? escapeHtml(d.witnesses) : '<span class="v soft">None given</span>'));
+    } else {
+      cells.push(fcell('Witnesses', d.witnesses
+        ? escapeHtml(d.witnesses) : '<span class="v soft">None given</span>'));
+      cells.push(fcell('Status', statusPill(d.status),
+        d.status === 'pending' ? 'With Staff Management' : null));
+    }
+
+    return '<div class="card"><div class="card-h"><h3>'+escapeHtml(d.title)+'</h3>'+
+      '<span class="aside">Report #'+d.id+'</span></div>'+
+      '<div class="card-b">'+
+        '<div class="sec"><div class="sec-h"><span class="t">'+
+          (d.status === 'pending' ? 'Under review' : 'Decided')+'</span>'+
+          '<span class="n">'+subs+'</span></div>'+
+          '<div class="fg">'+cells.join('')+'</div>'+
+        '</div>'+
+        (d.viewer.staff ? reporterSection() : '')+
+      '</div></div>';
+  }
+
+  /* ---- who sent it. Staff only. ---- */
+  function reporterSection(){
+    var r = DATA.reporter;
+    if(!r) return '<div class="sec"><div class="sec-h"><span class="t">The reporter</span>'+
+      '</div><div class="fieldnote" style="margin-top:0">That account has since been '+
+      'removed. The report stands as a record of what was said.</div></div>';
+
+    var n = (DATA.history || []).length;
+    var cells = [
+      fcell('UCP account', '<a href="/dashboard/lookup?id='+r.id+'">'+escapeHtml(r.name)+'</a>',
+            'Account #'+r.id),
+      fcell('Group', '<span class="grp tone-'+(r.rank|0)+'">'+escapeHtml(r.role)+'</span>',
+            r.created_at ? 'Joined '+escapeHtml(ago(r.created_at)) : null),
+      fcell('Status', r.status === 'active'
+            ? '<span class="dotv ok">Active</span>'
+            : '<span class="dotv bad">'+escapeHtml(cap(r.status))+'</span>'),
+      /* Whether this is a first report or a ninth is the fact most likely
+         to change how the rest of it reads — in either direction. */
+      fcell('Reports filed', n ? String(n + 1) : '1',
+            n ? n+' before this one' : 'This is their first')
+    ];
+
+    return '<div class="sec"><div class="sec-h"><span class="t">The reporter</span>'+
+      '<a class="go" href="/dashboard/lookup?id='+r.id+'">Open the full account'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+AI.open+'</svg></a></div>'+
+      '<div class="fg">'+cells.join('')+'</div></div>';
+  }
+
+  /* ---- the report as submitted ---- */
+  function reportCard(){
+    var d = DATA;
+    var ev = d.evidence.length
+      ? '<div class="evlist">'+d.evidence.map(function(e){
+          return '<div class="evitem"><span class="ic">'+ai('link')+'</span><div class="b">'+
+            '<a href="'+escapeHtml(e.url)+'" target="_blank" rel="noopener noreferrer">'+
+            escapeHtml(e.url)+'</a>'+
+            (e.note ? '<div class="nt">'+escapeHtml(e.note)+'</div>' : '')+
+          '</div></div>';
+        }).join('')+'</div>'
+      : '<div class="a none">No evidence was attached.</div>';
+
+    return '<div class="card"><div class="card-h"><h3>The report</h3>'+
+      '<span class="aside">'+escapeHtml(d.channel_label)+' · '+
+      escapeHtml(d.frequency_label)+'</span></div><div class="card-b">'+
+
+      '<div class="ansq"><div class="n"><b>1.</b>What happened?</div>'+
+        '<div class="a text">'+escapeHtml(d.body)+'</div></div>'+
+
+      '<div class="ansq"><div class="n"><b>2.</b>What do you want to happen?</div>'+
+        (d.outcome_wanted
+          ? '<div class="a text">'+escapeHtml(d.outcome_wanted)+'</div>'
+          : '<div class="a none">Nothing was asked for.</div>')+'</div>'+
+
+      '<div class="ansq"><div class="n"><b>3.</b>Evidence</div>'+
+        '<div class="a">'+ev+'</div></div>'+
+
+      (d.status !== 'pending' ? verdictNote() : '')+
+      '</div></div>';
+  }
+
+  function verdictNote(){
+    var d = DATA, good = d.status === 'concluded';
+    return '<div style="margin-top:6px"><div class="note-a '+(good?'good':'bad')+'">'+
+      '<span class="si">'+ai(good?'tick':'warn')+'</span><div>'+
+      '<h4>'+escapeHtml(d.category_label || 'Report')+' — '+
+      escapeHtml(d.outcome_label || cap(d.status))+'</h4>'+
+      '<p>Decided '+escapeHtml(ago(d.concluded_at))+
+      /* Rule 3: the reporter is told what was decided, never who decided
+         it. `concluded_by` is null in their copy, so this sentence is
+         simply shorter for them rather than being a different sentence. */
+      (d.concluded_by ? ' by <b>'+escapeHtml(d.concluded_by)+'</b>' : '')+
+      '. The reason is in the comments below.</p>'+
+      '</div></div></div>';
+  }
+
+  /* ---- comments ---- */
+  function commentsCard(){
+    var d = DATA;
+    var list = d.comments.length ? d.comments.map(function(c){
+      var mark = c.mark === 'verdict' ? 'The decision'
+               : (c.mark === 'opening' ? 'Opening comment' : null);
+      return '<div class="cm'+(c.staff_only ? ' staffonly' : '')+
+        (c.mark ? ' marked' : '')+'">'+
+        '<div class="h"><b>'+escapeHtml(c.author)+'</b>'+
+          (c.staff ? '<span class="ctag staff">Staff</span>' : '')+
+          (c.staff_only ? '<span class="ctag only">Staff only</span>' : '')+
+          (mark ? '<span class="ctag mark">'+escapeHtml(mark)+'</span>' : '')+
+          '<span class="when">'+stampEsc(c.at)+' UTC</span></div>'+
+        '<div class="body">'+escapeHtml(c.body)+'</div></div>';
+    }).join('') : '<div class="fieldnote" style="margin-top:0">Nothing has been said yet.</div>';
+
+    var may = d.viewer.staff || (d.mine && d.comments_enabled && d.status === 'pending');
+    var box = may
+      ? '<div style="margin-top:14px">'+
+          '<textarea class="ta" id="cbody" maxlength="4000" style="min-height:96px" '+
+          'placeholder="'+(d.viewer.staff
+            ? 'Reply to the reporter, or leave a note for Staff Management.'
+            : 'Anything you forgot, or a reply to what has been said.')+'"></textarea>'+
+          (d.viewer.staff
+            ? '<label class="chkline"><input type="checkbox" id="conly">'+
+              '<span>Staff only — the reporter never sees this</span></label>'
+            : '')+
+          '<div class="formfoot" style="margin-top:10px">'+
+            '<button class="btn primary" id="csend">'+ai('msg')+'Post</button></div>'+
+        '</div>'
+      : '<div class="fieldnote">'+
+        (d.status !== 'pending'
+          ? 'This report has been decided, so the thread is closed. If something new has '+
+            'happened, that is a new report rather than an addition to this one.'
+          : 'Comments on this report have been closed by Staff Management.')+'</div>';
+
+    return '<div class="card"><div class="card-h"><h3>Comments</h3>'+
+      '<span class="aside">'+d.comments.length+
+      (d.comments.length === 1 ? ' comment' : ' comments')+'</span></div>'+
+      '<div class="card-b">'+list+box+'</div></div>';
+  }
+
+  /* ---- handling: triage, allocation, verdict. Staff only. ---- */
+  function handlingCard(){
+    var d = DATA, done = d.status !== 'pending';
+
+    function ro(label, value, hint){
+      return '<div class="panelfield"><label>'+label+'</label><div class="ro">'+value+'</div>'+
+        (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div>';
+    }
+
+    if(done){
+      return '<div class="card"><div class="card-h"><h3>Handling</h3>'+
+        '<span class="aside">'+statusPill(d.status)+'</span></div><div class="card-b">'+
+        ro('Category', escapeHtml(d.category_label || '—')) +
+        ro('Outcome', escapeHtml(d.outcome_label || '—')) +
+        ro('Decided by', escapeHtml(d.concluded_by || '—'),
+           stamp(d.concluded_at)+' UTC') +
+        ro('Handled by', escapeHtml(d.handler || 'Never allocated'),
+           'Fixed once the report was decided.') +
+        '<div class="fieldnote">A concluded report can’t be reopened. If the decision was '+
+        'wrong, that is a conversation with Management rather than a button here.</div>'+
+        '</div></div>';
+    }
+
+    var cats = (d.categories || []).map(function(c){
+      return '<option value="'+escapeHtml(c.key)+'"'+
+        (d.category === c.key ? ' selected' : '')+'>'+escapeHtml(c.label)+'</option>';
+    }).join('');
+    var outs = (d.outcomes || []).map(function(o){
+      return '<option value="'+escapeHtml(o.key)+'">'+escapeHtml(o.label)+'</option>';
+    }).join('');
+    var hands = (d.handlers || []).map(function(h){
+      return '<option value="'+escapeHtml(h.name)+'"'+
+        (d.handler === h.name ? ' selected' : '')+'>'+escapeHtml(h.name)+' · '+
+        escapeHtml(h.role)+'</option>';
+    }).join('');
+
+    return '<div class="card"><div class="card-h"><h3>Handling</h3></div><div class="card-b">'+
+
+      /* Triage first, because it is what happens first and what the
+         information panel promised would happen within 24-48 hours. */
+      '<div class="panelfield">'+
+        '<label for="cat">Category</label>'+
+        '<select class="sel" id="cat"><option value="">Not triaged</option>'+cats+'</select>'+
+        '<div class="hint">The four categories on the information page, in the same words. '+
+        'Setting one takes the report out of the Untriaged tab.</div>'+
+      '</div>'+
+
+      '<div class="panelfield">'+
+        '<label for="hd">Allocated to</label>'+
+        '<select class="sel" id="hd"><option value="">Nobody</option>'+hands+'</select>'+
+        '<div class="hint">Reports arrive unallocated — there is no obvious owner of a report '+
+        'about a staff member, and handing it to somebody at random is worse than leaving it '+
+        'in the pile. Anyone on this list can take it, including you.</div>'+
+      '</div>'+
+
+      '<div class="panelfield">'+
+        '<label for="cmEn">Comments</label>'+
+        '<select class="sel" id="cmEn">'+
+          '<option value="1"'+(d.comments_enabled?' selected':'')+'>Open to the reporter'+
+          '</option>'+
+          '<option value="0"'+(!d.comments_enabled?' selected':'')+'>Closed to the reporter'+
+          '</option>'+
+        '</select>'+
+        '<div class="hint">Closing stops the reporter replying. Staff can still write here.</div>'+
+      '</div>'+
+
+      '<div class="panelfield">'+
+        '<label for="ocomment">Opening comment</label>'+
+        '<textarea class="ta" id="ocomment" maxlength="4000" style="min-height:90px" '+
+        'placeholder="Tell them it has been picked up, and by which team."></textarea>'+
+        '<label class="chkline"><input type="checkbox" id="oonly">'+
+        '<span>Staff only</span></label>'+
+        '<div class="hint">Optional, but a report allocated in silence looks — to the person '+
+        'who sent it — exactly like a report nobody has read.</div>'+
+        '<div class="go"><button class="btn sm" id="allocSave">Save</button></div>'+
+      '</div>'+
+
+      /* ---- the verdict ---- */
+      '<div class="panelfield">'+
+        '<label for="vout">Conclude this report</label>'+
+        '<select class="sel" id="vcat"><option value="">Category…</option>'+cats+'</select>'+
+        '<select class="sel" id="vout" style="margin-top:9px">'+
+          '<option value="">What was done…</option>'+outs+'</select>'+
+        '<textarea class="ta" id="vcomment" maxlength="4000" style="min-height:110px;'+
+        'margin-top:10px" placeholder="Why. The reporter is shown this, so write it to them."'+
+        '></textarea>'+
+        '<div class="hint">A reason is required. Concluding closes the thread and tells the '+
+        'reporter what was decided — never who decided it.</div>'+
+        '<div class="hint warn">Nothing here punishes anybody. Whatever is done about the '+
+        'staff member happens off this page; the report records what was decided.</div>'+
+        '<div class="go"><button class="btn primary" id="conclude">Conclude</button></div>'+
+      '</div>'+
+
+      '</div></div>';
+  }
+
+  function logCard(){
+    var rows = (DATA.log || []).length ? DATA.log.map(function(l){
+      var act = l.action !== 'viewed';
+      return '<div class="logrow'+(act?' act':'')+'"><span class="dot"></span><div>'+
+        '<span class="t">'+stampEsc(l.at)+'</span> <b>'+escapeHtml(l.actor)+'</b> '+
+        escapeHtml(l.action === 'viewed' ? 'opened the report.' : (l.detail || l.action))+
+      '</div></div>';
+    }).join('') : '<div class="fieldnote">Nothing yet.</div>';
+
+    return '<div class="card"><div class="card-h"><h3>Running log</h3>'+
+      '<span class="aside">Staff only</span></div>'+
+      '<div class="card-b"><div class="log">'+rows+'</div>'+
+      '<div class="fieldnote">Repeat visits by the same person within an hour are counted '+
+      'once.</div></div></div>';
+  }
+
+  function historyCard(){
+    var list = DATA.history || [];
+    if(!list.length) return '';
+    var rows = list.map(function(h){
+      return '<a class="hrow" href="/dashboard/reports?id='+h.id+'">'+
+        '<span class="hst">'+statusPill(h.status)+'</span>'+
+        '<span class="hmain">'+
+          '<span class="ht">'+escapeHtml(h.title)+'</span>'+
+          '<span class="hs">Sent '+escapeHtml(stamp(h.created_at))+' UTC'+
+            (h.concluded_at ? ' · decided '+escapeHtml(ago(h.concluded_at)) : ' · still open')+
+            (h.outcome ? ' · '+escapeHtml(h.outcome) : '')+'</span>'+
+        '</span><span class="hgo">'+ai('chev')+'</span></a>';
+    }).join('');
+
+    return '<div class="card"><div class="card-h"><h3>'+
+      (DATA.viewer.staff ? 'Their other reports' : 'Your other reports')+'</h3>'+
+      '<span class="aside">'+list.length+'</span></div>'+
+      '<div class="card-b"><div class="hlist">'+rows+'</div></div></div>';
+  }
+
+  /* Only Management and Founders can reach a report that names them — a
+     Staff Management holder is refused at the door. So this is not a lock:
+     it is the fact, said out loud, at the top of the page, before they read
+     a word of it. Whether to hand it to somebody else is their judgement;
+     the UCP's job is to make sure it is a judgement they know they are
+     making. */
+  function conflictNote(){
+    if(!DATA.viewer || !DATA.viewer.named) return '';
+    return '<div class="card"><div class="card-b">'+
+      '<div class="note-a bad"><span class="si">'+ai('warn')+'</span><div>'+
+        '<h4>This report names you</h4>'+
+        '<p>You can read and handle it because you are Management — there is no queue above '+
+        'this one to send it to. Everything you do here is in the running log with your name '+
+        'on it, and the person who sent it is never told who decided it.</p>'+
+        '<p>If somebody else can take it, allocate it to them.</p>'+
+      '</div></div></div></div>';
+  }
+
+  function renderReport(){
+    var staff = DATA.viewer.staff;
+    document.body.classList.toggle('appeal-solo', !staff);
+    document.body.classList.add('appeal-wide');
+    var head = document.querySelector('.ahead');
+    if(head) head.style.display = 'none';
+    document.querySelector('.page-title h1').textContent = 'Staff Report #'+DATA.id;
+    document.title = 'BlaineSide — Staff Report #'+DATA.id;
+
+    document.getElementById('qbody').innerHTML =
+      backbar() + conflictNote() +
+      '<div class="apgrid'+(staff?'':' solo')+'">'+
+        '<div>'+ aboutCard() + reportCard() + commentsCard() +
+          (staff ? '' : historyCard()) +'</div>'+
+        (staff ? '<div>'+ handlingCard() + logCard() + historyCard() +'</div>' : '')+
+      '</div>';
+
+    wireReport();
+  }
+
+  function wireReport(){
+    var send = document.getElementById('csend');
+    if(send) send.addEventListener('click', function(){
+      var ta = document.getElementById('cbody'), only = document.getElementById('conly');
+      var body = ta.value.trim();
+      if(!body){ toast('Write something first.'); return; }
+      send.disabled = true;
+      UCP.post('report-comment.php',
+        { id: DATA.id, body: body, staff_only: !!(only && only.checked) })
+        .then(function(res){
+          var d = res && res.data ? res.data : {};
+          send.disabled = false;
+          if(!(d && d.ok)){ toast(d.error || 'That didn’t post.'); return; }
+          DATA = d.report; renderReport();
+        }).catch(function(){ send.disabled = false; toast('Could not reach the server'); });
+    });
+
+    var save = document.getElementById('allocSave');
+    if(save) save.addEventListener('click', function(){
+      var cat = document.getElementById('cat').value;
+      var hd  = document.getElementById('hd').value;
+      var cm  = document.getElementById('cmEn').value === '1';
+      var oc  = document.getElementById('ocomment').value.trim();
+      var oo  = document.getElementById('oonly');
+      save.disabled = true;
+      UCP.post('report-allocate.php', { id: DATA.id, category: cat, handler: hd,
+        comments_enabled: cm, comment: oc, staff_only: !!(oo && oo.checked) })
+        .then(function(res){
+          var d = res && res.data ? res.data : {};
+          save.disabled = false;
+          if(!(d && d.ok)){ toast(d.error || 'Nothing was saved.'); return; }
+          DATA = d.report; renderReport(); toast('Saved.');
+        }).catch(function(){ save.disabled = false; toast('Could not reach the server'); });
+    });
+
+    var done = document.getElementById('conclude');
+    if(done) done.addEventListener('click', function(){
+      var cat = document.getElementById('vcat').value;
+      var out = document.getElementById('vout').value;
+      var why = document.getElementById('vcomment').value.trim();
+      if(!cat){ toast('Choose which kind of report this is.'); return; }
+      if(!out){ toast('Choose what was done about it.'); return; }
+      if(!why){ toast('Write the reason. The reporter is shown it.'); return; }
+      done.disabled = true;
+      UCP.post('report-verdict.php',
+        { id: DATA.id, category: cat, outcome: out, comment: why })
+        .then(function(res){
+          var d = res && res.data ? res.data : {};
+          done.disabled = false;
+          if(!(d && d.ok)){ toast(d.error || 'That didn’t save.'); return; }
+          DATA = d.report; renderReport(); toast(d.message || 'Concluded.');
+        }).catch(function(){ done.disabled = false; toast('Could not reach the server'); });
+    });
+  }
+
+  /* =====================================================================
+     ROUTING
+
+     The hash IS the view, so the sidebar, the tab bar and the back button
+     all go through one path rather than three that can disagree.
+     ===================================================================== */
+  function go(key, push){
+    var known = false;
+    for(var i=0;i<VIEWS.length;i++) if(VIEWS[i].key === key) known = true;
+    if(!known) key = 'submit';
+
+    /* Arrived at a view they can't open: the body explains the refusal in
+       the server's words, and the tab for it isn't drawn. */
+    var st = GATE && GATE.views ? GATE.views[key] : null;
+    VIEW = key;
+    if(push && history.replaceState) history.replaceState(null, '', location.pathname+'#'+key);
+
+    var v = null;
+    for(var j=0;j<VIEWS.length;j++) if(VIEWS[j].key === key) v = VIEWS[j];
+    document.querySelector('.page-title h1').textContent = v ? v.label : 'Staff Reports';
+
+    renderTabs();
+
+    if(st && !st.may){
+      document.getElementById('qbody').innerHTML = refused(v ? v.label : 'That view', st.why);
+      return;
+    }
+
+    if(key === 'panel'){ renderPanel(); loadQueue(); return; }
+    if(key === 'mine'){
+      renderMine();
+      if(!MINE) UCP.get('report-mine.php').then(function(d){
+        MINE = (d && d.ok === true) ? d : { reports: [] };
+        renderMine();
+      }).catch(function(){ toast('Could not reach the server'); });
+      return;
+    }
+    renderSubmit();
+  }
+
   window.addEventListener('hashchange', function(){
-    go((location.hash || '').replace('#',''), false);
+    if(ID) return;
+    go((location.hash||'').replace('#',''), false);
   });
 
   UCP.get('session.php').then(function(d){
     if(!d || d.authenticated !== true){
-      window.location.replace('/login?return='+encodeURIComponent('/dashboard/reports'));
+      window.location.replace('/login?return='+
+        encodeURIComponent('/dashboard/reports'+(ID ? '?id='+ID : '')));
       return;
     }
     var an = document.getElementById('acctName'), ar = document.getElementById('acctRole');
@@ -909,25 +2617,24 @@
     IS_FOUNDER       = (d.rank|0) >= 9;
     MY_RANK          = d.rank | 0;
     MY_TEAMS         = d.teams || [];
-    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderSidebar(SIDEBAR);
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was)
+      renderSidebar(SIDEBAR);
 
-    /* The gate. Asked for, not assumed from the rank this page just read —
-       Staff Management opens the Staff Report Panel below Management, and
-       that rule lives in api/_queues.php, not here. */
-    return UCP.get('queues.php').then(function(q){
-      if(q && q.ok === true && q.queues){
-        for(var i=0;i<q.queues.length;i++) if(q.queues[i].key === AREA) STATE = q.queues[i];
-      }
-      go((location.hash || '').replace('#',''), false);
-    });
-  }).catch(function(){
-    /* No answer from the server. Draw the page with no gate resolved rather
-       than a spinner that never ends — every view still says it isn't built,
-       which is the true part, and the panel gate is enforced server-side
-       whatever this page decided to draw. */
-    go((location.hash || '').replace('#',''), false);
-    toast('Could not reach the server');
-  });
+    if(ID) return loadReport();
+
+    return Promise.all([UCP.get('queues.php'), UCP.get('report-options.php')])
+      .then(function(r){
+        var q = r[0], o = r[1];
+        if(q && q.ok === true && q.queues){
+          for(var i=0;i<q.queues.length;i++) if(q.queues[i].key === 'reports') GATE = q.queues[i];
+        }
+        OPTS = (o && o.ok === true) ? o
+             : { may:false, why:(o && o.error) || 'Staff reports could not be loaded.',
+                 staff:[], channels:[], frequencies:[], limits:{} };
+        go((location.hash||'').replace('#',''), false);
+      });
+  }).catch(function(){ toast('Could not reach the server'); });
+
 
   /* ===== ACCOUNT MENU ===== */
   (function(){

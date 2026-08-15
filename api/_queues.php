@@ -7,10 +7,11 @@
  *
  *   Refund Requests    submit / mine / panel
  *   Ban Appeals        submit        / panel
- *   Staff Reports      submit        / panel
+ *   Staff Reports      submit / mine / panel
  *   Asset Transfers    submit / mine / panel
  *
- * Ban Appeals is built (see _appeals.php). The other three are not yet, and
+ * Ban Appeals and Staff Reports are built (see _appeals.php and
+ * _reports.php). The other two are not yet, and
  * that is why this file exists first: it is the one place that says who may
  * open what, so the sidebar, the pages and the endpoints that eventually do
  * the work all read the same answer instead of each re-deciding it. When a
@@ -79,10 +80,12 @@ function queues_registry(): array
         'reports' => [
             'label' => 'Staff Reports',
             'path'  => '/dashboard/reports',
-            'live'  => false,
-            'why'   => 'Staff reports aren\'t switched on yet.',
+            // Built. See _reports.php, and dashboard/reports.html.
+            'live'  => true,
+            'why'   => null,
             'views' => [
                 'submit' => ['label' => 'Submit a Staff Report', 'min' => 0],
+                'mine'   => ['label' => 'My Staff Reports',      'min' => 0],
                 'panel'  => ['label' => 'Staff Report Panel',
                              'min'   => BS_QUEUE_REPORT_RANK,
                              'team'  => 'staff_management'],
