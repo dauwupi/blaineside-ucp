@@ -474,7 +474,10 @@
       {label:'My properties',href:'#'},
       {label:'Businesses',href:'#'},
       {label:'Listings',href:'#'}]},
-    {heading:'Administration',admins:true},
+    /* min:1, not admins:true. Support Staff sit at rank 1 and their panel
+       lives in this section; a heading gated at rank 3 would hide the
+       section from exactly the people who use it most. */
+    {heading:'Administration',min:1},
     /* Founder-only. Managers reach Group Management through the Management
        group below instead — same page, fewer powers, enforced server-side. */
     {label:'Founder',icon:'crown',founder:true,children:[
@@ -487,6 +490,13 @@
        See BS_ADMIN_MIN_RANK in api/_admin.php, which is what decides. */
     {label:'Administrators',icon:'search',admins:true,children:[
       {label:'Administrative Search',href:'/dashboard/search'}]},
+    /* Support Staff and above. The application queue is the work rank 1
+       exists to do, so it is a rank gate rather than a sub-group — see
+       BS_APP_PANEL_RANK in api/_applications.php, which is what decides. */
+    {label:'Support Staff',icon:'lifebuoy',min:1,children:[
+      {label:'Application Panel',href:'/dashboard/applications'},
+      {label:'Question Manager',href:'/dashboard/app-questions'},
+      {label:'Response Templates',href:'/dashboard/app-templates'}]},
     {heading:'Reports, Appeals & Refunds'},
     /* Everyone submits; who may open a PANEL is the only thing that varies,
        and it is `min` (a rank) OR `team` (a sub-group that opens it at any
@@ -505,7 +515,13 @@
       {label:'My Asset Transfers',href:'/dashboard/transfers#mine'},
       {label:'Asset Transfer Panel',href:'/dashboard/transfers#panel',min:3}]},
     {heading:'Account'},
-    {label:'My Profile',icon:'user',href:'/profile'},
+    /* My Profile is a parent now: the account page and the player's own
+       application are two different places, and the application is the one
+       a new player is looking for. Everyone sees it — passing an
+       application is not a permission, it is a state. */
+    {label:'My Profile',icon:'user',children:[
+      {label:'My Account',href:'/profile'},
+      {label:'Application',href:'/dashboard/application'}]},
     {label:'World Points',icon:'clock',href:'#'},
     {label:'XM Radio',icon:'radio',href:'#'}
   ];
@@ -526,7 +542,9 @@
     flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
     swap:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
     chev:'<path d="M9 6l6 6-6 6"/>',
-    search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'
+    search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+    lifebuoy:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/>' +
+             '<path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/>'
   };
   function navIcon(n, c){
     return '<svg class="' + c + '" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
@@ -672,6 +690,7 @@
     appeal:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/>' +
            '<path d="M15 14l4.5 4.5"/>',
     report:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    application:'<path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/>',
     system:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'
   };
 
@@ -801,7 +820,7 @@
      The pages keep the markup as a fallback for a browser that never runs
      this; what is drawn here replaces it.
      ===================================================================== */
-  var UCP_VERSION = '2.4.1';
+  var UCP_VERSION = '2.5.0';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
