@@ -262,6 +262,7 @@
     meWrite(m);
     paintMe(m);
     initQuickSearch(m.rank);
+    renderNav();               // the rank may have just changed the menu
   }
 
   /* The tone can go on before the document body exists, and should: it is
@@ -433,6 +434,182 @@
     });
   }
 
+
+  /* =====================================================================
+     THE SIDEBAR
+
+     One copy, here, for every page.
+
+     It used to be a `const SIDEBAR = [...]`, an ICONS map, navMay() and
+     renderSidebar() pasted into all eleven pages. Eleven copies is eleven
+     things to forget when one of them changes — which is exactly what
+     happened: Staff Reports gained a view on one page and kept the old
+     sub-menu on the other ten. Adding a menu item is now an edit to NAV
+     below and nothing else.
+
+     Any page with a `<nav id="nav">` gets the menu. It is drawn on load
+     from the cached rank so the first paint is right, and again the moment
+     rememberMe() hears from api/session.php — that second pass is what
+     stops the Administration section flickering in.
+
+     Nothing here is a permission. It decides what is DRAWN; every page
+     behind a link asks the server, and every endpoint checks again.
+     ===================================================================== */
+  var NAV = [
+    {label:'Dashboard',icon:'home',href:'/dashboard'},
+    {label:'Characters',icon:'user',children:[
+      {label:'Empty character slot',empty:true},
+      {label:'Empty character slot',empty:true},
+      {label:'Empty character slot',empty:true}]},
+    {heading:'Community'},
+    {label:'Forums',icon:'chat',children:[
+      {label:'Forums',href:'#'},
+      {label:'Community Rules',href:'#'},
+      {label:'Development Changelog',href:'#'}]},
+    {label:'Factions',icon:'briefcase',children:[
+      {label:'Legal factions',href:'#'},
+      {label:'Illegal factions',href:'#'},
+      {label:'Applications',href:'#'}]},
+    {label:'Properties',icon:'house',children:[
+      {label:'My properties',href:'#'},
+      {label:'Businesses',href:'#'},
+      {label:'Listings',href:'#'}]},
+    {heading:'Administration',admins:true},
+    /* Founder-only. Managers reach Group Management through the Management
+       group below instead — same page, fewer powers, enforced server-side. */
+    {label:'Founder',icon:'crown',founder:true,children:[
+      {label:'Group Management',href:'/dashboard/groups'}]},
+    {label:'Management',icon:'shield',admin:true,children:[
+      {label:'County Bulletin',href:'/dashboard/bulletin'},
+      {label:'Announcements',href:'/dashboard/announcements'},
+      {label:'Group Management',href:'/dashboard/groups',notFounder:true}]},
+    /* Trainee Admin and above — the whole admin ladder, not just Management.
+       See BS_ADMIN_MIN_RANK in api/_admin.php, which is what decides. */
+    {label:'Administrators',icon:'search',admins:true,children:[
+      {label:'Administrative Search',href:'/dashboard/search'}]},
+    {heading:'Reports, Appeals & Refunds'},
+    /* Everyone submits; who may open a PANEL is the only thing that varies,
+       and it is `min` (a rank) OR `team` (a sub-group that opens it at any
+       rank). Mirrors api/_queues.php, which is what actually enforces it. */
+    {label:'Refund Requests',icon:'coin',children:[
+      {label:'Submit a Request',href:'/dashboard/refunds#submit'},
+      {label:'My Requests',href:'/dashboard/refunds#mine'},
+      {label:'Refund Request Panel',href:'/dashboard/refunds#panel',min:3}]},
+    /* One page decides which view you get, so these are single buttons —
+       a sub-menu would be two clicks to the same place, and a second copy
+       of the panel's gate to keep in step. */
+    {label:'Ban Appeals',icon:'gavel',href:'/dashboard/appeals'},
+    {label:'Staff Reports',icon:'flag',href:'/dashboard/reports'},
+    {label:'Asset Transfers',icon:'swap',children:[
+      {label:'Submit an Asset Transfer',href:'/dashboard/transfers#submit'},
+      {label:'My Asset Transfers',href:'/dashboard/transfers#mine'},
+      {label:'Asset Transfer Panel',href:'/dashboard/transfers#panel',min:3}]},
+    {heading:'Account'},
+    {label:'My Profile',icon:'user',href:'/profile'},
+    {label:'World Points',icon:'clock',href:'#'},
+    {label:'XM Radio',icon:'radio',href:'#'}
+  ];
+
+  var NAV_ICONS = {
+    crown:'<path d="M4 18h16M4 18l-1.5-9 5 3.5L12 5l4.5 7.5 5-3.5L20 18"/>',
+    shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>',
+    home:'<path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+    user:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+    chat:'<path d="M4 5h16v11H8l-4 3z"/>',
+    briefcase:'<path d="M4 7h16v13H4z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>',
+    house:'<path d="M3 10.5L12 4l9 6.5V20H3zM9 20v-6h6v6"/>',
+    doc:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
+    clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+    radio:'<path d="M8 6l10 6-10 6z"/><path d="M4 5v14"/>',
+    coin:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.8h4a1.7 1.7 0 0 1 0 3.4h-3a1.7 1.7 0 0 0 0 3.4h4"/>',
+    gavel:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/>',
+    flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    swap:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+    chev:'<path d="M9 6l6 6-6 6"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'
+  };
+  function navIcon(n, c){
+    return '<svg class="' + c + '" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+           (NAV_ICONS[n] || '') + '</svg>';
+  }
+
+  /* `min` is a rank on the ladder in api/_ranks.php. `team` is a sub-group
+     key that opens the item on its own at ANY rank — which is how a Staff
+     Management holder reaches the Staff Report Panel without being
+     Management. A menu drawn from rank alone would be wrong for exactly the
+     people the sub-group exists for. */
+  function navMayItem(x, rank, teams){
+    if (!x) return true;
+    if (x.admin && rank < 8) return false;
+    if (x.founder && rank < 9) return false;
+    if (x.admins && rank < 3) return false;
+    if (x.notFounder && rank >= 9) return false;
+    if (typeof x.min === 'number' && rank < x.min &&
+        !(x.team && teams.indexOf(x.team) > -1)) return false;
+    return true;
+  }
+
+  var navDrawn = '';        // what the menu was last drawn for
+
+  function renderNav(items){
+    var host = document.getElementById('nav');
+    if (!host) return;
+
+    var me = meRead() || {};
+    var rank = me.rank | 0;
+    var teams = Array.isArray(me.teams) ? me.teams : [];
+    items = items || w.SIDEBAR || NAV;
+
+    /* Redrawing an unchanged menu closes every group the reader had open,
+       which is what made the sub-menus snap shut a second after landing. */
+    var sig = rank + '|' + teams.join(',') + '|' + (items === NAV ? '' : 'custom');
+    if (sig === navDrawn && host.children.length) return;
+    navDrawn = sig;
+
+    host.innerHTML = items.filter(function (it) {
+      return navMayItem(it, rank, teams);
+    }).map(function (it) {
+      if (it.heading) return '<div class="nav-heading">' + esc(it.heading) + '</div>';
+      if (it.children) {
+        var subs = it.children.filter(function (c) {
+          return navMayItem(c, rank, teams);
+        }).map(function (c) {
+          return c.empty
+            ? '<a class="slot-empty">' + esc(c.label) + '</a>'
+            : '<a href="' + esc(c.href || '#') + '">' + esc(c.label) + '</a>';
+        }).join('');
+        return '<div class="nav-group" data-collapsible><div class="nav-item">' +
+          navIcon(it.icon, 'i') + '<span class="lbl">' + esc(it.label) + '</span>' +
+          navIcon('chev', 'chev') + '</div><div class="sub">' + subs + '</div></div>';
+      }
+      var tag = it.href ? 'a' : 'div', attr = it.href ? ' href="' + esc(it.href) + '"' : '';
+      return '<div class="nav-group"><' + tag + ' class="nav-item"' + attr + '>' +
+        navIcon(it.icon, 'i') + '<span class="lbl">' + esc(it.label) + '</span></' + tag + '>' +
+        '</div>';
+    }).join('');
+
+    /* The current page's own entry, marked. Every page used to do this by
+       hand or not at all. */
+    var here = location.pathname.replace(/\/$/, '') || '/dashboard';
+    Array.prototype.forEach.call(host.querySelectorAll('a.nav-item, .sub a'), function (a) {
+      var h = (a.getAttribute('href') || '').split('#')[0].replace(/\/$/, '');
+      if (h && h === here) {
+        var item = a.classList.contains('nav-item') ? a : a.closest('.nav-group');
+        if (item) {
+          (a.classList.contains('nav-item') ? a : a).classList.add('active');
+          if (!a.classList.contains('nav-item')) item.classList.add('open');
+        }
+      }
+    });
+
+    Array.prototype.forEach.call(host.querySelectorAll('.nav-group[data-collapsible] > .nav-item'),
+      function (item) {
+        item.addEventListener('click', function () {
+          item.parentElement.classList.toggle('open');
+        });
+      });
+  }
+
   w.UCP = {
     post: post, get: get, loadCsrf: loadCsrf,
     esc: esc, relTime: relTime, readCookie: readCookie, fmtSecs: fmtSecs,
@@ -440,8 +617,15 @@
     me: CACHED,                 // {name, role, rank} or null — the LAST KNOWN
     rank: CACHED ? CACHED.rank : null,
     rememberMe: rememberMe, forgetMe: forgetMe, paintMe: paintMe,
-    initQuickSearch: initQuickSearch
+    initQuickSearch: initQuickSearch,
+    nav: renderNav, NAV: NAV
   };
+
+  /* Pages still say `renderSidebar(SIDEBAR)` after the session lands, and
+     that call is worth keeping — it is the redraw that corrects the menu
+     for the real rank. Both names resolve here now. */
+  w.SIDEBAR = NAV;
+  w.renderSidebar = renderNav;
 
   applyTod();
   document.addEventListener('DOMContentLoaded', function () {
@@ -450,6 +634,7 @@
     initTabFade();
     loadCsrf();
     paintMe(CACHED);            // first paint, before session.php answers
+    renderNav();                // ditto for the menu, from the cached rank
     // Drawn from the cached rank so the box doesn't flash in and out; the
     // real rank corrects it a moment later via rememberMe() below.
     initQuickSearch(CACHED ? CACHED.rank : 0);

@@ -1003,7 +1003,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
 <style>
   /* ---------- ACCOUNT LOOKUP ----------
      Almost everything here is the profile page's own stylesheet, on purpose:
@@ -1425,7 +1425,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=2.5.1"></script>
+<script src="/assets/js/ucp.js?v=2.6.0"></script>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
@@ -1510,88 +1510,13 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
      ranks, not the account being viewed; getting those two confused is how
      a Trainee Admin would end up seeing a Founder menu.
      ===================================================================== */
-  var SIDEBAR = [
-    { label:'Dashboard', icon:'home', href:'/dashboard' },
-    { label:'Characters', icon:'user', children:[
-      { label:'No characters yet', empty:true },
-    ]},
-    { heading:'Community' },
-    { label:'Forums', icon:'chat', children:[
-      { label:'Forums', href:'https://forum.blaineside.com' },
-      { label:'Community Rules', href:'#' },
-      { label:'Development Changelog', href:'#' },
-    ]},
-    { label:'Factions', icon:'briefcase', children:[
-      { label:'Legal factions', href:'#' },
-      { label:'Illegal factions', href:'#' },
-      { label:'Applications', href:'#' },
-    ]},
-    { label:'Properties', icon:'house', children:[
-      { label:'My properties', href:'#' },
-      { label:'Businesses', href:'#' },
-      { label:'Listings', href:'#' },
-    ]},
-    { heading:'Administration', admins:true },
-    { label:'Founder', icon:'crown', founder:true, children:[
-      { label:'Group Management', href:'/dashboard/groups' },
-    ]},
-    { label:'Management', icon:'shield', admin:true, children:[
-      { label:'County Bulletin', href:'/dashboard/bulletin' },
-      { label:'Announcements',   href:'/dashboard/announcements' },
-      { label:'Group Management', href:'/dashboard/groups', notFounder:true },
-    ]},
-    /* Trainee Admin and above — see BS_ADMIN_MIN_RANK in api/_admin.php. */
-    { label:'Administrators', icon:'search', admins:true, children:[
-      { label:'Administrative Search', href:'/dashboard/search' },
-    ]},
-    { heading:'Reports, Appeals & Refunds' },
-    /* Everyone submits; who may open a PANEL is the only thing that varies,
-       and it is `min` (a rank) OR `team` (a sub-group that opens it at any
-       rank). The same rule lives server-side in api/_queues.php and every
-       page behind these links asks it again — this only decides what is
-       drawn. */
-    { label:'Refund Requests', icon:'coin', children:[
-      { label:'Submit a Request',      href:'/dashboard/refunds#submit' },
-      { label:'My Requests',           href:'/dashboard/refunds#mine' },
-      { label:'Refund Request Panel',  href:'/dashboard/refunds#panel', min:3 },
-    ]},
-    /* No children. The rules, the form, the queue and one appeal are all
-       one page now, and which of them you get is decided there — so a
-       sub-menu would be two clicks to the same place. */
-    { label:'Ban Appeals', icon:'gavel', href:'/dashboard/appeals' },
-    { label:'Staff Reports', icon:'flag', children:[
-      { label:'Submit a Staff Report', href:'/dashboard/reports#submit' },
-      { label:'Staff Report Panel',    href:'/dashboard/reports#panel',
-        min:8, team:'staff_management' },
-    ]},
-    { label:'Asset Transfers', icon:'swap', children:[
-      { label:'Submit an Asset Transfer', href:'/dashboard/transfers#submit' },
-      { label:'My Asset Transfers',       href:'/dashboard/transfers#mine' },
-      { label:'Asset Transfer Panel',     href:'/dashboard/transfers#panel', min:3 },
-    ]},
-    { heading:'Account' },
-    { label:'My Profile',        icon:'user',  href:'/profile' },
-    { label:'World Points',      icon:'clock', href:'#' },
-    { label:'XM Radio',          icon:'radio', href:'#' },
-  ];;
-  var ICONS = {
-    crown:'<path d="M4 18h16M4 18l-1.5-9 5 3.5L12 5l4.5 7.5 5-3.5L20 18"/>',
-    shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>',
-    home:'<path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
-    user:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
-    chat:'<path d="M4 5h16v11H8l-4 3z"/>',
-    briefcase:'<path d="M4 7h16v13H4z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>',
-    house:'<path d="M3 10.5L12 4l9 6.5V20H3zM9 20v-6h6v6"/>',
-    doc:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
-    clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
-    radio:'<path d="M8 6l10 6-10 6z"/><path d="M4 5v14"/>',
-    coin:'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.8h4a1.7 1.7 0 0 1 0 3.4h-3a1.7 1.7 0 0 0 0 3.4h4"/>',
-    gavel:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/>',
-    flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
-    swap:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
-    chev:'<path d="M9 6l6 6-6 6"/>',
-    search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
-  };;
+  /* The sidebar lives in assets/js/ucp.js — one copy for every page. It
+     used to be pasted into all eleven, which is eleven things to forget
+     when one of them changes; adding a menu item is now an edit to NAV in
+     that file and nothing else. Any page with <nav id="nav"> gets it, drawn
+     from the cached rank on load and again when api/session.php answers.
+
+     The IS_* flags below stay: this page uses them for its own UI. */
   var IS_MANAGER = false, IS_FOUNDER = false, IS_ADMINISTRATOR = false;
   var MY_RANK = 0, MY_TEAMS = [];   // the ladder rung, and sub-group keys
   /* Seed the menu gates from the last known session so the FIRST paint is
@@ -1608,51 +1533,6 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     MY_RANK          = me.rank | 0;
     MY_TEAMS         = me.teams || [];
   })();
-  function svg(nm,c){ return '<svg class="'+c+'" viewBox="0 0 24 24" fill="none" stroke="currentColor">'+(ICONS[nm]||'')+'</svg>'; }
-  /* Menu gates.
-
-     `min` is a rank on the ladder in api/_ranks.php. `team` is a sub-group
-     key that opens the item on its own at ANY rank — which is how a Staff
-     Management holder reaches the Staff Report Panel without being
-     Management. A menu drawn from rank alone would be wrong for exactly the
-     people the sub-group exists for.
-
-     This decides what is DRAWN. Every page behind a link asks the server,
-     and every endpoint checks again; nothing here is a permission. */
-  function navMay(x){
-    if(!x) return true;
-    if(x.admin && !IS_MANAGER) return false;
-    if(x.founder && !IS_FOUNDER) return false;
-    if(x.admins && !IS_ADMINISTRATOR) return false;
-    if(x.notFounder && IS_FOUNDER) return false;
-    if(typeof x.min === 'number' && MY_RANK < x.min
-       && !(x.team && MY_TEAMS.indexOf(x.team) > -1)) return false;
-    return true;
-  }
-
-  function renderNav(){
-    $('nav').innerHTML = SIDEBAR.filter(function(it){
-      return navMay(it);
-    }).map(function(it){
-      if(it.heading) return '<div class="nav-heading">'+esc(it.heading)+'</div>';
-      if(it.children){
-        var subs = it.children.filter(navMay).map(function(c){
-          return c.empty ? '<a class="slot-empty">'+esc(c.label)+'</a>'
-                         : '<a href="'+esc(c.href||'#')+'">'+esc(c.label)+'</a>';
-        }).join('');
-        return '<div class="nav-group" data-collapsible><div class="nav-item">'+svg(it.icon,'i')+
-               '<span class="lbl">'+esc(it.label)+'</span>'+svg('chev','chev')+'</div>'+
-               '<div class="sub">'+subs+'</div></div>';
-      }
-      var tag = it.href ? 'a' : 'div', attr = it.href ? ' href="'+esc(it.href)+'"' : '';
-      return '<div class="nav-group"><'+tag+' class="nav-item'+(it.active?' active':'')+'"'+attr+'>'+
-             svg(it.icon,'i')+'<span class="lbl">'+esc(it.label)+'</span></'+tag+'></div>';
-    }).join('');
-    Array.prototype.forEach.call(document.querySelectorAll('.nav-group[data-collapsible] > .nav-item'), function(item){
-      item.addEventListener('click', function(){ item.parentElement.classList.toggle('open'); });
-    });
-  }
-  renderNav();
 
   /* ---- topbar chrome: the account menu, the mobile drawer, the clock ----
      Same behaviour as every other page. The menu starts closed; without this
@@ -2588,7 +2468,7 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
     IS_FOUNDER       = rank >= 9;
     MY_RANK          = rank;
     MY_TEAMS         = s.teams || [];
-    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderNav();
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderSidebar();
 
     if(rank < 3){
       lockOut('Administrators only',
