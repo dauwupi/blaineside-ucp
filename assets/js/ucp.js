@@ -218,7 +218,17 @@
            open to Staff Management holders at any administrator rank, so a
            menu drawn from rank alone would be wrong for exactly the people
            the sub-group exists for. */
-        teams: Array.isArray(m.teams) ? m.teams.map(String) : []
+        teams: Array.isArray(m.teams) ? m.teams.map(String) : [],
+        /* The balance, so the top bar paints the right number on the FIRST
+           frame. It was left out of this whitelist, which meant every load
+           drew 0, then the real figure a moment later when session.php
+           answered — a visible flicker, and a width change that shoved the
+           search box and the account button sideways with it.
+
+           A stale balance for one frame is fine; it is corrected by the
+           same request that always corrected it. A wrong balance of 0 for
+           one frame is not, because 0 is a number somebody might believe. */
+        credits: typeof m.credits === 'number' ? m.credits : undefined
       }));
     } catch (e) { /* private mode, quota — the page still works, it just blinks */ }
   }
@@ -881,9 +891,14 @@
       'cursor:default;user-select:none}',
     '.topbar .creditbox .cico{width:21px;height:21px;flex:none;stroke:var(--gold,#e2b65c);',
       'fill:none;stroke-width:1.6}',
+    /* min-width, and tabular figures, so the box is the same size at 0 and
+       at 999,9K. Without it the element resized as the balance arrived and
+       everything to its left moved — which is most of what the flicker
+       actually was. Centred, so the space either side stays even. */
     '.topbar .creditbox .cnum{font-family:Oswald,sans-serif;font-weight:600;font-size:16.5px;',
       'line-height:1;letter-spacing:.01em;font-variant-numeric:tabular-nums;',
-      'color:var(--gold,#e2b65c)}',
+      'color:var(--gold,#e2b65c);min-width:56px;text-align:center;display:inline-block}',
+    '.topbar .creditbox .cnum.unknown{color:var(--text-dim,#655e51)}',
 
     '.topbar .creditbox .cplus{width:34px;display:grid;place-items:center;',
       'color:var(--text-faint,#968e7e);border-left:1px solid var(--border,#38322b);',
@@ -933,7 +948,7 @@
         '<svg class="cico" viewBox="0 0 24 24">' +
           '<circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/>' +
           '<path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg>' +
-        '<span class="cnum" id="creditValue">0</span></span>' +
+        '<span class="cnum unknown" id="creditValue">—</span></span>' +
       '<a class="cplus" href="/dashboard/store#credits" aria-label="Buy credits" ' +
         'title="Buy credits">' +
         '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></a>';
@@ -945,9 +960,19 @@
   function paintCredits(me){
     var v = document.getElementById('creditValue');
     if (!v) return;
-    var n = me && typeof me.credits === 'number' ? me.credits : 0;
-    v.textContent = creditFormat(n);
-    v.setAttribute('title', n.toLocaleString('en-US') + ' credits');
+
+    /* Nothing cached and nothing from the server yet: an em dash, dimmed.
+       It holds the same width as a real figure and says "not known yet",
+       which 0 does not. */
+    if (!me || typeof me.credits !== 'number') {
+      v.textContent = '—';
+      v.className = 'cnum unknown';
+      v.removeAttribute('title');
+      return;
+    }
+    v.textContent = creditFormat(me.credits);
+    v.className = 'cnum';
+    v.setAttribute('title', me.credits.toLocaleString('en-US') + ' credits');
   }
 
   /* =====================================================================
@@ -972,7 +997,7 @@
     name.parentNode.replaceChild(a, name);
   }
 
-  var UCP_VERSION = '2.9.1';
+  var UCP_VERSION = '2.9.2';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
