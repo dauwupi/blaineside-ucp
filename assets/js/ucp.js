@@ -521,7 +521,7 @@
     {label:'My Profile',icon:'user',children:[
       {label:'My Account',href:'/profile'},
       {label:'Application',href:'/dashboard/application'}]},
-    {label:'World Points',icon:'clock',href:'#'},
+    {label:'Credit Store',icon:'coin',href:'/dashboard/store'},
     {label:'XM Radio',icon:'radio',href:'#'}
   ];
 
@@ -841,7 +841,29 @@
      The pages keep the markup as a fallback for a browser that never runs
      this; what is drawn here replaces it.
      ===================================================================== */
-  var UCP_VERSION = '2.7.0';
+  /* =====================================================================
+     THE BRAND MARK
+
+     BlaineSide in the top-left is the first thing anybody tries to click
+     to get home, and on every page it was a <span>. Done here rather than
+     in fourteen files: it is one line of markup that was wrong in the same
+     way everywhere.
+
+     A real anchor, not a click handler — so middle-click opens a tab and
+     the keyboard can reach it, which a div with an onclick cannot.
+     ===================================================================== */
+  function initBrandLink(){
+    var name = document.querySelector('.side-brand .name');
+    if (!name || name.closest('a')) return;
+    var a = document.createElement('a');
+    a.href = '/dashboard';
+    a.className = 'name';
+    a.setAttribute('aria-label', 'BlaineSide — go to the dashboard');
+    a.innerHTML = name.innerHTML;
+    name.parentNode.replaceChild(a, name);
+  }
+
+  var UCP_VERSION = '2.8.0';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -897,6 +919,7 @@
     renderNav();                // ditto for the menu, from the cached rank
     initNotifications();
     initSideFoot();
+    initBrandLink();
     // Drawn from the cached rank so the box doesn't flash in and out; the
     // real rank corrects it a moment later via rememberMe() below.
     initQuickSearch(CACHED ? CACHED.rank : 0);
