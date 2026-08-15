@@ -695,10 +695,16 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
    Four aligned columns. The pills line up, the chevrons line up, and the
    highlight lands on exactly the same box as the rule above it. */
 .aplist{margin-top:2px}
+/* Boxed, like the Scratchpad's notes. Four aligned columns inside each box:
+   the pills line up, the chevrons line up, and the row a hover highlights is
+   unmistakably one row. */
 .aprow{display:grid;grid-template-columns:46px minmax(0,1fr) 90px 14px;align-items:center;
-  gap:0 16px;padding:13px 22px;margin:0 -22px;cursor:pointer;transition:background .12s}
-.aprow + .aprow{border-top:1px solid var(--rule)}
-.aprow:hover{background:var(--charcoal-3)}
+  gap:0 16px;padding:12px 15px;border-radius:11px;
+  background:var(--charcoal-3);border:1px solid var(--border-soft);
+  cursor:pointer;transition:background .13s,border-color .13s}
+.aprow + .aprow{margin-top:9px}
+.aprow:hover{background:var(--charcoal-4);border-color:rgba(226,182,92,.26)}
+.aprow:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .aprow .num{font-size:11.5px;font-weight:700;color:var(--text-dim);letter-spacing:.02em;
   font-variant-numeric:tabular-nums;transition:color .12s}
 .aprow:hover .num{color:var(--gold)}
@@ -713,12 +719,17 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 .aprow .go{width:14px;height:14px;stroke-width:2.4;color:var(--text-dim);
   transition:color .12s,transform .12s;justify-self:end}
 .aprow:hover .go{color:var(--gold);transform:translateX(2px)}
-#appealPager .pager{margin:0 -22px;padding:15px 22px 0}
+#appealPager .pager{padding-top:16px}
 
 /* ---- one entry ---- */
 .list{margin-top:4px}
-.ent{padding:15px 0 14px;position:relative}
-.ent + .ent{border-top:1px solid var(--rule)}
+/* Boxed, the same as the appeal rows and the Scratchpad's notes. A run of
+   entries separated only by a hairline reads as one block of text with dates
+   in it; a box per entry gives the eye something to stop at. */
+.ent{padding:13px 15px 14px;position:relative;border-radius:11px;
+  background:var(--charcoal-3);border:1px solid var(--border-soft);
+  transition:border-color .13s}
+.ent + .ent{margin-top:9px}
 .ent-1{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .stampd{font-size:12.5px;font-weight:700;color:var(--parchment);font-variant-numeric:tabular-nums;
   white-space:nowrap}
@@ -764,11 +775,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
 /* ---- a row being changed ----
    A tint and a coloured left rule rather than a bordered box: it is the same
    row in a different mode, not a new thing beside it. */
-.ent.editing{background:rgba(226,182,92,.045);box-shadow:inset 3px 0 0 rgba(226,182,92,.5);
-  padding-left:15px;margin-left:-15px;border-radius:0 8px 8px 0}
-.ent.deleting,.pnote.deleting{background:rgba(193,85,63,.06);
-  box-shadow:inset 3px 0 0 rgba(193,85,63,.6);
-  padding-left:15px;margin-left:-15px;border-radius:0 8px 8px 0}
+.ent.editing{background:rgba(226,182,92,.05);border-color:rgba(226,182,92,.34);
+  box-shadow:inset 3px 0 0 rgba(226,182,92,.5)}
+.ent.deleting,.pnote.deleting{background:rgba(193,85,63,.07);
+  border-color:rgba(193,85,63,.4);box-shadow:inset 3px 0 0 rgba(193,85,63,.6)}
 .modehead{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:11px;font-weight:800;
   letter-spacing:.09em;text-transform:uppercase;color:var(--gold)}
 .deleting .modehead{color:#e0917f}
@@ -822,11 +832,10 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
    where every entry has the same shape and the eye is scanning a column —
    but a note is a paragraph of somebody's prose, and a run of them with only
    a rule between was one wall of text with names in it. */
-.pnote{padding:13px 15px 14px;border-radius:11px;
-  background:var(--charcoal);border:1px solid var(--border)}
+.pnote{padding:12px 15px 13px;border-radius:11px;
+  background:var(--charcoal-3);border:1px solid var(--border-soft)}
 .pnote + .pnote{margin-top:9px}
-.pnote.deleting{padding-left:15px;margin-left:0;border-radius:11px;
-  border-color:rgba(193,85,63,.35)}
+
 .note-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12px;
   color:var(--text-faint);font-variant-numeric:tabular-nums}
 .note-h b{color:var(--parchment);font-weight:700;font-size:12.5px}
@@ -879,9 +888,8 @@ body.ready .account-meta,body.ready .page-title h1{opacity:1}
   .pager{flex-direction:column;align-items:stretch;gap:12px}
   .pnav{justify-content:center}
   .rowbtns .mini{flex:1 1 auto;justify-content:center}
-  .aprow{grid-template-columns:40px minmax(0,1fr) auto;gap:0 12px;padding:13px 16px;margin:0 -16px}
+  .aprow{grid-template-columns:40px minmax(0,1fr) auto;gap:0 12px;padding:12px 13px}
   .aprow .go{display:none}
-  #appealPager .pager{margin:0 -16px;padding:15px 16px 0}
 }
 /* The old pager and the screenshot stamp lived here. The pager is now
    declared once, above, in the record block; the stamp was replaced by
