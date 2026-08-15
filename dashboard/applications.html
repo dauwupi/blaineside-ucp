@@ -568,7 +568,14 @@
     background:rgba(212,146,58,.1);border:1px solid rgba(212,146,58,.26)}
   .qhead .qi svg{width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:1.9}
   .qhead h1{font-size:23px;font-weight:700;letter-spacing:-.02em}
-  .qhead p{font-size:13.5px;color:var(--text-faint);margin-top:4px;max-width:82ch}
+  /* No max-width. A measure cap is right for body copy inside a card, but
+     this line sits alone under the page title with the full content width
+     behind it — capping it there just wraps a short sentence early and
+     leaves the right half of the header empty. */
+  /* max-width:none, not simply omitted: the shell's own .qhead p rule
+     higher up this stylesheet caps the measure at 66ch, and a later
+     rule that says nothing about max-width leaves that cap standing. */
+  .qhead p{font-size:13.5px;color:var(--text-faint);margin-top:4px;max-width:none}
 
   .card{background:var(--charcoal-2);border:1px solid var(--border-soft);border-radius:14px}
   .card + .card{margin-top:16px}

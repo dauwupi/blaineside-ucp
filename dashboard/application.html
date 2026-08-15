@@ -564,7 +564,14 @@
     background:rgba(212,146,58,.1);border:1px solid rgba(212,146,58,.26)}
   .qhead .qi svg{width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:1.9}
   .qhead h1{font-size:23px;font-weight:700;letter-spacing:-.02em}
-  .qhead p{font-size:13.5px;color:var(--text-faint);margin-top:4px;max-width:80ch}
+  /* No max-width. A measure cap is right for body copy inside a card, but
+     this line sits alone under the page title with the full content width
+     behind it — capping it there just wraps a short sentence early and
+     leaves the right half of the header empty. */
+  /* max-width:none, not simply omitted: the shell's own .qhead p rule
+     higher up this stylesheet caps the measure at 66ch, and a later
+     rule that says nothing about max-width leaves that cap standing. */
+  .qhead p{font-size:13.5px;color:var(--text-faint);margin-top:4px;max-width:none}
 
   .split{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
   @media (max-width:1150px){ .split{grid-template-columns:1fr} }
@@ -657,7 +664,7 @@
   .state svg{width:17px;height:17px;stroke:var(--gold);fill:none;stroke-width:1.9}
   .state.good svg{stroke:#9dbd77}
   .state h4{font-size:13.5px;font-weight:700}
-  .state p{font-size:12.5px;color:var(--text-faint);margin-top:2px;max-width:80ch}
+  .state p{font-size:12.5px;color:var(--text-faint);margin-top:2px}
   .state .act{margin-left:auto;flex:none}
 
   .arow.open{cursor:pointer;transition:background .13s,border-color .13s}
@@ -1064,8 +1071,9 @@
 
         '<div class="nextgrid">' +
           nextTile('user', 'Make your character',
-            'Your first character is created in game. Take the name and the backstory you ' +
-            'wrote in the application — it is the one people will know you by.') +
+            'Your first character is created in game, and none of it is fixed by what you ' +
+            'wrote here — the application only checks that you understand how roleplay works. ' +
+            'Pick whatever name and history you actually want to play.') +
           nextTile('book', 'Read the rules once more',
             'You have shown you know them. The full set is on the forums, and the parts ' +
             'people trip over most are the crime-zone and chain-robbing rules.') +
