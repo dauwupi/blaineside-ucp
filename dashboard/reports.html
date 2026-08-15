@@ -1416,6 +1416,10 @@
      nothing before it, so the gaps come from the grid and the bar above. */
   .apgrid > div > .card:first-child{margin-top:0}
   .lookbar{margin-bottom:20px}
+  /* The report number on a history row. The title is built from the names,
+     so two reports about the same person read identically without it. */
+  .hrow.tight .hid{flex:none;font-size:11.5px;font-weight:700;color:var(--text-dim);
+    font-variant-numeric:tabular-nums}
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css">
 </head>
@@ -2626,16 +2630,19 @@
       'once.</div></div></div>';
   }
 
-  /* ---- their other reports ----
-     One line each, and paged.
+  /* ---- their past reports ----
+     One line each, three to a page.
 
      It was three lines a row with the title wrapping, which is fine for a
      person who has reported somebody twice and unreadable for one who has
      done it sixty times — and sixty is exactly the case where this card
-     matters most, because the volume IS the finding. Status, title, when,
-     five to a page.
+     matters most, because the volume IS the finding. Three to a page keeps
+     it a sidebar-sized card rather than a second queue.
+
+     The id is on the row because the title is built from the names, so two
+     reports about the same person are two rows reading exactly alike.
      ===================================================================== */
-  var HPAGE = 1, HPER = 5;
+  var HPAGE = 1, HPER = 3;
 
   function historyCard(){
     var list = DATA.history || [];
@@ -2649,6 +2656,7 @@
       return '<a class="hrow tight" href="/dashboard/reports?id='+h.id+'" '+
         'title="'+escapeHtml(h.title)+'">'+
         '<span class="hst">'+statusPill(h.status)+'</span>'+
+        '<span class="hid">#'+h.id+'</span>'+
         '<span class="ht">'+escapeHtml(h.title)+'</span>'+
         '<span class="hw">'+escapeHtml(h.concluded_at ? ago(h.concluded_at)
                                                       : ago(h.created_at))+'</span>'+
@@ -2657,11 +2665,26 @@
 
     var pager = '';
     if(pages > 1){
+      /* The same control as a player's administrative record — numbers with
+         chevrons either side — so the two page the same way. */
+      var out = [], seen = {};
+      function push(n){
+        if(n < 1 || n > pages || seen[n]) return; seen[n] = 1;
+        out.push('<button class="pg'+(n === HPAGE ? ' on' : '')+'" data-hp="'+n+'">'+n+
+                 '</button>');
+      }
+      push(1);
+      if(HPAGE - 2 > 2) out.push('<span class="pg-gap">…</span>');
+      for(var i = HPAGE - 1; i <= HPAGE + 1; i++) push(i);
+      if(HPAGE + 2 < pages - 1) out.push('<span class="pg-gap">…</span>');
+      push(pages);
+
       pager = '<div class="pager tight">'+
-        '<span class="pinfo">Page '+HPAGE+' of '+pages+'</span>'+
+        '<span class="pinfo">'+list.length+' reports</span>'+
         '<button class="pg" data-hp="'+(HPAGE-1)+'"'+(HPAGE <= 1 ? ' disabled' : '')+
           ' aria-label="Previous page"><svg viewBox="0 0 24 24" fill="none" '+
           'stroke="currentColor"><path d="M15 6l-6 6 6 6"/></svg></button>'+
+        out.join('')+
         '<button class="pg" data-hp="'+(HPAGE+1)+'"'+(HPAGE >= pages ? ' disabled' : '')+
           ' aria-label="Next page"><svg viewBox="0 0 24 24" fill="none" '+
           'stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>'+
@@ -2669,7 +2692,7 @@
     }
 
     return '<div class="card"><div class="card-h"><h3>'+
-      (DATA.viewer.staff ? 'Their other reports' : 'Your other reports')+'</h3>'+
+      (DATA.viewer.staff ? 'Their past reports' : 'Your past reports')+'</h3>'+
       '<span class="aside">'+list.length+'</span></div>'+
       '<div class="card-b"><div class="hlist tight">'+rows+'</div>'+pager+'</div></div>';
   }

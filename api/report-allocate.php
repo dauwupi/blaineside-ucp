@@ -165,14 +165,19 @@ report_log_add($pdo, $id, $acc, 'handled', implode(' ', $changes));
 
 /* Being given a report is the notification that matters most on this page:
    an allocation nobody is told about is an allocation that has not
-   happened. Only on a change, and never to the person who did it. */
+   happened. Only on a change — but ALWAYS to the new handler, including
+   when that is the person doing the allocating. Taking a report for
+   yourself is how it enters your list of things to do, and a silent
+   self-allocation is one you have to remember on your own. */
 if (isset($hid) && $hid !== null && (int)($r['handler_id'] ?? 0) !== (int)$hid) {
+    $mine = (int)$hid === (int)$acc['id'];
     notify($pdo, (int)$hid, 'report', 'allocated',
-        'A staff report was allocated to you',
+        $mine ? 'You took a staff report' : 'A staff report was allocated to you',
         ['body' => (string)$r['title'],
          'url'  => '/dashboard/reports?id=' . $id,
-         'actor_name' => (string)$acc['username'],
+         'actor_name' => $mine ? null : (string)$acc['username'],
          'actor_id'   => (int)$acc['id'],
+         'self'       => true,
          'dedupe'     => 'report:' . $id . ':allocated']);
 }
 

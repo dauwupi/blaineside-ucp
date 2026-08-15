@@ -62,8 +62,15 @@ function notify(PDO $pdo, int $accountId, string $area, string $kind,
 {
     if ($accountId <= 0 || !notes_available($pdo)) return false;
 
-    /* Never tell somebody what they just did. */
-    if (!empty($opt['actor_id']) && (int)$opt['actor_id'] === $accountId) return false;
+    /* Never tell somebody what they just did — unless the caller says
+       otherwise. Being handed a piece of work is the exception: an
+       administrator who takes an unallocated report for themselves should
+       still get the notification, because the notification is what puts it
+       in their list of things to do. Everything else is noise. */
+    if (empty($opt['self']) && !empty($opt['actor_id'])
+        && (int)$opt['actor_id'] === $accountId) {
+        return false;
+    }
 
     $now    = time();
     $dedupe = isset($opt['dedupe']) && $opt['dedupe'] !== '' ? (string)$opt['dedupe'] : null;

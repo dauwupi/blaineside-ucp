@@ -14,6 +14,7 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require_once __DIR__ . '/_account.php';
 require_once __DIR__ . '/_appeals.php';
+require_once __DIR__ . '/_notify.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST required', 405);
 require_csrf();
@@ -92,6 +93,31 @@ if (array_key_exists('handler', $in)) {
                         WHERE id = ?')
             ->execute([(int)$t['id'], (string)$t['username'], time(), $id]);
         appeal_log_add($pdo, $id, $acc, 'handler', 'Handler set to ' . $t['username'] . '.');
+
+        /* The new handler always hears about it, including when they are
+           the person who just took it. Being handed an appeal is what puts
+           it in somebody's list of things to do, and a silent
+           self-assignment is one they have to remember on their own. */
+        if ((int)$t['id'] !== (int)($a['handler_id'] ?? 0)) {
+            $mine = (int)$t['id'] === (int)$acc['id'];
+
+            /* The appellant's name, for the one line of context that makes
+               the notification worth reading. Missing is fine — a deleted
+               account is not a reason to skip telling somebody they have
+               work. */
+            $w = $pdo->prepare('SELECT username FROM ucp_accounts WHERE id = ? LIMIT 1');
+            $w->execute([(int)$a['account_id']]);
+            $who = (string)($w->fetchColumn() ?: '');
+
+            notify($pdo, (int)$t['id'], 'appeal', 'allocated',
+                $mine ? 'You took a ban appeal' : 'A ban appeal was assigned to you',
+                ['body' => 'Appeal #' . $id . ($who ? ' from ' . $who : '') . '.',
+                 'url'  => '/dashboard/appeals?id=' . $id,
+                 'actor_name' => $mine ? null : (string)$acc['username'],
+                 'actor_id'   => (int)$acc['id'],
+                 'self'       => true,
+                 'dedupe'     => 'appeal:' . $id . ':allocated']);
+        }
         $did[] = 'Handler set to ' . $t['username'] . '.';
     }
 }
