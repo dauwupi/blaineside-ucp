@@ -579,6 +579,12 @@
 
   .card{background:var(--charcoal-2);border:1px solid var(--border-soft);border-radius:14px}
   .card + .card{margin-top:16px}
+  /* The answers card lives inside #answersHost so it can be redrawn on its
+     own without losing what is half-typed in the feedback box. That wrapper
+     is a plain div, so `.card + .card` stopped matching across it and the
+     gap above the card vanished. Spacing the wrapper restores it — and
+     anything else that ends up in a wrapper here gets it too. */
+  .split > div > * + *{margin-top:16px}
   .card-h{display:flex;align-items:center;gap:11px;padding:14px 18px;border-bottom:1px solid var(--border-soft)}
   .card-h h3{font-size:13.5px;font-weight:700}
   .card-h .r{margin-left:auto;display:flex;gap:9px;align-items:center}
@@ -656,7 +662,10 @@
   textarea:focus,input[type=text]:focus{outline:none;border-color:rgba(226,182,92,.45)}
 
   /* ---- review ---- */
-  .split{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+  /* 340, not 380. The decision box holds two buttons, a select and a
+     textarea and needs no more; every pixel it gives back goes to the
+     answers. */
+  .split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
   @media (max-width:1150px){ .split{grid-template-columns:1fr} }
 
   .warn{display:flex;gap:13px;align-items:flex-start;background:rgba(193,85,63,.09);
@@ -717,7 +726,10 @@
     font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums}
   .ihead .tx b{display:block;font-size:13.5px;font-weight:600}
   .ihead .r{margin-left:auto;flex:none;display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:11.5px}
-  .ibody{padding:0 16px 16px 56px;border-top:1px solid var(--border-soft);
+  /* Indented to 56px it lined up under the title, which looked tidy and
+     wasted a column of empty space down the left of every answer. Long
+     answers are the thing this page exists to read; they get the width. */
+  .ibody{padding:0 16px 16px;border-top:1px solid var(--border-soft);
     animation:bsOpen .16s ease-out both}
   .ibody .prompt{font-size:12.5px;color:var(--text-faint);line-height:1.75;padding-top:14px}
   .ihead[data-answer]{cursor:pointer;user-select:none}

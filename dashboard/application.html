@@ -573,7 +573,7 @@
      rule that says nothing about max-width leaves that cap standing. */
   .qhead p{font-size:13.5px;color:var(--text-faint);margin-top:4px;max-width:none}
 
-  .split{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+  .split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
   @media (max-width:1150px){ .split{grid-template-columns:1fr} }
 
   .card{background:var(--charcoal-2);border:1px solid var(--border-soft);border-radius:14px}
@@ -598,9 +598,11 @@
     letter-spacing:.1em;text-transform:uppercase;text-indent:.05em;line-height:1;padding:5px 10px;
     border-radius:7px;border:1px solid var(--border);background:var(--charcoal-3);color:var(--text-dim)}
   .mark.on{color:var(--gold);border-color:rgba(226,182,92,.34);background:rgba(226,182,92,.08)}
-  .ibody{padding:0 16px 16px 56px;border-top:1px solid var(--border-soft);
+  /* Full width, not indented under the title — see the same note on the
+     review page. An answer is the content, not a caption. */
+  .ibody{padding:0 16px 16px;border-top:1px solid var(--border-soft);
     animation:bsOpen .16s ease-out both}
-  .ibody .prompt{font-size:12.5px;color:var(--text-faint);line-height:1.75;padding-top:14px;max-width:92ch}
+  .ibody .prompt{font-size:12.5px;color:var(--text-faint);line-height:1.75;padding-top:14px}
   .ibody textarea{margin-top:11px}
   textarea,input[type=text]{width:100%;background:var(--charcoal);border:1px solid var(--border);
     border-radius:10px;color:var(--parchment);font:inherit;font-size:13px;padding:12px 13px;resize:vertical;
