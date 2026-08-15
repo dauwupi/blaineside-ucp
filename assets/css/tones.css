@@ -216,3 +216,20 @@
 @media (prefers-reduced-motion:reduce){
   .topbar .creditbox .cplus{transition:none}
 }
+
+
+/* ---------------------------------------------------------------------
+   THE ACCOUNT MENU
+
+   Closed in CSS, not by script.
+
+   Every page hid this with menu.style.display = 'none' in its own inline
+   JavaScript, which runs after the browser has already painted — so the
+   whole dropdown flashed open for a frame on every load. A stylesheet in
+   the <head> means it is never painted at all.
+
+   assets/js/ucp.js writes the same inline style at boot so the existing
+   per-page toggles, which read menu.style.display, still open it on the
+   first click.
+   --------------------------------------------------------------------- */
+.account-menu{display:none}

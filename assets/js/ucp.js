@@ -929,6 +929,18 @@
     v.setAttribute('title', me.credits.toLocaleString('en-US') + ' credits');
   }
 
+
+  /* The account dropdown is closed by assets/css/tones.css, in the head,
+     so it is never painted open. The pages toggle it by reading
+     menu.style.display, though — which is '' until something writes it,
+     and '' is not 'none', so the first click would close an already
+     closed menu and appear to do nothing. Writing it here keeps those
+     toggles working without touching a single page. */
+  function initAccountMenu(){
+    var menu = document.getElementById('acctMenu');
+    if (menu && !menu.style.display) menu.style.display = 'none';
+  }
+
   /* =====================================================================
      THE BRAND MARK
 
@@ -951,7 +963,7 @@
     name.parentNode.replaceChild(a, name);
   }
 
-  var UCP_VERSION = '3.0.0';
+  var UCP_VERSION = '3.0.1';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1023,6 +1035,7 @@
     initSideFoot();
     initBrandLink();
     initCredits();
+    initAccountMenu();
     // Drawn from the cached rank so the box doesn't flash in and out; the
     // real rank corrects it a moment later via rememberMe() below.
     initQuickSearch(CACHED ? CACHED.rank : 0);
