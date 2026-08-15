@@ -104,6 +104,24 @@ try {
 } catch (Throwable $e) {
 }
 
+/* Credit balance.
+ *
+ * Guarded, like the sub-groups above it: the table arrives with
+ * docs/migration-credits.sql, and one migration behind the key is simply
+ * absent. Absent is NOT zero — assets/js/ucp.js paints nothing rather than
+ * a balance of 0 that nobody has any reason to believe.
+ *
+ * An account with no row has never held credits, which IS zero, so the
+ * COALESCE is correct where the missing table is not. */
+$credits = null;
+try {
+    $st = $pdo->prepare('SELECT balance FROM ucp_credits WHERE account_id = ? LIMIT 1');
+    $st->execute([(int)$acc['id']]);
+    $v = $st->fetchColumn();
+    $credits = $v === false ? 0 : (int)$v;
+} catch (Throwable $e) {
+}
+
 ok([
     'authenticated' => true,
     'id'     => (int)$acc['id'],
@@ -116,4 +134,4 @@ ok([
     // Set only when security.totp_required_rank is configured and this rank
     // is at or above it. The dashboard uses it to send staff to /security.
     'twofa_setup_required' => twofa_is_required($rank) && !$enabled,
-]);
+] + ($credits === null ? [] : ['credits' => $credits]));

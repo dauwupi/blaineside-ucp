@@ -1326,6 +1326,17 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   }
   window.addEventListener('hashchange', route);
 
+  /* The balance in the header. Same source as the top bar — api/session.php
+     — so the two can never disagree. Shown in full here rather than
+     abbreviated: this is the page you come to when you want the exact
+     number. */
+  UCP.get('session.php').then(function(d){
+    var b = el('bal');
+    if(!b) return;
+    var n = (d && typeof d.credits === 'number') ? d.credits : 0;
+    b.innerHTML = n.toLocaleString('en-US') + '<i>credits</i>';
+  });
+
   /* The ticket count sits on a tab, so it is fetched once on arrival
      whichever tab is open. */
   UCP.get('store-tickets.php?scope=mine&status=all&page=1').then(function(d){
