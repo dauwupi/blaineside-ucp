@@ -799,6 +799,8 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   .flow{display:grid;grid-template-columns:repeat(3,1fr)}
   @media (max-width:900px){.flow{grid-template-columns:1fr}}
   .step{padding:20px 20px 22px}
+  .ovtop .step{padding:15px 18px 16px}
+  .ovtop .step p{margin-top:9px}
   .step + .step{border-left:1px solid var(--border)}
   @media (max-width:900px){.step + .step{border-left:0;border-top:1px solid var(--border)}}
   .step .mk{display:flex;align-items:center;gap:10px}
@@ -1252,27 +1254,36 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
       ' cents a credit, the most expensive of the ' + TIERS.length + '.</div>';
   }
 
+  /* One delegated listener on the page body rather than a listener per
+     element: redrawing the value panel used to call this again, which
+     bound a second handler to every FAQ row, so a click fired twice and
+     the answer opened and shut in the same tick. */
   function wireOverview(){
-    document.querySelectorAll('[data-pack]').forEach(function(b){
-      b.addEventListener('click', function(){
-        VSEL = parseInt(this.getAttribute('data-pack'), 10);
-        var host = el('valBody');
-        if(host){ host.innerHTML = valPanel(); wireOverview(); }
-      });
-    });
-    /* One at a time. Nine questions all open is a page nobody can find
-       their way back up. */
-    document.querySelectorAll('.faq .qh').forEach(function(h){
-      h.addEventListener('click', function(){
-        var q = h.parentNode, was = q.classList.contains('on');
-        document.querySelectorAll('.faq .q.on').forEach(function(o){ o.classList.remove('on'); });
+    var host = el('body');
+    if(!host || host.dataset.wired) return;
+    host.dataset.wired = '1';
+
+    host.addEventListener('click', function(e){
+      var bar = e.target.closest('[data-pack]');
+      if(bar){
+        VSEL = parseInt(bar.getAttribute('data-pack'), 10);
+        var vb = el('valBody');
+        if(vb) vb.innerHTML = valPanel();
+        return;
+      }
+
+      /* One question open at a time: nine open at once is a page nobody
+         can find their way back up. */
+      var qh = e.target.closest('.faq .qh');
+      if(qh){
+        var q = qh.parentNode, was = q.classList.contains('on');
+        host.querySelectorAll('.faq .q.on').forEach(function(o){ o.classList.remove('on'); });
         if(!was) q.classList.add('on');
-      });
-    });
-    document.querySelectorAll('[data-goto]').forEach(function(a){
-      a.addEventListener('click', function(e){
-        e.preventDefault(); location.hash = this.getAttribute('data-goto');
-      });
+        return;
+      }
+
+      var go = e.target.closest('[data-goto]');
+      if(go){ e.preventDefault(); location.hash = go.getAttribute('data-goto'); }
     });
   }
 
