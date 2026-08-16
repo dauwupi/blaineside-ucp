@@ -614,38 +614,38 @@
 
 .packs{display:flex;flex-direction:column}
 /* A <button> does not inherit the page's colour, so the row states it. */
-.pk{color:var(--parchment);display:grid;
+.prow{color:var(--parchment);display:grid;
   grid-template-columns:164px minmax(0,1fr) 92px 112px 22px;align-items:center;gap:14px;
-  padding:20px 18px;cursor:pointer;border:0;background:none;font-family:inherit;text-align:left;
+  padding:14px 18px;cursor:pointer;border:0;background:none;font-family:inherit;text-align:left;
   width:100%;border-top:1px solid var(--border);transition:.13s;position:relative}
-.pk:first-child{border-top:0}
-.pk:hover{background:var(--charcoal-3)}
-.pk.on{background:var(--charcoal-3)}
-.pk.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gold)}
-.pk .top{display:flex;align-items:center;gap:8px}
-.pk .top svg{width:17px;height:17px;stroke:#b99a5e;fill:none;stroke-width:1.85;flex:none}
-.pk.on .top svg{stroke:var(--gold)}
-.pk .top .n{font-size:20px;font-weight:700;line-height:1;letter-spacing:-.025em;
+.prow:first-child{border-top:0}
+.prow:hover{background:var(--charcoal-3)}
+.prow.on{background:var(--charcoal-3)}
+.prow.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gold)}
+.prow .top{display:flex;align-items:center;gap:8px}
+.prow .top svg{width:17px;height:17px;stroke:#b99a5e;fill:none;stroke-width:1.85;flex:none}
+.prow.on .top svg{stroke:var(--gold)}
+.prow .top .n{font-size:20px;font-weight:700;line-height:1;letter-spacing:-.025em;
   font-variant-numeric:tabular-nums;color:var(--parchment)}
-.pk .line{display:block;font-size:10.5px;color:var(--text-dim);margin-top:7px;line-height:1;
+.prow .line{display:block;font-size:10.5px;color:var(--text-dim);margin-top:7px;line-height:1;
   font-variant-numeric:tabular-nums}
-.pk .line b{color:#9dbd77;font-weight:700}
-.pk .tr{height:9px;border-radius:100px;background:var(--charcoal-4);overflow:hidden}
-.pk .tr i{display:block;height:100%;border-radius:100px;
+.prow .line b{color:#9dbd77;font-weight:700}
+.prow .tr{height:9px;border-radius:100px;background:var(--charcoal-4);overflow:hidden}
+.prow .tr i{display:block;height:100%;border-radius:100px;
   background:linear-gradient(90deg,var(--stone),#a8916a)}
-.pk.on .tr i{background:linear-gradient(90deg,var(--amber),var(--gold))}
-.pk .off{font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;text-align:right;line-height:1}
-.pk .off.base{font-style:italic}
-.pk.on .off{color:var(--gold);font-weight:700}
-.pk .pr{text-align:right;line-height:1}
-.pk .pr .now{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+.prow.on .tr i{background:linear-gradient(90deg,var(--amber),var(--gold))}
+.prow .off{font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;text-align:right;line-height:1}
+.prow .off.base{font-style:italic}
+.prow.on .off{color:var(--gold);font-weight:700}
+.prow .pr{text-align:right;line-height:1}
+.prow .pr .now{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;
   color:var(--parchment)}
-.pk.on .pr .now{color:var(--gold)}
-.pk .pr .was{display:block;font-size:11px;color:var(--text-dim);text-decoration:line-through;margin-top:5px}
-.pk .pr .each{display:block;font-size:10.5px;color:var(--text-dim);margin-top:5px}
-.pk .rd{width:18px;height:18px;border-radius:50%;border:1.6px solid var(--border);display:grid;place-items:center}
-.pk.on .rd{border-color:var(--gold)}
-.pk.on .rd::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.prow.on .pr .now{color:var(--gold)}
+.prow .pr .was{display:block;font-size:11px;color:var(--text-dim);text-decoration:line-through;margin-top:5px}
+.prow .pr .each{display:block;font-size:10.5px;color:var(--text-dim);margin-top:5px}
+.prow .rd{width:18px;height:18px;border-radius:50%;border:1.6px solid var(--border);display:grid;place-items:center}
+.prow.on .rd{border-color:var(--gold)}
+.prow.on .rd::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--gold)}
 
 /* The promotion is the header of the card whose prices it changes, so the
    claim and the numbers it affects are one object. */
@@ -1259,14 +1259,23 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   /* Prices, and nothing else. Every percentage, per-credit figure and bar
      length on this page and on the Overview is derived from these two
      numbers, so changing a price cannot leave a stale claim behind. */
+  /* Prices, and nothing else. Every percentage, per-credit figure and bar
+     length on this page and on the Overview is derived from these two
+     numbers, so changing a price cannot leave a stale claim behind.
+
+     The ladder is deliberately dense at the bottom: most people buy one
+     item, and the gap from €4.99 to €14.99 was wide enough that the small
+     pack was the only realistic first purchase. */
   var TIERS = [
     {credits:50,   price:'€4.99'},
+    {credits:120,  price:'€10.99'},
     {credits:180,  price:'€14.99'},
+    {credits:260,  price:'€19.99'},
     {credits:375,  price:'€24.99'},
     {credits:850,  price:'€49.99'},
-    {credits:2000, price:'€99.99'},
-    {credits:5000, price:'€199.99'}
+    {credits:2000, price:'€99.99'}
   ];
+
 
 
   var ICONS = {
@@ -1563,7 +1572,10 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
     var top = packSaveMax();
     return TIERS.map(function(t, i){
       var sv = packSave(i), bonus = packCredits(t) - t.credits, cut = PROMO && PROMO.kind === 'off';
-      return '<button class="pk' + (i === PSEL ? ' on' : '') + '" data-pack="' + i + '">' +
+      /* .prow / data-buy, not .pk / data-pack: the Overview's value panel
+         already owns those names, and sharing them made a click on one of
+         its bars jump to this tab. */
+      return '<button class="prow' + (i === PSEL ? ' on' : '') + '" data-buy="' + i + '">' +
         '<span><span class="top">' + CRED + '<span class="n">' + num(packCredits(t)) + '</span></span>' +
           '<span class="line">' + (bonus
             ? num(t.credits) + ' + <b>' + num(bonus) + ' bonus</b>'
@@ -2063,8 +2075,8 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
     var host = el('body');
     if(!host) return;
     host.addEventListener('click', function(e){
-      var pk = e.target.closest('[data-pack]');
-      if(pk){ PSEL = parseInt(pk.getAttribute('data-pack'), 10); return viewCredits(); }
+      var pk = e.target.closest('[data-buy]');
+      if(pk){ PSEL = parseInt(pk.getAttribute('data-buy'), 10); return viewCredits(); }
       if(e.target.closest('#promoBtn')) return promoModal();
     });
   })();
