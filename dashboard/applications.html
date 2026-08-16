@@ -757,12 +757,18 @@
      A reading aid under an answer, staff only. Collapsed on arrival — note
      included: on a six-question application it would otherwise be six panels
      of small print between the reviewer and the next answer. */
-  .assist .ah{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  /* 11.25/8.75 rather than 10/10: the runs have no descenders, so their
+     visual block is cap-top to baseline, which sits 1.25px above the box
+     centre. Measured off a 4x render, not guessed. */
+  .assist .ah{display:flex;align-items:center;gap:10px;padding:11.25px 14px 8.75px;
     border-top:1px solid var(--border);background:var(--charcoal-2);
     cursor:pointer;user-select:none;font-size:11.5px;color:var(--text-dim);line-height:1}
-  /* Every child gets the same 14px box so the header's top and bottom
-     padding are identical no matter what the font metrics do. */
-  .assist .ah > span{display:inline-flex;align-items:center;height:14px;line-height:1}
+  /* Centring the boxes is not centring the letters: 10px caps and 11.5px
+     lowercase have different cap-heights, so equal boxes still read as
+     stepped. The three runs sit on one baseline instead, and the baseline
+     group as a whole is what gets centred in the row. */
+  .assist .ah .lbl{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .assist .ah .lbl > span{line-height:1}
   .assist .ah .t{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
     color:var(--text-faint);text-indent:.14em}
   .assist .ah .score{font-variant-numeric:tabular-nums;font-weight:600;color:var(--text-faint)}
@@ -1259,8 +1265,10 @@
       '<span><b>' + num(st.longest) + '</b> words in the longest run</span></div>';
 
     return '<div class="assist' + (open ? ' open' : '') + '">' +
-      '<div class="ah" data-assist="' + a.id + '"><span class="t">Application Assist</span>' +
-      '<span class="score">' + s.found + ' of ' + s.total + '</span><span>criteria found</span>' +
+      '<div class="ah" data-assist="' + a.id + '"><span class="lbl">' +
+      '<span class="t">Application Assist</span>' +
+      '<span class="score">' + s.found + ' of ' + s.total + '</span>' +
+      '<span class="cf">criteria found</span></span>' +
       '<svg class="cv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>' +
       '<div class="ab">' + checks + meta +
       '<div class="note">Assist looks for wording, not understanding. A missing line means those ' +
