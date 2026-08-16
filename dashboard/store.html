@@ -695,6 +695,13 @@
 .sum .go{margin-top:14px;width:100%}
 .sum .note{margin-top:13px;font-size:11px;color:var(--text-dim);line-height:1.7}
 
+.paying{border-top:1px solid var(--border);padding:15px 20px 17px;background:var(--charcoal)}
+.paying .k{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim)}
+.prow2{display:flex;gap:11px;font-size:12px;color:var(--text-dim);line-height:1.7;padding:9px 0}
+.prow2 + .prow2{border-top:1px solid rgba(56,50,43,.5)}
+.prow2 svg{width:14px;height:14px;flex:none;margin-top:3px;stroke:var(--gold);fill:none;stroke-width:1.8}
+.prow2 b{color:var(--text-faint);font-weight:600}
+
 .det{display:grid;grid-template-columns:repeat(3,1fr)}
 @media (max-width:900px){.det{grid-template-columns:1fr}}
 .dc{padding:17px 18px 19px}
@@ -895,7 +902,12 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
 
   /* The shell puts a top margin on any .card following a .card; inside a
      grid row that pushes the second column down by itself. */
-  .ovtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+  /* Both cards end level, and the shorter one spreads its own rows to fill
+     rather than leaving a pocket of empty card at the bottom. */
+  .ovtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:stretch}
+  .ovtop > .card{display:flex;flex-direction:column}
+  .ovtop .card-b{flex:1;display:flex;flex-direction:column}
+  .bars{flex:1;justify-content:space-evenly}
   .ovtop > .card + .card{margin-top:0}
   @media (max-width:1080px){.ovtop{grid-template-columns:minmax(0,1fr)}}
 
@@ -1380,7 +1392,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
      'Every credit spends the same, but the larger packs cost less to buy per credit. The 2,000 pack works out 50% cheaper per credit than the 50 pack. If you already know what you want and it costs more than a small pack covers, buying the larger pack once is cheaper than topping up twice.' +
      '<div class="kb">' + INFO + '<span>The comparison at the top of this page shows the difference for every pack.</span></div>'],
     ['Buying','How do I pay?',
-     'Card and PayPal, through the payment provider &mdash; the store never sees or stores your card details.' +
+     'By bank transfer, through the payment provider &mdash; the store never sees or stores your bank details.' +
      '<div class="kb no">' + WARN + '<span>Payments are not switched on yet. Prices are final, but nothing can be bought until the provider is connected.</span></div>'],
     ['Spending','Does any of this give an advantage?',
      'No, and that is deliberate. Everything sold here is cosmetic, administrative or convenience: names, slots, plates, standing. Nothing you buy changes how your character performs against anyone else, and nothing affects the in-game economy.'],
@@ -1498,6 +1510,15 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
           '<p>Choose an item, confirm, and the system applies it for you. No ticket, no approval, no waiting.</p></div>' +
           '<div class="step" style="border-left:0;border-top:1px solid var(--border)"><div class="mk"><span class="n">3</span><h4>Keep the receipt</h4></div>' +
           '<p>Every top-up and every purchase is listed under Purchase History with the date, the cost and exactly where it was applied.</p></div>' +
+        '</div>' +
+        /* A footer rather than padding: the two cards in this row should end
+           level, and empty space with a border round it is the thing we keep
+           taking out of this page. */
+        '<div class="paying"><div class="k">Paying</div>' +
+          '<div class="prow2">' + BANK + '<span><b>Bank transfer.</b> Handled by the payment provider &mdash; ' +
+          'the store never sees or stores your bank details.</span></div>' +
+          '<div class="prow2">' + LOCK + '<span><b>Euro, tax included.</b> The price on the pack is the price ' +
+          'charged. Nothing recurs and nothing renews.</span></div>' +
         '</div></div>' +
       '</div>' +
 
@@ -1640,9 +1661,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
         '<div class="after">' + CRED + '<span>Balance after this purchase</span><b>' +
         num(bal + packCredits(t)) + '</b></div>') +
 
-      '<div class="methods"><span class="mth">' + CARD + 'Card</span>' +
-      '<span class="mth">' + PPAL + 'PayPal</span>' +
-      '<span class="mth">' + BANK + 'Bank transfer</span>' +
+      '<div class="methods"><span class="mth">' + BANK + 'Bank transfer</span>' +
       '<span class="mth">' + LOCK + 'Encrypted</span></div>' +
 
       '<button class="btn primary go" disabled>Payments aren’t switched on yet</button>' +
@@ -1663,9 +1682,9 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
         '<div class="dc"><b>' + DOC + 'Receipted permanently</b><p>Every top-up is written to Purchase History ' +
         'with the date, the amount, the price paid and any promotion applied &mdash; quote that number if ' +
         'anything needs correcting.</p></div>' +
-        '<div class="dc"><b>' + LOCK + 'Handled by the provider</b><p>Card, PayPal and bank transfer are ' +
-        'processed by the payment provider. The store never sees or stores your card details, and prices ' +
-        'are in euro with tax included.</p></div>' +
+        '<div class="dc"><b>' + LOCK + 'Handled by the provider</b><p>Payment is by bank transfer, handled ' +
+        'by the payment provider. The store never sees or stores your bank details, and prices are in euro ' +
+        'with tax included.</p></div>' +
       '</div></div>');
   }
 
