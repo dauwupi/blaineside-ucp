@@ -555,10 +555,11 @@
   /* =====================================================================
      CREDIT STORE
 
-     Four tabs, one page, chosen by the hash so a link can point at any of
+     Five tabs, one page, chosen by the hash so a link can point at any of
      them:
 
-       (none) / #credits   the price tiers
+       (none) / #overview  the introduction
+       #credits            the price tiers
        #shop               what credits buy
        #history            what you have bought
        #support            tickets, and the only tab wired to anything
@@ -567,25 +568,35 @@
      behind them. They say so, out loud, at the top of the page: a Buy
      button that silently does nothing is worse than one that admits it.
      ===================================================================== */
-/* header + balance */
-.qhead{display:flex;gap:15px;align-items:flex-start;margin-bottom:18px}
+/* header */
+.qhead{display:flex;gap:15px;align-items:center;margin-bottom:0}
 .qhead .qi{width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;
-  background:rgba(212,146,58,.1);border:1px solid rgba(212,146,58,.26)}
+  background:linear-gradient(160deg,rgba(226,182,92,.2),rgba(212,146,58,.06));
+  border:1px solid rgba(226,182,92,.34)}
 .qhead .qi svg{width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:1.9}
 .qhead h1{font-size:23px;font-weight:700;letter-spacing:-.02em}
 .qhead p{font-size:13.5px;color:var(--text-faint);margin-top:4px}
-.qhead .bal{margin-left:auto;flex:none;text-align:right;border-left:1px solid var(--border);padding-left:22px}
-.qhead .bal .k{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim)}
-.qhead .bal .v{font-family:Oswald,sans-serif;font-size:30px;font-weight:600;line-height:1.05;
-  letter-spacing:.01em;color:var(--gold);margin-top:3px}
-.qhead .bal .v i{font-style:normal;font-size:13px;color:var(--text-faint);margin-left:5px;font-family:Inter,sans-serif;font-weight:600}
 
-.tabs{display:flex;gap:4px;background:var(--charcoal-2);border:1px solid var(--border);
-  border-radius:11px;padding:4px;margin-bottom:20px;width:max-content;flex-wrap:wrap}
-.tab{padding:8px 16px;border-radius:8px;font-size:12.5px;font-weight:700;color:var(--text-faint);
-  cursor:pointer;border:none;background:none;font-family:inherit;display:flex;align-items:center;gap:8px}
-.tab.on{background:var(--charcoal);color:var(--parchment)}
-.tab .n{font-size:10.5px;font-weight:800;color:var(--amber)}
+/* Every gap on this page is the same 14px, set once here rather than as a
+   margin on each block, so nothing can drift. */
+.stack > * + *{margin-top:14px}
+
+/* Tabs as a shelf: five labelled destinations, icon and label centred
+   together on one row. */
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{flex:1;min-width:150px;display:flex;align-items:center;justify-content:center;gap:11px;height:52px;
+  padding:0 14px;border-radius:12px;background:var(--charcoal-2);border:1px solid var(--border);
+  cursor:pointer;font-family:inherit;transition:.14s;position:relative}
+.tab .ic{width:30px;height:30px;flex:none;border-radius:8px;display:grid;place-items:center;
+  background:var(--charcoal-3);border:1px solid var(--border-soft);color:var(--text-faint)}
+.tab .ic svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9}
+.tab b{font-size:12.5px;font-weight:600;color:var(--text-faint);line-height:1}
+.tab:hover{border-color:rgba(226,182,92,.24)}
+.tab.on{background:var(--charcoal-3);border-color:rgba(226,182,92,.4)}
+.tab.on b{color:var(--parchment)}
+.tab.on .ic{color:var(--gold);border-color:rgba(226,182,92,.34);background:rgba(226,182,92,.1)}
+.tab .n{position:absolute;top:9px;right:11px;font-size:10.5px;font-weight:800;color:var(--amber);
+  font-variant-numeric:tabular-nums}
 
 .notice{display:flex;align-items:center;gap:13px;background:linear-gradient(90deg,rgba(212,146,58,.10),rgba(212,146,58,.045));
   border:1px solid rgba(212,146,58,.30);border-radius:13px;padding:13px 16px;margin-bottom:18px;font-size:12.5px}
@@ -714,6 +725,141 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   .pg[disabled]{opacity:.35;cursor:not-allowed}
   .pgap{color:var(--text-dim);font-size:12px}
 
+  /* ---------------- Overview ----------------
+     The photograph is the county at dusk, processed down to about half
+     colour and masked so it only exists on the right of the card: the
+     headline sits on flat charcoal and never needs a shadow to stay
+     readable. 16KB of WebP. */
+  .hero{position:relative;padding:30px 30px 0;overflow:hidden;background:var(--charcoal-2);
+    display:flex;flex-direction:column}
+  .hero .img{position:absolute;inset:0;background:url(/assets/img/hero-jack.webp) no-repeat center right/cover}
+  .hero .veil{position:absolute;inset:0;background:linear-gradient(90deg,
+    var(--charcoal-2) 22%, rgba(32,29,25,.60) 48%, rgba(32,29,25,.14) 76%, rgba(32,29,25,.26) 100%)}
+  .hero .glow{position:absolute;inset:0;background:
+    radial-gradient(560px 240px at 74% 12%, rgba(212,146,58,.14), transparent 66%)}
+  .hero .in{position:relative;padding-bottom:26px}
+  .hero .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
+  .hero h2{font-size:27px;font-weight:700;line-height:1.28;letter-spacing:-.015em;margin:11px 0 13px;max-width:26ch}
+  .hero h2 em{font-style:normal;color:var(--gold)}
+  .hero p{font-size:13px;color:var(--text-faint);line-height:1.85;max-width:52ch}
+  .hero .acts{display:flex;gap:9px;margin-top:20px;flex-wrap:wrap}
+  .facts{position:relative;display:flex;margin-top:auto;padding:18px 30px;
+    border-top:1px solid var(--border);background:rgba(18,17,16,.62)}
+  .facts .f{flex:1;padding-right:16px;min-width:0}
+  .facts .f + .f{padding-left:18px;border-left:1px solid var(--border)}
+  .facts .f b{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;
+    color:var(--parchment);line-height:1}
+  .facts .f b svg{width:14px;height:14px;stroke:var(--gold);fill:none;stroke-width:1.9;flex:none}
+  .facts .f span{display:block;font-size:11.5px;color:var(--text-dim);line-height:1.65;margin-top:7px}
+
+  .ovtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+  @media (max-width:1080px){.ovtop{grid-template-columns:minmax(0,1fr)}}
+
+  /* Value comparison. Longer bar means a better deal, which is the
+     direction people expect; the smallest pack is the baseline everything
+     is measured against, so it has no bar at all. */
+  /* Not stretched to match its neighbour: a card padded out to someone
+     else's height is just a pool of empty space with a border round it. */
+  .val .card-b{padding:16px 18px 18px}
+  .val .lead{font-size:12px;color:var(--text-dim);line-height:1.7;margin-bottom:15px}
+  .bars{display:flex;flex-direction:column;gap:2px}
+  .bar{display:grid;grid-template-columns:62px minmax(0,1fr) 74px;align-items:center;gap:11px;
+    padding:8px 9px;border-radius:9px;cursor:pointer;border:1px solid transparent;transition:.13s;
+    background:none;font-family:inherit;text-align:left;width:100%}
+  .bar:hover{background:var(--charcoal-3)}
+  .bar.on{background:var(--charcoal-3);border-color:rgba(226,182,92,.32)}
+  .bar .pk{font-size:12px;font-weight:600;color:var(--text-faint);font-variant-numeric:tabular-nums;
+    text-align:right;line-height:1}
+  .bar.on .pk{color:var(--parchment)}
+  .bar .tr{height:9px;border-radius:100px;background:var(--charcoal-4);overflow:hidden}
+  .bar .tr i{display:block;height:100%;border-radius:100px;
+    background:linear-gradient(90deg,var(--stone),#a8916a);transition:.2s}
+  .bar.on .tr i{background:linear-gradient(90deg,var(--amber),var(--gold))}
+  .bar .rt{font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;text-align:right;line-height:1}
+  .bar .rt.base{font-style:italic}
+  .bar.on .rt{color:var(--gold);font-weight:700}
+  .val .out{margin-top:16px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr)}
+  .val .out .cell{padding:13px 0 2px;text-align:center}
+  .val .out .cell + .cell{border-left:1px solid var(--border)}
+  .val .out .k{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--text-dim);line-height:1;text-indent:.13em}
+  .val .out .n{display:block;margin-top:9px;font-size:17px;font-weight:700;color:var(--parchment);
+    line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .val .out .n.gold{color:var(--gold)}
+  .val .out .n.good{color:#9dbd77}
+  .val .note{margin-top:15px;padding-top:13px;border-top:1px solid var(--border);
+    font-size:11px;color:var(--text-dim);line-height:1.65}
+
+  .flow{display:grid;grid-template-columns:repeat(3,1fr)}
+  @media (max-width:900px){.flow{grid-template-columns:1fr}}
+  .step{padding:20px 20px 22px}
+  .step + .step{border-left:1px solid var(--border)}
+  @media (max-width:900px){.step + .step{border-left:0;border-top:1px solid var(--border)}}
+  .step .mk{display:flex;align-items:center;gap:10px}
+  .step .mk .n{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:11px;
+    font-weight:800;color:#1a1512;background:linear-gradient(180deg,var(--gold),var(--amber));
+    font-variant-numeric:tabular-nums}
+  .step .mk h4{font-size:13px;font-weight:700}
+  .step p{font-size:12.5px;color:var(--text-dim);line-height:1.75;margin-top:11px}
+  .step .hint{display:inline-flex;align-items:center;gap:7px;margin-top:13px;font-size:11px;
+    color:var(--text-faint);background:var(--charcoal-3);border:1px solid var(--border-soft);
+    border-radius:8px;padding:6px 10px;line-height:1}
+  .step .hint svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+
+  /* FAQ. Everything is closed on arrival except the first, and answers
+     carry their own structure — lists where a case branches, a callout
+     where there is something worth not missing. */
+  .faq .q{border-top:1px solid var(--border)}
+  .faq .q:first-child{border-top:0}
+  .faq .qh{display:flex;align-items:center;gap:12px;padding:14px 18px;font-size:12.5px;font-weight:600;
+    line-height:1;cursor:pointer;user-select:none;transition:.13s}
+  .faq .qh:hover{background:rgba(41,37,32,.5)}
+  .faq .q.on .qh{color:var(--gold)}
+  .faq .qh .tg{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--text-dim);border:1px solid var(--border);border-radius:5px;padding:4px 7px;line-height:1}
+  .faq .q.on .qh .tg{color:var(--amber);border-color:rgba(212,146,58,.35)}
+  .faq .qh .cv{margin-left:auto;width:13px;height:13px;stroke:var(--text-dim);fill:none;
+    stroke-width:2.2;transition:.16s;flex:none}
+  .faq .q.on .qh .cv{transform:rotate(180deg);stroke:var(--gold)}
+  .faq .qb{display:none;padding:2px 18px 17px;font-size:12.5px;color:var(--text-dim);line-height:1.85}
+  .faq .q.on .qb{display:block;animation:bsOpen .16s ease-out both}
+  .faq .qb ul{list-style:none;margin:10px 0 0}
+  .faq .qb li{position:relative;padding-left:17px;margin-top:7px}
+  .faq .qb li::before{content:'';position:absolute;left:3px;top:9px;width:5px;height:5px;
+    border-radius:50%;background:var(--stone)}
+  .faq .qb b{color:var(--text-faint);font-weight:600}
+  .faq .qb .kb{display:flex;gap:11px;margin-top:12px;padding:11px 13px;border-radius:10px;
+    background:rgba(212,146,58,.07);border:1px solid rgba(212,146,58,.24);color:var(--text-faint);
+    font-size:12px;line-height:1.7}
+  .faq .qb .kb svg{width:15px;height:15px;flex:none;margin-top:3px;stroke:var(--gold);fill:none;stroke-width:1.9}
+  .faq .qb .kb.no{background:rgba(193,85,63,.07);border-color:rgba(193,85,63,.26)}
+  .faq .qb .kb.no svg{stroke:#d98a75}
+  .faq .foot{display:flex;align-items:center;gap:6px;padding:13px 18px;border-top:1px solid var(--border);
+    font-size:12px;color:var(--text-dim);background:var(--charcoal);flex-wrap:wrap}
+  .faq .foot a{color:var(--gold);text-decoration:none;font-weight:600;cursor:pointer}
+
+  .help{display:grid;grid-template-columns:minmax(0,1fr) 420px}
+  @media (max-width:1000px){.help{grid-template-columns:minmax(0,1fr)}}
+  .hleft{padding:22px 24px 24px;display:flex;flex-direction:column}
+  .hleft .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
+  .hleft h4{font-size:16px;font-weight:700;margin:9px 0 10px;letter-spacing:-.01em}
+  .hleft p{font-size:12.5px;color:var(--text-dim);line-height:1.8;margin-bottom:16px}
+  .sfacts{display:flex;margin:4px 0 18px}
+  .sfacts .sf{flex:1;padding-right:14px;min-width:0}
+  .sfacts .sf + .sf{padding-left:16px;border-left:1px solid var(--border)}
+  .sfacts .sf b{display:block;font-size:12px;font-weight:700;color:var(--gold);line-height:1}
+  .sfacts .sf span{display:block;font-size:11.5px;color:var(--text-dim);margin-top:6px;line-height:1.55}
+  .hleft .btn{align-self:flex-start;margin-top:auto}
+  .hright{border-left:1px solid var(--border);padding:22px 24px;
+    background:radial-gradient(420px 220px at 100% 100%, rgba(212,146,58,.08), transparent 70%), var(--charcoal)}
+  @media (max-width:1000px){.hright{border-left:0;border-top:1px solid var(--border)}}
+  .hk{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);
+    margin-bottom:12px}
+  .hrow{display:flex;gap:11px;font-size:12px;color:var(--text-dim);line-height:1.7;padding:9px 0}
+  .hrow + .hrow{border-top:1px solid rgba(56,50,43,.5)}
+  .hrow svg{width:14px;height:14px;flex:none;margin-top:3px;stroke:var(--text-faint);fill:none;stroke-width:1.9}
+  .hrow b{color:var(--text-faint);font-weight:600}
+
   .empty{border:1px dashed var(--border);border-radius:12px;padding:34px 18px;text-align:center;
     color:var(--text-dim);font-size:12.5px}
   .card-b .empty{margin:0}
@@ -797,18 +943,18 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
 
     <main class="content">
 
-      <div class="qhead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.8h4a1.7 1.7 0 0 1 0 3.4h-3a1.7 1.7 0 0 0 0 3.4h4"/></svg></span>
-        <div>
-          <h1>Credit Store</h1>
-          <p>Buy credits, spend them, and keep the receipts.</p>
+      <div class="stack">
+        <div class="qhead">
+          <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/><path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg></span>
+          <div>
+            <h1>Credit Store</h1>
+            <p>Buy credits, spend them, and keep the receipts.</p>
+          </div>
         </div>
-        <div class="bal"><div class="k">Your balance</div>
-          <div class="v" id="bal">0<i>credits</i></div></div>
-      </div>
 
-      <div class="tabs" id="tabs"></div>
-      <div id="body"><div class="empty">Loading…</div></div>
+        <div class="tabs" id="tabs"></div>
+        <div id="body"><div class="empty">Loading&hellip;</div></div>
+      </div>
 </main>
   </div>
 
@@ -930,7 +1076,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
      window of three, arrows either side — because paging that behaves
      differently on different pages is a small cruelty.
      ===================================================================== */
-  var TAB = 'credits', TICKETS = null, TPAGE = 1, TSCOPE = 'mine', TSTATUS = 'all', ONE = null;
+  var TAB = 'overview', TICKETS = null, TPAGE = 1, TSCOPE = 'mine', TSTATUS = 'all', ONE = null;
   var STAFF = false, ME = 0;
 
   function el(id){ return document.getElementById(id); }
@@ -1003,22 +1149,191 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
     'Purchase support below is live.</span></div>';
 
   /* ---------------- tabs ---------------- */
+  var TI = {
+    overview:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>',
+    credits:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/><path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg>',
+    shop:'<svg viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+    history:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+    support:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.4"/><path d="M6 6l3.6 3.6M18 6l-3.6 3.6M6 18l3.6-3.6M18 18l-3.6-3.6"/></svg>'
+  };
+
   function tabs(){
     var open = TICKETS && TICKETS.counts
       ? (TICKETS.counts.open || 0) + (TICKETS.counts.answered || 0) : 0;
     var defs = [
-      ['credits', 'Purchase Credits', 0],
-      ['shop',    'Credit Shop',      0],
-      ['history', 'Purchase History', 0],
-      ['support', 'Purchase Support', open]
+      ['overview', 'Overview',         0],
+      ['credits',  'Purchase Credits', 0],
+      ['shop',     'Credit Shop',      0],
+      ['history',  'Purchase History', 0],
+      ['support',  'Purchase Support', open]
     ];
     el('tabs').innerHTML = defs.map(function(d){
       return '<button class="tab' + (TAB === d[0] ? ' on' : '') + '" data-tab="' + d[0] + '">' +
-        d[1] + (d[2] ? ' <span class="n">' + d[2] + '</span>' : '') + '</button>';
+        '<span class="ic">' + TI[d[0]] + '</span><b>' + d[1] + '</b>' +
+        (d[2] ? '<span class="n">' + d[2] + '</span>' : '') + '</button>';
     }).join('');
     document.querySelectorAll('[data-tab]').forEach(function(b){
       b.addEventListener('click', function(){ location.hash = this.getAttribute('data-tab'); });
     });
+  }
+
+  /* ---------------- 0 · overview ----------------
+     The store is the only page in the UCP people arrive at from outside
+     it, so it gets an introduction: what a credit is, what a pack costs
+     per credit, how buying works, and the answers to the questions that
+     would otherwise arrive as tickets. Nothing here is fetched — it is
+     all statements about how the store behaves. */
+  var VSEL = 2;
+  var CENTS = TIERS.map(function(t){
+    return +(parseFloat(t.price.replace(/[^0-9.]/g,'')) * 100 / t.credits).toFixed(1);
+  });
+  function saveOf(i){ return Math.round((1 - CENTS[i] / CENTS[0]) * 100); }
+
+  var WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4.5l8.5 15h-17l8.5-15z"/><path d="M12 10.5v4M12 17h.01"/></svg>';
+  var INFO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg>';
+  var CHK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>';
+  var CLK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+  var PER  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>';
+  var CV   = '<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6"/></svg>';
+
+  var QS = [
+    ['Buying','Which pack is the best value?',
+     'Every credit spends the same, but the larger packs cost less to buy per credit. The 2,000 pack works out 50% cheaper per credit than the 50 pack. If you already know what you want and it costs more than a small pack covers, buying the larger pack once is cheaper than topping up twice.' +
+     '<div class="kb">' + INFO + '<span>The comparison at the top of this page shows the difference for every pack.</span></div>'],
+    ['Buying','How do I pay?',
+     'Card and PayPal, through the payment provider &mdash; the store never sees or stores your card details.' +
+     '<div class="kb no">' + WARN + '<span>Payments are not switched on yet. Prices are final, but nothing can be bought until the provider is connected.</span></div>'],
+    ['Spending','Does any of this give an advantage?',
+     'No, and that is deliberate. Everything sold here is cosmetic, administrative or convenience: names, slots, plates, standing. Nothing you buy changes how your character performs against anyone else, and nothing affects the in-game economy.'],
+    ['Spending','Can I gift credits or items to someone else?',
+     'Not at the moment. Credits stay on the account that bought them, and anything you buy applies to that account&rsquo;s own characters.'],
+    ['Refunds','Can I get a refund on credits?',
+     'No. All credit purchases are <b>final and non-refundable in any form</b>, whether or not the credits have been spent. This is what keeps the store from being used to move real money in and out of the game.' +
+     '<div class="kb no">' + WARN + '<span>Buying credits is a one-way transaction. Only buy what you intend to spend.</span></div>'],
+    ['Refunds','Can I get a refund on something I bought in the shop?',
+     'Once an item has applied, it is final &mdash; a name change cannot be undone by refunding it. There are two exceptions, and both are corrections rather than refunds:' +
+     '<ul><li><b>Charged but not delivered.</b> If the credits left your balance and the item never applied, the item will be applied or the credits returned.</li>' +
+     '<li><b>Applied to the wrong place.</b> If the system put an item on the wrong character or property, it will be moved.</li></ul>' +
+     '<div class="kb">' + INFO + '<span>Both are handled in Purchase Support. Quote the receipt number and it is usually a single reply.</span></div>'],
+    ['Refunds','What happens to my credits if I am punished or banned?',
+     'They stay on the account. Credits are not confiscated as a punishment, and they are not refunded because of one either &mdash; a ban does not entitle you to money back, and the balance is still there if the account returns.'],
+    ['Problems','A purchase did not apply. What now?',
+     'Open Purchase History first &mdash; it will tell you whether the charge went through at all:' +
+     '<ul><li><b>Nothing listed.</b> The purchase never happened and you have not been charged. Try again.</li>' +
+     '<li><b>Listed as applied, but you cannot see it in-game.</b> Relog once. If it is still missing, open a ticket with the receipt number.</li></ul>'],
+    ['Problems','I think I have been charged twice.',
+     'Purchase History lists every top-up with its date and time, so two identical entries a few seconds apart is a duplicate worth reporting. One entry and two emails from the payment provider usually means a failed attempt followed by a successful one &mdash; only the successful one is charged. Either way, open a ticket and quote both receipt numbers.']
+  ];
+
+  function valPanel(){
+    var bars = TIERS.map(function(t, i){
+      var sv = saveOf(i);
+      return '<button class="bar' + (i === VSEL ? ' on' : '') + '" data-pack="' + i + '">' +
+        '<span class="pk">' + num(t.credits) + '</span>' +
+        '<span class="tr"><i style="width:' + (sv ? Math.round(sv / 50 * 100) : 0) + '%"></i></span>' +
+        '<span class="rt' + (sv ? '' : ' base') + '">' + (sv ? sv + '% off' : 'baseline') + '</span></button>';
+    }).join('');
+    var t = TIERS[VSEL], save = saveOf(VSEL);
+    return '<div class="bars">' + bars + '</div>' +
+      '<div class="out">' +
+        '<div class="cell"><div class="k">Pack price</div><span class="n gold">' + t.price + '</span></div>' +
+        '<div class="cell"><div class="k">Each credit</div><span class="n">' + CENTS[VSEL].toFixed(1) + '¢</span></div>' +
+        '<div class="cell"><div class="k">Cheaper by</div><span class="n' + (save ? ' good' : '') + '">' +
+          (save ? save + '%' : '—') + '</span></div>' +
+      '</div>' +
+      '<div class="note">Measured against the ' + num(TIERS[0].credits) + '-credit pack at ' +
+      CENTS[0].toFixed(1) + ' cents a credit, the most expensive of the ' + TIERS.length + '.</div>';
+  }
+
+  function wireOverview(){
+    document.querySelectorAll('[data-pack]').forEach(function(b){
+      b.addEventListener('click', function(){
+        VSEL = parseInt(this.getAttribute('data-pack'), 10);
+        var host = el('valBody');
+        if(host){ host.innerHTML = valPanel(); wireOverview(); }
+      });
+    });
+    document.querySelectorAll('.faq .qh').forEach(function(h){
+      h.addEventListener('click', function(){ h.parentNode.classList.toggle('on'); });
+    });
+    document.querySelectorAll('[data-goto]').forEach(function(a){
+      a.addEventListener('click', function(e){
+        e.preventDefault(); location.hash = this.getAttribute('data-goto');
+      });
+    });
+  }
+
+  function viewOverview(){
+    var faq = QS.map(function(q, i){
+      return '<div class="q' + (i === 0 ? ' on' : '') + '"><div class="qh"><span>' + q[1] + '</span>' +
+        '<span class="tg">' + q[0] + '</span>' + CV + '</div>' +
+        '<div class="qb">' + q[2] + '</div></div>';
+    }).join('');
+
+    paint('body',
+      '<div class="card hero">' +
+        '<span class="img"></span><span class="veil"></span><span class="glow"></span>' +
+        '<div class="in">' +
+          '<div class="eyebrow">What credits are</div>' +
+          '<h2>One balance. <em>No subscriptions</em>, no expiry, nothing that renews behind your back.</h2>' +
+          '<p>Credits are the store&rsquo;s only currency. You buy them once, they sit on your account until you ' +
+          'spend them, and every purchase writes a receipt you can open years later. Purchases apply themselves ' +
+          'the moment you confirm. Nothing sold here changes how your character performs in-game: it changes ' +
+          'names, slots, plates and standing, not outcomes.</p>' +
+          '<div class="acts">' +
+            '<a class="btn primary" href="#credits" data-goto="credits">Buy credits</a>' +
+            '<a class="btn" href="#shop" data-goto="shop">Browse the shop</a>' +
+          '</div>' +
+        '</div>' +
+        '<div class="facts">' +
+          '<div class="f"><b>' + CLK + 'Never expires</b><span>A balance bought today is still there in three years, played or not.</span></div>' +
+          '<div class="f"><b>' + CHK + 'Applies instantly</b><span>Confirm a purchase and it is done &mdash; nothing waits on staff.</span></div>' +
+          '<div class="f"><b>' + PER + 'Cosmetic only</b><span>Names, slots, plates and standing. Never an in-game advantage.</span></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="ovtop" style="margin-top:14px">' +
+        '<div class="card val"><div class="card-h"><h3>Where credits go furthest</h3></div>' +
+        '<div class="card-b" id="valBody">' + valPanel() + '</div></div>' +
+        '<div class="card"><div class="card-h"><h3>How buying works</h3></div>' +
+        '<div class="flow" style="grid-template-columns:1fr">' +
+          '<div class="step"><div class="mk"><span class="n">1</span><h4>Buy credits</h4></div>' +
+          '<p>Pick a pack and pay once. Credits land on your account immediately and show in the top bar of every page from then on.</p></div>' +
+          '<div class="step" style="border-left:0;border-top:1px solid var(--border)"><div class="mk"><span class="n">2</span><h4>Spend them</h4></div>' +
+          '<p>Choose an item, confirm, and the system applies it for you. No ticket, no approval, no waiting.</p></div>' +
+          '<div class="step" style="border-left:0;border-top:1px solid var(--border)"><div class="mk"><span class="n">3</span><h4>Keep the receipt</h4></div>' +
+          '<p>Every top-up and every purchase is listed under Purchase History with the date, the cost and exactly where it was applied.</p></div>' +
+        '</div></div>' +
+      '</div>' +
+
+      '<div class="card faq" style="margin-top:14px"><div class="card-h"><h3>Before you buy</h3></div>' +
+        '<div>' + faq + '</div>' +
+        '<div class="foot"><span>Still unsure?</span> <a data-goto="support">Ask in Purchase Support</a>' +
+        '<span>&mdash; it is private, and it is the same team that handles the charge.</span></div>' +
+      '</div>' +
+
+      '<div class="card help" style="margin-top:14px">' +
+        '<div class="hleft">' +
+          '<div class="eyebrow">Purchase Support</div>' +
+          '<h4>Something went wrong? Tell us privately.</h4>' +
+          '<p>Purchase Support is a private line between you and the Management team. Nobody else on the server ' +
+          'can read it, it never appears on the forums, and it stays open until the charge is resolved.</p>' +
+          '<div class="sfacts">' +
+            '<div class="sf"><b>Private</b><span>You and Management only</span></div>' +
+            '<div class="sf"><b>Same panel</b><span>Replies arrive here, not by email</span></div>' +
+            '<div class="sf"><b>Kept</b><span>Filed against the receipt for good</span></div>' +
+          '</div>' +
+          '<a class="btn primary" data-goto="support">Open a ticket</a>' +
+        '</div>' +
+        '<div class="hright">' +
+          '<div class="hk">What to include</div>' +
+          '<div class="hrow">' + CLK + '<span><b>The receipt number.</b> Copy it from Purchase History &mdash; it is the fastest way to find the charge.</span></div>' +
+          '<div class="hrow">' + PER + '<span><b>The character it was for.</b> Items apply per character, so the name narrows it immediately.</span></div>' +
+          '<div class="hrow">' + CHK + '<span><b>What you expected to happen.</b> Say what you saw instead &mdash; it saves a round of questions.</span></div>' +
+        '</div>' +
+      '</div>');
+
+    wireOverview();
   }
 
   /* ---------------- 1 · credits ---------------- */
@@ -1324,25 +1639,15 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
     var m = h.match(/ticket=(\d+)/);
     if(m){ TAB = 'support'; tabs(); return loadTicket(parseInt(m[1], 10)); }
 
-    TAB = ['credits','shop','history','support'].indexOf(h) > -1 ? h : 'credits';
+    TAB = ['overview','credits','shop','history','support'].indexOf(h) > -1 ? h : 'overview';
     tabs();
+    if(TAB === 'overview') return viewOverview();
     if(TAB === 'credits') return viewCredits();
     if(TAB === 'shop')    return viewShop();
     if(TAB === 'history') return viewHistory();
     return viewSupport();
   }
   window.addEventListener('hashchange', route);
-
-  /* The balance in the header. Same source as the top bar — api/session.php
-     — so the two can never disagree. Shown in full here rather than
-     abbreviated: this is the page you come to when you want the exact
-     number. */
-  UCP.get('session.php').then(function(d){
-    var b = el('bal');
-    if(!b) return;
-    var n = (d && typeof d.credits === 'number') ? d.credits : 0;
-    b.innerHTML = n.toLocaleString('en-US') + '<i>credits</i>';
-  });
 
   /* The ticket count sits on a tab, so it is fetched once on arrival
      whichever tab is open. */
