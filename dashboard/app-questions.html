@@ -636,12 +636,18 @@
   .item.editing .ihead .tx b{color:var(--gold)}
   .item.retired{opacity:.55}
   .frow{display:flex;gap:9px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .minlab{display:flex;gap:9px;align-items:center;font-size:12.5px;color:var(--text-faint)}
+  .minlab .minbox{width:62px;text-align:center;padding:6px 6px;font-size:12.5px;border-radius:8px}
   .flab{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);
     margin-bottom:7px}
   .flab + .flab{margin-top:13px}
   .foot{display:flex;align-items:center;gap:11px;margin-top:16px;padding-top:15px;
     border-top:1px solid var(--border-soft);font-size:12.5px;color:var(--text-faint);flex-wrap:wrap}
-  .foot input[type=text]{width:58px;text-align:center;padding:8px 6px}
+  /* A three-digit number does not need a 44px-tall, 58px-wide field. Both
+     of these inherited the page's general input rule, which exists for the
+     prompt textarea. */
+  .foot input[type=text]{width:52px;text-align:center;padding:6px 6px;font-size:12.5px;
+    border-radius:8px}
 
   /* ---- Assist criteria, inside the question editor ---- */
   /* .asw, not .sw. The page shell already defines .toggle and .sw for the
@@ -919,9 +925,8 @@
           escapeHtml(q.prompt || '') + '</textarea>' +
         assistEditor(q) +
         '<div class="frow">' +
-          '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--text-faint)">' +
-          '<input type="text" id="eMin" value="' + (q.min_chars||0) + '" style="width:72px;text-align:center">' +
-          ' character minimum</label>' +
+          '<label class="minlab"><input type="text" class="minbox" id="eMin" value="' +
+          (q.min_chars||0) + '"> character minimum</label>' +
           '<button class="btn sm" id="ePin">' + (q.pinned ? 'Unpin' : 'Pin this') + '</button>' +
           (q.id ? '<button class="btn sm" id="eRetire">' + (q.retired ? 'Restore' : 'Retire') + '</button>' : '') +
           '<button class="btn sm" id="eCancel" style="margin-left:auto">Cancel</button>' +

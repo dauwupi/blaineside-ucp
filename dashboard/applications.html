@@ -733,49 +733,57 @@
     animation:bsOpen .16s ease-out both}
   .ibody .prompt{font-size:12.5px;color:var(--text-faint);line-height:1.75;padding-top:14px}
   .ihead[data-answer]{cursor:pointer;user-select:none}
-  .ihead .cnt{font-size:11.5px;color:var(--text-dim)}
-  .ihead .cnt .short{color:#d98a75;font-weight:700}
   .ib{width:29px;height:29px;flex:none;border-radius:8px;display:grid;place-items:center;
     border:1px solid var(--border);background:var(--charcoal-3);color:var(--text-faint)}
   .ib svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
-  .answer{background:var(--charcoal);border:1px solid var(--border);border-radius:10px;padding:13px 14px;
-    font-size:13px;line-height:1.8;white-space:pre-wrap;margin-top:11px;overflow-wrap:anywhere}
+  /* Answer well. The answer text and its Assist share one container so they
+     read as one object; Assist hangs off the bottom edge like a drawer. */
+  .well{background:var(--charcoal);border:1px solid var(--border);border-radius:10px;
+    margin-top:11px;overflow:hidden}
+  .well .txt{padding:13px 14px;font-size:13px;line-height:1.8;white-space:pre-wrap;
+    overflow-wrap:anywhere}
+
+  /* Length meter in the answer header: fills toward the minimum, rust when short. */
+  .len{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-dim);
+    font-variant-numeric:tabular-nums;line-height:1}
+  .len .meter{width:74px;height:4px;border-radius:100px;background:var(--charcoal-4);
+    overflow:hidden;flex:none}
+  .len .meter i{display:block;height:100%;background:var(--text-faint);border-radius:100px}
+  .len.no .meter i{background:#a9503c}
+  .len .n{font-weight:600;color:var(--text-faint)}
+  .len.no .n{color:#d98a75}
 
   /* ---- Assist ----
-     A reading aid under an answer, staff only. Collapsed on arrival: on a
-     six-question application it would otherwise be six panels of small
-     print between the reviewer and the next answer. */
-  .assist{margin-top:12px;border:1px solid var(--border);border-radius:12px;
-    background:var(--charcoal);overflow:hidden}
-  .assist .ah{display:flex;align-items:center;gap:9px;padding:11px 14px;cursor:pointer;user-select:none}
-  .assist.open .ah{border-bottom:1px solid var(--border)}
-  .assist .ah .t{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--text-faint)}
-  .assist .ah .beta{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--text-dim);border:1px solid var(--border);border-radius:5px;padding:3px 6px}
-  .assist .ah .r{margin-left:auto;font-size:11.5px;color:var(--text-dim);display:flex;
-    align-items:center;gap:8px}
-  .assist .ah .cv{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.2;
-    transition:transform .16s}
+     A reading aid under an answer, staff only. Collapsed on arrival — note
+     included: on a six-question application it would otherwise be six panels
+     of small print between the reviewer and the next answer. */
+  .assist .ah{display:flex;align-items:center;gap:10px;padding:10px 14px;
+    border-top:1px solid var(--border);background:var(--charcoal-2);
+    cursor:pointer;user-select:none;font-size:11.5px;color:var(--text-dim);line-height:1}
+  /* Every child gets the same 14px box so the header's top and bottom
+     padding are identical no matter what the font metrics do. */
+  .assist .ah > span{display:inline-flex;align-items:center;height:14px;line-height:1}
+  .assist .ah .t{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--text-faint);text-indent:.14em}
+  .assist .ah .score{font-variant-numeric:tabular-nums;font-weight:600;color:var(--text-faint)}
+  .assist .ah .cv{margin-left:auto;width:14px;height:14px;stroke:currentColor;fill:none;
+    stroke-width:2.2;transition:transform .16s}
   .assist.open .ah .cv{transform:rotate(180deg)}
-  .assist .ab{display:none;padding:12px 14px}
+  .assist .ab{display:none;background:var(--charcoal-2);border-top:1px solid rgba(56,50,43,.6)}
   .assist.open .ab{display:block;animation:bsOpen .16s ease-out both}
-  .astats{display:flex;gap:20px;flex-wrap:wrap;padding-bottom:11px;margin-bottom:9px;
-    border-bottom:1px solid var(--border)}
-  .astats .k{font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+  .assist .chk{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:12.5px;
     color:var(--text-dim)}
-  .astats .v{font-family:Oswald,sans-serif;font-size:17px;font-weight:600;margin-top:3px;
-    color:var(--parchment);font-variant-numeric:tabular-nums}
-  .astats .v.ok{color:#9dbd77}
-  .astats .v.no{color:#d98a75}
-  .chk{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12.5px;color:var(--text-dim)}
-  .chk svg{width:15px;height:15px;flex:none;fill:none;stroke-width:2.4;stroke:currentColor}
-  .chk.y{color:var(--parchment)}
-  .chk.y svg{stroke:#9dbd77}
-  .chk .why{margin-left:auto;font-size:11px;color:var(--text-dim);overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;max-width:45%}
-  .assist .note{font-size:11.5px;color:var(--text-dim);line-height:1.65;padding:10px 14px;
-    border-top:1px solid var(--border);background:var(--charcoal-2)}
+  .assist .chk + .chk{border-top:1px solid rgba(56,50,43,.45)}
+  .assist .chk svg{width:14px;height:14px;flex:none;fill:none;stroke-width:2.4;stroke:currentColor}
+  .assist .chk.y{color:var(--parchment)}
+  .assist .chk.y svg{stroke:#9dbd77}
+  .assist .chk .why{margin-left:auto;font-size:11px;font-style:italic;color:var(--text-dim);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
+  .assist .meta{display:flex;gap:22px;flex-wrap:wrap;padding:9px 14px;
+    border-top:1px solid var(--border);font-size:11.5px;color:var(--text-dim)}
+  .assist .meta b{font-weight:600;color:var(--text-faint);font-variant-numeric:tabular-nums}
+  .assist .note{padding:9px 14px;border-top:1px solid var(--border);font-size:11px;
+    color:var(--text-dim);line-height:1.7}
 
   .fb{border-radius:12px;padding:14px 16px;background:rgba(193,85,63,.08);border:1px solid rgba(193,85,63,.26)}
   .fb.good{background:rgba(127,160,90,.08);border-color:rgba(127,160,90,.26)}
@@ -1241,34 +1249,42 @@
 
     var checks = (s.checks || []).map(function(c){
       return '<div class="chk ' + (c.found ? 'y' : 'n') + '">' + (c.found ? TICK : DASH) +
-        escapeHtml(c.label) +
-        (c.found && c.match ? '<span class="why">“' + escapeHtml(c.match) + '”</span>' : '') +
+        '<span>' + escapeHtml(c.label) + '</span>' +
+        (c.found && c.match ? '<span class="why">\u201C' + escapeHtml(c.match) + '\u201D</span>' : '') +
         '</div>';
     }).join('');
 
+    var meta = '<div class="meta"><span><b>' + num(st.chars) + '</b> characters</span>' +
+      '<span><b>' + num(st.paragraphs) + '</b> paragraph' + (st.paragraphs === 1 ? '' : 's') + '</span>' +
+      '<span><b>' + num(st.longest) + '</b> words in the longest run</span></div>';
+
     return '<div class="assist' + (open ? ' open' : '') + '">' +
-      '<div class="ah" data-assist="' + a.id + '"><span class="t">Assist</span>' +
-      '<span class="beta">Beta</span><span class="r">' +
-        s.found + ' of ' + s.total + ' found' +
-        (st.min_chars && !st.meets_min
-          ? ' · ' + num(st.chars) + ' characters, under the ' + num(st.min_chars) + ' asked for'
-          : '') +
-      '<svg class="cv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div>' +
-      '<div class="ab">' +
-        '<div class="astats">' +
-          '<div><div class="k">Length</div><div class="v ' +
-            (st.min_chars ? (st.meets_min ? 'ok' : 'no') : '') + '">' + num(st.chars) + '</div></div>' +
-          '<div><div class="k">Paragraphs</div><div class="v">' + num(st.paragraphs) + '</div></div>' +
-          '<div><div class="k">Longest run</div><div class="v">' + num(st.longest) + ' words</div></div>' +
-        '</div>' + checks + '</div>' +
+      '<div class="ah" data-assist="' + a.id + '"><span class="t">Application Assist</span>' +
+      '<span class="score">' + s.found + ' of ' + s.total + '</span><span>criteria found</span>' +
+      '<svg class="cv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>' +
+      '<div class="ab">' + checks + meta +
       '<div class="note">Assist looks for wording, not understanding. A missing line means those ' +
-      'words were not found — it does not mean the answer is wrong, and a tick does not mean it ' +
-      'is right.</div></div>';
+      'words were not found \u2014 it does not mean the answer is wrong, and a tick does not mean it ' +
+      'is right.</div></div></div>';
   }
 
   /* Every answer starts closed. An application with three long answers is
      three screens of scrolling before you can see what was asked, and the
      first thing a reviewer does is decide which one to read. */
+  /* Length reads as a meter, not a sentence: it fills toward the minimum and
+     goes rust when the answer falls short. No minimum set, no meter. */
+  function lenChip(a){
+    if(!a.min_chars){
+      return '<span class="len"><span class="n">' + num(a.chars) + '</span> character' +
+        (a.chars === 1 ? '' : 's') + '</span>';
+    }
+    var pct = Math.max(4, Math.min(100, Math.round(a.chars / a.min_chars * 100)));
+    var short = a.chars < a.min_chars;
+    return '<span class="len' + (short ? ' no' : '') + '">' +
+      '<span class="meter"><i style="width:' + pct + '%"></i></span>' +
+      '<span class="n">' + num(a.chars) + '</span> of ' + num(a.min_chars) + '</span>';
+  }
+
   var ANS_OPEN = {};
 
   function answersCard(d){
@@ -1280,15 +1296,13 @@
       return '<div class="item"><div class="ihead" data-answer="' + a.id + '">' +
         '<span class="idx">' + (i+1) + '</span>' +
         '<span class="tx"><b>' + escapeHtml(a.title) + '</b></span>' +
-        '<span class="r"><span class="cnt">' + num(a.chars) + ' character' + (a.chars===1?'':'s') +
-        (a.min_chars ? ' · ' + num(a.min_chars) + ' asked for' : '') +
-        (a.min_chars && a.chars < a.min_chars ? ' · <b class="short">under</b>' : '') + '</span>' +
+        '<span class="r">' + lenChip(a) +
         '<span class="ib"><svg viewBox="0 0 24 24"><path d="M6 ' +
         (open ? '15l6-6 6 6' : '9l6 6 6-6') + '"/></svg></span></span></div>' +
         (open
           ? '<div class="ibody"><div class="prompt">' + escapeHtml(a.prompt) + '</div>' +
-            '<div class="answer">' + escapeHtml(a.body || '') + '</div>' +
-            assistBlock(a) + '</div>'
+            '<div class="well"><div class="txt">' + escapeHtml(a.body || '') + '</div>' +
+            assistBlock(a) + '</div></div>'
           : '') + '</div>';
     }).join('');
 
