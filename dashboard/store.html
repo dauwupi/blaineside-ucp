@@ -743,8 +743,11 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   .hero h2 em{font-style:normal;color:var(--gold)}
   .hero p{font-size:13px;color:var(--text-faint);line-height:1.85;max-width:52ch}
   .hero .acts{display:flex;gap:9px;margin-top:20px;flex-wrap:wrap}
-  .facts{position:relative;display:flex;margin-top:auto;padding:18px 30px;
-    border-top:1px solid var(--border);background:rgba(18,17,16,.62)}
+  /* Breaks out of the hero's 30px padding so the strip runs edge to edge,
+     and it is opaque: a translucent band over a photograph is a band with
+     a building in it. */
+  .facts{position:relative;display:flex;margin:auto -30px 0;padding:18px 30px;
+    border-top:1px solid var(--border);background:#191714}
   .facts .f{flex:1;padding-right:16px;min-width:0}
   .facts .f + .f{padding-left:18px;border-left:1px solid var(--border)}
   .facts .f b{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;
@@ -752,7 +755,10 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   .facts .f b svg{width:14px;height:14px;stroke:var(--gold);fill:none;stroke-width:1.9;flex:none}
   .facts .f span{display:block;font-size:11.5px;color:var(--text-dim);line-height:1.65;margin-top:7px}
 
+  /* The shell puts a top margin on any .card following a .card; inside a
+     grid row that pushes the second column down by itself. */
   .ovtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+  .ovtop > .card + .card{margin-top:0}
   @media (max-width:1080px){.ovtop{grid-template-columns:minmax(0,1fr)}}
 
   /* Value comparison. Longer bar means a better deal, which is the
@@ -1237,12 +1243,13 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
     return '<div class="bars">' + bars + '</div>' +
       '<div class="out">' +
         '<div class="cell"><div class="k">Pack price</div><span class="n gold">' + t.price + '</span></div>' +
-        '<div class="cell"><div class="k">Each credit</div><span class="n">' + CENTS[VSEL].toFixed(1) + '¢</span></div>' +
+        '<div class="cell"><div class="k">Each credit</div><span class="n">' + CENTS[VSEL].toFixed(1) + ' cents</span></div>' +
         '<div class="cell"><div class="k">Cheaper by</div><span class="n' + (save ? ' good' : '') + '">' +
           (save ? save + '%' : '—') + '</span></div>' +
       '</div>' +
-      '<div class="note">Measured against the ' + num(TIERS[0].credits) + '-credit pack at ' +
-      CENTS[0].toFixed(1) + ' cents a credit, the most expensive of the ' + TIERS.length + '.</div>';
+      '<div class="note">Prices are in euro, so a cent here is a euro cent. Measured against the ' +
+      num(TIERS[0].credits) + '-credit pack at ' + CENTS[0].toFixed(1) +
+      ' cents a credit, the most expensive of the ' + TIERS.length + '.</div>';
   }
 
   function wireOverview(){
@@ -1253,8 +1260,14 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
         if(host){ host.innerHTML = valPanel(); wireOverview(); }
       });
     });
+    /* One at a time. Nine questions all open is a page nobody can find
+       their way back up. */
     document.querySelectorAll('.faq .qh').forEach(function(h){
-      h.addEventListener('click', function(){ h.parentNode.classList.toggle('on'); });
+      h.addEventListener('click', function(){
+        var q = h.parentNode, was = q.classList.contains('on');
+        document.querySelectorAll('.faq .q.on').forEach(function(o){ o.classList.remove('on'); });
+        if(!was) q.classList.add('on');
+      });
     });
     document.querySelectorAll('[data-goto]').forEach(function(a){
       a.addEventListener('click', function(e){
