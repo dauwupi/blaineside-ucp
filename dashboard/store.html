@@ -604,6 +604,144 @@
 .notice span{color:var(--text-faint)}
 
 /* ---------- tiers ---------- */
+/* ---------------- Purchase Credits ----------------
+   A list you choose from, and a live summary of that choice. Five tiles
+   side by side made every pack look equally good and left nothing room to
+   explain itself. */
+.buygrid{display:grid;grid-template-columns:minmax(0,1fr) 392px;gap:14px;align-items:start}
+@media (max-width:1150px){.buygrid{grid-template-columns:minmax(0,1fr)}}
+.buygrid > .card + .card{margin-top:0}
+
+.packs{display:flex;flex-direction:column}
+/* A <button> does not inherit the page's colour, so the row states it. */
+.pk{color:var(--parchment);display:grid;
+  grid-template-columns:164px minmax(0,1fr) 92px 112px 22px;align-items:center;gap:14px;
+  padding:20px 18px;cursor:pointer;border:0;background:none;font-family:inherit;text-align:left;
+  width:100%;border-top:1px solid var(--border);transition:.13s;position:relative}
+.pk:first-child{border-top:0}
+.pk:hover{background:var(--charcoal-3)}
+.pk.on{background:var(--charcoal-3)}
+.pk.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gold)}
+.pk .top{display:flex;align-items:center;gap:8px}
+.pk .top svg{width:17px;height:17px;stroke:#b99a5e;fill:none;stroke-width:1.85;flex:none}
+.pk.on .top svg{stroke:var(--gold)}
+.pk .top .n{font-size:20px;font-weight:700;line-height:1;letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums;color:var(--parchment)}
+.pk .line{display:block;font-size:10.5px;color:var(--text-dim);margin-top:7px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.pk .line b{color:#9dbd77;font-weight:700}
+.pk .tr{height:9px;border-radius:100px;background:var(--charcoal-4);overflow:hidden}
+.pk .tr i{display:block;height:100%;border-radius:100px;
+  background:linear-gradient(90deg,var(--stone),#a8916a)}
+.pk.on .tr i{background:linear-gradient(90deg,var(--amber),var(--gold))}
+.pk .off{font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;text-align:right;line-height:1}
+.pk .off.base{font-style:italic}
+.pk.on .off{color:var(--gold);font-weight:700}
+.pk .pr{text-align:right;line-height:1}
+.pk .pr .now{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  color:var(--parchment)}
+.pk.on .pr .now{color:var(--gold)}
+.pk .pr .was{display:block;font-size:11px;color:var(--text-dim);text-decoration:line-through;margin-top:5px}
+.pk .pr .each{display:block;font-size:10.5px;color:var(--text-dim);margin-top:5px}
+.pk .rd{width:18px;height:18px;border-radius:50%;border:1.6px solid var(--border);display:grid;place-items:center}
+.pk.on .rd{border-color:var(--gold)}
+.pk.on .rd::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--gold)}
+
+/* The promotion is the header of the card whose prices it changes, so the
+   claim and the numbers it affects are one object. */
+.p3h{display:flex;align-items:center;gap:13px;padding:13px 18px;
+  background:linear-gradient(90deg,rgba(212,146,58,.13),rgba(212,146,58,.03) 62%,transparent);
+  border-bottom:1px solid rgba(212,146,58,.26)}
+.p3h .ic{width:34px;height:34px;flex:none;border-radius:9px;display:grid;place-items:center;
+  background:rgba(212,146,58,.13);border:1px solid rgba(212,146,58,.34);color:var(--gold)}
+.p3h .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6}
+.p3h .tx b{font-size:12.5px;font-weight:700}
+.p3h .tx b em{font-style:normal;color:var(--gold)}
+.p3h .tx span{display:block;font-size:11.5px;color:var(--text-dim);margin-top:3px}
+.p3h .r{margin-left:auto;text-align:right;flex:none}
+.p3h .r .t{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--parchment)}
+.p3h .r .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-dim);margin-top:4px}
+.fbtn{margin-left:14px;flex:none;display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;
+  border-radius:8px;border:1px solid var(--border);background:var(--charcoal-3);color:var(--text-faint);
+  font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-indent:.12em;
+  cursor:pointer;font-family:inherit;line-height:1}
+.fbtn:hover{border-color:var(--charcoal-4);color:var(--parchment)}
+.fbtn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.9}
+
+.sum .big{display:flex;align-items:flex-end;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.sum .big .bi{width:26px;height:26px;flex:none;color:var(--gold);padding-bottom:3px}
+.sum .big .bi svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.5}
+.sum .big .n{font-size:34px;font-weight:700;color:var(--gold);line-height:.95;letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums}
+.sum .big .u{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text-dim);padding-bottom:4px}
+.sum .big .pr{margin-left:auto;text-align:right;line-height:1}
+.sum .big .pr .k{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim)}
+.sum .big .pr .n2{display:block;margin-top:8px;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.sum .row{display:flex;align-items:center;gap:12px;padding:11px 0;font-size:12.5px;color:var(--text-dim)}
+.sum .row + .row{border-top:1px solid rgba(56,50,43,.55)}
+.sum .row .v{margin-left:auto;color:var(--parchment);font-weight:600;font-variant-numeric:tabular-nums}
+.sum .row .v.good{color:#9dbd77}
+.sum .row .v.strike{text-decoration:line-through;color:var(--text-dim);font-weight:500}
+.sum .after{display:flex;align-items:center;gap:11px;margin-top:14px;padding:12px 13px;border-radius:11px;
+  background:var(--charcoal);border:1px solid var(--border);font-size:12px;color:var(--text-dim)}
+.sum .after b{margin-left:auto;color:var(--parchment);font-weight:700;font-variant-numeric:tabular-nums;font-size:14px}
+.sum .after svg{width:15px;height:15px;stroke:var(--gold);fill:none;stroke-width:1.8;flex:none}
+.methods{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+.mth{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:8px;
+  border:1px solid var(--border);background:var(--charcoal);font-size:11px;color:var(--text-faint);font-weight:600}
+.mth svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.9}
+.sum .go{margin-top:14px;width:100%}
+.sum .note{margin-top:13px;font-size:11px;color:var(--text-dim);line-height:1.7}
+
+.det{display:grid;grid-template-columns:repeat(3,1fr)}
+@media (max-width:900px){.det{grid-template-columns:1fr}}
+.dc{padding:17px 18px 19px}
+.dc + .dc{border-left:1px solid var(--border)}
+@media (max-width:900px){.dc + .dc{border-left:0;border-top:1px solid var(--border)}}
+.dc b{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;line-height:1}
+.dc b svg{width:15px;height:15px;stroke:var(--gold);fill:none;stroke-width:1.8;flex:none}
+.dc p{font-size:12px;color:var(--text-dim);line-height:1.75;margin-top:10px}
+
+/* Founder-only promotion editor. */
+.pmask{position:fixed;inset:0;background:rgba(10,9,8,.72);display:grid;place-items:center;z-index:70;
+  padding:24px;animation:bsFade .16s ease both}
+.pmodal{width:520px;max-width:100%;background:var(--charcoal-2);border:1px solid var(--border);
+  border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.6);overflow:hidden;animation:bsOpen .18s ease-out both}
+.pmodal .mh{display:flex;align-items:center;gap:11px;padding:15px 18px;border-bottom:1px solid var(--border)}
+.pmodal .mh h4{font-size:13.5px;font-weight:700}
+.pmodal .mh .who{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--amber);border:1px solid rgba(212,146,58,.35);border-radius:5px;padding:4px 7px;line-height:1}
+.pmodal .mb{padding:18px;max-height:70vh;overflow:auto}
+.fld{margin-bottom:15px}
+.fld label{display:block;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:8px}
+.fld input{width:100%;height:38px;padding:0 12px;border-radius:9px;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--parchment);font-family:inherit;font-size:13px}
+.fld input:focus{outline:none;border-color:rgba(226,182,92,.45)}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;height:52px;border-radius:10px;border:1px solid var(--border);background:var(--charcoal);
+  color:var(--text-faint);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.seg button.on{border-color:rgba(226,182,92,.45);background:rgba(226,182,92,.09);color:var(--parchment)}
+.seg button span{font-size:10.5px;color:var(--text-dim);font-weight:500}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.prev{padding:12px 13px;border-radius:11px;background:var(--charcoal);border:1px solid var(--border)}
+.prev .k{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim)}
+.prev .l{font-size:12.5px;color:var(--text-faint);margin-top:8px;line-height:1.7}
+.prev .l b{color:var(--gold);font-weight:700}
+.pmodal .mf{display:flex;align-items:center;gap:9px;padding:14px 18px;border-top:1px solid var(--border);
+  background:var(--charcoal);flex-wrap:wrap}
+.pmodal .mf .warn{font-size:11px;color:var(--text-dim);line-height:1.6;max-width:250px}
+.pmodal .mf .sp{margin-left:auto;display:flex;gap:9px}
+
+.notice{display:flex;align-items:center;gap:13px;background:linear-gradient(90deg,rgba(212,146,58,.10),rgba(212,146,58,.045));
+  border:1px solid rgba(212,146,58,.30);border-radius:13px;padding:13px 16px;margin-bottom:18px;font-size:12.5px}
+.notice b{font-weight:700}
+.notice span{color:var(--text-faint)}
+
+/* ---------- tiers ---------- */
 .tiers{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
 @media (max-width:1250px){.tiers{grid-template-columns:repeat(3,1fr)}}
 .tier{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;overflow:hidden;
@@ -1084,6 +1222,18 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
      window of three, arrows either side — because paging that behaves
      differently on different pages is a small cruelty.
      ===================================================================== */
+  var CRED  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/><path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg>';
+  var TAGI  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 12.6V5.4a1.4 1.4 0 0 1 1.4-1.4h7.2a1.4 1.4 0 0 1 1 .4l7 7a1.4 1.4 0 0 1 0 2l-7.2 7.2a1.4 1.4 0 0 1-2 0l-7-7a1.4 1.4 0 0 1-.4-1z"/><circle cx="8.4" cy="8.4" r="1.5"/></svg>';
+  var STACKI= '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><ellipse cx="12" cy="7" rx="7.5" ry="3.2"/><path d="M4.5 7v4.4c0 1.8 3.4 3.2 7.5 3.2s7.5-1.4 7.5-3.2V7"/><path d="M4.5 11.6V16c0 1.8 3.4 3.2 7.5 3.2s7.5-1.4 7.5-3.2v-4.4"/></svg>';
+  var GEAR  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20l4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20z"/><path d="M13.5 6.5l3 3"/></svg>';
+  var CARD  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="6" width="18" height="12" rx="2.4"/><path d="M3 10h18"/></svg>';
+  var PPAL  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 19l2-14h5.5a3.5 3.5 0 0 1 0 7H10"/></svg>';
+  var BANK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3.5 9.5L12 4.5l8.5 5"/><path d="M5.5 10.5v7M10 10.5v7M14 10.5v7M18.5 10.5v7"/><path d="M3.5 19.5h17"/></svg>';
+  var LOCK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path d="M8.4 10.5V8a3.6 3.6 0 0 1 7.2 0v2.5"/></svg>';
+  var CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+  var DOC   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4"/><path d="M9 12.5h6M9 16h4"/></svg>';
+  var BALANCE = null;
+
   var TAB = 'overview', TICKETS = null, TPAGE = 1, TSCOPE = 'mine', TSTATUS = 'all', ONE = null;
   var STAFF = false, ME = 0;
 
@@ -1106,13 +1256,18 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   }
 
   /* ---------------- the shopfront, until there is a ledger ---------------- */
+  /* Prices, and nothing else. Every percentage, per-credit figure and bar
+     length on this page and on the Overview is derived from these two
+     numbers, so changing a price cannot leave a stale claim behind. */
   var TIERS = [
-    {credits:50,   price:'€4.99',  rate:'10.0 cents per credit'},
-    {credits:180,  price:'€14.99', rate:'8.3 cents', more:'17% more'},
-    {credits:375,  price:'€24.99', rate:'6.7 cents', more:'34% more', best:true},
-    {credits:850,  price:'€49.99', rate:'5.9 cents', more:'41% more'},
-    {credits:2000, price:'€99.99', rate:'5.0 cents', more:'50% more'}
+    {credits:50,   price:'€4.99'},
+    {credits:180,  price:'€14.99'},
+    {credits:375,  price:'€24.99'},
+    {credits:850,  price:'€49.99'},
+    {credits:2000, price:'€99.99'},
+    {credits:5000, price:'€199.99'}
   ];
+
 
   var ICONS = {
     person:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
@@ -1196,6 +1351,13 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
     return +(parseFloat(t.price.replace(/[^0-9.]/g,'')) * 100 / t.credits).toFixed(1);
   });
   function saveOf(i){ return Math.round((1 - CENTS[i] / CENTS[0]) * 100); }
+  /* Scaled to the best saving on offer, so adding a pack cannot push a bar
+     past the end of its track. */
+  function saveTop(){
+    var m = 1;
+    TIERS.forEach(function(t, i){ m = Math.max(m, saveOf(i)); });
+    return m;
+  }
 
   var WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4.5l8.5 15h-17l8.5-15z"/><path d="M12 10.5v4M12 17h.01"/></svg>';
   var INFO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg>';
@@ -1238,7 +1400,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
       var sv = saveOf(i);
       return '<button class="bar' + (i === VSEL ? ' on' : '') + '" data-pack="' + i + '">' +
         '<span class="pk">' + num(t.credits) + '</span>' +
-        '<span class="tr"><i style="width:' + (sv ? Math.round(sv / 50 * 100) : 0) + '%"></i></span>' +
+        '<span class="tr"><i style="width:' + (sv ? Math.round(sv / saveTop() * 100) : 0) + '%"></i></span>' +
         '<span class="rt' + (sv ? '' : ' base') + '">' + (sv ? sv + '% off' : 'baseline') + '</span></button>';
     }).join('');
     var t = TIERS[VSEL], save = saveOf(VSEL);
@@ -1360,16 +1522,237 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
     wireOverview();
   }
 
-  /* ---------------- 1 · credits ---------------- */
+  /* ---------------- 1 · credits ----------------
+     A list you choose from on the left, a live summary of that choice on
+     the right. The pack list speaks the Overview's language exactly — the
+     same bar, the same "17% off / baseline", the same cents per credit —
+     so somebody arriving from the homepage already knows how to read it.
+
+     A promotion is one object with a name, a kind and a value. It applies
+     to every pack, and it flows through every number here rather than
+     being announced beside them. */
+  var PROMO = null, MAY_PROMO = false, PSEL = 2, PDRAFT = null;
+
+  function packPrice(t){
+    return parseFloat(t.price.replace(/[^0-9.]/g, ''));
+  }
+  /* Credits a pack gives once the promotion is applied. */
+  function packCredits(t){
+    return (PROMO && PROMO.kind === 'bonus')
+      ? Math.round(t.credits * (1 + PROMO.value / 100)) : t.credits;
+  }
+  /* What it costs once the promotion is applied. */
+  function packCost(t){
+    return (PROMO && PROMO.kind === 'off')
+      ? +(packPrice(t) * (1 - PROMO.value / 100)).toFixed(2) : packPrice(t);
+  }
+  function packCents(t){ return +(packCost(t) * 100 / packCredits(t)).toFixed(1); }
+  function packSave(i){
+    return Math.round((1 - packCents(TIERS[i]) / packCents(TIERS[0])) * 100);
+  }
+  /* The bars are scaled to the best saving on offer rather than a fixed
+     50%, so adding a pack cannot push a bar past the end of its track. */
+  function packSaveMax(){
+    var m = 1;
+    TIERS.forEach(function(t, i){ m = Math.max(m, packSave(i)); });
+    return m;
+  }
+  function eur(n){ return '€' + n.toFixed(2); }
+
+  function packRows(){
+    var top = packSaveMax();
+    return TIERS.map(function(t, i){
+      var sv = packSave(i), bonus = packCredits(t) - t.credits, cut = PROMO && PROMO.kind === 'off';
+      return '<button class="pk' + (i === PSEL ? ' on' : '') + '" data-pack="' + i + '">' +
+        '<span><span class="top">' + CRED + '<span class="n">' + num(packCredits(t)) + '</span></span>' +
+          '<span class="line">' + (bonus
+            ? num(t.credits) + ' + <b>' + num(bonus) + ' bonus</b>'
+            : 'credits') + '</span></span>' +
+        '<span class="tr"><i style="width:' + (sv ? Math.round(sv / top * 100) : 0) + '%"></i></span>' +
+        '<span class="off' + (sv ? '' : ' base') + '">' + (sv ? sv + '% off' : 'baseline') + '</span>' +
+        '<span class="pr"><span class="now">' + eur(packCost(t)) + '</span>' +
+          (cut ? '<span class="was">' + eur(packPrice(t)) + '</span>' : '') +
+          '<span class="each">' + packCents(t).toFixed(1) + ' cents each</span></span>' +
+        '<span class="rd"></span></button>';
+    }).join('');
+  }
+
+  function promoLabel(p){
+    return p.kind === 'off'
+      ? p.value + '% off every pack'
+      : '+' + p.value + '% credits on every pack';
+  }
+  /* "3d 04h 12m", counted down from the row's end time. */
+  function promoLeft(sec){
+    if(sec <= 0) return 'ending';
+    var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+    return (d ? d + 'd ' : '') + pad2(h) + 'h ' + pad2(m) + 'm';
+  }
+  function pad2(n){ return n < 10 ? '0' + n : String(n); }
+
+  function packHead(){
+    var edit = MAY_PROMO
+      ? '<button class="fbtn" id="promoBtn">' + GEAR + (PROMO ? 'Edit' : 'Promotion') + '</button>' : '';
+    if(!PROMO){
+      return '<div class="card-h"><h3>Choose a pack</h3>' +
+        '<span class="r">Larger packs cost less per credit</span>' + edit + '</div>';
+    }
+    return '<div class="p3h"><span class="ic">' + (PROMO.kind === 'off' ? TAGI : STACKI) + '</span>' +
+      '<span class="tx"><b>' + escapeHtml(PROMO.name) + ' &mdash; <em>' + promoLabel(PROMO) + '</em></b>' +
+      '<span>Applied at checkout. The prices below already include it.</span></span>' +
+      '<span class="r"><span class="t">' + promoLeft(PROMO.left) + '</span>' +
+      '<span class="k">remaining</span></span>' + edit + '</div>';
+  }
+
+  function summary(){
+    var t = TIERS[PSEL], sv = packSave(PSEL);
+    var bonus = packCredits(t) - t.credits, cut = PROMO && PROMO.kind === 'off';
+    var bal = (typeof BALANCE === 'number') ? BALANCE : null;
+
+    return '<div class="big"><span class="bi">' + CRED + '</span>' +
+      '<span class="n">' + num(packCredits(t)) + '</span><span class="u">credits</span>' +
+      '<span class="pr"><span class="k">You pay</span><span class="n2"' +
+      (cut ? ' style="color:#9dbd77"' : '') + '>' + eur(packCost(t)) + '</span></span></div>' +
+
+      '<div class="row"><span>Pack</span><span class="v">' + num(t.credits) + ' credits</span></div>' +
+      (bonus ? '<div class="row"><span>' + escapeHtml(PROMO.name) + ' bonus</span>' +
+        '<span class="v good">+' + num(bonus) + ' credits</span></div>' : '') +
+      (cut ? '<div class="row"><span>List price</span><span class="v strike">' + eur(packPrice(t)) + '</span></div>' +
+        '<div class="row"><span>' + escapeHtml(PROMO.name) + ' discount</span><span class="v good">&minus;' +
+        eur(+(packPrice(t) - packCost(t)).toFixed(2)) + '</span></div>' : '') +
+      '<div class="row"><span>Each credit</span><span class="v">' + packCents(t).toFixed(1) + ' cents</span></div>' +
+      '<div class="row"><span>Cheaper than the smallest pack</span><span class="v' + (sv ? ' good' : '') + '">' +
+        (sv ? sv + '%' : '&mdash;') + '</span></div>' +
+
+      (bal === null ? '' :
+        '<div class="after">' + CRED + '<span>Balance after this purchase</span><b>' +
+        num(bal + packCredits(t)) + '</b></div>') +
+
+      '<div class="methods"><span class="mth">' + CARD + 'Card</span>' +
+      '<span class="mth">' + PPAL + 'PayPal</span>' +
+      '<span class="mth">' + BANK + 'Bank transfer</span>' +
+      '<span class="mth">' + LOCK + 'Encrypted</span></div>' +
+
+      '<button class="btn primary go" disabled>Payments aren’t switched on yet</button>' +
+      '<div class="note">Charged once in euro, tax included. Credits land immediately and a receipt is ' +
+      'written to Purchase History. Credit purchases are final and non-refundable.</div>';
+  }
+
   function viewCredits(){
-    paint('body', OFFLINE + '<div class="tiers">' + TIERS.map(function(t){
-      return '<div class="tier' + (t.best ? ' best' : '') + '">' +
-        (t.best ? '<span class="flag">Best value</span>' : '') +
-        '<div class="amt"><div class="n">' + num(t.credits) + '</div><div class="u">credits</div></div>' +
-        '<div class="body"><div class="price">' + t.price + '</div>' +
-        '<div class="rate">' + t.rate + (t.more ? ' · <b>' + t.more + '</b>' : '') + '</div>' +
-        '<span class="buy">Buy</span></div></div>';
-    }).join('') + '</div>');
+    paint('body',
+      '<div class="buygrid">' +
+        '<div class="card">' + packHead() + '<div class="packs">' + packRows() + '</div></div>' +
+        '<div class="card sum"><div class="card-h"><h3>Your purchase</h3></div>' +
+        '<div class="card-b">' + summary() + '</div></div>' +
+      '</div>' +
+      '<div class="card" style="margin-top:14px"><div class="det">' +
+        '<div class="dc"><b>' + CLOCK + 'Instant, every time</b><p>Credits appear on your balance the moment ' +
+        'the payment clears, and show in the top bar on every page. Nothing waits on a member of staff.</p></div>' +
+        '<div class="dc"><b>' + DOC + 'Receipted permanently</b><p>Every top-up is written to Purchase History ' +
+        'with the date, the amount, the price paid and any promotion applied &mdash; quote that number if ' +
+        'anything needs correcting.</p></div>' +
+        '<div class="dc"><b>' + LOCK + 'Handled by the provider</b><p>Card, PayPal and bank transfer are ' +
+        'processed by the payment provider. The store never sees or stores your card details, and prices ' +
+        'are in euro with tax included.</p></div>' +
+      '</div></div>');
+  }
+
+  /* ---- founder: the promotion editor ---- */
+  function promoDraft(){
+    if(PDRAFT) return PDRAFT;
+    var d = new Date(Date.now() + 7 * 86400000);
+    PDRAFT = PROMO
+      ? {name: PROMO.name, kind: PROMO.kind, value: PROMO.value,
+         ends: fmtLocalEnds(new Date(PROMO.ends * 1000))}
+      : {name: '', kind: 'off', value: 20, ends: fmtLocalEnds(d)};
+    return PDRAFT;
+  }
+  function fmtLocalEnds(d){
+    return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()) +
+      ' ' + pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes());
+  }
+
+  /* The preview writes out what the offer actually does to a real pack.
+     Setting 90% by accident should be visible before it is saved, not
+     after somebody has bought at that price. */
+  function promoPreview(d){
+    var t = TIERS[2], before = packPrice(t);
+    if(d.kind === 'off'){
+      var after = +(before * (1 - d.value / 100)).toFixed(2);
+      return '<b>' + escapeHtml(d.name || 'Untitled') + ' &mdash; ' + d.value + '% off every pack</b><br>' +
+        num(t.credits) + ' credits drops from ' + eur(before) + ' to <b>' + eur(after) + '</b>.';
+    }
+    var got = Math.round(t.credits * (1 + d.value / 100));
+    return '<b>' + escapeHtml(d.name || 'Untitled') + ' &mdash; +' + d.value + '% credits on every pack</b><br>' +
+      'The ' + num(t.credits) + ' pack gives <b>' + num(got) + ' credits</b> for the same ' + eur(before) + '.';
+  }
+
+  function promoModal(){
+    var d = promoDraft();
+    var host = document.createElement('div');
+    host.className = 'pmask';
+    host.innerHTML =
+      '<div class="pmodal"><div class="mh"><h4>Credit promotion</h4>' +
+      '<span class="who">Founder only</span></div><div class="mb">' +
+        '<div class="fld"><label>What it does</label><div class="seg">' +
+          '<button data-kind="off"' + (d.kind === 'off' ? ' class="on"' : '') +
+            '>Discount the price<span>Packs cost less</span></button>' +
+          '<button data-kind="bonus"' + (d.kind === 'bonus' ? ' class="on"' : '') +
+            '>Add bonus credits<span>Packs give more</span></button>' +
+        '</div></div>' +
+        '<div class="fld"><label>Name shown to players</label>' +
+          '<input id="pName" maxlength="60" value="' + escapeHtml(d.name) + '" placeholder="Founders Week"></div>' +
+        '<div class="two"><div class="fld"><label>Amount %</label>' +
+          '<input id="pVal" inputmode="numeric" value="' + d.value + '"></div>' +
+          '<div class="fld"><label>Ends (UTC)</label>' +
+          '<input id="pEnds" value="' + escapeHtml(d.ends) + '" placeholder="2026-08-23 23:59"></div></div>' +
+        '<div class="prev"><div class="k">Players will see</div>' +
+        '<div class="l" id="pPrev">' + promoPreview(d) + '</div></div>' +
+      '</div>' +
+      '<div class="mf"><span class="warn">Applies to every pack. Purchases already made are not changed.</span>' +
+      '<span class="sp">' +
+        (PROMO ? '<button class="btn" id="pStop">Stop the promotion</button>' : '') +
+        '<button class="btn" id="pCancel">Cancel</button>' +
+        '<button class="btn primary" id="pSave">Save</button>' +
+      '</span></div></div>';
+    document.body.appendChild(host);
+
+    function sync(){
+      d.name = el('pName').value;
+      d.value = Math.max(0, parseInt(el('pVal').value, 10) || 0);
+      d.ends = el('pEnds').value;
+      el('pPrev').innerHTML = promoPreview(d);
+    }
+    host.querySelectorAll('[data-kind]').forEach(function(b){
+      b.addEventListener('click', function(){
+        d.kind = b.getAttribute('data-kind');
+        host.querySelectorAll('[data-kind]').forEach(function(o){ o.classList.remove('on'); });
+        b.classList.add('on');
+        sync();
+      });
+    });
+    ['pName','pVal','pEnds'].forEach(function(id){ el(id).addEventListener('input', sync); });
+
+    function close(){ PDRAFT = null; host.remove(); }
+    el('pCancel').addEventListener('click', close);
+    host.addEventListener('click', function(e){ if(e.target === host) close(); });
+
+    if(el('pStop')){
+      el('pStop').addEventListener('click', function(){
+        UCP.post('store-promo.php', {stop: 1}).then(function(r){
+          if(!r.data || !r.data.ok) return toast((r.data && r.data.error) || 'Could not stop it.');
+          PROMO = null; close(); toast('Promotion stopped.'); route();
+        });
+      });
+    }
+    el('pSave').addEventListener('click', function(){
+      sync();
+      UCP.post('store-promo.php', {name: d.name, kind: d.kind, value: d.value, ends: d.ends})
+        .then(function(r){
+          if(!r.data || !r.data.ok) return toast((r.data && r.data.error) || 'Could not save that.');
+          PROMO = r.data.promo || null; close(); toast('Promotion saved.'); route();
+        });
+    });
   }
 
   /* ---------------- 2 · shop ---------------- */
@@ -1673,10 +2056,37 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   }
   window.addEventListener('hashchange', route);
 
-  /* The ticket count sits on a tab, so it is fetched once on arrival
-     whichever tab is open. */
-  UCP.get('store-tickets.php?scope=mine&status=all&page=1').then(function(d){
-    if(d && d.ok){ TICKETS = d; STAFF = !!d.staff; ME = d.me ? d.me.id : 0; }
+  /* One delegated listener for the whole page body: the credits view is
+     redrawn on every pack click, and per-element handlers would multiply
+     each time it was. */
+  (function(){
+    var host = el('body');
+    if(!host) return;
+    host.addEventListener('click', function(e){
+      var pk = e.target.closest('[data-pack]');
+      if(pk){ PSEL = parseInt(pk.getAttribute('data-pack'), 10); return viewCredits(); }
+      if(e.target.closest('#promoBtn')) return promoModal();
+    });
+  })();
+
+  /* Everything the first paint needs is fetched together, and the page is
+     drawn once they are all in: the promotion decides every price shown,
+     so drawing before it lands would flash list prices and then correct
+     them. UCP.get never rejects, so a missing endpoint is a null, not a
+     blank page.
+
+     · store-promo    the offer, and whether this account may change it
+     · session        the balance, for "balance after this purchase"
+     · store-tickets  the open count that rides on the Support tab */
+  Promise.all([
+    UCP.get('store-promo.php'),
+    UCP.get('session.php'),
+    UCP.get('store-tickets.php?scope=mine&status=all&page=1')
+  ]).then(function(r){
+    var p = r[0], me = r[1], tk = r[2];
+    if(p && p.ok){ PROMO = p.promo || null; MAY_PROMO = !!p.may_edit; }
+    if(me && typeof me.credits === 'number') BALANCE = me.credits;
+    if(tk && tk.ok){ TICKETS = tk; STAFF = !!tk.staff; ME = tk.me ? tk.me.id : 0; }
     route();
   });
 
