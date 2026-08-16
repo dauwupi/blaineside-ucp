@@ -2081,26 +2081,41 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
     });
   })();
 
-  /* Everything the first paint needs is fetched together, and the page is
-     drawn once they are all in: the promotion decides every price shown,
-     so drawing before it lands would flash list prices and then correct
-     them. UCP.get never rejects, so a missing endpoint is a null, not a
-     blank page.
+  /* Draw first, fill in after.
+     The page used to wait on three requests before it drew anything, which
+     meant any one of them being slow left the store on "Loading…" with no
+     way out. Now the first paint happens immediately from what is already
+     known, and each request repaints the part it owns when it lands. A
+     store that renders and then corrects itself beats one that renders
+     nothing.
 
-     · store-promo    the offer, and whether this account may change it
-     · session        the balance, for "balance after this purchase"
-     · store-tickets  the open count that rides on the Support tab */
-  Promise.all([
-    UCP.get('store-promo.php'),
-    UCP.get('session.php'),
-    UCP.get('store-tickets.php?scope=mine&status=all&page=1')
-  ]).then(function(r){
-    var p = r[0], me = r[1], tk = r[2];
-    if(p && p.ok){ PROMO = p.promo || null; MAY_PROMO = !!p.may_edit; }
-    if(me && typeof me.credits === 'number') BALANCE = me.credits;
-    if(tk && tk.ok){ TICKETS = tk; STAFF = !!tk.staff; ME = tk.me ? tk.me.id : 0; }
-    route();
-  });
+     The calls are also made one after another rather than all at once:
+     PHP serialises requests that touch the same session anyway, so firing
+     them in parallel bought nothing and made the queue longer. */
+  route();
+
+  function refresh(){
+    if(TAB === 'credits') return viewCredits();
+    if(TAB === 'overview') return viewOverview();
+    if(TAB === 'support') return viewSupport();
+  }
+
+  UCP.get('store-promo.php')
+    .then(function(d){
+      if(d && d.ok){ PROMO = d.promo || null; MAY_PROMO = !!d.may_edit; refresh(); }
+      return UCP.get('session.php');
+    })
+    .then(function(d){
+      if(d && typeof d.credits === 'number'){ BALANCE = d.credits; refresh(); }
+      return UCP.get('store-tickets.php?scope=mine&status=all&page=1');
+    })
+    .then(function(d){
+      if(d && d.ok){
+        TICKETS = d; STAFF = !!d.staff; ME = d.me ? d.me.id : 0;
+        tabs();
+        if(TAB === 'support') viewSupport();
+      }
+    });
 
   /* ===== ACCOUNT MENU ===== */
   (function(){
