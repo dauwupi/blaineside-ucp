@@ -747,7 +747,7 @@ $PAGE_HEAD = <<<'HTML'
   }
 </style>
 <link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
-<script src="/assets/js/ucp.js"></script>
+<script src="/assets/js/ucp.js?v=3.0.2"></script>
 </head>
 
 HTML;

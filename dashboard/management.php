@@ -652,7 +652,7 @@ require __DIR__ . '/../partials/shell-top.php';
 
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-<script src="/assets/js/ucp.js"></script>
+<script src="/assets/js/ucp.js?v=3.0.2"></script>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.

@@ -273,7 +273,19 @@
        into the cache for a UCP that has no ledger would then paint 0 on
        the next page before the session answers, which is a number nobody
        asked for. */
-    if (typeof d.credits === 'number') m.credits = d.credits;
+    if (typeof d.credits === 'number') {
+      m.credits = d.credits;
+    } else {
+      /* Carry the last known balance forward.
+         Not every endpoint that describes the caller reports credits —
+         api/profile.php does not — and My Profile hands its payload
+         straight to rememberMe(). Replacing the cache wholesale therefore
+         dropped a balance we already knew and repainted the top bar as an
+         em dash. A figure this page did not mention is a figure this page
+         has nothing to say about, not a figure that has gone away. */
+      var known = meRead();
+      if (known && typeof known.credits === 'number') m.credits = known.credits;
+    }
     meWrite(m);
     paintMe(m);
     paintCredits(m);
@@ -963,7 +975,7 @@
     name.parentNode.replaceChild(a, name);
   }
 
-  var UCP_VERSION = '3.0.1';
+  var UCP_VERSION = '3.0.2';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

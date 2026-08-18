@@ -7,7 +7,6 @@
  */
 $PAGE_TITLE = 'My Profile — BlaineSide UCP';
 $PAGE_HEADING = 'My Profile';
-$PAGE_SEARCH = false;   // this page has never had a search box
 $PAGE_HEAD = <<<'HTML'
 <style>
 /* ============================================================
@@ -1802,7 +1801,7 @@ require __DIR__ . '/partials/shell-top.php';
   </main>
 </div>
 
-<script src="/assets/js/ucp.js"></script>
+<script src="/assets/js/ucp.js?v=3.0.2"></script>
 <script src="/assets/js/qrcode.js" defer></script>
 <script>
 /* =====================================================================
