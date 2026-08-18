@@ -300,3 +300,31 @@ button.primary:disabled{
 .btn.primary svg,
 .btn.p svg,
 button.primary svg{stroke:currentColor}
+
+
+/* =====================================================================
+   STATUS PILLS
+
+   Every rounded status label in the UCP — Pending, Accepted, Rejected,
+   Denied, Open, Closed — is a .pill or an .ap. They were declared page by
+   page, so some pages set them in capitals and some did not, and the same
+   word looked like two different components depending where you met it.
+
+   This is shape only. Not one colour is touched: each page keeps its own
+   .pending / .accepted / .rejected fills exactly as they are.
+
+   Capitals have no descenders, so a line-height built for lowercase hangs
+   empty space under them; letter-spacing adds a gap after the last letter
+   that the text-indent cancels. That is what centres the word in the box.
+   ===================================================================== */
+.pill,
+.ap{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  text-indent:.06em;
+  white-space:nowrap;
+}

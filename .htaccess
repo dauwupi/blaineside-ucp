@@ -70,6 +70,12 @@ RewriteRule ^ /%1 [R=301,L]
 RewriteCond %{THE_REQUEST} \s/+(.*?)\.html[\s?] [NC]
 RewriteRule ^ /%1 [R=301,L]
 
+# /dashboard/store.php -> /dashboard/store
+# Same rule for the pages that are now PHP, so there is still exactly one
+# canonical URL for every page. api/ is already excluded above.
+RewriteCond %{THE_REQUEST} \s/+(.*?)\.php[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
+
 # ---------------------------------------------------------------------
 # 2. Clean URL -> the real file.
 #    /login          -> login.html             (file)
@@ -88,12 +94,26 @@ RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -l
 RewriteRule ^ - [L]
 
+# /store -> store.php   (tried BEFORE .html)
+#
+# Pages that pull their sidebar and top bar from partials/ are .php. The
+# .php rule comes first so a page that has been converted wins over an
+# old .html left beside it — which makes the conversion reversible: delete
+# the .php and the .html serves again, unchanged.
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.+?)/?$ $1.php [L]
+
 # /login -> login.html
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.html -f
 RewriteRule ^(.+?)/?$ $1.html [L]
 
-# /dashboard (or /dashboard/) -> dashboard/index.html
+# /dashboard (or /dashboard/) -> dashboard/index.php, else index.html
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME}/index.php -f
+RewriteRule ^(.+?)/?$ $1/index.php [L]
+
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteCond %{REQUEST_FILENAME}/index.html -f
 RewriteRule ^(.+?)/?$ $1/index.html [L]
@@ -101,7 +121,7 @@ RewriteRule ^(.+?)/?$ $1/index.html [L]
 # ---------------------------------------------------------------------
 # 3. "/" serves the sign-in page.
 # ---------------------------------------------------------------------
-DirectoryIndex index.html
+DirectoryIndex index.php index.html
 
 # ---------------------------------------------------------------------
 # Housekeeping
@@ -124,6 +144,10 @@ RedirectMatch 404 ^/docs(/|$)
 
 # Never serve the API's own includes or credentials, even if api/.htaccess
 # goes missing during a deploy.
+# The shell partials are includes, never pages. Blocked outright so
+# /partials/shell-top.php cannot be fetched on its own.
+RedirectMatch 404 ^/partials/
+
 <FilesMatch "^(config\.php|config\.example\.php|_.*\.php)$">
   Require all denied
 </FilesMatch>
