@@ -595,8 +595,12 @@
 .tab.on{background:var(--charcoal-3);border-color:rgba(226,182,92,.4)}
 .tab.on b{color:var(--parchment)}
 .tab.on .ic{color:var(--gold);border-color:rgba(226,182,92,.34);background:rgba(226,182,92,.1)}
-.tab .n{position:absolute;top:9px;right:11px;font-size:10.5px;font-weight:800;color:var(--amber);
-  font-variant-numeric:tabular-nums}
+/* Inline, not a corner badge: a number pinned to the corner of a tile
+   reads as floating rather than as part of the label it counts. */
+.tab .n{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;
+  padding:0 6px;border-radius:100px;background:var(--charcoal);border:1px solid var(--border);
+  font-size:10.5px;font-weight:800;line-height:1;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.tab.on .n{color:var(--gold);border-color:rgba(226,182,92,.34)}
 
 
 /* =====================================================================
@@ -616,7 +620,8 @@
 
 .tabbar{display:inline-flex;gap:4px;padding:5px;border-radius:13px;background:var(--charcoal-2);
   border:1px solid var(--border);margin-bottom:18px;max-width:100%;overflow-x:auto}
-.tabbar .tab{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:10px 17px;
+.tabbar .tab{flex:none;min-width:0;height:auto;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:10px 17px;
   border-radius:9px;border:1px solid transparent;background:none;cursor:pointer;white-space:nowrap;
   font-size:13.5px;font-weight:600;color:var(--text-faint);font-family:inherit;transition:.15s}
 .tabbar .tab svg{width:16px;height:16px;stroke-width:1.9;flex:none;color:var(--stone);fill:none;stroke:currentColor}
@@ -637,6 +642,33 @@
 .filters button .n{display:inline-flex;align-items:center;font-size:11.5px;font-weight:800;
   line-height:1;font-variant-numeric:tabular-nums;color:var(--text-dim)}
 .filters button.on .n{color:var(--gold)}
+
+/* The administrative record's pager, exactly: a count on the left,
+   Previous / numbers / Next on the right, above a hairline. */
+.pager{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  margin-top:17px;padding-top:15px;border-top:1px solid var(--border)}
+.pcount{font-size:12px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.pcount b{color:var(--parchment);font-weight:600}
+.pnav{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.pnav button{min-width:33px;height:33px;padding:0 9px;border-radius:9px;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--text-faint);font-family:inherit;font-size:12.5px;
+  font-weight:600;cursor:pointer;display:grid;place-items:center;
+  font-variant-numeric:tabular-nums;transition:.14s}
+.pnav button:hover:not([disabled]){color:var(--parchment);border-color:var(--charcoal-4)}
+.pnav button[aria-current="true"]{background:var(--charcoal-4);color:var(--parchment);
+  border-color:rgba(226,182,92,.38)}
+.pnav button[disabled]{opacity:.3;cursor:default}
+@media (max-width:640px){.pager{flex-direction:column;align-items:stretch}.pnav{justify-content:center}}
+
+/* A page rule makes .hint an inline-flex box, which turned the sentence and
+   its bold N/A into two flex items with a gap between them — which is why
+   the full stop sat adrift. Here it is a plain block of text. */
+.card .fld .hint{display:block}
+.card .fld .hint b{display:inline;color:var(--text-faint);font-weight:600}
+
+.suphead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.suphead .tabbar{margin-bottom:0}
+.suphead .btn{margin-left:auto}
 
 .searchrow{display:flex;gap:11px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
 .searchbox{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:200px;
@@ -676,11 +708,13 @@
 .pill,.ap{display:inline-flex;align-items:center;justify-content:center;text-align:center;
   font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1;
   padding:6px 12px;border-radius:100px;white-space:nowrap;border:1px solid var(--border);
-  background:var(--charcoal);color:var(--text-faint)}
+  background:var(--charcoal-3);color:var(--text-faint)}
 .aprow .ap{justify-self:stretch;padding:6px 0}
 .pill.open,.ap.open{color:#e3bd72;background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.32)}
 .pill.answered,.ap.answered{color:#9fae8d;background:rgba(127,160,90,.11);border-color:rgba(127,160,90,.32)}
-.pill.closed,.ap.closed{color:var(--text-faint)}
+/* Closed is the quiet state. It takes the row's own surface rather than a
+   darker one, so it blends instead of announcing itself. */
+.pill.closed,.ap.closed{background:transparent;border-color:var(--border);color:var(--text-dim)}
 
 .plink{color:inherit;text-decoration:none;border-bottom:1px solid rgba(226,182,92,.35);transition:.13s}
 .plink:hover{color:var(--gold);border-bottom-color:var(--gold)}
@@ -756,7 +790,7 @@
 .fld input::placeholder,.fld textarea::placeholder{color:#4f4941}
 .fld .hint{background:none;border:0;padding:0;border-radius:0;
   font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.6}
-.fld .hint b{color:var(--text-faint);font-weight:600}
+.fld .hint b{display:inline;color:var(--text-faint);font-weight:600}
 .fld .hint .count{float:right;font-variant-numeric:tabular-nums}
 .orow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
 @media (max-width:620px){.orow{grid-template-columns:1fr}}
@@ -958,7 +992,8 @@
 
 .tabbar{display:inline-flex;gap:4px;padding:5px;border-radius:13px;background:var(--charcoal-2);
   border:1px solid var(--border);margin-bottom:18px;max-width:100%;overflow-x:auto}
-.tabbar .tab{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:10px 17px;
+.tabbar .tab{flex:none;min-width:0;height:auto;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:10px 17px;
   border-radius:9px;border:1px solid transparent;background:none;cursor:pointer;white-space:nowrap;
   font-size:13.5px;font-weight:600;color:var(--text-faint);font-family:inherit;transition:.15s}
 .tabbar .tab svg{width:16px;height:16px;stroke-width:1.9;flex:none;color:var(--stone);fill:none;stroke:currentColor}
@@ -979,6 +1014,23 @@
 .filters button .n{display:inline-flex;align-items:center;font-size:11.5px;font-weight:800;
   line-height:1;font-variant-numeric:tabular-nums;color:var(--text-dim)}
 .filters button.on .n{color:var(--gold)}
+
+/* The administrative record's pager, exactly: a count on the left,
+   Previous / numbers / Next on the right, above a hairline. */
+.pager{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  margin-top:17px;padding-top:15px;border-top:1px solid var(--border)}
+.pcount{font-size:12px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.pcount b{color:var(--parchment);font-weight:600}
+.pnav{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.pnav button{min-width:33px;height:33px;padding:0 9px;border-radius:9px;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--text-faint);font-family:inherit;font-size:12.5px;
+  font-weight:600;cursor:pointer;display:grid;place-items:center;
+  font-variant-numeric:tabular-nums;transition:.14s}
+.pnav button:hover:not([disabled]){color:var(--parchment);border-color:var(--charcoal-4)}
+.pnav button[aria-current="true"]{background:var(--charcoal-4);color:var(--parchment);
+  border-color:rgba(226,182,92,.38)}
+.pnav button[disabled]{opacity:.3;cursor:default}
+@media (max-width:640px){.pager{flex-direction:column;align-items:stretch}.pnav{justify-content:center}}
 
 .searchrow{display:flex;gap:11px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
 .searchbox{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:200px;
@@ -1018,11 +1070,13 @@
 .pill,.ap{display:inline-flex;align-items:center;justify-content:center;text-align:center;
   font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1;
   padding:6px 12px;border-radius:100px;white-space:nowrap;border:1px solid var(--border);
-  background:var(--charcoal);color:var(--text-faint)}
+  background:var(--charcoal-3);color:var(--text-faint)}
 .aprow .ap{justify-self:stretch;padding:6px 0}
 .pill.open,.ap.open{color:#e3bd72;background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.32)}
 .pill.answered,.ap.answered{color:#9fae8d;background:rgba(127,160,90,.11);border-color:rgba(127,160,90,.32)}
-.pill.closed,.ap.closed{color:var(--text-faint)}
+/* Closed is the quiet state. It takes the row's own surface rather than a
+   darker one, so it blends instead of announcing itself. */
+.pill.closed,.ap.closed{background:transparent;border-color:var(--border);color:var(--text-dim)}
 
 .plink{color:inherit;text-decoration:none;border-bottom:1px solid rgba(226,182,92,.35);transition:.13s}
 .plink:hover{color:var(--gold);border-bottom-color:var(--gold)}
@@ -1098,7 +1152,7 @@
 .fld input::placeholder,.fld textarea::placeholder{color:#4f4941}
 .fld .hint{background:none;border:0;padding:0;border-radius:0;
   font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.6}
-.fld .hint b{color:var(--text-faint);font-weight:600}
+.fld .hint b{display:inline;color:var(--text-faint);font-weight:600}
 .fld .hint .count{float:right;font-variant-numeric:tabular-nums}
 .orow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
 @media (max-width:620px){.orow{grid-template-columns:1fr}}
@@ -2280,19 +2334,23 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   /* ---------------- 4 · support ---------------- */
   /* The administrative record's pager, to the pixel: window of three,
      arrows either side, ends pinned with an ellipsis. */
-  function pager(page, pages){
+  /* The administrative record's pager, to the letter: a count on the left,
+     Previous / numbers / Next on the right. Paging that behaves differently
+     on different pages is a small cruelty, so this borrows the record's
+     shape rather than inventing a third one. */
+  function pager(page, pages, total, per){
     if(pages <= 1) return '';
-    var h = '<div class="pager">';
-    h += '<button class="pg" data-page="' + (page-1) + '"' + (page<=1?' disabled':'') + '>&lt;</button>';
-    var start = Math.max(1, Math.min(page-1, pages-2)), end = Math.min(pages, start+2);
-    if(start > 1) h += '<button class="pg" data-page="1">1</button>' +
-                       (start > 2 ? '<span class="pgap">…</span>' : '');
-    for(var i=start;i<=end;i++)
-      h += '<button class="pg' + (i===page?' on':'') + '" data-page="' + i + '">' + i + '</button>';
-    if(end < pages) h += (end < pages-1 ? '<span class="pgap">…</span>' : '') +
-                         '<button class="pg" data-page="' + pages + '">' + pages + '</button>';
-    return h + '<button class="pg" data-page="' + (page+1) + '"' +
-      (page>=pages?' disabled':'') + '>&gt;</button></div>';
+    var first = (page - 1) * per;
+    var b = [];
+    b.push('<button data-page="' + (page-1) + '"' + (page <= 1 ? ' disabled' : '') + '>Previous</button>');
+    for(var i = 1; i <= pages; i++){
+      b.push('<button data-page="' + i + '"' + (i === page ? ' aria-current="true"' : '') + '>' + i + '</button>');
+    }
+    b.push('<button data-page="' + (page+1) + '"' + (page >= pages ? ' disabled' : '') + '>Next</button>');
+    return '<div class="pager">' +
+      '<span class="pcount">Showing ' + (first + 1) + '–' + Math.min(first + per, total) +
+      ' of ' + total + '</span>' +
+      '<div class="pnav">' + b.join('') + '</div></div>';
   }
 
   /* Status reads as one of three words, in the appeal list's own pill:
@@ -2368,23 +2426,20 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
 
     var c = d.counts || {};
     var live = (c.open|0) + (c.answered|0);
+    var all  = live + (c.closed|0);
 
-    /* The lede says what this is, who reads it, and what happens next —
-       the three things a player wants before typing anything. */
-    var lede = (STAFF && TSCOPE === 'all')
-      ? '<b>' + live + '</b> outstanding · ' + (c.open|0) + ' with nobody having replied yet · ' +
-        (c.closed|0) + ' closed to date'
-      : 'A private line to Management about a payment. Only you and the Management team can read ' +
-        'a ticket, it never appears on the forums, and it stays open until the charge is settled. ' +
-        'You have <b>' + live + '</b> open of ' + STORE_OPEN_MAX + ' allowed.';
-
-    var tabs = STAFF
-      ? '<div class="tabbar">' +
-        '<button class="tab' + (TSCOPE === 'mine' ? ' on' : '') + '" data-scope="mine">' + I_USER +
-        'Your tickets<span class="n">' + ((c.open|0)+(c.answered|0)+(c.closed|0)) + '</span></button>' +
-        '<button class="tab' + (TSCOPE === 'all' ? ' on' : '') + '" data-scope="all">' + I_INBOX +
-        'Ticket Management<span class="n">' + live + '</span></button></div>'
-      : '';
+    /* No page title and no lede: every other tab in the Credit Store opens
+       straight onto its content, and a heading that repeats the tab you
+       just clicked is a line of text that tells you nothing. */
+    var head = '<div class="suphead">' +
+      (STAFF
+        ? '<div class="tabbar">' +
+          '<button class="tab' + (TSCOPE === 'mine' ? ' on' : '') + '" data-scope="mine">' + I_USER +
+          'Your tickets<span class="n">' + all + '</span></button>' +
+          '<button class="tab' + (TSCOPE === 'all' ? ' on' : '') + '" data-scope="all">' + I_INBOX +
+          'Ticket Management<span class="n">' + live + '</span></button></div>'
+        : '<span></span>') +
+      '<button class="btn primary" id="newBtn">' + I_PLUS + 'Open a ticket</button></div>';
 
     var search = (STAFF && TSCOPE === 'all')
       ? '<div class="searchrow"><span class="searchbox">' + I_SEARCH +
@@ -2394,10 +2449,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
         '</button></div>'
       : '';
 
-    paint('body',
-      '<div class="phead"><div><h2>Purchase Support</h2><p>' + lede + '</p></div>' +
-      '<button class="btn primary" id="newBtn">' + I_PLUS + 'Open a ticket</button></div>' +
-      tabs +
+    paint('body', head +
       '<div class="card"><div class="card-h"><h3>' +
         (TSCOPE === 'all' ? 'All tickets' : 'Your tickets') + '</h3>' +
         '<div class="r">' + filterBar() + '</div></div>' +
@@ -2406,7 +2458,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
         ? '<div class="aplist">' + d.rows.map(ticketRow).join('') + '</div>'
         : '<div class="empty">' + (TSTATUS === 'all'
             ? 'No tickets yet.' : 'Nothing matches that filter.') + '</div>') +
-      (d.pages > 1 ? pager(d.page, d.pages) : '') +
+      pager(d.page, d.pages, d.total, d.per || 10) +
       '</div></div>');
 
     wireSupport();
