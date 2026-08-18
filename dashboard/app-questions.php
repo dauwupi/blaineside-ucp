@@ -687,7 +687,7 @@ $PAGE_HEAD = <<<'HTML'
   .hint{font-size:11.5px;color:var(--text-dim);line-height:1.6;margin-top:8px}
 
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
 
 HTML;

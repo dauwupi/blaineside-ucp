@@ -328,3 +328,28 @@ button.primary svg{stroke:currentColor}
   text-indent:.06em;
   white-space:nowrap;
 }
+
+
+/* =====================================================================
+   THE TOP BAR'S SEARCH
+
+   Fifteen pages carried an identical copy of these rules and two carried
+   none, because My Profile and the account lookup never had a search box
+   until the shell was shared. The markup arrived; the styling did not, so
+   both pages showed a bare input and a 24px magnifier.
+
+   Scoped to .topbar on purpose: the Credit Store's ticket list has its own
+   .searchbox, and this must not reach it.
+   ===================================================================== */
+.topbar .searchbox{display:flex;align-items:center;gap:9px;height:38px;padding:0 14px;width:280px;
+  background:var(--charcoal);border:1px solid var(--border);border-radius:10px;color:var(--text-dim)}
+.topbar .searchbox svg{width:15px;height:15px;flex:none;stroke-width:2}
+.topbar .searchbox input{background:none;border:none;outline:none;color:var(--parchment);
+  font-family:inherit;font-size:13.5px;width:100%;height:auto;padding:0;margin:0;border-radius:0}
+.topbar .searchbox input::placeholder{color:var(--text-dim)}
+.topbar .search-mini{display:none}
+
+@media (max-width:760px){
+  .topbar .searchbox{display:none}
+  .topbar .search-mini{display:grid}
+}

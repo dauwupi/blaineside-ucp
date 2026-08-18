@@ -707,7 +707,7 @@ $PAGE_HEAD = <<<'HTML'
     color:var(--text-dim);font-size:12.5px}
 
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
 </head>
 
 HTML;
