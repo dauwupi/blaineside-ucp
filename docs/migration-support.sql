@@ -1,0 +1,4 @@
+ALTER TABLE ucp_store_tickets
+  ADD COLUMN category VARCHAR(32) NOT NULL DEFAULT 'other' AFTER subject,
+  ADD COLUMN amount VARCHAR(40) DEFAULT NULL AFTER order_ref,
+  ADD COLUMN char_name VARCHAR(60) DEFAULT NULL AFTER amount;

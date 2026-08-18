@@ -32,7 +32,13 @@ if (!$t || !store_may_read($acc, $t)) fail('That ticket no longer exists.', 404)
 
 $out = store_ticket_out($t, $acc);
 $out['messages'] = store_messages($pdo, $id);
-$out['staff']    = store_is_staff($acc);
+$out['staff']     = store_is_staff($acc);
 $out['may_reply'] = $t['status'] !== 'closed';
+
+/* The panel beside the thread. Only shown to staff — a player looking at
+   their own ticket does not need to be told how many they have opened. */
+if ($out['staff']) {
+    $out['history'] = store_player_history($pdo, (int)$t['account_id']);
+}
 
 ok($out);

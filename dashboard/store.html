@@ -598,6 +598,203 @@
 .tab .n{position:absolute;top:9px;right:11px;font-size:10.5px;font-weight:800;color:var(--amber);
   font-variant-numeric:tabular-nums}
 
+
+/* =====================================================================
+   PURCHASE SUPPORT
+
+   Built out of the appeal page's own parts rather than a second set that
+   looks similar: .aprow for the list, its centred status pill, .kv for
+   the detail panel, .cm for a comment, .composer for the reply. A ticket
+   should feel like an appeal because it is the same kind of object.
+   ===================================================================== */
+.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+.phead > div:first-child{flex:1;min-width:260px}
+.phead h2{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.phead p{font-size:13.5px;color:var(--text-faint);line-height:1.6}
+.phead p b{color:var(--gold);font-weight:700}
+.backb{margin-bottom:14px}
+
+.tabbar{display:inline-flex;gap:4px;padding:5px;border-radius:13px;background:var(--charcoal-2);
+  border:1px solid var(--border);margin-bottom:18px;max-width:100%;overflow-x:auto}
+.tabbar .tab{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:10px 17px;
+  border-radius:9px;border:1px solid transparent;background:none;cursor:pointer;white-space:nowrap;
+  font-size:13.5px;font-weight:600;color:var(--text-faint);font-family:inherit;transition:.15s}
+.tabbar .tab svg{width:16px;height:16px;stroke-width:1.9;flex:none;color:var(--stone);fill:none;stroke:currentColor}
+.tabbar .tab:hover{background:var(--charcoal-3);color:var(--parchment)}
+.tabbar .tab.on{background:var(--charcoal-4);color:var(--parchment);border-color:rgba(226,182,92,.34)}
+.tabbar .tab.on svg{color:var(--gold)}
+.tabbar .tab .n{position:static;top:auto;right:auto;display:inline-flex;align-items:center;
+  font-size:11.5px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--text-dim)}
+.tabbar .tab.on .n{color:var(--gold)}
+
+.filters{display:inline-flex;gap:4px;padding:4px;border-radius:11px;background:var(--charcoal);
+  border:1px solid var(--border);flex-wrap:wrap}
+.filters button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 13px;
+  border-radius:8px;border:1px solid transparent;background:none;cursor:pointer;font-family:inherit;
+  font-size:12.5px;font-weight:600;color:var(--text-faint);transition:.15s}
+.filters button:hover{background:var(--charcoal-3);color:var(--parchment)}
+.filters button.on{background:var(--charcoal-4);color:var(--parchment);border-color:rgba(226,182,92,.34)}
+.filters button .n{display:inline-flex;align-items:center;font-size:11.5px;font-weight:800;
+  line-height:1;font-variant-numeric:tabular-nums;color:var(--text-dim)}
+.filters button.on .n{color:var(--gold)}
+
+.searchrow{display:flex;gap:11px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.searchbox{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:200px;
+  border-radius:10px;border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim)}
+.searchbox svg{width:15px;height:15px;flex:none;stroke-width:2;fill:none;stroke:currentColor}
+.searchrow .searchbox input{flex:1;min-width:0;background:none;border:0;outline:none;padding:0;
+  margin:0;border-radius:0;height:auto;box-shadow:none;color:var(--parchment);
+  font-family:inherit;font-size:13.5px}
+.searchbox input::placeholder{color:var(--text-dim)}
+
+.aplist{display:flex;flex-direction:column}
+.aprow{color:var(--parchment);text-decoration:none;
+  display:grid;grid-template-columns:82px minmax(0,1fr) 150px 104px 14px;align-items:center;
+  gap:0 16px;padding:12px 15px;border-radius:11px;background:var(--charcoal-3);
+  border:1px solid var(--border-soft);cursor:pointer;transition:background .13s,border-color .13s}
+.aprow + .aprow{margin-top:9px}
+.aprow:hover{background:var(--charcoal-4);border-color:rgba(226,182,92,.26)}
+.aprow .num{font-size:11.5px;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aprow:hover .num{color:var(--gold)}
+.aprow .t{display:block;font-size:13px;font-weight:700;line-height:1.45;
+  color:var(--parchment);overflow-wrap:anywhere}
+.aprow .s{display:block;font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.5}
+.aprow .s b{color:var(--text-faint);font-weight:600}
+.aprow .s .dot{padding:0 5px;opacity:.55}
+.aprow .tcat{font-size:12px;color:var(--text-faint);text-align:right;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.aprow .go{width:14px;height:14px;stroke-width:2.4;stroke:var(--text-dim);fill:none;justify-self:end;
+  transition:stroke .12s,transform .12s}
+.aprow:hover .go{stroke:var(--gold);transform:translateX(2px)}
+@media (max-width:900px){
+  .aprow{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}
+  .aprow .num,.aprow .cat,.aprow .go{display:none}
+}
+
+/* One pill, three words, centred in its own box. */
+.pill,.ap{display:inline-flex;align-items:center;justify-content:center;text-align:center;
+  font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1;
+  padding:6px 12px;border-radius:100px;white-space:nowrap;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--text-faint)}
+.aprow .ap{justify-self:stretch;padding:6px 0}
+.pill.open,.ap.open{color:#e3bd72;background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.32)}
+.pill.answered,.ap.answered{color:#9fae8d;background:rgba(127,160,90,.11);border-color:rgba(127,160,90,.32)}
+.pill.closed,.ap.closed{color:var(--text-faint)}
+
+.plink{color:inherit;text-decoration:none;border-bottom:1px solid rgba(226,182,92,.35);transition:.13s}
+.plink:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+.apgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+@media (max-width:1050px){.apgrid{grid-template-columns:minmax(0,1fr)}}
+
+.kv{display:flex;flex-direction:column}
+.kv .r{padding:12px 0;font-size:13px}
+.kv .r + .r{border-top:1px solid var(--border-soft)}
+.kv .k{font-size:12px;color:var(--text-dim)}
+.kv .v{color:var(--parchment);font-weight:600;margin-top:4px;overflow-wrap:anywhere}
+.kv .v.soft{color:var(--text-faint);font-weight:500}
+
+.cm{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--charcoal-2)}
+.cm + .cm{margin-top:11px}
+.cm .h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 15px;
+  background:var(--charcoal-3);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-faint)}
+.cm .h b{color:var(--parchment);font-weight:700}
+.cm .h .when{margin-left:auto;color:var(--text-dim);font-size:12px}
+.cm .body{padding:12px 15px;font-size:13.5px;color:var(--parchment);line-height:1.7;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+.cm.staff{border-color:rgba(226,182,92,.3)}
+.cm.staff .h{background:rgba(226,182,92,.07);border-bottom-color:rgba(226,182,92,.22)}
+
+.composer{margin-top:16px}
+.composer textarea{display:block;width:100%;padding:12px 14px;border-radius:11px;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--parchment);font-family:inherit;font-size:13.5px;line-height:1.65;resize:vertical}
+.composer textarea::placeholder{color:#4f4941}
+.composer .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:11px}
+.composer .row .grow{flex:1;text-align:right;font-size:12px;color:var(--text-dim)}
+.evrow2{display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:11px;background:var(--charcoal);
+  border:1px solid var(--border);font-size:12.5px;color:var(--text-dim);margin-top:16px;flex-wrap:wrap}
+.evrow2 svg{width:15px;height:15px;flex:none;stroke:var(--stone);fill:none;stroke-width:2}
+.evrow2 b{color:var(--text-faint);font-weight:600}
+.evrow2 .btn{margin-left:auto}
+
+/* ---- opening a ticket ---- */
+.steps{display:flex;flex-direction:column}
+.step{border-top:1px solid var(--border);padding:18px 20px}
+.step:first-child{border-top:0}
+.sn{display:flex;align-items:center;gap:11px;margin-bottom:14px;flex-wrap:wrap}
+.sn .n{width:22px;height:22px;flex:none;border-radius:7px;display:grid;place-items:center;font-size:10.5px;
+  font-weight:800;background:var(--gold);color:#000;font-variant-numeric:tabular-nums}
+.sn h4{font-size:13px;font-weight:700}
+.sn .req2{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.sn p{margin-left:auto;font-size:11.5px;color:var(--text-dim)}
+.cats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+@media (max-width:760px){.cats{grid-template-columns:1fr}}
+.cat{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border-radius:11px;
+  border:1px solid var(--border);background:var(--charcoal);cursor:pointer;font-family:inherit;
+  text-align:left;transition:.13s}
+.cat:hover{border-color:var(--charcoal-4)}
+.cat.on{border-color:rgba(226,182,92,.5);background:rgba(226,182,92,.07)}
+.cat .ic{width:30px;height:30px;flex:none;border-radius:8px;display:grid;place-items:center;
+  background:var(--charcoal-3);border:1px solid var(--border)}
+.cat .ic svg{width:15px;height:15px;stroke:var(--text-faint);fill:none;stroke-width:1.8}
+.cat.on .ic{background:rgba(226,182,92,.14);border-color:rgba(226,182,92,.4)}
+.cat.on .ic svg{stroke:var(--gold)}
+.cat b{display:block;font-size:12.5px;font-weight:600;color:var(--text-faint);line-height:1.3}
+.cat.on b{color:var(--parchment)}
+.cat span span{display:block;font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55}
+.fld{margin-bottom:0}
+.fld label{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:9px}
+.fld label u{text-decoration:none;letter-spacing:.02em;text-transform:none;font-size:11px;
+  font-weight:600;color:var(--stone)}
+.fld input,.fld textarea{display:block;width:100%;padding:11px 13px;border-radius:10px;
+  border:1px solid var(--border);background:var(--charcoal);color:var(--parchment);font-family:inherit;
+  font-size:13px;line-height:1.6}
+.fld textarea{resize:vertical}
+.fld input:disabled{opacity:.45}
+.fld input::placeholder,.fld textarea::placeholder{color:#4f4941}
+.fld .hint{background:none;border:0;padding:0;border-radius:0;
+  font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.6}
+.fld .hint b{color:var(--text-faint);font-weight:600}
+.fld .hint .count{float:right;font-variant-numeric:tabular-nums}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+@media (max-width:620px){.orow{grid-template-columns:1fr}}
+.na{display:inline-flex;align-items:center;justify-content:center;gap:9px;height:41px;padding:0 13px;
+  border-radius:10px;border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim);
+  font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.na .bx{width:15px;height:15px;flex:none;border-radius:4px;border:1.6px solid var(--border);
+  display:grid;place-items:center}
+.na .bx svg{width:10px;height:10px;stroke:#000;stroke-width:3.4;fill:none;opacity:0}
+.na.on{border-color:rgba(226,182,92,.5);color:var(--parchment)}
+.na.on .bx{border-color:var(--gold);background:var(--gold)}
+.na.on .bx svg{opacity:1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+@media (max-width:620px){.two{grid-template-columns:1fr}}
+.fa{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px 20px;
+  border-top:1px solid var(--border);background:var(--charcoal)}
+.tcheck{padding:12px 13px;border-radius:11px;background:var(--charcoal);border:1px solid var(--border)}
+.tcheck .k{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim)}
+.tcheck .v{font-size:12.5px;font-weight:700;color:var(--gold);margin-top:8px;line-height:1.5;
+  overflow-wrap:anywhere}
+.asech{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim);
+  margin:16px 0 8px}
+.ck{display:flex;gap:10px;padding:10px 0;font-size:12px;color:var(--text-dim);line-height:1.6;
+  border-top:1px solid var(--border-soft)}
+.ck:first-child{border-top:0}
+.ck svg{width:14px;height:14px;flex:none;margin-top:2px;fill:none;stroke-width:2.4;stroke:var(--text-dim)}
+.ck.done svg{stroke:var(--ok)}
+.ck.done{color:var(--text-faint)}
+.ck b{color:var(--text-faint);font-weight:600}
+.priv{display:flex;gap:10px;font-size:11.5px;color:var(--text-dim);line-height:1.65;padding:11px 12px;
+  border-radius:10px;background:rgba(226,182,92,.06);border:1px solid rgba(226,182,92,.22)}
+.priv svg{width:14px;height:14px;flex:none;margin-top:2px;stroke:var(--gold);fill:none;stroke-width:1.9}
+
+/* Every button centres its own contents — a label sitting left of centre
+   in a fixed-width box is the thing that makes a panel look unfinished. */
+.btn,.btn.primary,.btn.sm{display:inline-flex;align-items:center;justify-content:center;text-align:center}
+.gchip{justify-content:center}
+
 .notice{display:flex;align-items:center;gap:13px;background:linear-gradient(90deg,rgba(212,146,58,.10),rgba(212,146,58,.045));
   border:1px solid rgba(212,146,58,.30);border-radius:13px;padding:13px 16px;margin-bottom:18px;font-size:12.5px}
 .notice b{font-weight:700}
@@ -742,6 +939,203 @@
   background:var(--charcoal);flex-wrap:wrap}
 .pmodal .mf .warn{font-size:11px;color:var(--text-dim);line-height:1.6;max-width:250px}
 .pmodal .mf .sp{margin-left:auto;display:flex;gap:9px}
+
+
+/* =====================================================================
+   PURCHASE SUPPORT
+
+   Built out of the appeal page's own parts rather than a second set that
+   looks similar: .aprow for the list, its centred status pill, .kv for
+   the detail panel, .cm for a comment, .composer for the reply. A ticket
+   should feel like an appeal because it is the same kind of object.
+   ===================================================================== */
+.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+.phead > div:first-child{flex:1;min-width:260px}
+.phead h2{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.phead p{font-size:13.5px;color:var(--text-faint);line-height:1.6}
+.phead p b{color:var(--gold);font-weight:700}
+.backb{margin-bottom:14px}
+
+.tabbar{display:inline-flex;gap:4px;padding:5px;border-radius:13px;background:var(--charcoal-2);
+  border:1px solid var(--border);margin-bottom:18px;max-width:100%;overflow-x:auto}
+.tabbar .tab{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:10px 17px;
+  border-radius:9px;border:1px solid transparent;background:none;cursor:pointer;white-space:nowrap;
+  font-size:13.5px;font-weight:600;color:var(--text-faint);font-family:inherit;transition:.15s}
+.tabbar .tab svg{width:16px;height:16px;stroke-width:1.9;flex:none;color:var(--stone);fill:none;stroke:currentColor}
+.tabbar .tab:hover{background:var(--charcoal-3);color:var(--parchment)}
+.tabbar .tab.on{background:var(--charcoal-4);color:var(--parchment);border-color:rgba(226,182,92,.34)}
+.tabbar .tab.on svg{color:var(--gold)}
+.tabbar .tab .n{position:static;top:auto;right:auto;display:inline-flex;align-items:center;
+  font-size:11.5px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--text-dim)}
+.tabbar .tab.on .n{color:var(--gold)}
+
+.filters{display:inline-flex;gap:4px;padding:4px;border-radius:11px;background:var(--charcoal);
+  border:1px solid var(--border);flex-wrap:wrap}
+.filters button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 13px;
+  border-radius:8px;border:1px solid transparent;background:none;cursor:pointer;font-family:inherit;
+  font-size:12.5px;font-weight:600;color:var(--text-faint);transition:.15s}
+.filters button:hover{background:var(--charcoal-3);color:var(--parchment)}
+.filters button.on{background:var(--charcoal-4);color:var(--parchment);border-color:rgba(226,182,92,.34)}
+.filters button .n{display:inline-flex;align-items:center;font-size:11.5px;font-weight:800;
+  line-height:1;font-variant-numeric:tabular-nums;color:var(--text-dim)}
+.filters button.on .n{color:var(--gold)}
+
+.searchrow{display:flex;gap:11px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.searchbox{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:200px;
+  border-radius:10px;border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim)}
+.searchbox svg{width:15px;height:15px;flex:none;stroke-width:2;fill:none;stroke:currentColor}
+.searchrow .searchbox input{flex:1;min-width:0;background:none;border:0;outline:none;padding:0;
+  margin:0;border-radius:0;height:auto;box-shadow:none;color:var(--parchment);
+  font-family:inherit;font-size:13.5px}
+.searchbox input::placeholder{color:var(--text-dim)}
+
+.aplist{display:flex;flex-direction:column}
+.aprow{color:var(--parchment);text-decoration:none;
+  display:grid;grid-template-columns:82px minmax(0,1fr) 150px 104px 14px;align-items:center;
+  gap:0 16px;padding:12px 15px;border-radius:11px;background:var(--charcoal-3);
+  border:1px solid var(--border-soft);cursor:pointer;transition:background .13s,border-color .13s}
+.aprow + .aprow{margin-top:9px}
+.aprow:hover{background:var(--charcoal-4);border-color:rgba(226,182,92,.26)}
+.aprow .num{font-size:11.5px;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aprow:hover .num{color:var(--gold)}
+.aprow .t{display:block;font-size:13px;font-weight:700;line-height:1.45;
+  color:var(--parchment);overflow-wrap:anywhere}
+.aprow .s{display:block;font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.5}
+.aprow .s b{color:var(--text-faint);font-weight:600}
+.aprow .s .dot{padding:0 5px;opacity:.55}
+.aprow .tcat{font-size:12px;color:var(--text-faint);text-align:right;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.aprow .go{width:14px;height:14px;stroke-width:2.4;stroke:var(--text-dim);fill:none;justify-self:end;
+  transition:stroke .12s,transform .12s}
+.aprow:hover .go{stroke:var(--gold);transform:translateX(2px)}
+@media (max-width:900px){
+  .aprow{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}
+  .aprow .num,.aprow .cat,.aprow .go{display:none}
+}
+
+/* One pill, three words, centred in its own box. */
+.pill,.ap{display:inline-flex;align-items:center;justify-content:center;text-align:center;
+  font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1;
+  padding:6px 12px;border-radius:100px;white-space:nowrap;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--text-faint)}
+.aprow .ap{justify-self:stretch;padding:6px 0}
+.pill.open,.ap.open{color:#e3bd72;background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.32)}
+.pill.answered,.ap.answered{color:#9fae8d;background:rgba(127,160,90,.11);border-color:rgba(127,160,90,.32)}
+.pill.closed,.ap.closed{color:var(--text-faint)}
+
+.plink{color:inherit;text-decoration:none;border-bottom:1px solid rgba(226,182,92,.35);transition:.13s}
+.plink:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+.apgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+@media (max-width:1050px){.apgrid{grid-template-columns:minmax(0,1fr)}}
+
+.kv{display:flex;flex-direction:column}
+.kv .r{padding:12px 0;font-size:13px}
+.kv .r + .r{border-top:1px solid var(--border-soft)}
+.kv .k{font-size:12px;color:var(--text-dim)}
+.kv .v{color:var(--parchment);font-weight:600;margin-top:4px;overflow-wrap:anywhere}
+.kv .v.soft{color:var(--text-faint);font-weight:500}
+
+.cm{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--charcoal-2)}
+.cm + .cm{margin-top:11px}
+.cm .h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 15px;
+  background:var(--charcoal-3);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-faint)}
+.cm .h b{color:var(--parchment);font-weight:700}
+.cm .h .when{margin-left:auto;color:var(--text-dim);font-size:12px}
+.cm .body{padding:12px 15px;font-size:13.5px;color:var(--parchment);line-height:1.7;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+.cm.staff{border-color:rgba(226,182,92,.3)}
+.cm.staff .h{background:rgba(226,182,92,.07);border-bottom-color:rgba(226,182,92,.22)}
+
+.composer{margin-top:16px}
+.composer textarea{display:block;width:100%;padding:12px 14px;border-radius:11px;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--parchment);font-family:inherit;font-size:13.5px;line-height:1.65;resize:vertical}
+.composer textarea::placeholder{color:#4f4941}
+.composer .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:11px}
+.composer .row .grow{flex:1;text-align:right;font-size:12px;color:var(--text-dim)}
+.evrow2{display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:11px;background:var(--charcoal);
+  border:1px solid var(--border);font-size:12.5px;color:var(--text-dim);margin-top:16px;flex-wrap:wrap}
+.evrow2 svg{width:15px;height:15px;flex:none;stroke:var(--stone);fill:none;stroke-width:2}
+.evrow2 b{color:var(--text-faint);font-weight:600}
+.evrow2 .btn{margin-left:auto}
+
+/* ---- opening a ticket ---- */
+.steps{display:flex;flex-direction:column}
+.step{border-top:1px solid var(--border);padding:18px 20px}
+.step:first-child{border-top:0}
+.sn{display:flex;align-items:center;gap:11px;margin-bottom:14px;flex-wrap:wrap}
+.sn .n{width:22px;height:22px;flex:none;border-radius:7px;display:grid;place-items:center;font-size:10.5px;
+  font-weight:800;background:var(--gold);color:#000;font-variant-numeric:tabular-nums}
+.sn h4{font-size:13px;font-weight:700}
+.sn .req2{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.sn p{margin-left:auto;font-size:11.5px;color:var(--text-dim)}
+.cats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+@media (max-width:760px){.cats{grid-template-columns:1fr}}
+.cat{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border-radius:11px;
+  border:1px solid var(--border);background:var(--charcoal);cursor:pointer;font-family:inherit;
+  text-align:left;transition:.13s}
+.cat:hover{border-color:var(--charcoal-4)}
+.cat.on{border-color:rgba(226,182,92,.5);background:rgba(226,182,92,.07)}
+.cat .ic{width:30px;height:30px;flex:none;border-radius:8px;display:grid;place-items:center;
+  background:var(--charcoal-3);border:1px solid var(--border)}
+.cat .ic svg{width:15px;height:15px;stroke:var(--text-faint);fill:none;stroke-width:1.8}
+.cat.on .ic{background:rgba(226,182,92,.14);border-color:rgba(226,182,92,.4)}
+.cat.on .ic svg{stroke:var(--gold)}
+.cat b{display:block;font-size:12.5px;font-weight:600;color:var(--text-faint);line-height:1.3}
+.cat.on b{color:var(--parchment)}
+.cat span span{display:block;font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55}
+.fld{margin-bottom:0}
+.fld label{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:9px}
+.fld label u{text-decoration:none;letter-spacing:.02em;text-transform:none;font-size:11px;
+  font-weight:600;color:var(--stone)}
+.fld input,.fld textarea{display:block;width:100%;padding:11px 13px;border-radius:10px;
+  border:1px solid var(--border);background:var(--charcoal);color:var(--parchment);font-family:inherit;
+  font-size:13px;line-height:1.6}
+.fld textarea{resize:vertical}
+.fld input:disabled{opacity:.45}
+.fld input::placeholder,.fld textarea::placeholder{color:#4f4941}
+.fld .hint{background:none;border:0;padding:0;border-radius:0;
+  font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.6}
+.fld .hint b{color:var(--text-faint);font-weight:600}
+.fld .hint .count{float:right;font-variant-numeric:tabular-nums}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+@media (max-width:620px){.orow{grid-template-columns:1fr}}
+.na{display:inline-flex;align-items:center;justify-content:center;gap:9px;height:41px;padding:0 13px;
+  border-radius:10px;border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim);
+  font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.na .bx{width:15px;height:15px;flex:none;border-radius:4px;border:1.6px solid var(--border);
+  display:grid;place-items:center}
+.na .bx svg{width:10px;height:10px;stroke:#000;stroke-width:3.4;fill:none;opacity:0}
+.na.on{border-color:rgba(226,182,92,.5);color:var(--parchment)}
+.na.on .bx{border-color:var(--gold);background:var(--gold)}
+.na.on .bx svg{opacity:1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+@media (max-width:620px){.two{grid-template-columns:1fr}}
+.fa{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px 20px;
+  border-top:1px solid var(--border);background:var(--charcoal)}
+.tcheck{padding:12px 13px;border-radius:11px;background:var(--charcoal);border:1px solid var(--border)}
+.tcheck .k{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim)}
+.tcheck .v{font-size:12.5px;font-weight:700;color:var(--gold);margin-top:8px;line-height:1.5;
+  overflow-wrap:anywhere}
+.asech{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim);
+  margin:16px 0 8px}
+.ck{display:flex;gap:10px;padding:10px 0;font-size:12px;color:var(--text-dim);line-height:1.6;
+  border-top:1px solid var(--border-soft)}
+.ck:first-child{border-top:0}
+.ck svg{width:14px;height:14px;flex:none;margin-top:2px;fill:none;stroke-width:2.4;stroke:var(--text-dim)}
+.ck.done svg{stroke:var(--ok)}
+.ck.done{color:var(--text-faint)}
+.ck b{color:var(--text-faint);font-weight:600}
+.priv{display:flex;gap:10px;font-size:11.5px;color:var(--text-dim);line-height:1.65;padding:11px 12px;
+  border-radius:10px;background:rgba(226,182,92,.06);border:1px solid rgba(226,182,92,.22)}
+.priv svg{width:14px;height:14px;flex:none;margin-top:2px;stroke:var(--gold);fill:none;stroke-width:1.9}
+
+/* Every button centres its own contents — a label sitting left of centre
+   in a fixed-width box is the thing that makes a panel look unfinished. */
+.btn,.btn.primary,.btn.sm{display:inline-flex;align-items:center;justify-content:center;text-align:center}
+.gchip{justify-content:center}
 
 .notice{display:flex;align-items:center;gap:13px;background:linear-gradient(90deg,rgba(212,146,58,.10),rgba(212,146,58,.045));
   border:1px solid rgba(212,146,58,.30);border-radius:13px;padding:13px 16px;margin-bottom:18px;font-size:12.5px}
@@ -1029,7 +1423,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   .who-line{font-size:11.5px;color:var(--text-dim)}
 
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
+<link rel="stylesheet" href="/assets/css/tones.css">
 </head>
 <body>
 
@@ -1068,6 +1462,18 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
       <button class="icon-btn search-mini" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
       <button class="icon-btn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="dot"></span></button>
       <div class="divider"></div>
+      <!-- Credit balance. In the markup, not created by JavaScript: an
+           element that arrives after the first paint is a visible jump in
+           the top bar on every single load. assets/js/ucp.js fills the
+           figure in and still inserts the whole block on any page that
+           does not carry it. -->
+      <div class="creditbox">
+        <span class="cmain">
+          <svg class="cico" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/><path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg>
+          <span class="cnum unknown" id="creditValue">&mdash;</span>
+        </span>
+        <a class="cplus" href="/dashboard/store#credits" aria-label="Buy credits" title="Buy credits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></a>
+      </div>
       <div class="creditbox">
         <span class="cmain">
           <svg class="cico" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/><path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg>
@@ -1246,7 +1652,32 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   var DOC   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4"/><path d="M9 12.5h6M9 16h4"/></svg>';
   var BALANCE = null;
 
-  var TAB = 'overview', TICKETS = null, TPAGE = 1, TSCOPE = 'mine', TSTATUS = 'all', ONE = null;
+  var I_USER   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>';
+  var I_INBOX  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3.5 13h4l1.5 3h6l1.5-3h4"/><path d="M5 5h14l2 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5l2-8z"/></svg>';
+  var I_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+  var I_PLUS   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>';
+  var I_BACK   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>';
+  var I_CHECK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>';
+  var I_UNDO   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 10h9a5 5 0 0 1 0 10h-3"/><path d="M8 6l-4 4 4 4"/></svg>';
+  var I_TICK   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>';
+  var I_CIRCLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5"/></svg>';
+  var I_LOCK   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path d="M8.4 10.5V8a3.6 3.6 0 0 1 7.2 0v2.5"/></svg>';
+  var CAT_ICON = {
+    credits: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/><path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg>',
+    double:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4.5l8.5 15h-17l8.5-15z"/><path d="M12 10.5v4M12 17h.01"/></svg>',
+    wrong:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+    other:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.1 2.5v1.4M12 17h.01"/></svg>'
+  };
+
+  function fullDate(ts){
+    var d = new Date(ts * 1000);
+    return d.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'}) +
+      ', ' + d.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+  }
+
+  var TAB = 'overview', TICKETS = null, TPAGE = 1, TSCOPE = 'mine', TSTATUS = 'live', ONE = null;
+  var TQ = '', TSORT = 'newest', NEWFORM = false, ME_NAME = '';
+  var STORE_OPEN_MAX = 5;
   var STAFF = false, ME = 0;
 
   function el(id){ return document.getElementById(id); }
@@ -1864,40 +2295,63 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
       (page>=pages?' disabled':'') + '>&gt;</button></div>';
   }
 
-  function statusPill(t){
-    if(t.status === 'closed')   return '<span class="st dead"><s></s>Closed</span>';
-    if(t.status === 'answered') return '<span class="st warn"><s></s>Answered</span>';
-    return '<span class="st ok"><s></s>Open</span>';
+  /* Status reads as one of three words, in the appeal list's own pill:
+     centred, uppercase, no dot. "Open" means it is waiting on Management;
+     "Answered" means the ball is back with the player. */
+  function statusPill(t, cls){
+    var k = t.status === 'closed' ? 'closed' : (t.status === 'answered' ? 'answered' : 'open');
+    var w = t.status === 'closed' ? 'Closed'
+          : (t.status === 'answered' ? 'Answered' : (STAFF && TSCOPE === 'all' ? 'Unanswered' : 'Open'));
+    return '<span class="' + (cls || 'pill') + ' ' + k + '">' + w + '</span>';
+  }
+
+  function catLabel(t){ return t.category_label || 'Something else'; }
+
+  /* A name is a link to that account's record for staff, and plain text
+     for everybody else — a player cannot open the lookup page, so a link
+     there would be a dead end wearing a pointer cursor. */
+  function nameLink(id, name){
+    var safe = escapeHtml(name || 'somebody');
+    return (STAFF && id) ? '<a class="plink" href="/dashboard/lookup?id=' + id + '">' + safe + '</a>' : safe;
+  }
+
+  function waitedFor(t){
+    var since = (t.last && t.last.at) ? t.last.at : t.created_at;
+    return ago(since);
   }
 
   function ticketRow(t){
-    var sub = [];
-    if(t.order_ref) sub.push(escapeHtml(t.order_ref));
-    sub.push('opened ' + ago(t.created_at));
-    sub.push(t.replies + ' repl' + (t.replies === 1 ? 'y' : 'ies'));
-    if(TSCOPE === 'all' && t.player) sub.unshift('<b>' + escapeHtml(t.player.name) + '</b>');
-    return '<div class="trow" data-ticket="' + t.id + '"><span class="id">#' + t.id + '</span>' +
-      '<span class="tx"><b>' + escapeHtml(t.subject) + '</b>' +
-      '<span>' + sub.join(' · ') + '</span></span>' +
-      '<span class="r">' + statusPill(t) +
-      '<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text-dim);fill:none;' +
-      'stroke-width:2.2"><path d="M9 6l6 6-6 6"/></svg></span></div>';
+    var bits = ['Opened ' + ago(t.created_at)];
+    if(t.status === 'closed' && t.closed){
+      bits.push('Closed by <b>' + escapeHtml(t.closed.by || 'somebody') + '</b>');
+    } else if(t.last){
+      bits.push((t.last.staff ? 'Management replied ' : 'Player replied ') + '<b>' + ago(t.last.at) + '</b>');
+    } else {
+      bits.push('<b>Waiting ' + waitedFor(t) + '</b>');
+    }
+    bits.push(t.replies ? t.replies + ' comment' + (t.replies === 1 ? '' : 's') : 'No comments');
+
+    return '<a class="aprow" data-ticket="' + t.id + '">' +
+      '<span class="num">' + escapeHtml(t.order_ref || 'N/A') + '</span>' +
+      '<span><span class="t">' + escapeHtml(t.subject) + '</span>' +
+      '<span class="s">' + bits.join('<span class="dot">·</span>') + '</span></span>' +
+      '<span class="tcat">' + escapeHtml(catLabel(t)) + '</span>' +
+      statusPill(t, 'ap') +
+      '<svg class="go" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></a>';
   }
 
-  function newTicketCard(){
-    return '<div class="card"><div class="card-h"><h3>Open a ticket</h3></div><div class="card-b">' +
-      '<p class="lede">Only you and Management can read a ticket. Mention the order if it is about ' +
-      'something you bought — it saves a round trip.</p>' +
-      '<div class="flab" style="margin-top:15px">Order reference <span style="font-weight:600;' +
-      'letter-spacing:0;text-transform:none;color:var(--text-dim)">— optional</span></div>' +
-      '<input type="text" id="nOrder" placeholder="#595625" maxlength="40">' +
-      '<div class="flab">Subject</div>' +
-      '<input type="text" id="nSubject" placeholder="One line — what went wrong" maxlength="140">' +
-      '<div class="flab">What happened</div>' +
-      '<textarea id="nBody" rows="5" placeholder="When it happened, what you expected, and what ' +
-      'you got instead."></textarea>' +
-      '<button class="btn primary" id="openBtn" style="width:100%;margin-top:14px">Open ticket</button>' +
-      '</div></div>';
+  /* ---- the list ---- */
+  function filterBar(){
+    var opts = (STAFF && TSCOPE === 'all')
+      ? [['open','Unanswered'],['answered','Answered'],['closed','Closed'],['all','Everything']]
+      : [['live','Open'],['closed','Closed'],['all','Everything']];
+    var c = (TICKETS && TICKETS.counts) || {};
+    var n = {open:c.open|0, answered:c.answered|0, closed:c.closed|0,
+             live:(c.open|0)+(c.answered|0), all:(c.open|0)+(c.answered|0)+(c.closed|0)};
+    return '<span class="filters">' + opts.map(function(o){
+      return '<button data-status="' + o[0] + '"' + (TSTATUS === o[0] ? ' class="on"' : '') + '>' +
+        o[1] + '<span class="n">' + (n[o[0]] || 0) + '</span></button>';
+    }).join('') + '</span>';
   }
 
   function viewSupport(){
@@ -1910,34 +2364,50 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
       return;
     }
 
-    var filters = '<select class="sel" id="tstatus">' +
-      ['all|Every ticket','live|Still open','open|Waiting on us','answered|Answered','closed|Closed']
-        .map(function(o){
-          var b = o.split('|');
-          return '<option value="' + b[0] + '"' + (TSTATUS === b[0] ? ' selected' : '') + '>' +
-                 b[1] + '</option>';
-        }).join('') + '</select>';
+    if(NEWFORM) return viewNewTicket();
 
-    var scope = d.staff
-      ? '<select class="sel" id="tscope">' +
-        '<option value="mine"' + (TSCOPE==='mine'?' selected':'') + '>My tickets</option>' +
-        '<option value="all"' + (TSCOPE==='all'?' selected':'') + '>Everybody\'s</option></select>'
+    var c = d.counts || {};
+    var live = (c.open|0) + (c.answered|0);
+
+    /* The lede says what this is, who reads it, and what happens next —
+       the three things a player wants before typing anything. */
+    var lede = (STAFF && TSCOPE === 'all')
+      ? '<b>' + live + '</b> outstanding · ' + (c.open|0) + ' with nobody having replied yet · ' +
+        (c.closed|0) + ' closed to date'
+      : 'A private line to Management about a payment. Only you and the Management team can read ' +
+        'a ticket, it never appears on the forums, and it stays open until the charge is settled. ' +
+        'You have <b>' + live + '</b> open of ' + STORE_OPEN_MAX + ' allowed.';
+
+    var tabs = STAFF
+      ? '<div class="tabbar">' +
+        '<button class="tab' + (TSCOPE === 'mine' ? ' on' : '') + '" data-scope="mine">' + I_USER +
+        'Your tickets<span class="n">' + ((c.open|0)+(c.answered|0)+(c.closed|0)) + '</span></button>' +
+        '<button class="tab' + (TSCOPE === 'all' ? ' on' : '') + '" data-scope="all">' + I_INBOX +
+        'Ticket Management<span class="n">' + live + '</span></button></div>'
       : '';
 
-    paint('body', '<div class="split"><div>' +
+    var search = (STAFF && TSCOPE === 'all')
+      ? '<div class="searchrow"><span class="searchbox">' + I_SEARCH +
+        '<input type="text" id="tq" placeholder="Search player, order reference or subject…" value="' +
+        escapeHtml(TQ) + '"></span>' +
+        '<button class="btn sm" id="tsort">' + (TSORT === 'oldest' ? 'Oldest first' : 'Newest first') +
+        '</button></div>'
+      : '';
+
+    paint('body',
+      '<div class="phead"><div><h2>Purchase Support</h2><p>' + lede + '</p></div>' +
+      '<button class="btn primary" id="newBtn">' + I_PLUS + 'Open a ticket</button></div>' +
+      tabs +
       '<div class="card"><div class="card-h"><h3>' +
         (TSCOPE === 'all' ? 'All tickets' : 'Your tickets') + '</h3>' +
-        '<div class="r">' + scope + filters + '</div></div>' +
-      (d.rows.length ? d.rows.map(ticketRow).join('')
-        : '<div class="card-b"><div class="empty">' +
-          (TSTATUS === 'all' ? 'No tickets yet.' : 'Nothing matches that filter.') +
-          '</div></div>') +
-      (d.pages > 1
-        ? '<div class="card-h" style="border-bottom:none;border-top:1px solid var(--border-soft)">' +
-          '<span class="who-line">' + d.total + ' ticket' + (d.total===1?'':'s') + '</span>' +
-          '<div class="r">' + pager(d.page, d.pages) + '</div></div>'
-        : '') +
-      '</div></div><div>' + newTicketCard() + '</div></div>');
+        '<div class="r">' + filterBar() + '</div></div>' +
+      '<div class="card-b">' + search +
+      (d.rows.length
+        ? '<div class="aplist">' + d.rows.map(ticketRow).join('') + '</div>'
+        : '<div class="empty">' + (TSTATUS === 'all'
+            ? 'No tickets yet.' : 'Nothing matches that filter.') + '</div>') +
+      (d.pages > 1 ? pager(d.page, d.pages) : '') +
+      '</div></div>');
 
     wireSupport();
   }
@@ -1953,83 +2423,272 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
         loadTickets();
       });
     });
-    var sc = el('tscope');
-    if(sc) sc.addEventListener('change', function(){ TSCOPE = this.value; TPAGE = 1; loadTickets(); });
-    var stf = el('tstatus');
-    if(stf) stf.addEventListener('change', function(){ TSTATUS = this.value; TPAGE = 1; loadTickets(); });
+    document.querySelectorAll('[data-scope]').forEach(function(b){
+      b.addEventListener('click', function(){
+        TSCOPE = this.getAttribute('data-scope');
+        TSTATUS = TSCOPE === 'all' ? 'open' : 'live';
+        TPAGE = 1; TQ = ''; loadTickets();
+      });
+    });
+    document.querySelectorAll('[data-status]').forEach(function(b){
+      b.addEventListener('click', function(){
+        TSTATUS = this.getAttribute('data-status'); TPAGE = 1; loadTickets();
+      });
+    });
+    var so = el('tsort');
+    if(so) so.addEventListener('click', function(){
+      TSORT = TSORT === 'oldest' ? 'newest' : 'oldest'; TPAGE = 1; loadTickets();
+    });
+    var q = el('tq');
+    if(q) q.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ TQ = this.value.trim(); TPAGE = 1; loadTickets(); }
+    });
+    var nb = el('newBtn');
+    if(nb) nb.addEventListener('click', function(){ NEWFORM = true; viewSupport(); });
+  }
 
-    var ob = el('openBtn');
-    if(ob) ob.addEventListener('click', openTicket);
+  /* ---- opening one ----
+     Three steps rather than a wall of fields, and no subject: the title is
+     built from the account and the order reference on the server, so every
+     ticket in the queue reads the same way. */
+  var DRAFT = {category:'credits', order:'', no_order:false, amount:'', char:'', body:''};
+
+  function draftTitle(){
+    var ref = DRAFT.no_order ? 'N/A' : (DRAFT.order.trim() || 'N/A');
+    return 'Purchase Support — ' + (ME_NAME || 'you') + ' (' + ref + ')';
+  }
+
+  function checklist(){
+    var rows = [
+      [DRAFT.category !== '', 'Told us what it is about.', 'It decides who picks it up first.'],
+      [DRAFT.no_order || DRAFT.order.trim() !== '', 'Order reference given.',
+       'Copy it from Purchase History, or tick that you have none.'],
+      [DRAFT.body.trim().length >= 20, 'Said what happened.',
+       'At least 20 characters — the more precise, the fewer replies it takes.']
+    ];
+    return rows.map(function(r){
+      return '<div class="ck' + (r[0] ? ' done' : '') + '">' +
+        (r[0] ? I_TICK : I_CIRCLE) + '<span><b>' + r[1] + '</b> ' + r[2] + '</span></div>';
+    }).join('');
+  }
+
+  function viewNewTicket(){
+    var cats = (TICKETS && TICKETS.categories) || {};
+    var keys = Object.keys(cats);
+    var blurb = {
+      credits: 'You paid, the money left your account, and the balance never moved.',
+      double:  'Two charges for one purchase, or one charge and two receipts.',
+      wrong:   'The purchase went through but landed on the wrong character or property.',
+      other:   'Anything about a payment that the three above do not cover.'
+    };
+
+    paint('body',
+      '<button class="btn sm backb" id="backList">' + I_BACK + 'Back to your tickets</button>' +
+      '<div class="phead"><div><h2>Open a ticket</h2>' +
+      '<p>Only you and Management can read this. You will be notified here when they reply.</p></div>' +
+      '</div>' +
+
+      '<div class="apgrid"><div class="card"><div class="steps">' +
+
+      '<div class="step"><div class="sn"><span class="n">1</span><h4>What is this about?</h4>' +
+      '<span class="req2">Required</span><p>Sets who picks it up first.</p></div>' +
+      '<div class="cats">' + keys.map(function(k){
+        return '<button class="cat' + (DRAFT.category === k ? ' on' : '') + '" data-cat="' + k + '">' +
+          '<span class="ic">' + (CAT_ICON[k] || CAT_ICON.other) + '</span>' +
+          '<span><b>' + escapeHtml(cats[k]) + '</b><span>' + (blurb[k] || '') + '</span></span></button>';
+      }).join('') + '</div></div>' +
+
+      '<div class="step"><div class="sn"><span class="n">2</span><h4>Which purchase?</h4>' +
+      '<span class="req2">Required</span><p>The fastest way to find your charge.</p></div>' +
+      '<div class="fld"><label>Order reference</label>' +
+      '<div class="orow"><input type="text" id="nOrder" maxlength="40" placeholder="#595625" value="' +
+      escapeHtml(DRAFT.order) + '"' + (DRAFT.no_order ? ' disabled' : '') + '>' +
+      '<button class="na' + (DRAFT.no_order ? ' on' : '') + '" id="noOrder">' +
+      '<span class="bx">' + I_TICK + '</span>I don\'t have one</button></div>' +
+      '<div class="hint">Copy it from Purchase History. No order? Tick the box and it is recorded ' +
+      'as <b>N/A</b>.</div></div>' +
+      '<div class="two"><div class="fld"><label>Amount paid <u>optional</u></label>' +
+      '<input type="text" id="nAmount" maxlength="40" placeholder="€24.99" value="' +
+      escapeHtml(DRAFT.amount) + '"></div>' +
+      '<div class="fld"><label>Character <u>optional</u></label>' +
+      '<input type="text" id="nChar" maxlength="60" placeholder="Marcus Reyes" value="' +
+      escapeHtml(DRAFT.char) + '"></div></div></div>' +
+
+      '<div class="step"><div class="sn"><span class="n">3</span><h4>What happened?</h4>' +
+      '<span class="req2">Required</span><p>Written once, read by Management only.</p></div>' +
+      '<div class="fld"><textarea id="nBody" rows="5" placeholder="When it happened, what you ' +
+      'expected, and what you got instead.">' + escapeHtml(DRAFT.body) + '</textarea>' +
+      '<div class="hint"><span class="count" id="nCount">' + DRAFT.body.trim().length +
+      ' / 20 minimum</span>The more precise you are, the fewer replies it takes.</div></div></div>' +
+
+      '<div class="fa"><button class="btn primary" id="openBtn">Open ticket</button>' +
+      '<button class="btn" id="cancelBtn">Cancel</button></div>' +
+      '</div></div>' +
+
+      '<div><div class="card"><div class="card-h"><h3>Your ticket</h3></div><div class="card-b">' +
+      '<div class="tcheck"><div class="k">It will be titled</div>' +
+      '<div class="v" id="tTitle">' + escapeHtml(draftTitle()) + '</div></div>' +
+      '<div class="asech">Before you send</div><div id="tChecks">' + checklist() + '</div>' +
+      '<div class="asech">Who can read this</div>' +
+      '<div class="priv">' + I_LOCK + '<span>Only you and the Management team. It never appears on ' +
+      'the forums, and it stays open until the charge is settled.</span></div>' +
+      '</div></div></div></div>');
+
+    wireNewTicket();
+  }
+
+  function wireNewTicket(){
+    function sync(){
+      var t = el('tTitle'), c = el('tChecks'), n = el('nCount');
+      if(t) t.textContent = draftTitle();
+      if(c) c.innerHTML = checklist();
+      if(n) n.textContent = DRAFT.body.trim().length + ' / 20 minimum';
+    }
+    document.querySelectorAll('[data-cat]').forEach(function(b){
+      b.addEventListener('click', function(){
+        DRAFT.category = this.getAttribute('data-cat');
+        document.querySelectorAll('[data-cat]').forEach(function(o){ o.classList.remove('on'); });
+        this.classList.add('on'); sync();
+      });
+    });
+    var no = el('noOrder');
+    if(no) no.addEventListener('click', function(){
+      DRAFT.no_order = !DRAFT.no_order;
+      this.classList.toggle('on', DRAFT.no_order);
+      el('nOrder').disabled = DRAFT.no_order;
+      sync();
+    });
+    [['nOrder','order'],['nAmount','amount'],['nChar','char'],['nBody','body']].forEach(function(f){
+      var e = el(f[0]);
+      if(e) e.addEventListener('input', function(){ DRAFT[f[1]] = this.value; sync(); });
+    });
+    el('backList').addEventListener('click', function(){ NEWFORM = false; viewSupport(); });
+    el('cancelBtn').addEventListener('click', function(){ NEWFORM = false; viewSupport(); });
+    el('openBtn').addEventListener('click', openTicket);
   }
 
   function openTicket(){
     var b = el('openBtn'); b.disabled = true;
     UCP.post('store-ticket-open.php', {
-      subject: el('nSubject').value, body: el('nBody').value, order_ref: el('nOrder').value
+      category: DRAFT.category,
+      order_ref: DRAFT.order,
+      no_order: DRAFT.no_order ? 1 : 0,
+      amount: DRAFT.amount,
+      char_name: DRAFT.char,
+      body: DRAFT.body
     }).then(function(res){
       var d = res.data || {};
       b.disabled = false;
       if(!d.ok) return toast(d.error || 'Could not open the ticket');
+      DRAFT = {category:'credits', order:'', no_order:false, amount:'', char:'', body:''};
+      NEWFORM = false; TICKETS = null;
       toast('Ticket opened. Management have been notified.');
       location.hash = 'ticket=' + d.id;
     }).catch(function(){ b.disabled = false; toast('Could not reach the server'); });
   }
 
-  /* ---------------- one ticket ---------------- */
+  /* ---------------- one ticket ----------------
+     Laid out like a ban appeal: the request on the left, the details as a
+     key/value list beside it, comments as bordered cards, composer last. */
   function viewTicket(t){
     ONE = t;
-    var msgs = (t.messages || []).map(function(m){
-      return '<div class="msg ' + (m.staff ? 'staff' : 'player') + '">' +
-        '<div class="who">' + escapeHtml(m.author) +
-        (m.staff && m.role ? ' · ' + escapeHtml(m.role) : '') +
-        ' · ' + ago(m.at) + '</div>' +
+    STAFF = !!t.staff;
+
+    var first = (t.messages || [])[0];
+    var rest  = (t.messages || []).slice(1);
+
+    var comments = rest.map(function(m){
+      return '<div class="cm' + (m.staff ? ' staff' : '') + '">' +
+        '<div class="h"><b>' + nameLink(m.id, m.author) + '</b>' +
+        '<span class="gchip tone-' + (m.rank | 0) + '">' + escapeHtml(m.role || 'Member') + '</span>' +
+        '<span class="when">' + ago(m.at) + '</span></div>' +
         '<div class="body">' + escapeHtml(m.body) + '</div></div>';
     }).join('');
 
+    var kv = [
+      ['Order reference', escapeHtml(t.order_ref || 'N/A'), !t.order_ref || t.order_ref === 'N/A'],
+      ['About', escapeHtml(t.category_label || 'Something else'), false],
+      ['Amount paid', t.amount ? escapeHtml(t.amount) : 'Not given', !t.amount],
+      ['Character', t.char_name ? escapeHtml(t.char_name) : 'Not given', !t.char_name],
+      ['Opened by', t.player ? nameLink(t.player.id, t.player.name) : '—', false],
+      ['Opened', fullDate(t.created_at), true]
+    ].map(function(r){
+      return '<div class="r"><div class="k">' + r[0] + '</div>' +
+        '<div class="v' + (r[2] ? ' soft' : '') + '">' + r[1] + '</div></div>';
+    }).join('');
+
+    var hist = t.history
+      ? '<div class="card" style="margin-top:16px"><div class="card-h"><h3>Their history</h3></div>' +
+        '<div class="card-b"><div class="kv">' +
+        '<div class="r"><div class="k">Tickets opened</div><div class="v">' + t.history.tickets +
+        ' · ' + t.history.closed + ' closed</div></div>' +
+        '<div class="r"><div class="k">Member since</div><div class="v soft">' +
+        escapeHtml((t.history.since || '').slice(0, 10) || 'unknown') + '</div></div>' +
+        '</div></div></div>'
+      : '';
+
+    var acts = '';
+    if(t.may_reply && STAFF) acts = '<button class="btn" id="closeBtn">' + I_CHECK + 'Close ticket</button>';
+
     paint('body',
-      '<div class="backline"><button class="btn" id="backBtn">' +
-        '<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Back to tickets</button>' +
-        statusPill(t) +
-        '<span class="who-line">Ticket #' + t.id +
-        (t.order_ref ? ' · ' + escapeHtml(t.order_ref) : '') +
-        ' · opened ' + ago(t.created_at) +
-        (t.player && !t.mine ? ' by ' + escapeHtml(t.player.name) : '') + '</span></div>' +
+      '<button class="btn sm backb" id="backBtn">' + I_BACK + 'Back to ' +
+        (TSCOPE === 'all' ? 'the queue' : 'your tickets') + '</button>' +
 
-      '<div class="card"><div class="card-h"><h3>' + escapeHtml(t.subject) + '</h3>' +
-      (t.closed ? '<div class="r"><span class="who-line">Closed by ' +
-        escapeHtml(t.closed.by || 'somebody') + ' ' + ago(t.closed.at) + '</span></div>' : '') +
-      '</div><div class="card-b">' + msgs +
+      '<div class="phead"><div><h2>' + escapeHtml(t.subject) + '</h2>' +
+      '<p>Opened ' + ago(t.created_at) +
+      (t.player ? ' by <b>' + nameLink(t.player.id, t.player.name) + '</b>' : '') +
+      (t.closed ? ' · Closed by <b>' + escapeHtml(t.closed.by || 'somebody') + '</b> ' + ago(t.closed.at)
+                : (t.last ? ' · Last comment ' + ago(t.last.at) : '')) + '</p></div>' +
+      (acts ? '<span style="display:flex;gap:10px">' + acts + '</span>' : '') + '</div>' +
 
-      (t.may_reply
-        ? '<div class="flab" style="margin-top:16px">Reply</div>' +
-          '<textarea id="rBody" rows="3" placeholder="Add to this ticket…"></textarea>' +
-          '<div style="display:flex;gap:9px;margin-top:12px">' +
-          '<button class="btn" id="closeBtn">Close ticket</button>' +
-          '<button class="btn primary" id="replyBtn" style="margin-left:auto">Send reply</button></div>'
-        : '<div class="empty" style="margin-top:16px">This ticket is closed.' +
-          (t.staff ? '' : ' Open a new one if it is still not right.') + '</div>' +
-          (t.staff
-            ? '<button class="btn" id="reopenBtn" style="margin-top:12px">Reopen it</button>'
-            : '')) +
+      '<div class="apgrid"><div>' +
+        '<div class="card"><div class="card-h"><h3>The request</h3>' +
+        '<div class="r">' + statusPill(t) + '</div></div>' +
+        '<div class="card-b"><p class="card-lede">' +
+        escapeHtml(first ? first.body : '') + '</p></div></div>' +
+
+        '<div class="card" style="margin-top:16px"><div class="card-h"><h3>Comments</h3>' +
+        '<div class="r">' + rest.length + '</div></div><div class="card-b">' +
+        (rest.length ? comments : '<div class="empty">No comments yet.</div>') +
+
+        (t.may_reply
+          ? '<div class="composer"><textarea id="rBody" rows="4" placeholder="Write a comment…"></textarea>' +
+            '<div class="row"><button class="btn primary" id="replyBtn">Post comment</button>' +
+            (STAFF ? '<button class="btn" id="replyCloseBtn">' + I_CHECK + 'Post and close</button>' : '') +
+            '<span class="grow">' + (STAFF ? 'The player is notified either way.'
+                                           : 'Management are notified.') + '</span></div></div>'
+          : '<div class="evrow2">' + I_CHECK + '<span>This ticket is closed. A new comment reopens it.</span>' +
+            '<button class="btn sm" id="reopenBtn">' + I_UNDO + 'Reopen and comment</button></div>') +
+        '</div></div>' +
+      '</div><div>' +
+        '<div class="card"><div class="card-h"><h3>Details</h3></div>' +
+        '<div class="card-b"><div class="kv">' + kv + '</div></div></div>' + hist +
       '</div></div>');
 
     el('backBtn').addEventListener('click', function(){ location.hash = 'support'; });
     var rb = el('replyBtn');
-    if(rb) rb.addEventListener('click', function(){
-      var box = el('rBody');
-      if(!box.value.trim()) return toast('Write something first.');
-      rb.disabled = true;
-      UCP.post('store-ticket-reply.php', {id: t.id, body: box.value}).then(function(res){
-        var d = res.data || {};
-        rb.disabled = false;
-        if(!d.ok) return toast(d.error || 'Could not send that');
-        loadTicket(t.id);
-      }).catch(function(){ rb.disabled = false; toast('Could not reach the server'); });
-    });
+    if(rb) rb.addEventListener('click', function(){ sendReply(t.id, false); });
+    var rcb = el('replyCloseBtn');
+    if(rcb) rcb.addEventListener('click', function(){ sendReply(t.id, true); });
     var cb = el('closeBtn');
     if(cb) cb.addEventListener('click', function(){ closeTicket(t.id, false); });
     var rob = el('reopenBtn');
     if(rob) rob.addEventListener('click', function(){ closeTicket(t.id, true); });
+  }
+
+  function sendReply(id, andClose){
+    var box = el('rBody');
+    if(!box.value.trim()) return toast('Write something first.');
+    var btn = el(andClose ? 'replyCloseBtn' : 'replyBtn');
+    btn.disabled = true;
+    UCP.post('store-ticket-reply.php', {id: id, body: box.value}).then(function(res){
+      var d = res.data || {};
+      btn.disabled = false;
+      if(!d.ok) return toast(d.error || 'Could not send that');
+      TICKETS = null;
+      if(andClose) return closeTicket(id, false);
+      loadTicket(id);
+    }).catch(function(){ btn.disabled = false; toast('Could not reach the server'); });
   }
 
   function closeTicket(id, reopen){
@@ -2044,7 +2703,8 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
 
   /* ---------------- loading ---------------- */
   function loadTickets(){
-    UCP.get('store-tickets.php?scope=' + TSCOPE + '&status=' + TSTATUS + '&page=' + TPAGE)
+    UCP.get('store-tickets.php?scope=' + TSCOPE + '&status=' + TSTATUS + '&page=' + TPAGE +
+              '&sort=' + TSORT + '&q=' + encodeURIComponent(TQ))
       .then(function(d){
         if(!d || !d.ok){
           paint('body', '<div class="card"><div class="card-b"><p class="lede">' +
@@ -2053,7 +2713,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
         }
         TICKETS = d; STAFF = !!d.staff; ME = d.me ? d.me.id : 0;
         tabs();
-        if(TAB === 'support') viewSupport();
+        if(TAB === 'support' && !onOneTicket()) viewSupport();
       });
   }
 
@@ -2113,7 +2773,12 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
      them in parallel bought nothing and made the queue longer. */
   route();
 
+  /* A single ticket is also TAB === 'support', so a late-arriving fetch
+     must not repaint the list over the top of whatever ticket is open. */
+  function onOneTicket(){ return /ticket=\d+/.test(location.hash || ''); }
+
   function refresh(){
+    if(onOneTicket()) return;
     if(TAB === 'credits') return viewCredits();
     if(TAB === 'overview') return viewOverview();
     if(TAB === 'support') return viewSupport();
@@ -2125,14 +2790,15 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
       return UCP.get('session.php');
     })
     .then(function(d){
+      if(d && d.name) ME_NAME = d.name;
       if(d && typeof d.credits === 'number'){ BALANCE = d.credits; refresh(); }
-      return UCP.get('store-tickets.php?scope=mine&status=all&page=1');
+      return UCP.get('store-tickets.php?scope=mine&status=live&page=1');
     })
     .then(function(d){
       if(d && d.ok){
         TICKETS = d; STAFF = !!d.staff; ME = d.me ? d.me.id : 0;
         tabs();
-        if(TAB === 'support') viewSupport();
+        if(TAB === 'support' && !onOneTicket()) viewSupport();
       }
     });
 

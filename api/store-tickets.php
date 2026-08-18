@@ -32,6 +32,8 @@ $staff  = store_is_staff($acc);
 $scope  = (string)($_GET['scope'] ?? 'mine');
 $status = (string)($_GET['status'] ?? 'all');
 $page   = max(1, (int)($_GET['page'] ?? 1));
+$term   = trim((string)($_GET['q'] ?? ''));
+$sort   = (string)($_GET['sort'] ?? 'newest');
 
 if ($scope === 'all' && !$staff) {
     json_out(['ok' => false, 'error' => 'Only Management can read everybody\'s tickets.'], 403);
@@ -49,6 +51,15 @@ if (in_array($status, STORE_TICKET_STATUSES, true)) {
     $params[] = $status;
 } elseif ($status === 'live') {
     $where[] = "t.status <> 'closed'";
+}
+
+/* One box searching three things, because somebody working the queue has
+   one of three things to hand: a name, an order reference, or a phrase
+   they remember from the ticket. */
+if ($term !== '') {
+    $where[]  = '(u.username LIKE ? OR t.order_ref LIKE ? OR t.subject LIKE ?)';
+    $like     = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $term) . '%';
+    $params[] = $like; $params[] = $like; $params[] = $like;
 }
 
 $sql = 'FROM ucp_store_tickets t JOIN ucp_accounts u ON u.id = t.account_id'
@@ -74,7 +85,8 @@ if ($page > $pages) $page = $pages;
    stable. */
 $st = $pdo->prepare(
     'SELECT t.*, u.username ' . $sql .
-    " ORDER BY FIELD(t.status, 'open', 'answered', 'closed'), t.updated_at DESC, t.id DESC" .
+    " ORDER BY FIELD(t.status, 'open', 'answered', 'closed'), " .
+    ($sort === 'oldest' ? 't.created_at ASC, t.id ASC' : 't.updated_at DESC, t.id DESC') .
     ' LIMIT ' . (int)$per . ' OFFSET ' . (int)(($page - 1) * $per)
 );
 $st->execute($params);
@@ -102,6 +114,9 @@ ok([
     'counts' => $cs,
     'scope'  => $scope,
     'status' => $status,
+    'q'      => $term,
+    'sort'   => $sort,
+    'categories' => STORE_CATEGORIES,
     'staff'  => $staff,
     'me'     => ['id' => (int)$acc['id'], 'name' => $acc['username']],
 ]);
