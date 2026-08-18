@@ -125,13 +125,13 @@
 :root{
   /* ONE YELLOW.
      The UCP had drifted into three: an amber, a gold, and whatever the
-     gradient between them looked like at 145 degrees. #ffda89 is the
+     gradient between them looked like at 145 degrees. #e2b65c is the
      official colour. Both names point at it, so a rule written against
      either lands in the same place and nothing needs renaming. */
-  --gold:#ffda89;
-  --amber:#ffda89;
+  --gold:#e2b65c;
+  --amber:#e2b65c;
   --gold-ink:#000000;
-  --gold-hover:#f6cd72;
+  --gold-hover:#d8a234;
 
   --charcoal-2:#201d19;
   --charcoal-3:#292520;
