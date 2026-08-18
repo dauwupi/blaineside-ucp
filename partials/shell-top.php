@@ -122,6 +122,31 @@ if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
           </a>
         </div>
       </div>
+
+      <!-- First paint of the account block, from the same localStorage cache
+           assets/js/ucp.js keeps ("bs_me"). ucp.js runs at the end of the
+           body, so on a long page the browser paints the blank placeholders
+           first and the name appears to flash in on every load. This runs
+           while the header is still being parsed, so the name is already
+           there when the row is first painted. ucp.js then repaints the same
+           values a moment later, which the eye cannot see. -->
+      <script>
+      (function(){
+        try{
+          var m = JSON.parse(localStorage.getItem('bs_me') || 'null');
+          if(!m) return;
+          var e = document.documentElement;
+          e.className = e.className.replace(/\bme-\d\b/g,'').trim();
+          e.classList.add('me-' + ((typeof m.rank === 'number' && m.rank >= 0 && m.rank <= 9) ? (m.rank|0) : 0));
+          var f = [['acctName', m.name], ['acctRole', m.role],
+                   ['menuName', m.name], ['menuRole', m.role]];
+          for(var i=0;i<f.length;i++){
+            var el = document.getElementById(f[i][0]);
+            if(el && f[i][1]) el.textContent = f[i][1];
+          }
+        }catch(err){}
+      })();
+      </script>
     </header>
 
     <main class="content">
