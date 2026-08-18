@@ -374,3 +374,37 @@ button.primary svg{stroke:currentColor}
 .topbar textarea,
 .topbar .account-menu,
 .topbar .account-menu a{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
+
+/* =====================================================================
+   GOLD CONTROLS THAT ARE NOT .btn.primary
+
+   A few pages build their own gold call to action with a private class —
+   the dashboard's "Start your application" (.appnote .go), the news
+   slide link, and the preview link in the composer. They were still on
+   the old amber→gold gradient and had no :hover rule at all, so they sat
+   there unchanged under the cursor while every real button darkened.
+
+   Same treatment as the primary button: flat brand gold, black text, and
+   the one hover colour. Kept here rather than in each page so the next
+   page that copies the class gets it too.
+   ===================================================================== */
+.appnote .go,
+.slide-link,
+.pv-link{
+  background:var(--gold)!important;background-image:none!important;
+  border:1px solid var(--gold)!important;color:var(--gold-ink)!important;
+  box-shadow:none!important;text-shadow:none;
+  transition:background .13s ease, border-color .13s ease;
+}
+.appnote .go:hover,
+.slide-link:hover,
+.pv-link:hover{
+  background:var(--gold-hover)!important;
+  border-color:var(--gold-hover)!important;
+  transform:none!important;box-shadow:none!important;
+}
+.appnote .go.quiet,
+.appnote .go.quiet:hover{
+  background:var(--charcoal-3)!important;background-image:none!important;
+  border:1px solid var(--border)!important;color:var(--text-faint)!important;
+}

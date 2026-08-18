@@ -1289,7 +1289,7 @@ input[type=text],textarea{width:100%;background:var(--charcoal);border:1px solid
   .who-line{font-size:11.5px;color:var(--text-dim)}
 
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.1">
 </head>
 
 HTML;

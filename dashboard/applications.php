@@ -801,7 +801,7 @@ $PAGE_HEAD = <<<'HTML'
   .backline .btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2}
 
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.1">
 </head>
 
 HTML;

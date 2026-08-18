@@ -1429,7 +1429,7 @@ $PAGE_HEAD = <<<'HTML'
   .hrow.tight .hid{flex:none;font-size:11.5px;font-weight:700;color:var(--text-dim);
     font-variant-numeric:tabular-nums}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.1">
 </head>
 
 HTML;
