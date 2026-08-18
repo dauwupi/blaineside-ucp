@@ -30,12 +30,12 @@
    ===================================================================== */
 
 .tone-0{--tone:#7d7365;--tone-ink:#16130f;--tone-text:#9a9082}   /* Member            */
-.tone-1{--tone:#6b3230;--tone-ink:#ffffff;--tone-text:#c07f78}   /* Support Staff     */
-.tone-2{--tone:#3b6280;--tone-ink:#ffffff;--tone-text:#7ba3bf}   /* Development Team  */
+.tone-1{--tone:#660000;--tone-ink:#ffffff;--tone-text:#cc6a60}   /* Support Staff     */
+.tone-2{--tone:#275976;--tone-ink:#ffffff;--tone-text:#6fa3c6}   /* Development Team  */
 .tone-3,.tone-4,.tone-5,.tone-6,.tone-7{                         /* Trainee → Lead    */
-        --tone:#4a8f4a;--tone-ink:#04230a;--tone-text:#69ad69}
-.tone-8{--tone:#cf8b3a;--tone-ink:#241200;--tone-text:#dda157}   /* Management        */
-.tone-9{--tone:#8f83c9;--tone-ink:#16102e;--tone-text:#a89ddd}   /* Founder           */
+        --tone:#00aa00;--tone-ink:#032a03;--tone-text:#3fc23f}
+.tone-8{--tone:#ff9600;--tone-ink:#2a1600;--tone-text:#ffa733}   /* Management        */
+.tone-9{--tone:#9985ff;--tone-ink:#150e33;--tone-text:#ab9bff}   /* Founder           */
 
 
 /* ---------------------------------------------------------------------
@@ -46,11 +46,11 @@
    --me / --me-text without that page having to know the ladder at all.
    --------------------------------------------------------------------- */
 .me-0{--me:#7d7365;--me-text:#9a9082}
-.me-1{--me:#6b3230;--me-text:#c07f78}
-.me-2{--me:#3b6280;--me-text:#7ba3bf}
-.me-3,.me-4,.me-5,.me-6,.me-7{--me:#4a8f4a;--me-text:#69ad69}
-.me-8{--me:#cf8b3a;--me-text:#dda157}
-.me-9{--me:#8f83c9;--me-text:#a89ddd}
+.me-1{--me:#660000;--me-text:#cc6a60}
+.me-2{--me:#275976;--me-text:#6fa3c6}
+.me-3,.me-4,.me-5,.me-6,.me-7{--me:#00aa00;--me-text:#3fc23f}
+.me-8{--me:#ff9600;--me-text:#ffa733}
+.me-9{--me:#9985ff;--me-text:#ab9bff}
 
 /* The role line in the account button, and the same line inside the
    account dropdown. Falls back to amber on a page that hasn't reported a
@@ -74,12 +74,21 @@
    the fill gives one construction that works for all ten, and reads better
    on a dark page besides.
    --------------------------------------------------------------------- */
-.gchip{display:inline-flex;align-items:center;font-size:10px;font-weight:800;
-  letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:100px;
-  white-space:nowrap;line-height:1.35;
-  color:var(--tone-text);
-  background:color-mix(in srgb, var(--tone) 17%, transparent);
-  border:1px solid color-mix(in srgb, var(--tone) 44%, transparent)}
+/* Both names, one rule. Pages say "the rank badge lives in tones.css — see
+   .gchip,.rank there", and until now only .gchip was here, which left every
+   .rank element on a profile with no styling at all.
+
+   line-height:1 and the text-indent are what centre the label: uppercase
+   letters have no descenders, so a 1.35 line box hangs empty space beneath
+   them, and letter-spacing adds a trailing gap after the last letter that
+   the indent cancels. */
+.gchip,.rank{display:inline-flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border-radius:100px;
+  white-space:nowrap;line-height:1;text-indent:.05em;
+  color:var(--tone-text,#9a9082);
+  background:color-mix(in srgb, var(--tone,#7d7365) 17%, transparent);
+  border:1px solid color-mix(in srgb, var(--tone,#7d7365) 44%, transparent)}
 
 
 /* =====================================================================
@@ -114,6 +123,16 @@
    variable on itself; this only moves the default.
    ===================================================================== */
 :root{
+  /* ONE YELLOW.
+     The UCP had drifted into three: an amber, a gold, and whatever the
+     gradient between them looked like at 145 degrees. #ffda89 is the
+     official colour. Both names point at it, so a rule written against
+     either lands in the same place and nothing needs renaming. */
+  --gold:#ffda89;
+  --amber:#ffda89;
+  --gold-ink:#000000;
+  --gold-hover:#f6cd72;
+
   --charcoal-2:#201d19;
   --charcoal-3:#292520;
   --charcoal-4:#35302a;
@@ -233,3 +252,51 @@
    first click.
    --------------------------------------------------------------------- */
 .account-menu{display:none}
+
+
+/* =====================================================================
+   THE PRIMARY BUTTON
+
+   Flat fill, black text, no gradient, no glow, no lift on hover. The
+   gradient was doing the same job as the fill and doing it in two
+   colours; the glow put a coloured backdrop on a page that has none
+   anywhere else.
+
+   Declared here rather than page by page for the same reason as the
+   surface block above: this file is the last stylesheet everywhere, so
+   one rule reaches every button in the UCP without nineteen files having
+   to agree.
+   ===================================================================== */
+.btn.primary,
+.btn.p,
+button.primary,
+.buy{
+  background:var(--gold)!important;
+  background-image:none!important;
+  border:1px solid var(--gold)!important;
+  color:var(--gold-ink)!important;
+  font-weight:700;
+  box-shadow:none!important;
+  text-shadow:none;
+  transition:background .13s ease, border-color .13s ease;
+}
+.btn.primary:hover,
+.btn.p:hover,
+button.primary:hover,
+.buy:hover{
+  background:var(--gold-hover)!important;
+  border-color:var(--gold-hover)!important;
+  transform:none!important;
+  box-shadow:none!important;
+}
+.btn.primary:disabled,
+.btn.p:disabled,
+button.primary:disabled{
+  opacity:.5;
+  transform:none!important;
+  box-shadow:none!important;
+}
+/* Icons inside a primary button take the text colour, not gold. */
+.btn.primary svg,
+.btn.p svg,
+button.primary svg{stroke:currentColor}
