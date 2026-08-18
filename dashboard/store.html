@@ -685,9 +685,13 @@
 .suphead .btn{margin-left:auto}
 
 .searchrow{display:flex;gap:11px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-.searchbox{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;flex:1;min-width:200px;
+/* Scoped to the ticket list. Unscoped, this hit the TOP BAR's .searchbox
+   too — same class name, shared shell — and flex:1 stretched it across
+   the header. */
+.searchrow .searchbox{display:flex;align-items:center;gap:9px;height:40px;padding:0 14px;
+  flex:1;min-width:200px;width:auto;
   border-radius:10px;border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim)}
-.searchbox svg{width:15px;height:15px;flex:none;stroke-width:2;fill:none;stroke:currentColor}
+.searchrow .searchbox svg{width:15px;height:15px;flex:none;stroke-width:2;fill:none;stroke:currentColor}
 .searchrow .searchbox input{flex:1;min-width:0;background:none;border:0;outline:none;padding:0;
   margin:0;border-radius:0;height:auto;box-shadow:none;color:var(--parchment);
   font-family:inherit;font-size:13.5px}
