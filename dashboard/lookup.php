@@ -142,11 +142,16 @@ button{font-family:inherit}
    flicker. */
 .content{opacity:0;transform:translateY(8px);
   transition:opacity .34s ease,transform .34s cubic-bezier(.22,.61,.36,1)}
-.account-meta,.page-title h1{opacity:0;transition:opacity .34s ease .04s}
+/* The account block is deliberately NOT in this fade. The name and group
+   are painted from the cached session while the header is still parsing,
+   so they are correct at the first paint; fading them in made this page
+   the only one where the top-right corner arrived a third of a second
+   after everything else. */
+.page-title h1{opacity:0;transition:opacity .34s ease .04s}
 body.ready .content{opacity:1;transform:none}
-body.ready .account-meta,body.ready .page-title h1{opacity:1}
+body.ready .page-title h1{opacity:1}
 @media (prefers-reduced-motion:reduce){
-  .content,.account-meta,.page-title h1{transition:none}
+  .content,.page-title h1{transition:none}
 }
 .topbar{height:var(--header-h);flex:none;display:flex;align-items:center;gap:16px;
   padding:0 26px;background:var(--charcoal-2);border-bottom:1px solid var(--border);
