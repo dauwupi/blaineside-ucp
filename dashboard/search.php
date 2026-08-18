@@ -1,0 +1,1132 @@
+<?php
+/**
+ * Administrative Search.
+ *
+ * The shell — backdrop, sidebar, top bar, credit box — comes from
+ * partials/shell-top.php. Nothing about it is repeated here.
+ */
+$PAGE_TITLE = 'BlaineSide — Administrative Search';
+$PAGE_HEADING = 'Administrative Search';
+$PAGE_HEAD = <<<'HTML'
+<style>
+  :root{
+    --amber:#d4923a; --gold:#e2b65c;
+    --charcoal:#121110; --charcoal-2:#1a1815; --charcoal-3:#221f1b; --charcoal-4:#2b2723;
+    --parchment:#f1efe9; --stone:#8a7f70; --text-dim:#655e51; --text-faint:#968e7e;
+    --border:#26221e; --border-soft:#1f1c18;
+    --danger:#c1553f; --ok:#7fa05a; --warn:#e2b65c;
+    --sidebar-w:256px; --header-h:66px; --content-bg:#100f0e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{height:100%}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--content-bg);color:var(--parchment);
+    -webkit-font-smoothing:antialiased;display:flex;min-height:100vh;font-size:14px;line-height:1.5}
+  a{color:var(--gold);text-decoration:none}
+  ::-webkit-scrollbar{width:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--charcoal-4);border-radius:6px}
+
+  /* ===== SIDEBAR (matches dashboard shell) ===== */
+  .sidebar{width:var(--sidebar-w);flex:none;position:relative;background:var(--charcoal-2);
+    border-right:1px solid var(--border-soft);z-index:50}
+  .side-inner{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding-bottom:66px}
+  .side-brand{display:flex;align-items:center;height:var(--header-h);padding:0 24px;border-bottom:1px solid var(--border-soft);flex:none}
+  .side-brand .name{font-family:'Oswald',sans-serif;font-weight:600;font-size:25px;letter-spacing:.07em;
+    text-transform:uppercase;line-height:1;color:var(--parchment)}
+  .side-brand .name b{color:var(--gold);font-weight:700}
+  .side-scroll{flex:1;overflow-y:auto;padding:12px 14px 18px}
+  .nav-group{margin-bottom:1px}
+  .nav-item{display:flex;align-items:center;gap:13px;padding:11px 12px;border-radius:9px;font-size:14px;
+    font-weight:500;color:var(--text-faint);cursor:pointer;transition:background .14s,color .14s;position:relative;user-select:none}
+  .nav-item svg.i{width:18px;height:18px;flex:none;stroke-width:1.8}
+  .nav-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .nav-item.active{background:var(--charcoal-3);color:var(--parchment)}
+  .nav-item.active::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;
+    border-radius:0 3px 3px 0;background:linear-gradient(180deg,var(--gold),var(--amber))}
+  .nav-item.active svg.i{color:var(--gold)}
+  .nav-item .lbl{flex:1}
+  a.nav-item{text-decoration:none}
+  .nav-item .chev{width:15px;height:15px;opacity:.5;transition:transform .2s;flex:none;stroke-width:2}
+  .nav-group.open > .nav-item .chev{transform:rotate(90deg)}
+  .sub{max-height:0;overflow:hidden;transition:max-height .26s ease;margin-left:9px;border-left:1px solid var(--border);padding-left:8px}
+  .nav-group.open .sub{max-height:340px}
+  .sub a{display:block;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-dim);transition:.13s;margin:1px 0}
+  .sub a:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .sub a.slot-empty{color:var(--text-dim);font-style:italic;cursor:default}
+  .sub a.slot-empty:hover{background:transparent;color:var(--text-dim)}
+  .nav-heading{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);padding:18px 12px 8px}
+  .side-foot{position:absolute;left:0;right:0;bottom:0;background:var(--charcoal-2);padding:13px 20px 15px;
+    border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:5px}
+  .foot-line{font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.5}
+  .foot-line .fv{color:var(--text-faint);font-weight:600}
+  .foot-line .st{display:inline-flex;align-items:center;gap:6px}
+  .foot-line .st .d{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+
+  /* ===== MAIN + HEADER ===== */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;background:transparent}
+
+  /* ============================================================
+     BACKDROP — the sign-in page's scene, carried through the UCP.
+
+     Four fixed layers: the Sandy Shores photo, the time-of-day tint,
+     a scrim that buys back the contrast the photo costs, and the
+     diagonal hairlines from the sign-in page.
+
+     The tint is driven by assets/js/ucp.js, which looks for `.stage`
+     and swaps a tod-* class onto it — the same code the sign-in page
+     runs, so the two can't drift apart.
+     ============================================================ */
+  .bg-stage{position:fixed;inset:0;top:var(--header-h);left:var(--sidebar-w);z-index:0;pointer-events:none;
+    overflow:hidden;background:#0b0a08}
+  .bg-stage .scene{position:absolute;inset:0;
+    background:url('/assets/img/bg-sandy.jpg') center/cover no-repeat;
+    opacity:.38;transform:scale(1.04)}
+  .bg-stage .tod{position:absolute;inset:0;transition:background 1s ease}
+  .bg-stage.tod-night .tod{background:rgba(20,28,56,.54)}
+  .bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
+  .bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
+  .bg-stage.tod-dusk  .tod{background:rgba(58,40,34,.34)}
+  /* An even vignette: equally dark on all four sides, lightest in the
+     middle. The old version graded left-to-right, which read as a black
+     band down one edge rather than as a backdrop. */
+  .bg-stage .bg-scrim{position:absolute;inset:0;background:
+    radial-gradient(115% 95% at 50% 50%,
+      rgba(10,9,8,.50) 0%, rgba(10,9,8,.74) 62%, rgba(10,9,8,.92) 100%)}
+  @media (max-width:760px){ .bg-stage{left:0} }
+  .topbar,.content{position:relative;z-index:1}
+
+  .topbar{height:var(--header-h);flex:none;display:flex;align-items:center;gap:16px;padding:0 26px;
+    background:var(--charcoal-2);border-bottom:1px solid var(--border);
+    box-shadow:0 1px 0 rgba(0,0,0,.4),0 6px 18px -12px rgba(0,0,0,.7);position:sticky;top:0;z-index:45}
+  .page-title h1{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .topbar .spacer{flex:1}
+  .searchbox{display:flex;align-items:center;gap:9px;height:38px;padding:0 14px;width:280px;
+    background:var(--charcoal);border:1px solid var(--border);border-radius:10px;color:var(--text-dim)}
+  .searchbox svg{width:15px;height:15px;flex:none;stroke-width:2}
+  .searchbox input{background:none;border:none;outline:none;color:var(--parchment);font-family:inherit;font-size:13.5px;width:100%}
+  .searchbox input::placeholder{color:var(--text-dim)}
+  .icon-btn{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint);cursor:pointer;transition:.14s;position:relative}
+  .icon-btn:hover{color:var(--parchment);background:var(--charcoal-3)}
+  .icon-btn svg{width:18px;height:18px;stroke-width:1.9}
+  .icon-btn .dot{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--danger);border:2px solid var(--charcoal-2)}
+  .hamburger{display:none}
+  .search-mini{display:none}
+  .divider{width:1px;height:30px;background:var(--border);flex:none}
+  .account-btn{display:flex;align-items:center;gap:12px;padding:6px 12px;border-radius:10px;
+    background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;min-width:170px}
+  .account-btn:hover{background:var(--charcoal-3)}
+  .account-meta{display:flex;flex-direction:column;line-height:1.3;flex:1;min-width:0;text-align:left}
+  .account-meta .u{font-size:13.5px;font-weight:600;color:var(--parchment);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .account-meta .r{font-size:11px;color:var(--amber);font-weight:600}
+  .account-btn .caret{width:15px;height:15px;color:var(--text-dim);stroke-width:2;flex:none}
+  .account-btn .acct-ico{display:none}
+
+  /* ===== CONTENT ===== */
+  .content{padding:28px 30px 44px;max-width:1180px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+
+  .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-faint);transition:.14s}
+  .page-back:hover{color:var(--parchment)}
+  .page-back svg{width:16px;height:16px}
+
+  .phead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .phead h2{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+  .phead p{font-size:13.5px;color:var(--text-faint)}
+  .phead p b{color:var(--gold);font-weight:700}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:10px;
+    font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;border:1px solid var(--border);
+    background:var(--charcoal-2);color:var(--parchment);transition:.14s;white-space:nowrap}
+  .btn:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .btn svg{width:16px;height:16px;stroke-width:2}
+  .btn.primary{background:linear-gradient(145deg,var(--gold),var(--amber));color:#1a1206;border:none;box-shadow:0 6px 16px rgba(212,146,58,.26)}
+  .btn.primary:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(212,146,58,.34)}
+  .btn.danger{color:#e0a99b;border-color:rgba(193,85,63,.4)}
+  .btn.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:8px 13px;font-size:12.5px}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+  /* dashboard-slot meter */
+  .slotbar{display:flex;align-items:center;gap:14px;background:var(--charcoal-2);border:1px solid var(--border);
+    border-radius:12px;padding:13px 18px;flex-wrap:wrap}
+  .slotbar .si{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-faint);flex:none}
+  .slotbar .si svg{width:16px;height:16px;color:var(--gold);stroke-width:1.9}
+  .slotbar .cnt{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+  .slotbar .cnt b{color:var(--gold)}
+  .slotbar .track{flex:1;height:7px;border-radius:5px;background:var(--charcoal);overflow:hidden;border:1px solid var(--border-soft);min-width:80px}
+  .slotbar .track > i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--amber),var(--gold));transition:width .3s}
+  .slotbar .note{font-size:11.5px;color:var(--text-dim);flex:none;min-width:0}
+
+  /* ===== LISTING GRID ===== */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+  .bcard{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    display:flex;flex-direction:column;transition:border-color .16s, transform .16s}
+  .bcard:hover{border-color:var(--charcoal-4)}
+  .bcard.shown{border-color:rgba(212,146,58,.45)}
+  .bcard .thumb{position:relative;height:150px;background:var(--charcoal-3);overflow:hidden}
+  .bcard .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .bcard .thumb .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,11,10,.05),rgba(12,11,10,.55))}
+  .bcard .thumb.noimg{display:grid;place-items:center;color:var(--text-dim)}
+  .bcard .thumb.noimg svg{width:34px;height:34px;stroke-width:1.4}
+  .bcard .thumb.g1{background:linear-gradient(120deg,#3a2a16,#191510)}
+  .bcard .thumb.g2{background:linear-gradient(120deg,#2c2617,#181712)}
+  .bcard .thumb.g3{background:linear-gradient(120deg,#33211a,#191310)}
+  .shown-badge{position:absolute;top:11px;right:11px;z-index:2;display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:700;color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));
+    padding:5px 10px;border-radius:100px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  .shown-badge svg{width:12px;height:12px;stroke-width:2.6}
+  .tag{position:absolute;top:11px;left:11px;z-index:2;display:inline-block;font-size:10px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:100px;color:#1a1206;background:var(--gold)}
+  .tag.evt{background:var(--danger);color:#fff}
+  .tag.upd{background:var(--stone);color:#141210}
+  .bcard .body{padding:15px 17px 8px;flex:1;display:flex;flex-direction:column;gap:6px}
+  .bcard .body h3{font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+  .bcard .body p{font-size:12.5px;color:var(--text-faint);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .bcard .meta{font-size:11px;color:var(--text-dim);font-weight:600;margin-top:auto}
+  .link-chip{display:inline-flex;align-items:center;gap:4px;color:var(--gold)}
+  .link-chip svg{width:11px;height:11px}
+  .bcard .foot{display:flex;align-items:center;gap:8px;padding:12px 15px;border-top:1px solid var(--border-soft);margin-top:10px}
+  .toggle{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none;flex:1;font-size:12.5px;font-weight:600;color:var(--text-faint)}
+  .toggle .sw{width:38px;height:22px;border-radius:100px;background:var(--charcoal-4);position:relative;transition:.18s;flex:none}
+  .toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#6b6357;transition:.18s}
+  .toggle.on .sw{background:linear-gradient(145deg,var(--gold),var(--amber))}
+  .toggle.on .sw::after{transform:translateX(16px);background:#1a1206}
+  .toggle.on{color:var(--parchment)}
+  .toggle.disabled{opacity:.4;cursor:not-allowed}
+  .icon-act{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:8px;background:var(--charcoal-3);
+    border:1px solid var(--border);color:var(--text-faint);cursor:pointer;transition:.13s}
+  .icon-act:hover{color:var(--parchment);background:var(--charcoal-4)}
+  .icon-act.del:hover{color:#eab3a6;background:rgba(193,85,63,.14);border-color:rgba(193,85,63,.4)}
+  .icon-act svg{width:15px;height:15px;stroke-width:2}
+
+  /* inline delete confirm */
+  .confirm{display:flex;align-items:center;gap:10px;padding:12px 15px;border-top:1px solid var(--border-soft);
+    background:rgba(193,85,63,.07)}
+  .confirm .q{flex:1;font-size:12.5px;font-weight:600;color:#e0a99b}
+
+  /* empty listing */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:60px 24px;gap:14px;background:var(--charcoal-2);border:1px dashed var(--border);border-radius:14px}
+  .empty .ei{width:56px;height:56px;border-radius:15px;display:grid;place-items:center;background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-dim)}
+  .empty .ei svg{width:26px;height:26px;stroke-width:1.6}
+  .empty h4{font-size:16px;font-weight:700;color:var(--text-faint)}
+  .empty p{font-size:13px;color:var(--text-dim);max-width:320px;line-height:1.5}
+
+  /* ===== CREATE / EDIT ===== */
+  .editor{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:start}
+  .form-card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;padding:22px 24px}
+  .field{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+  .field:last-child{margin-bottom:0}
+  .field label{font-size:12.5px;font-weight:600;color:var(--stone);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .field label .lt{display:inline-flex;align-items:baseline;gap:3px}
+  .field label .req{color:var(--amber);font-weight:700}
+  .field label .opt{color:var(--text-dim);font-weight:500}
+  .field label .count{font-size:11px;color:var(--text-dim);font-weight:600;font-variant-numeric:tabular-nums;flex:none}
+  .field-hint{font-size:11.5px;color:var(--text-dim);min-height:0}
+  .field-hint.err{color:var(--danger)}
+  .field-hint.ok{color:var(--ok)}
+  .locked-field{display:flex;align-items:center;gap:10px;padding:12px 13px;background:var(--charcoal-3);
+    border:1px solid var(--border);border-radius:10px;color:var(--parchment);font-size:14px;font-weight:600;cursor:not-allowed}
+  .locked-field svg{width:15px;height:15px;flex:none;color:var(--text-dim);stroke-width:2}
+  .locked-field .lock-note{margin-left:auto;font-size:11px;font-weight:600;color:var(--text-dim);
+    background:var(--charcoal);border:1px solid var(--border);padding:3px 9px;border-radius:100px}
+  input[type=text], textarea, select{width:100%;padding:12px 13px;font-family:inherit;font-size:14px;
+    background:var(--charcoal);border:1px solid var(--border);border-radius:10px;color:var(--parchment);transition:border-color .16s, box-shadow .16s}
+  textarea{resize:vertical;min-height:110px;line-height:1.55}
+  input::placeholder, textarea::placeholder{color:var(--text-dim)}
+  input:focus, textarea:focus, select:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.15)}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23968e7e' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;background-size:16px;padding-right:38px}
+
+  /* type segmented control */
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;padding:10px;border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint);transition:.14s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .seg button .swatch{width:9px;height:9px;border-radius:50%}
+  .seg button:hover{color:var(--parchment)}
+  .seg button.on{color:var(--parchment);border-color:var(--charcoal-4);background:var(--charcoal-3)}
+
+  /* image uploader + reposition */
+  .uploader{border:1px dashed var(--border);border-radius:12px;overflow:hidden;background:var(--charcoal)}
+  .drop{padding:34px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;cursor:pointer;transition:.14s}
+  .drop:hover, .drop.drag{background:var(--charcoal-3)}
+  .drop .di{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--charcoal-3);border:1px solid var(--border);color:var(--gold)}
+  .drop .di svg{width:22px;height:22px;stroke-width:1.7}
+  .drop h5{font-size:13.5px;font-weight:700;color:var(--parchment)}
+  .drop p{font-size:12px;color:var(--text-dim)}
+  .drop .browse{color:var(--gold);font-weight:700}
+  .imgframe{position:relative;height:190px;overflow:hidden;background:var(--charcoal-3);cursor:grab}
+  .imgframe.dragging{cursor:grabbing}
+    /* height:100% is what makes this draggable. Without it the box is the
+     image's own height, object-fit:cover has nothing to crop, and
+     object-position moves nothing — which is exactly how it behaved. */
+.imgframe img{position:absolute;inset:0;width:100%;height:100%;user-select:none;-webkit-user-drag:none;object-fit:cover}
+  .imgframe .hint{position:absolute;left:0;right:0;bottom:0;padding:9px 12px;font-size:11px;font-weight:600;color:#e6d3b2;
+    background:linear-gradient(180deg,transparent,rgba(12,11,10,.85));display:flex;align-items:center;gap:7px;pointer-events:none}
+  .imgframe .hint svg{width:13px;height:13px}
+  .img-actions{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border-soft);background:var(--charcoal-2)}
+  .img-actions .btn{flex:1}
+
+  .form-actions{display:flex;gap:10px;margin-top:22px;padding-top:20px;border-top:1px solid var(--border-soft)}
+  .form-actions .btn{flex:1}
+
+  /* live preview */
+  .preview-wrap{position:sticky;top:calc(var(--header-h) + 24px)}
+  .preview-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .preview-label .dotlbl{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  /* preview reuses the dashboard bulletin slide look */
+  .pv-slide{position:relative;height:250px;border-radius:14px;overflow:hidden;border:1px solid var(--border);display:flex;align-items:flex-end;background:var(--charcoal-3)}
+  .pv-slide .pvbg{position:absolute;inset:0}
+  .pv-slide.g1 .pvbg{background:linear-gradient(120deg,#3a2a16,#191510)}
+  .pv-slide.g2 .pvbg{background:linear-gradient(120deg,#2c2617,#181712)}
+  .pv-slide.g3 .pvbg{background:linear-gradient(120deg,#33211a,#191310)}
+  .pv-slide .pvbg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .pv-slide .pvbg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,11,10,.1),rgba(12,11,10,.55) 55%,rgba(12,11,10,.95))}
+  /* Matches the dashboard: the image fades out behind the caption, and
+     the fade is on .cap so it begins where the text begins. */
+  .pv-slide.has-img .pvbg::after{background:
+    linear-gradient(180deg,rgba(10,9,8,.30) 0%,rgba(10,9,8,.08) 38%,rgba(10,9,8,.30) 100%)}
+  .pv-slide.has-img .cap{padding-top:54px;
+    background:linear-gradient(to top,
+      rgba(10,9,8,.97) 0%, rgba(10,9,8,.95) 48%, rgba(10,9,8,.78) 72%, rgba(10,9,8,0) 100%)}
+  .pv-slide .cap{position:relative;padding:22px;width:100%}
+  .pv-slide .cap .tg{position:static;display:inline-block;margin-bottom:11px}
+  .pv-slide .cap h4{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* Two lines, never more. A long description over a photo turns the slide
+     into wallpaper with words on it. */
+  .pv-slide .cap p{font-size:13px;line-height:1.55;color:#cdc2ad;max-width:56ch;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pv-slide.has-img .cap h4{text-shadow:0 1px 12px rgba(0,0,0,.55)}
+  .pv-slide.has-img .cap p{color:#ddd3c2;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+  .pv-slide .cap .m{font-size:11.5px;color:var(--text-faint);margin-top:10px;font-weight:600}
+  .pv-slide.has-img .cap .m{color:#b6ab99}
+  .pv-link{display:inline-flex;align-items:center;gap:6px;margin-top:11px;font-size:11.5px;font-weight:700;
+    color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));padding:5px 11px;border-radius:100px}
+  .pv-link svg{width:13px;height:13px}
+  .pv-note{font-size:12px;color:var(--text-dim);margin-top:12px;line-height:1.5}
+
+
+  /* ---------- ANNOUNCEMENTS ---------- */
+  /* =====================================================================
+     ANNOUNCEMENT STRIP
+
+     Reads left to right like a filed notice: a colour stamp, then the
+     type and when it was posted, then the headline, then the detail.
+     Nothing is centred — centred text has no left edge to scan down, which
+     is why the old one turned into a paragraph floating in a box.
+
+     One --ann colour per type drives the rail, the stamp and the border,
+     so adding a type later is one variable, not six rules.
+     ===================================================================== */
+  .ann{--ann:var(--gold);--ann-ink:#1a1206;
+    display:flex;align-items:center;gap:15px;padding:13px 15px;position:relative;
+    border:1px solid color-mix(in srgb, var(--ann) 34%, transparent);
+    border-radius:13px;overflow:hidden;
+    background:linear-gradient(90deg,
+      color-mix(in srgb, var(--ann) 13%, transparent),
+      color-mix(in srgb, var(--ann) 4%, transparent) 42%,
+      transparent 78%), var(--charcoal-2)}
+  .ann::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ann)}
+  .ann-stamp{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:var(--ann);color:var(--ann-ink);box-shadow:0 6px 16px -8px var(--ann)}
+  .ann-stamp svg{width:18px;height:18px;stroke-width:2}
+  .ann-main{flex:1;min-width:0}
+  .ann-eyebrow{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--ann);margin-bottom:3px}
+  .ann-eyebrow .sep{opacity:.45}
+  .ann-eyebrow .ago{color:var(--text-faint);font-weight:700;letter-spacing:.08em}
+  .ann-head{font-size:14px;font-weight:700;color:var(--parchment);line-height:1.35;
+    letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* The detail wraps onto a second line and stops there — long enough to
+     say the thing, short enough that the strip keeps a fixed height. */
+  .ann-detail{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-top:3px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ann-acts{flex:none;display:flex;align-items:center;gap:8px}
+  .ann-link{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    padding:7px 12px;border-radius:100px;white-space:nowrap;
+    color:var(--ann);border:1px solid color-mix(in srgb, var(--ann) 40%, transparent);
+    background:color-mix(in srgb, var(--ann) 10%, transparent);transition:.16s}
+  .ann-link:hover{background:var(--ann);color:var(--ann-ink)}
+  .ann-link svg{width:12px;height:12px;stroke-width:2.4}
+  .ann-x{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;
+    background:transparent;border:none;color:var(--text-faint);cursor:pointer;transition:.14s}
+  .ann-x:hover{background:rgba(255,255,255,.06);color:var(--parchment)}
+  .ann-x svg{width:14px;height:14px;stroke-width:2.2}
+
+  .ann.t-notice     {--ann:var(--gold);--ann-ink:#1a1206}
+  .ann.t-maintenance{--ann:#7ea7d4;--ann-ink:#0b131d}
+  .ann.t-warning    {--ann:var(--amber);--ann-ink:#1a1206}
+  .ann.t-critical   {--ann:#d0644d;--ann-ink:#fff}
+  .ann.t-success    {--ann:#8fb463;--ann-ink:#0f1408}
+
+  @media (max-width:760px){
+    .ann{align-items:flex-start;gap:12px;padding:12px 13px}
+    .ann-head{white-space:normal;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .ann-detail{-webkit-line-clamp:3}
+    .ann-acts{flex-direction:column;align-items:flex-end;gap:6px}
+    .ann-link{padding:6px 10px}
+  }
+
+  .arow{display:flex;align-items:center;gap:14px;padding:15px 16px;border:1px solid var(--border-soft);
+    border-radius:13px;background:var(--charcoal-2);margin-bottom:11px}
+  .arow.live{border-color:rgba(226,182,92,.4);background:linear-gradient(180deg,rgba(226,182,92,.05),transparent)}
+  .arow .abody{flex:1;min-width:0}
+  .arow .aline{font-size:13.5px;font-weight:600;color:var(--parchment);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .arow .asub{font-size:12.5px;color:var(--text-dim);margin-top:5px;line-height:1.55;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .arow .ameta{font-size:11.5px;color:var(--text-faint);margin-top:7px;font-weight:600}
+  .arow .aacts{display:flex;align-items:center;gap:8px;flex:none}
+  .live-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;
+    letter-spacing:.1em;text-transform:uppercase;color:#1a1206;background:var(--gold);
+    padding:3px 9px;border-radius:100px}
+  .live-badge .dot{width:6px;height:6px;border-radius:50%;background:#1a1206}
+  .tchip{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 9px;border-radius:100px;border:1px solid var(--border);color:var(--text-dim)}
+  .apreview{margin-top:8px}
+  .switchrow{display:flex;align-items:center;gap:11px;margin-top:16px;font-size:13px;color:var(--text-dim)}
+  .switchrow .sw{width:38px;height:21px;border-radius:100px;background:var(--charcoal-4);position:relative;
+    border:1px solid var(--border);flex:none;transition:.2s}
+  .switchrow .sw::after{content:"";position:absolute;left:2px;top:1.5px;width:15px;height:15px;border-radius:50%;
+    background:var(--stone);transition:.2s}
+  .switchrow.on .sw{background:rgba(226,182,92,.3);border-color:rgba(226,182,92,.5)}
+  .switchrow.on .sw::after{left:19px;background:var(--gold)}
+
+
+  /* ---------- ADMINISTRATIVE SEARCH ---------- */
+
+  /* Tier colours and the group chip live in assets/css/tones.css, loaded
+     above — one palette for the whole UCP. */
+
+  /* ---- Lookup switcher ----
+     A raised control that sits ON the page rather than a row of text with a
+     line under it. The old version was underlined labels on the page's own
+     background: nothing to tell you it was a control at all, and the two
+     disabled ones read as grey text rather than as switches you can't throw.
+
+     Each lookup gets an icon and a count of what it can search, so the
+     difference between "built" and "designed" is visible before you click. */
+  .ltabs{display:inline-flex;align-self:flex-start;gap:6px;padding:6px;margin-bottom:22px;max-width:100%;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:15px;
+    box-shadow:0 10px 26px -18px rgba(0,0,0,.9);overflow-x:auto}
+  .ltab{flex:none;display:inline-flex;align-items:center;gap:10px;padding:11px 16px;
+    border-radius:11px;border:1px solid transparent;background:transparent;cursor:pointer;
+    font-family:inherit;text-align:left;color:var(--text-faint);transition:.15s;white-space:nowrap}
+  .ltab .ti{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--text-dim);transition:.15s}
+  .ltab .ti svg{width:15px;height:15px;stroke-width:1.9}
+  .ltab .tt{display:flex;flex-direction:column;gap:3px;line-height:1}
+  .ltab .tn{font-size:13px;font-weight:700;letter-spacing:-.01em}
+  .ltab .ts{font-size:10.5px;font-weight:600;color:var(--text-dim)}
+  .ltab:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .ltab:hover .ti{color:var(--text-faint);border-color:var(--charcoal-4)}
+  .ltab.on{color:var(--parchment);background:var(--charcoal-3);border-color:var(--charcoal-4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .ltab.on .ti{color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));
+    border-color:transparent;box-shadow:0 5px 14px -6px rgba(212,146,58,.6)}
+  .ltab.on .ts{color:var(--amber)}
+  .ltab.on.soon .ts{color:var(--text-dim)}
+  /* A lookup with no data behind it is dimmed but still legible — it is a
+     preview of what is coming, not an error. */
+  .ltab.soon{opacity:.55}
+  .ltab.soon:hover{opacity:.8}
+
+  /* ---- The form ----
+     Two columns on desktop, one on a phone. Every criterion is visible at
+     once and they combine with AND, which is the whole point: thirty
+     searchable things can't live behind a single "search by…" dropdown, and
+     a dropdown can't express "in this group AND not seen since March". */
+  .lookup{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;
+    padding:22px 24px 20px}
+  .lookup > h3{font-size:16px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+  .lookup > .lede{font-size:13px;color:var(--text-faint);margin-bottom:18px;max-width:80ch;line-height:1.55}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px}
+  .fsec{grid-column:1/-1;font-size:9.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--text-dim);margin:12px 0 2px}
+  .fsec:first-child{margin-top:0}
+
+  .f{display:flex;align-items:stretch;min-width:0}
+  .f .fi{flex:none;width:40px;display:grid;place-items:center;border-radius:10px 0 0 10px;
+    background:var(--charcoal-3);border:1px solid var(--border);border-right:none;color:var(--text-faint)}
+  .f .fi svg{width:16px;height:16px;stroke-width:1.9}
+  .f input,.f select{flex:1;min-width:0;height:42px;padding:0 13px;border-radius:0 10px 10px 0;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--parchment);
+    font-family:inherit;font-size:13.5px;transition:.15s}
+  .f input::placeholder{color:var(--text-dim)}
+  /* A date input has no placeholder to put the label in — the browser fills
+     it with mm/dd/yyyy — so the label gets its own slot before the field. */
+  .f .flab{flex:none;display:flex;align-items:center;padding:0 11px;font-size:12.5px;
+    color:var(--text-faint);background:var(--charcoal);border:1px solid var(--border);
+    border-left:none;border-right:none;white-space:nowrap}
+  .f.dated input{border-radius:0 10px 10px 0;color:var(--parchment)}
+  .f input:focus,.f select:focus{outline:none;border-color:rgba(226,182,92,.5);
+    box-shadow:0 0 0 3px rgba(212,146,58,.12);position:relative;z-index:1}
+  .f input:focus + .fi,.f:focus-within .fi{color:var(--gold);border-color:rgba(226,182,92,.5)}
+  .f select{appearance:none;cursor:pointer;padding-right:34px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7f70' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center}
+  /* A field with nothing behind it stays on the form — the shape of the
+     finished tool is worth seeing — but it cannot be typed into and cannot
+     be mistaken for one that works. */
+  .f.soon{opacity:.42}
+  .f.soon input,.f.soon select{cursor:not-allowed}
+  .f.soon .fi{color:var(--text-dim)}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.6) sepia(.3);cursor:pointer}
+
+  .lactions{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:18px;
+    border-top:1px solid var(--border-soft)}
+  .lactions .grow{flex:1}
+  .lactions .hint{font-size:12px;color:var(--text-dim)}
+
+  /* ---- Notes and results ---- */
+  .snote{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;margin-bottom:14px;
+    border-radius:12px;font-size:13px;line-height:1.5;
+    color:#e6d3b2;background:rgba(212,146,58,.07);border:1px solid rgba(212,146,58,.3)}
+  .snote svg{width:16px;height:16px;flex:none;stroke-width:2;color:var(--gold);margin-top:1px}
+
+  .rpanel{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .rhead{display:flex;align-items:center;gap:10px;padding:15px 18px;border-bottom:1px solid var(--border-soft)}
+  .rhead h3{font-size:14px;font-weight:700;letter-spacing:-.01em;flex:1}
+  .rhead svg{width:16px;height:16px;color:var(--gold);stroke-width:1.9;flex:none}
+  .rhead .rcount{font-size:12px;font-weight:600;color:var(--text-faint);font-variant-numeric:tabular-nums}
+
+  /* The table scrolls sideways on a narrow screen rather than crushing the
+     last column off the edge. */
+  .rwrap{overflow-x:auto}
+  .rtable{width:100%;border-collapse:collapse;min-width:520px}
+  .rtable th{text-align:left;padding:10px 18px;font-size:9.5px;font-weight:800;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.014);
+    border-bottom:1px solid var(--border-soft);white-space:nowrap}
+  .rtable td{padding:12px 18px;font-size:13px;color:var(--text-faint);
+    border-bottom:1px solid var(--border-soft);vertical-align:middle}
+  .rtable tr:last-child td{border-bottom:none}
+  .rtable tbody tr{transition:background .13s}
+  .rtable tbody tr:hover{background:var(--charcoal-3)}
+  .rtable .rid{font-variant-numeric:tabular-nums;color:var(--stone);font-weight:700;font-size:12px}
+  .rtable .rname{color:var(--parchment);font-weight:700;font-size:13.5px}
+  .rtable .rsub{display:block;font-size:11.5px;color:var(--text-dim);margin-top:3px}
+  .rtable .rview{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+    color:var(--gold);white-space:nowrap}
+  .rtable .rview:hover{text-decoration:underline}
+  .rtable td.right{text-align:right}
+  /* A staff row somebody can't open. Legible, not hidden — the point is that
+     they can see the account exists — but visibly closed. */
+  .rtable tr.locked td{color:var(--text-dim)}
+  .rtable tr.locked .rname{color:var(--text-faint)}
+  .rlock{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;
+    color:var(--text-faint);background:var(--charcoal);border:1px solid var(--border);
+    padding:6px 12px;border-radius:100px;white-space:nowrap;cursor:default}
+  .rlock svg{width:12px;height:12px;stroke-width:2.2;flex:none}
+  .schip{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;
+    letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:100px;
+    white-space:nowrap;color:var(--stone);background:rgba(255,255,255,.03);
+    border:1px solid var(--border)}
+  .schip svg{width:11px;height:11px;stroke-width:2.4}
+  .rdash{color:var(--text-dim)}
+  .rmob{display:none}
+
+  .rempty{padding:34px 18px;text-align:center;font-size:13px;color:var(--text-dim)}
+
+  /* The pager belongs to the results, so it sits inside them. It shows even
+     when there is one page — "1–6 of 6" is the answer to "is that all of
+     them?", which is not a question a missing control answers. */
+  .rfoot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px 18px;border-top:1px solid var(--border-soft);background:rgba(255,255,255,.012)}
+  .rfoot .grow{flex:1}
+  .rfoot .pg{min-width:34px;height:34px;padding:0 11px;display:inline-grid;place-items:center;
+    border-radius:9px;background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint);
+    font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.14s}
+  .rfoot .pg:hover:not(:disabled){color:var(--parchment);background:var(--charcoal-3)}
+  .rfoot .pg.on{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
+  .rfoot .pg:disabled{opacity:.35;cursor:not-allowed}
+  .rfoot .pg svg{width:14px;height:14px;stroke-width:2.2}
+  .rfoot .pg-gap{color:var(--text-dim);padding:0 2px}
+  .rfoot .pnum{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .rgrid{display:grid;grid-template-columns:1fr;gap:18px}
+
+  .mtag{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    padding:3px 8px;border-radius:100px;border:1px solid var(--border);color:var(--text-faint);white-space:nowrap}
+  .mtag.bad{color:#e0a99b;border-color:rgba(193,85,63,.42);background:rgba(193,85,63,.1)}
+  .pcount{font-size:12.5px;color:var(--text-faint);font-weight:600;font-variant-numeric:tabular-nums}
+
+  @media (max-width:860px){
+    .fgrid{grid-template-columns:1fr}
+    .lookup{padding:18px 16px 16px}
+    .rtable th:nth-child(3),.rtable td:nth-child(3){display:none}
+    .rtable{min-width:0}
+    .rtable th,.rtable td{padding-left:12px;padding-right:12px}
+    .rvlong{display:none}
+    .rmob{display:block}
+  }
+
+  /* ===== ACCOUNT MENU =====
+     The same component as the profile page. It used to exist only there, so
+     the button in the corner of every other page looked interactive and did
+     nothing. */
+  .account{position:relative}
+  .account-menu{position:absolute;right:0;top:calc(100% + 10px);width:230px;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
+    box-shadow:0 24px 50px -18px rgba(0,0,0,.8);padding:8px;z-index:60}
+  .account-menu .mhead{padding:8px 10px 12px;border-bottom:1px solid var(--border-soft);margin-bottom:6px}
+  .account-menu .mhead .n{font-size:14px;font-weight:700;color:var(--parchment)}
+  .account-menu .mhead .rr{font-size:12px;color:var(--amber);font-weight:600;margin-top:1px}
+  .menu-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;
+    font-size:13.5px;font-weight:500;color:var(--text-faint);cursor:pointer;transition:.13s;text-decoration:none}
+  .menu-item svg{width:16px;height:16px;stroke-width:1.9;flex:none}
+  .menu-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .menu-item.on{background:var(--charcoal-3);color:var(--parchment)}
+  .menu-item.on svg{color:var(--gold)}
+  .menu-item.danger{color:#d98a78}
+  .menu-item.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6}
+  .menu-sep{height:1px;background:var(--border-soft);margin:6px 4px}
+  @media (max-width:760px){ .account-menu{width:220px;right:-4px} }
+
+  /* toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);z-index:200;
+    display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:11px;background:var(--charcoal-3);
+    border:1px solid var(--border);box-shadow:0 18px 44px -14px rgba(0,0,0,.75);font-size:13.5px;font-weight:600;
+    color:var(--parchment);opacity:0;pointer-events:none;transition:.28s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast svg{width:17px;height:17px;color:var(--ok);stroke-width:2.4}
+
+  /* pager — centered */
+  .pager{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px}
+  .pager .pg{min-width:36px;height:36px;padding:0 11px;display:grid;place-items:center;border-radius:9px;
+    background:var(--charcoal-2);border:1px solid var(--border);color:var(--text-faint);
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
+  .pager .pg:hover:not(:disabled){color:var(--parchment);background:var(--charcoal-3)}
+  .pager .pg.on{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
+  .pager .pg:disabled{opacity:.4;cursor:not-allowed}
+  .pager .pg svg{width:15px;height:15px;stroke-width:2.2}
+  .pager .pg-gap{color:var(--text-dim);padding:0 2px}
+
+  .view{display:none}
+  .view.active{display:flex;flex-direction:column;gap:22px}
+
+  @media (max-width:1000px){ .editor{grid-template-columns:1fr} .preview-wrap{position:static} }
+  @media (max-width:760px){
+    .sidebar{position:fixed;left:0;top:0;height:100dvh;transform:translateX(-100%);transition:transform .26s ease}
+    .side-inner{position:static;height:100dvh}
+    body.nav-open .sidebar{transform:translateX(0);box-shadow:0 0 60px rgba(0,0,0,.6)}
+    .hamburger{display:grid}
+    .topbar{padding:0 14px;gap:10px}
+    .searchbox{display:none}
+    .search-mini{display:grid}
+    .divider{display:none}
+    .account-btn{min-width:0;padding:9px 11px;gap:6px}
+    .account-meta{display:none}
+    .account-btn .acct-ico{display:block;width:18px;height:18px;color:var(--text-faint)}
+    .content{padding:18px 14px 32px}
+    .phead h2{font-size:20px}
+    .grid{grid-template-columns:1fr}
+    .slotbar .track{order:4;flex-basis:100%}
+    .slotbar .note{flex-basis:100%;order:5}
+  }
+  .scrim{display:none;position:fixed;inset:0;background:rgba(8,7,6,.6);backdrop-filter:blur(2px);z-index:48;opacity:0;transition:opacity .22s}
+  .scrim.show{display:block;opacity:1}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
+</head>
+
+HTML;
+require __DIR__ . '/../partials/shell-top.php';
+?>
+
+
+      <div class="view active" id="view-list">
+        <a class="page-back" href="/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>Back to dashboard</a>
+
+        <div class="phead">
+          <div>
+            <h2>Administrative Search</h2>
+            <p id="introLine">Fill in anything you know — the more boxes, the narrower the result.
+              Opening an account is recorded against your own staff log.</p>
+          </div>
+        </div>
+
+        <div class="ltabs" id="ltabs" role="tablist"></div>
+        <div id="lookupHost"></div>
+
+        <div id="snote"></div>
+        <div class="rgrid" id="results"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
+
+<script src="/assets/js/ucp.js"></script>
+<script>
+  /* ===================== SIDEBAR (shared config) ===================== */
+  /* The sidebar lives in assets/js/ucp.js — one copy for every page.
+     It used to be pasted into all eleven, which is eleven things to forget
+     when one of them changes; adding a menu item is now an edit to NAV in
+     that file and nothing else. Any page with <nav id="nav"> gets it, drawn
+     from the cached rank on load and again when api/session.php answers. */
+  function svgI(n,c){return `<svg class="${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor">${ICONS[n]||''}</svg>`;}
+  /* Administration items appear only for Management and Founders. The pages
+     behind them check the rank themselves; hiding the link is so nobody is
+     shown a door that won't open. */
+  let IS_MANAGER=false, IS_FOUNDER=false, IS_ADMINISTRATOR=false;
+  let MY_RANK = 0, MY_TEAMS = [];   // the ladder rung, and sub-group keys
+  /* Menu gates.
+
+     `min` is a rank on the ladder in api/_ranks.php. `team` is a sub-group
+     key that opens the item on its own at ANY rank — which is how a Staff
+     Management holder reaches the Staff Report Panel without being
+     Management. A menu drawn from rank alone would be wrong for exactly the
+     people the sub-group exists for.
+
+     This decides what is DRAWN. Every page behind a link asks the server,
+     and every endpoint checks again; nothing here is a permission. */
+
+  /* Seed the menu gates from the last known session so the FIRST paint is
+     right. Without this every navigation drew the sidebar twice — once with
+     no Administration section, once with it — which is the flicker.
+     api/session.php confirms it below, and both the pages and the endpoints
+     check the rank with the server on every request regardless. */
+  (function(){
+    var me = window.UCP && UCP.me;
+    if(!me) return;
+    IS_ADMINISTRATOR = me.rank >= 3;
+    IS_MANAGER       = me.rank >= 8;
+    IS_FOUNDER       = me.rank >= 9;
+    MY_RANK          = me.rank | 0;
+    MY_TEAMS         = me.teams || [];
+  })();
+  renderSidebar(SIDEBAR);
+
+  /* =====================================================================
+     ADMINISTRATIVE SEARCH
+
+     The form is the server's (api/_admin.php), not this page's. That matters
+     more than it looks: most of what an admin will eventually want to search
+     — characters, phone numbers, balances, factions, properties, vehicles —
+     has no table behind it yet, because it lives on a game server that isn't
+     connected. Those fields are still drawn, so the shape of the finished
+     tool is visible, but they are disabled and the server ignores them.
+
+     A search box that silently returns nothing reads as "this player has no
+     characters", not as "this feature doesn't exist" — which is the wrong
+     thing to conclude while deciding whether to ban somebody.
+     ===================================================================== */
+  let TABS = [], TAB = 'user', LOADING = false;
+  let ITEMS = [], TOTAL_PAGES = 1, curPage = 1, LAST = null;
+
+  function toneOf(r){ return 'tone-' + (r >= 0 && r <= 9 ? r : 0); }
+  function tabBy(k){ for(var i=0;i<TABS.length;i++) if(TABS[i].key===k) return TABS[i]; return null; }
+
+  const FI = {
+    user:'<circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/>',
+    hash:'<path d="M5 9h14M5 15h14M10 4l-2 16M16 4l-2 16"/>',
+    mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+    discord:'<path d="M8 11a1 1 0 1 0 0-.01M16 11a1 1 0 1 0 0-.01"/><path d="M8.5 17c-2 0-3.5-1.2-4-3.5C4 10 5 6.8 6.5 5.5 7.4 5 8.6 4.7 9.5 4.6l.6 1.2a12 12 0 0 1 3.8 0l.6-1.2c.9.1 2.1.4 3 .9C19 6.8 20 10 19.5 13.5c-.5 2.3-2 3.5-4 3.5l-.9-1.5"/>',
+    chat:'<path d="M4 5h16v11H8l-4 3z"/>',
+    shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/>',
+    flag:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
+    lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    card:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',
+    phone:'<path d="M6 3h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z"/>',
+    cash:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',
+    bank:'<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h4M6 14h8"/>',
+    house:'<path d="M3 10.5L12 4l9 6.5V20H3zM9 20v-6h6v6"/>',
+    sort:'<path d="M8 8l4-4 4 4M8 16l4 4 4-4"/>',
+    plate:'<rect x="2" y="7" width="20" height="10" rx="2"/><path d="M7 11v2M11 11v2M15 11v2"/>',
+    car:'<path d="M5 16h14M4 16v-3l2-5h12l2 5v3"/><circle cx="8" cy="16" r="1.6"/><circle cx="16" cy="16" r="1.6"/>'
+  };
+  function ficon(n){ return '<span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' + (FI[n]||FI.hash) + '</svg></span>'; }
+
+  /* ---- the lookup switcher ---- */
+  const TAB_ICON = { user: FI.user, property: FI.house, vehicle: FI.car };
+
+  function renderTabs(){
+    document.getElementById('ltabs').innerHTML = TABS.map(function(t){
+      const sub = t.available ? '' : 'Not built yet';
+      return '<button class="ltab ' + (t.key===TAB?'on':'') + (t.available?'':' soon') +
+             '" role="tab" aria-selected="' + (t.key===TAB) + '" data-tab="' + t.key + '">' +
+        '<span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+          (TAB_ICON[t.key] || FI.hash) + '</svg></span>' +
+        '<span class="tt"><span class="tn">' + escapeHtml(t.label) + '</span>' +
+          (sub ? '<span class="ts">' + escapeHtml(sub) + '</span>' : '') + '</span>' +
+      '</button>';
+    }).join('');
+  }
+  document.getElementById('ltabs').addEventListener('click', function(e){
+    const b = e.target.closest('[data-tab]'); if(!b) return;
+    TAB = b.dataset.tab;
+    ITEMS = []; LAST = null;
+    document.getElementById('snote').innerHTML = '';
+    renderTabs(); renderForm(); renderResults(null);
+  });
+
+  /* ---- the form ----
+     Fields are laid out in the order the registry gives them, two to a row.
+     A `date` field gets its label above it rather than as a placeholder,
+     because a date input has no placeholder to put it in. */
+  function renderForm(){
+    const t = tabBy(TAB);
+    const host = document.getElementById('lookupHost');
+    if(!t){ host.innerHTML = ''; return; }
+
+    let lastOff = false;
+    const fields = t.fields.map(function(f){
+      const off  = (!t.available || !f.available);
+      const why  = f.why || t.why || '';
+      const attr = off ? ' disabled title="' + escapeHtml(why) + '"' : '';
+      let control;
+      if(f.type === 'select'){
+        control = '<select id="f_' + f.key + '"' + attr + '>' +
+          (f.options||[]).map(function(o){
+            return '<option value="' + escapeHtml(o[0]) + '">' + escapeHtml(o[1]) + '</option>';
+          }).join('') + '</select>';
+      } else if(f.type === 'date'){
+        control = '<span class="flab">' + escapeHtml(f.label) + '</span>' +
+                  '<input type="date" id="f_' + f.key + '" aria-label="' + escapeHtml(f.label) + '"' + attr + '>';
+      } else {
+        control = '<input type="' + (f.type === 'number' ? 'number' : 'text') + '" id="f_' + f.key + '"' +
+                  ' placeholder="' + escapeHtml(f.label) + '" autocomplete="off" spellcheck="false"' + attr + '>';
+      }
+      const cls = 'f' + (off ? ' soon' : '') + (f.type === 'date' ? ' dated' : '');
+      let head = '';
+      /* One divider where the built fields stop and the designed ones begin,
+         so nobody reads a greyed box as "no results for this". */
+      if(t.available && off && !lastOff){ head = '<div class="fsec">Waiting on the game server link</div>'; }
+      lastOff = off;
+      return head + '<label class="' + cls + '">' + ficon(f.icon) + control + '</label>';
+    }).join('');
+
+    host.innerHTML =
+      '<div class="lookup">' +
+        '<h3>' + escapeHtml(t.label) + '</h3>' +
+        '<p class="lede">' + escapeHtml(t.available
+          ? 'Every box you fill in narrows the result — they combine, they don\u2019t compete. Greyed boxes are waiting on the game server link.'
+          : (t.why || '')) + '</p>' +
+        '<div class="fgrid">' + fields + '</div>' +
+        '<div class="lactions">' +
+          '<span class="hint" id="lhint"></span>' +
+          '<span class="grow"></span>' +
+          (t.available ? '<button class="btn" id="clearBtn">Clear</button>' +
+                         '<button class="btn primary" id="goBtn">Search</button>' : '') +
+        '</div>' +
+      '</div>';
+
+    if(t.available){
+      document.getElementById('goBtn').addEventListener('click', function(){ run(1); });
+      document.getElementById('clearBtn').addEventListener('click', clearForm);
+      host.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' && e.target.tagName === 'INPUT'){ e.preventDefault(); run(1); }
+      });
+    }
+  }
+
+  function clearForm(){
+    const t = tabBy(TAB); if(!t) return;
+    t.fields.forEach(function(f){
+      const el = document.getElementById('f_' + f.key);
+      if(el) el.value = '';
+    });
+    ITEMS = []; LAST = null;
+    document.getElementById('snote').innerHTML = '';
+    document.getElementById('lhint').textContent = '';
+    renderResults(null);
+  }
+
+  /** Everything the admin actually typed, as a query string. */
+  function criteria(){
+    const t = tabBy(TAB), out = [];
+    if(!t) return out;
+    t.fields.forEach(function(f){
+      if(!f.available) return;
+      const el = document.getElementById('f_' + f.key);
+      if(!el || el.disabled) return;
+      const v = String(el.value || '').trim();
+      if(v !== '') out.push(encodeURIComponent(f.key) + '=' + encodeURIComponent(v));
+    });
+    return out;
+  }
+
+  /* ---- dates and times, shown the way the rest of the UCP shows them ---- */
+  function toTs(sql){
+    if(!sql) return null;
+    const m = String(sql).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    return m ? Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6])/1000 : null;
+  }
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dateOf(sql){
+    const t=toTs(sql); if(!t) return '—';
+    const d=new Date(t*1000);
+    return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear();
+  }
+  function agoOf(sql){
+    const t=toTs(sql); if(!t) return 'never';
+    return (window.UCP && UCP.relTime) ? UCP.relTime(t) : dateOf(sql);
+  }
+
+  /* ---- results ---- */
+  const ICO_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
+  function rowHTML(m){
+    /* A staff account somebody below Staff Management found. They get to see
+       that it exists and who it belongs to — that is the whole question a
+       search answers — and nothing else. The server sent nothing else. */
+    if(m.viewable === false){
+      return '<tr class="locked">' +
+        '<td class="rid">#' + m.id + '</td>' +
+        '<td><span class="rname">' + escapeHtml(m.name) + '</span>' +
+          '<span class="rsub rmob">Staff account</span></td>' +
+        '<td><span class="schip">' + ICO_LOCK + 'Staff account</span></td>' +
+        '<td class="rdash">—</td>' +
+        '<td class="right"><span class="rlock" title="Staff accounts are only visible to Staff Management">' +
+          ICO_LOCK + 'Locked</span></td>' +
+      '</tr>';
+    }
+
+    /* "Suspended" is the database's word; "Banned" is the community's, and
+       it is the one that will match the server's ban system. */
+    const label = m.status === 'suspended' ? 'Banned'
+                : m.status === 'pending'   ? 'Pending email'
+                : m.status === 'locked'    ? 'Locked' : m.status;
+    const bad = m.status !== 'active' ? ' <span class="mtag bad">' + escapeHtml(label) + '</span>' : '';
+    return '<tr>' +
+      '<td class="rid">#' + m.id + '</td>' +
+      '<td><span class="rname">' + escapeHtml(m.name) + '</span>' + bad +
+        '<span class="rsub">' + escapeHtml(m.email) + '</span></td>' +
+      '<td><span class="gchip ' + toneOf(m.rank) + '">' + escapeHtml(m.role) + '</span>' +
+        '<span class="rsub">Joined ' + escapeHtml(dateOf(m.created_at)) + '</span></td>' +
+      '<td>' + escapeHtml(agoOf(m.last_login)) + '</td>' +
+      '<td class="right"><a class="rview" href="/dashboard/lookup?id=' + m.id + '">' +
+        'View<span class="rvlong"> account</span> →</a></td>' +
+    '</tr>';
+  }
+
+  function panel(icon, title, count, inner){
+    return '<div class="rpanel"><div class="rhead">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' + icon + '</svg>' +
+      '<h3>' + title + '</h3>' +
+      (count !== null ? '<span class="rcount">' + count + '</span>' : '') +
+      '</div>' + inner + '</div>';
+  }
+  const ICO_USERS = '<path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/><path d="M17 11a3 3 0 1 0 0-6M18 20v-1a5 5 0 0 0-2-4"/>';
+
+  function renderResults(d){
+    const host = document.getElementById('results');
+    const t = tabBy(TAB);
+
+    if(!t || !t.available){
+      host.innerHTML = '';
+      return;
+    }
+    if(!d || !d.searched){
+      host.innerHTML = panel(ICO_USERS, 'Results', null,
+        '<div class="rempty">Fill in one or more boxes above and press Search.</div>');
+      return;
+    }
+    if(!ITEMS.length){
+      host.innerHTML = panel(ICO_USERS, 'Results', '0',
+        '<div class="rempty">No account matches everything you entered.</div>');
+      return;
+    }
+
+    host.innerHTML = panel(ICO_USERS, 'Accounts', d.total.toLocaleString('en-GB'),
+      '<div class="rwrap"><table class="rtable"><thead><tr>' +
+        '<th>ID</th><th>UCP name</th><th>Group</th><th>Last log in</th><th></th>' +
+      '</tr></thead><tbody>' + ITEMS.map(rowHTML).join('') + '</tbody></table></div>' +
+      footHTML(d));
+  }
+
+  /** The results footer: what you're looking at, and how to get to the rest. */
+  function footHTML(d){
+    let nums = '';
+    for(let i=1;i<=TOTAL_PAGES;i++){
+      if(i===1||i===TOTAL_PAGES||Math.abs(i-curPage)<=1){
+        nums += '<button class="pg ' + (i===curPage?'on':'') + '" data-pg="' + i + '">' + i + '</button>';
+      } else if(Math.abs(i-curPage)===2){
+        nums += '<span class="pg-gap">…</span>';
+      }
+    }
+    return '<div class="rfoot">' +
+      '<span class="pcount">Showing ' + d.from + '–' + d.to + ' of ' +
+        d.total.toLocaleString('en-GB') + '</span>' +
+      '<span class="grow"></span>' +
+      '<button class="pg" data-pg="' + (curPage-1) + '"' + (curPage===1?' disabled':'') + ' aria-label="Previous page">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+      '<span class="pnum">' + nums + '</span>' +
+      '<button class="pg" data-pg="' + (curPage+1) + '"' + (curPage===TOTAL_PAGES?' disabled':'') + ' aria-label="Next page">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></button>' +
+    '</div>';
+  }
+
+  document.getElementById('results').addEventListener('click', function(e){
+    const b = e.target.closest('[data-pg]'); if(!b || b.disabled) return;
+    run(parseInt(b.dataset.pg,10));
+    document.querySelector('.content').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+
+  /* ---- run ----
+     Not fired on keystroke like the group search. That one scans a table of
+     UCP names; this one can leave the server to ask the forum, and firing
+     that on every keypress would hammer somebody else's software. You press
+     Search, or Enter. */
+  function run(page){
+    if(LOADING) return;
+    const c = criteria();
+    const btn = document.getElementById('goBtn');
+
+    if(!c.length){
+      document.getElementById('lhint').textContent = 'Fill in at least one box first.';
+      return;
+    }
+    document.getElementById('lhint').textContent = '';
+
+    curPage = page || 1;
+    LOADING = true;
+    if(btn) btn.textContent = 'Searching…';
+
+    const qs = 'tab=' + encodeURIComponent(TAB) + '&page=' + curPage + '&' + c.join('&');
+
+    UCP.get('admin-search.php?' + qs).then(function(d){
+      LOADING = false;
+      if(btn) btn.textContent = 'Search';
+      if(!d || d.ok !== true){
+        if(d && d.authenticated === false){
+          window.location.replace('/login?return=' + encodeURIComponent('/dashboard/search'));
+          return;
+        }
+        toast((d && d.error) || 'That search did not work'); return;
+      }
+      TABS = d.tabs || TABS;
+      ITEMS = d.results || [];
+      TOTAL_PAGES = d.pages || 1;
+      curPage = d.page || curPage;
+      LAST = d;
+
+      const note = document.getElementById('snote');
+      const msgs = [];
+      if(d.blocked) msgs.push(d.blocked);
+      if(d.note)    msgs.push(d.note);
+      /* One explanation for however many locked rows are on screen. */
+      if(d.locked_staff > 0){
+        msgs.push(d.locked_staff + (d.locked_staff === 1 ? ' result is a staff account' : ' results are staff accounts') +
+          ' and can\u2019t be opened. Staff accounts are only visible to Staff Management ' +
+          '\u2014 contact them with any queries.');
+      }
+      note.innerHTML = msgs.map(function(m){
+        return '<div class="snote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>' +
+               escapeHtml(m) + '</div></div>';
+      }).join('');
+
+      renderResults(d);
+    }).catch(function(err){
+      LOADING = false;
+      if(btn) btn.textContent = 'Search';
+      console.error('[search] failed', err);
+      toast(err && err.message ? 'Page error: ' + err.message : 'Could not reach the server');
+    });
+  }
+
+
+  /* ===== ACCOUNT MENU ===== */
+  (function(){
+    var btn = document.getElementById('acctBtn'), menu = document.getElementById('acctMenu');
+    if(!btn || !menu) return;
+    menu.style.display = 'none';
+    btn.addEventListener('click', function(e){ e.stopPropagation();
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none'; });
+    menu.addEventListener('click', function(e){ e.stopPropagation(); });
+    document.addEventListener('click', function(){ menu.style.display = 'none'; });
+
+    /* Log out through fetch, so the browser never lands on the endpoint's raw
+       JSON. The href stays a working no-JS fallback. Forget the cached
+       identity first — the next person at this computer starts blank. */
+    document.getElementById('logoutBtn').addEventListener('click', function(e){
+      e.preventDefault();
+      this.style.pointerEvents = 'none';
+      if(window.UCP && UCP.forgetMe) UCP.forgetMe();
+      UCP.post('logout.php', {}).then(function(res){
+        var d = res && res.data ? res.data : {};
+        window.location.replace(d.redirect || '/login');
+      }).catch(function(){ window.location.href = '/api/logout.php?next=/login'; });
+    });
+  })();
+
+  /* ===================== UTIL ===================== */
+  function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  let toastTimer=null;
+  function toast(msg){
+    const t=document.getElementById('toast');
+    document.getElementById('toastMsg').textContent=msg;
+    t.classList.add('show'); clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+  }
+
+  /* mobile drawer */
+  const scrim=document.getElementById('scrim'), menuToggle=document.getElementById('menuToggle');
+  menuToggle.addEventListener('click',()=>{document.body.classList.toggle('nav-open');scrim.classList.toggle('show');});
+  scrim.addEventListener('click',()=>{document.body.classList.remove('nav-open');scrim.classList.remove('show');});
+  window.addEventListener('resize',()=>{if(window.innerWidth>760){document.body.classList.remove('nav-open');scrim.classList.remove('show');}});
+
+  /* The clock, the build number and the status line are drawn by
+     assets/js/ucp.js — one copy for every page. */
+
+
+
+  /* =====================================================================
+     BOOT — Trainee Admin and above. The endpoints check it themselves too;
+     this only decides whether to draw the page or the locked state.
+     ===================================================================== */
+  function lockOut(){
+    document.querySelector('.content').innerHTML =
+      '<div class="empty" style="margin:60px auto;max-width:520px">' +
+      '<span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
+      '<h4>Administrators only</h4>' +
+      '<p>Administrative Search is for Trainee Admin and above. If you think you should have ' +
+      'access, speak to a Manager.</p>' +
+      '<a class="btn primary" href="/dashboard">Back to dashboard</a></div>';
+  }
+
+  UCP.get('session.php').then(function(d){
+    if(!d || d.authenticated !== true){
+      window.location.replace('/login?return=' + encodeURIComponent('/dashboard/search'));
+      return;
+    }
+    const an=document.getElementById('acctName'), ar=document.getElementById('acctRole');
+    if(an) an.textContent = d.name || '';
+    if(ar) ar.textContent = d.role || 'Member';
+    /* Keep it for the next page load — this is what stops the flicker. */
+    if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
+
+    const rank = d.rank | 0;
+    if(rank < 3){ lockOut(); return; }
+
+    const was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
+    IS_ADMINISTRATOR = true;
+    IS_MANAGER = rank >= 8;
+    IS_FOUNDER = rank >= 9;
+    MY_RANK = rank; MY_TEAMS = d.teams || [];
+    /* Only redraw if the seed above was wrong — redrawing identical HTML is
+       what the eye reads as a flash. */
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderSidebar(SIDEBAR);
+
+    /* Load with nothing filled in: the server hands back the registry and
+       nothing else, and that registry is what the form is built from. */
+    UCP.get('admin-search.php').then(function(r){
+      if(r && r.ok){
+        TABS = r.tabs || [];
+        renderTabs(); renderForm(); renderResults(null);
+      }
+    }).catch(function(err){ console.error('[search] registry failed', err); });
+
+  }).catch(function(err){
+    console.error('[search] boot failed', err);
+    toast(err && err.message ? 'Page error: ' + err.message : 'Could not reach the server');
+  });
+
+</script>
+</body>
+</html>

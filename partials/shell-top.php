@@ -2,21 +2,33 @@
 /**
  * The UCP shell — everything above a page's own content.
  *
- * ONE copy of the sidebar, the top bar, the backdrop and the credit box.
+ * ONE copy of the sidebar, the top bar, the credit box and the backdrop.
  * They used to be pasted into eighteen files, which is eighteen places to
  * forget when one of them changes — and exactly how /store ended up with
  * two credit boxes.
  *
- * Included, not rendered by JavaScript, on purpose: an element that arrives
+ * Included, not built by JavaScript, on purpose: an element that arrives
  * after the first paint is a visible jump in the top bar on every load,
- * which is the flicker this markup was inlined to stop in the first place.
- * Apache assembles it, the browser still receives complete HTML.
+ * which is the flicker this markup was inlined to stop. Apache assembles
+ * the page; the browser still receives complete HTML.
  *
  * A page sets, before including this:
  *
- *   $PAGE_TITLE    <title> and, unless overridden, the heading
- *   $PAGE_HEADING  optional, when the two differ
- *   $PAGE_CSS      the page's own stylesheet block
+ *   $PAGE_TITLE    <title>, and the heading unless one is given
+ *   $PAGE_HEADING  optional, for when the two differ
+ *   $PAGE_HEAD     everything from the page's first <style> to </head>,
+ *                  verbatim. It is raw rather than just a stylesheet
+ *                  because the pages do not agree on the shape of that
+ *                  region — the account lookup has two <style> blocks with
+ *                  the tones.css link BETWEEN them, and that order is
+ *                  load-bearing: what comes after tones.css overrides it.
+ *                  Handing the whole region over unchanged is the only way
+ *                  to share the shell without quietly reordering somebody's
+ *                  cascade.
+ *
+ * Everything below a page's content stays in the page: each one has its own
+ * scripts, and several have their own toast markup. Only the shell above is
+ * shared, because only the shell above is identical.
  */
 if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
 ?>
@@ -26,15 +38,16 @@ if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($PAGE_TITLE) ?></title>
+  <!-- Every page of the UCP sits behind a sign-in and shows somebody's
+       account, so none of it belongs in a search index. Only profile.html
+       and the account lookup carried this before; the other sixteen were
+       relying on the login redirect alone. -->
+  <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='23' fill='%23121110'/%3E%3Ctext x='50' y='70' font-family='Oswald,sans-serif' font-size='60' font-weight='700' fill='%23e2b65c' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
-<style>
-<?= $PAGE_CSS ?? '' ?>
-</style>
-<link rel="stylesheet" href="/assets/css/tones.css">
-</head>
+<?= $PAGE_HEAD ?? '' ?>
 <body>
 
 <!-- Backdrop. `stage` is the hook assets/js/ucp.js uses for the time-of-day
@@ -60,17 +73,20 @@ if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
 
   <div class="main">
     <header class="topbar">
-      <button class="icon-btn hamburger" id="menuToggle" aria-label="Open menu">
+      <button class="icon-btn hamburger" id="menuToggle" title="Menu" aria-label="Open menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <div class="page-title"><h1><?= htmlspecialchars($PAGE_HEADING ?? $PAGE_TITLE) ?></h1></div>
+      <div class="page-title"><h1 id="pageTitle"><?= htmlspecialchars($PAGE_HEADING ?? $PAGE_TITLE) ?></h1></div>
       <div class="spacer"></div>
+<?php /* Off on My Profile and the account lookup, which never had one. */
+   if ($PAGE_SEARCH ?? true): ?>
       <div class="searchbox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input placeholder="Quick search…">
       </div>
       <button class="icon-btn search-mini" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
-      <button class="icon-btn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="dot"></span></button>
+<?php endif; ?>
+      <button class="icon-btn" title="Notifications" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="dot"></span></button>
       <div class="divider"></div>
       <!-- Credit balance. In the markup, not created by JavaScript: an
            element that arrives after the first paint is a visible jump in

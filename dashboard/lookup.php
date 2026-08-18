@@ -1,0 +1,2526 @@
+<?php
+/**
+ * Account lookup.
+ *
+ * The shell — backdrop, sidebar, top bar, credit box — comes from
+ * partials/shell-top.php. Nothing about it is repeated here.
+ */
+$PAGE_TITLE = 'BlaineSide — Account lookup';
+$PAGE_HEADING = 'Account lookup';
+$PAGE_SEARCH = false;   // this page has never had a search box
+$PAGE_HEAD = <<<'HTML'
+<style>
+/* ============================================================
+   TOKENS — identical to dashboard/index.html. Kept in sync by hand
+   for now; these should move to assets/css/ucp.css and be imported
+   by both before a third page copies them.
+   ============================================================ */
+:root{
+  --amber:#d4923a;
+  --gold:#e2b65c;
+  --charcoal:#121110;
+  --charcoal-2:#1a1815;
+  --charcoal-3:#221f1b;
+  --charcoal-4:#2b2723;
+  --parchment:#f1efe9;
+  --stone:#8a7f70;
+  --text-dim:#655e51;
+  --text-faint:#968e7e;
+  --border:#26221e;
+  --border-soft:#1f1c18;
+  /* divider inside a card — --border-soft vanishes against --charcoal-2 */
+  --rule:#302b25;
+  --danger:#c1553f;
+  --ok:#7fa05a;
+  --warn:#e2b65c;
+  --sidebar-w:256px;
+  --header-h:66px;
+  --content-bg:#100f0e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+/* display:flex/grid on a component beats the [hidden] attribute's UA rule,
+   which is how the empty state ended up rendering underneath the table. */
+[hidden]{display:none !important}
+html{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--content-bg);
+  color:var(--parchment);
+  -webkit-font-smoothing:antialiased;
+  display:flex;min-height:100vh;
+  font-size:14px;line-height:1.5;
+}
+a{color:var(--gold);text-decoration:none}
+button{font-family:inherit}
+::-webkit-scrollbar{width:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--charcoal-4);border-radius:6px}
+
+/* ================= SIDEBAR (matches dashboard) ================= */
+.sidebar{width:var(--sidebar-w);flex:none;position:relative;
+  background:var(--charcoal-2);border-right:1px solid var(--border-soft);z-index:50}
+.side-inner{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding-bottom:66px}
+.side-brand{display:flex;align-items:center;height:var(--header-h);padding:0 24px;
+  border-bottom:1px solid var(--border-soft);flex:none}
+.side-brand .name{font-family:'Oswald',sans-serif;font-weight:600;font-size:25px;
+  letter-spacing:.07em;text-transform:uppercase;line-height:1;color:var(--parchment)}
+.side-brand .name b{color:var(--gold);font-weight:700}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 14px 18px}
+.nav-group{margin-bottom:1px}
+.nav-item{display:flex;align-items:center;gap:13px;padding:11px 12px;border-radius:9px;
+  font-size:14px;font-weight:500;color:var(--text-faint);cursor:pointer;
+  transition:background .14s,color .14s;position:relative;user-select:none}
+.nav-item svg.i{width:18px;height:18px;flex:none;stroke-width:1.8}
+.nav-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+.nav-item.active{background:var(--charcoal-3);color:var(--parchment)}
+.nav-item.active::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;
+  border-radius:0 3px 3px 0;background:linear-gradient(180deg,var(--gold),var(--amber))}
+.nav-item.active svg.i{color:var(--gold)}
+.nav-item .lbl{flex:1}
+.nav-item .chev{width:15px;height:15px;opacity:.5;transition:transform .2s;flex:none;stroke-width:2}
+.nav-group.open > .nav-item .chev{transform:rotate(90deg)}
+.sub{max-height:0;overflow:hidden;transition:max-height .26s ease;margin-left:9px;
+  border-left:1px solid var(--border);padding-left:8px}
+.nav-group.open .sub{max-height:340px}
+.sub a{display:block;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--text-faint);transition:.13s;margin:1px 0}
+.sub a:hover{background:var(--charcoal-3);color:var(--parchment)}
+.sub a.slot-empty{color:var(--text-dim);font-style:italic;cursor:default}
+.sub a.slot-empty:hover{background:transparent;color:var(--text-dim)}
+.nav-heading{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--stone);padding:18px 12px 8px}
+.side-foot{position:absolute;left:0;right:0;bottom:0;background:var(--charcoal-2);
+  padding:13px 20px 15px;border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:5px}
+.foot-line{font-size:11px;color:var(--text-faint);font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.5}
+.foot-line .fv{color:var(--parchment);font-weight:600}
+.foot-line .st{display:inline-flex;align-items:center;gap:6px}
+.foot-line .st .d{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+
+/* ================= MAIN SHELL (matches dashboard) ================= */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;
+  background:transparent}
+
+/* ============================================================
+   BACKDROP — the sign-in page's scene, carried through the UCP.
+
+   Four fixed layers behind everything: the Sandy Shores photo, the
+   time-of-day tint, a scrim that buys back the contrast the photo
+   costs, and the diagonal hairlines from the sign-in page.
+
+   The tint is driven by assets/js/ucp.js, which looks for `.stage`
+   and swaps a tod-* class on it — the same code the sign-in page
+   uses, so the two can never drift out of step.
+   ============================================================ */
+.bg-stage{position:fixed;inset:0;top:var(--header-h);left:var(--sidebar-w);z-index:0;pointer-events:none;
+  overflow:hidden;background:#0b0a08}
+.bg-stage .scene{position:absolute;inset:0;
+  background:url('/assets/img/bg-sandy.jpg') center/cover no-repeat;
+  /* Present but never competing: this sits behind body copy all day, not
+     behind one sign-in card. */
+  opacity:.38;transform:scale(1.04)}
+.bg-stage .tod{position:absolute;inset:0;transition:background 1s ease}
+.bg-stage.tod-night .tod{background:rgba(20,28,56,.54)}
+.bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
+.bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
+.bg-stage.tod-dusk  .tod{background:rgba(58,40,34,.34)}
+/* An even vignette: equally dark on all four sides, lightest in the
+   middle. The old version graded left-to-right, which read as a black
+   band down one edge rather than as a backdrop. */
+.bg-stage .bg-scrim{position:absolute;inset:0;background:
+    radial-gradient(115% 95% at 50% 50%,
+      rgba(10,9,8,.50) 0%, rgba(10,9,8,.74) 62%, rgba(10,9,8,.92) 100%)}
+@media (max-width:760px){ .bg-stage{left:0} }
+.topbar,.content{position:relative;z-index:1}
+
+/* ---- First paint --------------------------------------------------
+   Every value on this page arrives from api/profile.php, so the markup
+   is empty for one frame and the browser paints the skeleton before it
+   paints the account. Holding the content back until the first render
+   turns that flash into one deliberate fade. `ready` is added whatever
+   the answer was, including a failure — the error message lives inside
+   .content and must not be hidden by the thing meant to hide the
+   flicker. */
+.content{opacity:0;transform:translateY(8px);
+  transition:opacity .34s ease,transform .34s cubic-bezier(.22,.61,.36,1)}
+.account-meta,.page-title h1{opacity:0;transition:opacity .34s ease .04s}
+body.ready .content{opacity:1;transform:none}
+body.ready .account-meta,body.ready .page-title h1{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  .content,.account-meta,.page-title h1{transition:none}
+}
+.topbar{height:var(--header-h);flex:none;display:flex;align-items:center;gap:16px;
+  padding:0 26px;background:var(--charcoal-2);border-bottom:1px solid var(--border);
+  box-shadow:0 1px 0 rgba(0,0,0,.4), 0 6px 18px -12px rgba(0,0,0,.7);
+  position:sticky;top:0;z-index:45}
+.page-title h1{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.topbar .spacer{flex:1}
+.icon-btn{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;
+  background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint);cursor:pointer;
+  transition:.14s;position:relative}
+.icon-btn:hover{color:var(--parchment);background:var(--charcoal-3)}
+.icon-btn svg{width:18px;height:18px;stroke-width:1.9}
+.divider{width:1px;height:30px;background:var(--border);flex:none}
+.account{position:relative}
+.account-btn{display:flex;align-items:center;gap:12px;padding:6px 12px;border-radius:10px;
+  background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;min-width:170px}
+.account-btn:hover{background:var(--charcoal-3)}
+.account-meta{display:flex;flex-direction:column;line-height:1.3;flex:1;min-width:0;text-align:left}
+.account-meta .u{font-size:13.5px;font-weight:600;color:var(--parchment);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-meta .r{font-size:11px;color:var(--amber);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-btn .caret{width:15px;height:15px;color:var(--stone);stroke-width:2;flex:none}
+.account-btn .acct-ico{display:none}
+.account-menu{position:absolute;right:0;top:calc(100% + 10px);width:230px;
+  background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
+  box-shadow:0 24px 50px -18px rgba(0,0,0,.8);padding:8px;z-index:60}
+.account-menu .mhead{padding:8px 10px 12px;border-bottom:1px solid var(--border-soft);margin-bottom:6px}
+.account-menu .mhead .n{font-size:14px;font-weight:700}
+.account-menu .mhead .rr{font-size:12px;color:var(--amber);font-weight:600;margin-top:1px}
+.menu-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;
+  font-size:13.5px;font-weight:500;color:var(--text-faint);cursor:pointer;transition:.13s}
+.menu-item svg{width:16px;height:16px;stroke-width:1.9;flex:none}
+.menu-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+.menu-item.on{background:var(--charcoal-3);color:var(--parchment)}
+.menu-item.on svg{color:var(--gold)}
+.menu-item.danger{color:#d98a78}
+.menu-item.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6}
+.menu-sep{height:1px;background:var(--border-soft);margin:6px 4px}
+.hamburger{display:none}
+.scrim{display:none;position:fixed;inset:0;background:rgba(8,7,6,.6);
+  backdrop-filter:blur(2px);z-index:48;opacity:0;transition:opacity .22s}
+.scrim.show{display:block;opacity:1}
+
+/* ============================================================
+   PAGE
+
+   Everything sits on a surface. Nothing floats directly on the
+   background gradient — text over the amber bloom is hard to read,
+   and a group with no edge has nothing to scan against.
+   ============================================================ */
+.content{padding:26px 30px 60px;max-width:1180px;width:100%;margin:0 auto}
+
+/* The card is the page's only container. No nesting: a bordered box
+   inside a bordered box reads as a mistake, so things that live in a
+   card (the FAQ, fact lists, the 2FA detail rows) are separated by
+   hairlines rather than boxed again. */
+.card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 20px 44px -30px rgba(0,0,0,.9);overflow:hidden}
+.card + .card{margin-top:20px}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:17px 22px 15px;border-bottom:1px solid var(--rule)}
+.card-h h3{font-size:15.5px;font-weight:700;letter-spacing:-.015em}
+.card-h .aside{font-size:12.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.card-b{padding:6px 22px 16px}
+.card-lede{font-size:13px;color:var(--text-faint);line-height:1.65;padding-top:14px;
+  max-width:80ch;text-wrap:pretty}
+.card-lede + *{margin-top:16px}
+.card.danger .card-h{border-bottom-color:rgba(193,85,63,.22)}
+.card.danger .card-h h3{color:#dfa294}
+
+/* ---- identity header ---- */
+.idcard{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:20px 22px}
+.idcard .who{flex:1;min-width:250px}
+.nameline{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.nameline h2{font-size:27px;font-weight:700;letter-spacing:-.025em;line-height:1.15}
+/* The rank badge lives in assets/css/tones.css — see .gchip,.rank there. */
+.idmeta{margin-top:8px;font-size:13px;color:var(--text-faint);display:flex;flex-wrap:wrap;
+  align-items:center;gap:5px 10px}
+.idmeta .sep{color:var(--stone)}
+.idmeta b{color:var(--parchment);font-weight:600}
+.idchips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+  padding:7px 12px 7px 10px;border-radius:9px;border:1px solid var(--border);
+  background:var(--charcoal);color:var(--text-faint);white-space:nowrap}
+.chip svg{width:14px;height:14px;stroke-width:2;flex:none}
+.chip.good{color:#9ec178;border-color:rgba(127,160,90,.34);background:rgba(127,160,90,.09)}
+.chip.warn{color:#e3bd72;border-color:rgba(226,182,92,.32);background:rgba(226,182,92,.08)}
+.chip.off{color:var(--stone)}
+.chip.sm{padding:3px 8px;font-size:10.5px;gap:5px}
+
+/* ---- tab bar --------------------------------------------------------
+   A boxed segmented control rather than underlined text. Three sections
+   is a real switch, not a hint: it needs an edge you can find without
+   hunting, and an active state that holds up over the amber bloom. */
+.tabbar{display:inline-flex;gap:4px;margin:20px 0;padding:5px;border-radius:13px;
+  background:var(--charcoal-2);border:1px solid var(--border);
+  box-shadow:0 14px 32px -26px rgba(0,0,0,.9);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{display:inline-flex;align-items:center;gap:9px;padding:10px 17px;border-radius:9px;
+  border:1px solid transparent;background:none;cursor:pointer;white-space:nowrap;
+  font-size:13.5px;font-weight:600;color:var(--text-faint);
+  transition:background .15s,color .15s,border-color .15s}
+.tab svg{width:16px;height:16px;stroke-width:1.9;flex:none;color:var(--stone);transition:color .15s}
+.tab:hover{background:var(--charcoal-3);color:var(--parchment)}
+.tab:hover svg{color:var(--text-faint)}
+.tab[aria-selected="true"]{background:var(--charcoal-4);color:var(--parchment);
+  border-color:rgba(226,182,92,.34);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.tab[aria-selected="true"] svg{color:var(--gold)}
+.tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.tabpanel[hidden]{display:none}
+
+/* ---- profile columns ----
+   Three, all inside the page's normal content width: Administrative
+   actions, then the read-only panels, then the account summary.
+
+   The account column pays for the actions column. It was 336px of label
+   over value with the values ending a third of the way across — a column
+   sized for a two-column page. At 248 the same rows read the same and the
+   middle keeps most of what it had.
+
+   Both outer columns stick; the middle is the only one long enough to
+   scroll past them. */
+.pgrid{display:grid;grid-template-columns:284px minmax(0,1fr) 248px;gap:20px;align-items:start}
+.pgrid > .col-a{grid-column:1;grid-row:1}
+.pgrid > .col-l{grid-column:2;grid-row:1}
+.pgrid > .col-r{grid-column:3;grid-row:1}
+.pgrid > .col-a,
+.pgrid > .col-r{position:sticky;top:calc(var(--header-h) + 20px)}
+
+/* Nothing to show in it — close the column rather than leave a gap. */
+.pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 248px}
+.pgrid:has(> .col-a > .card[hidden]) > .col-a{display:none}
+.pgrid:has(> .col-a > .card[hidden]) > .col-l{grid-column:1}
+.pgrid:has(> .col-a > .card[hidden]) > .col-r{grid-column:2}
+
+/* ---- settings row: label + description left, control right ---- */
+.rows > .row:first-child,
+.rows > .link-row:first-child,
+.rows > .kv:first-child,
+.rows > .sess:first-child{padding-top:16px}
+.row{display:flex;align-items:flex-start;gap:20px;padding:16px 0}
+.row + .row{border-top:1px solid var(--rule)}
+.row-l{flex:1;min-width:0}
+.row-t{font-size:13.5px;font-weight:600;color:var(--parchment);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.row-v{font-size:13px;color:var(--text-faint);margin-top:4px;word-break:break-word}
+.row-v b{color:var(--parchment);font-weight:600}
+.row-d{font-size:12.5px;color:var(--text-faint);margin-top:5px;line-height:1.6;
+  max-width:72ch;text-wrap:pretty}
+.row-r{flex:none;display:flex;align-items:center;gap:9px;padding-top:1px}
+
+/* ---- buttons ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:9px 15px;border-radius:9px;border:1px solid var(--border);background:var(--charcoal);
+  color:var(--text-faint);font-size:13px;font-weight:600;cursor:pointer;
+  transition:background .14s,color .14s,border-color .14s,transform .12s;white-space:nowrap}
+.btn:hover{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
+.btn:active{transform:scale(.975)}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn svg{width:15px;height:15px;stroke-width:2;flex:none}
+.btn.primary{background:linear-gradient(180deg,var(--gold),var(--amber));border-color:transparent;
+  color:#17140f;font-weight:800;box-shadow:0 10px 22px -12px rgba(212,146,58,.75)}
+.btn.primary:hover{filter:brightness(1.06);color:#17140f}
+.btn.danger{color:#d98a78;border-color:rgba(193,85,63,.36)}
+.btn.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6;border-color:rgba(193,85,63,.55)}
+.btn.lg{padding:12px 20px;font-size:13.5px}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.42;pointer-events:none;box-shadow:none}
+
+/* A value the player can't change. Labelled rather than shown as a greyed
+   -out button, so it doesn't read as a control that happens to be broken. */
+.locked{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;
+  color:var(--stone);padding:7px 12px 7px 10px;border-radius:9px;
+  border:1px dashed var(--border);background:var(--charcoal);white-space:nowrap}
+.locked svg{width:13px;height:13px;stroke-width:2;flex:none}
+
+/* ---- segmented control ---- */
+.seg{display:inline-flex;padding:3px;gap:2px;border-radius:11px;
+  background:var(--charcoal);border:1px solid var(--border)}
+.seg button{padding:9px 16px;border-radius:8px;border:1px solid transparent;background:none;
+  cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-faint);transition:.14s}
+.seg button:hover{color:var(--parchment)}
+.seg button[aria-pressed="true"]{background:var(--charcoal-4);color:var(--parchment);
+  border-color:rgba(226,182,92,.3)}
+
+/* ---- inline expanding form ---- */
+.expand{display:none;padding:2px 0 18px}
+.expand.on{display:block;animation:expandIn .22s cubic-bezier(.2,.8,.3,1) both}
+@keyframes expandIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.form{background:var(--charcoal);border:1px solid var(--border);border-radius:12px;
+  padding:20px;max-width:620px}
+.form-grid{display:grid;gap:16px;max-width:430px}
+.fld label{display:block;font-size:12.5px;font-weight:600;color:var(--parchment);margin-bottom:7px}
+.fld input,.fld select,.fld textarea{width:100%;background:var(--charcoal-2);
+  border:1px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--parchment);
+  font-family:inherit;font-size:13.5px;outline:none;transition:border-color .14s,box-shadow .14s}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--stone)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--amber);
+  box-shadow:0 0 0 3px rgba(212,146,58,.14)}
+/* A validated field: the border carries the state and the hint line under it
+   turns into the result, so there is one place to look rather than two. */
+.ctl{position:relative}
+.fld.chk input{padding-right:42px}
+.fld.ok input{border-color:rgba(127,160,90,.6);box-shadow:0 0 0 3px rgba(127,160,90,.12);
+  background:rgba(127,160,90,.04)}
+.fld.err input{border-color:rgba(193,85,63,.72);box-shadow:0 0 0 3px rgba(193,85,63,.13);
+  background:rgba(193,85,63,.05)}
+.fld.ok input:focus{border-color:rgba(127,160,90,.85)}
+.fld.err input:focus{border-color:rgba(193,85,63,.9)}
+.ind{position:absolute;right:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;
+  display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .15s}
+.fld.ok .ind,.fld.err .ind,.fld.busy .ind{opacity:1}
+.ind svg{width:18px;height:18px;stroke-width:2.4}
+.fld.ok .ind{color:var(--ok)}
+.fld.err .ind{color:#d98a78}
+.fld.busy .ind{color:var(--stone)}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--charcoal-4);
+  border-top-color:var(--stone);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fld .hint{font-size:11.5px;color:var(--text-faint);margin-top:6px;line-height:1.5;max-width:52ch;
+  display:flex;align-items:flex-start;gap:6px}
+.fld .hint.ok{color:#9ec178}
+.fld .hint.err{color:#dd8878}
+.fld .hint b{color:inherit;font-weight:700}
+.form-acts{display:flex;gap:9px;margin-top:20px;flex-wrap:wrap}
+
+/* password strength — same three rules as reset-confirm.html */
+.meter{display:flex;gap:5px;margin-top:10px}
+.meter i{height:4px;flex:1;border-radius:3px;background:var(--charcoal-4);transition:background .25s}
+.meter.s1 i:nth-child(1){background:var(--danger)}
+.meter.s2 i:nth-child(-n+2){background:var(--amber)}
+.meter.s3 i:nth-child(-n+3){background:var(--gold)}
+.meter.s4 i{background:var(--ok)}
+.reqs{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.req{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
+  color:var(--text-faint);border:1px solid var(--border);border-radius:100px;padding:5px 11px}
+.req svg{width:11px;height:11px;stroke-width:2.6}
+.req.met{color:#9ec178;border-color:rgba(127,160,90,.35);background:rgba(127,160,90,.08)}
+
+/* ---- notes / callouts ---- */
+.note{display:flex;gap:11px;padding:13px 15px;border-radius:11px;font-size:12.5px;line-height:1.65;
+  border:1px solid var(--border);background:var(--charcoal);color:var(--text-faint);
+  margin-top:16px;max-width:88ch;text-wrap:pretty}
+.note svg{width:16px;height:16px;flex:none;stroke-width:2;margin-top:1px;color:var(--stone)}
+.note b{color:var(--parchment);font-weight:700}
+.note.amber{border-color:rgba(212,146,58,.3);background:rgba(212,146,58,.07);color:#dcbd8b}
+.note.amber svg{color:var(--gold)}
+.note.amber b{color:#f3e2c4}
+.note.red{border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.08);color:#dfa294}
+.note.red svg{color:#d98a78}
+.note.red b{color:#f4d4cb}
+.note.green{border-color:rgba(127,160,90,.32);background:rgba(127,160,90,.08);color:#b6cd97}
+.note.green svg{color:#9ec178}
+.note.green b{color:#dcecc6}
+.blank.soon .ei{color:var(--stone);background:rgba(255,255,255,.02)}
+
+/* ---- linked accounts ---- */
+.link-row{display:flex;align-items:center;gap:14px;padding:15px 0}
+.link-row + .link-row{border-top:1px solid var(--rule)}
+.link-mark{width:40px;height:40px;border-radius:11px;flex:none;display:grid;place-items:center;
+  background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint)}
+.link-mark svg{width:19px;height:19px;stroke-width:1.9}
+.link-mark.forum{color:var(--gold);background:rgba(212,146,58,.11);border-color:rgba(212,146,58,.26)}
+.link-mark.discord{color:#a8afd4;background:rgba(107,116,168,.16);border-color:rgba(107,116,168,.3)}
+.link-mark.game{color:#8fb4d6;background:rgba(120,160,200,.12);border-color:rgba(120,160,200,.26)}
+.link-body{flex:1;min-width:0}
+.link-body .n{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.link-body .s{font-size:12.5px;color:var(--text-faint);margin-top:4px;line-height:1.55}
+.link-body .s b{color:var(--parchment);font-weight:600}
+.link-body .s.none{color:var(--stone)}
+.link-body .s.mono b{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.02em}
+.link-body .s .lic{color:var(--stone);font-weight:500}
+
+/* ---- your account: a stacked key/value list, not a boxed grid ---- */
+/* ---- the Account column ----
+   Label left, value right, one line each. It was label on one line and value
+   on the next with a rule between every pair: seven facts became fourteen
+   lines and about 520px of column, most of it empty down the right-hand
+   side. Two columns halve that and give the card a straight edge to scan.
+
+   Read-only view only. The player's own profile does not have this column. */
+.acct-kv{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0}
+.acct-kv + .acct-kv{border-top:1px solid var(--rule)}
+.acct-kv .k{font-size:11.5px;color:var(--text-faint);font-weight:500;flex:none}
+.acct-kv .v{font-size:12.5px;font-weight:600;text-align:right;min-width:0;
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+/* `.sub` is the sidebar's collapsed submenu (max-height:0), so the second
+   half of a value is `.acct-sub` — the same name here swallowed it whole. */
+.acct-kv .v .acct-sub{display:block;font-size:11px;font-weight:500;color:var(--text-dim);
+  margin-top:1px;font-variant-numeric:normal}
+
+.kv{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:12px 0}
+.kv + .kv{border-top:1px solid var(--rule)}
+.kv .k{font-size:12.5px;color:var(--text-faint);font-weight:500;flex:none}
+.kv .v{font-size:13.5px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;gap:7px;justify-content:flex-end;flex-wrap:wrap}
+.kv .v .sm{font-size:12px;font-weight:500;color:var(--text-faint);font-variant-numeric:normal}
+.kv .v a.ext{display:inline-flex;align-items:center;gap:6px;color:var(--parchment);
+  border-bottom:1px solid rgba(226,182,92,.35);transition:.16s}
+.kv .v a.ext:hover{color:var(--gold);border-bottom-color:var(--gold)}
+.kv .v a.ext svg{width:12px;height:12px;stroke-width:2;color:var(--stone);flex:none}
+.kv .v a.ext:hover svg{color:var(--gold)}
+.copy{background:none;border:none;padding:2px;color:var(--stone);cursor:pointer;
+  display:grid;place-items:center;border-radius:5px;transition:.13s}
+.copy:hover{color:var(--gold)}
+.copy svg{width:14px;height:14px;stroke-width:2}
+
+/* ============================================================
+   SECURITY
+   ============================================================ */
+.tfa-head{display:flex;align-items:flex-start;gap:16px;padding:22px 22px 20px}
+.tfa-shield{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
+  background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint)}
+.tfa-shield svg{width:23px;height:23px;stroke-width:1.8}
+.card[data-on="1"] .tfa-shield{color:var(--ok);background:rgba(127,160,90,.11);border-color:rgba(127,160,90,.3)}
+.tfa-head .t{flex:1;min-width:0}
+.tfa-head h4{font-size:16.5px;font-weight:700;letter-spacing:-.015em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tfa-state{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 9px;border-radius:100px;background:var(--charcoal-4);color:var(--text-faint)}
+.card[data-on="1"] .tfa-state{background:rgba(127,160,90,.16);color:#9ec178}
+.tfa-head p{font-size:13px;color:var(--text-faint);line-height:1.65;margin-top:8px;
+  max-width:80ch;text-wrap:pretty}
+.tfa-body{padding:0 22px 20px}
+.tfa-foot{display:flex;gap:9px;flex-wrap:wrap;padding:16px 22px;
+  border-top:1px solid var(--rule);background:rgba(0,0,0,.2);border-radius:0 0 13px 13px}
+
+/* three prerequisites in no particular order — check marks, not step numbers */
+.need{list-style:none;margin-top:18px;display:grid;gap:11px}
+.need li{position:relative;padding-left:28px;font-size:13px;
+  color:var(--text-faint);line-height:1.6;max-width:78ch;text-wrap:pretty}
+.need li::before{content:"";position:absolute;left:2px;top:5px;width:12px;height:8px;
+  border-left:2px solid var(--gold);border-bottom:2px solid var(--gold);
+  transform:rotate(-45deg);border-radius:1px}
+.need li b{color:var(--parchment);font-weight:600}
+.need.loss li::before{border:none;width:11px;height:2px;background:#d98a78;transform:none;
+  top:11px;left:3px;border-radius:2px}
+
+/* method + recovery rows — hairlines, no second box */
+.tfa-detail{margin-top:18px}
+.tfa-detail > div{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 0}
+.tfa-detail > div + div{border-top:1px solid var(--rule)}
+.tfa-detail .k{font-size:12.5px;color:var(--text-faint);font-weight:600;width:150px;flex:none}
+.tfa-detail .v{font-size:13.5px;font-weight:600;flex:1;min-width:140px}
+.tfa-detail .v .sm{display:block;font-size:12px;font-weight:500;color:var(--text-faint);margin-top:3px}
+.codes-left{display:flex;align-items:center;gap:10px}
+.pips{display:flex;gap:3px}
+.pips i{width:7px;height:14px;border-radius:2px;background:var(--ok);opacity:.85}
+.pips i.spent{background:var(--charcoal-4);opacity:1}
+.tfa-detail .v.low{color:#e3bd72}
+.tfa-detail .v.low .pips i:not(.spent){background:var(--warn)}
+
+/* setup steps */
+.steps{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-faint)}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;
+  font-weight:800;border:1px solid var(--border);background:var(--charcoal);color:var(--text-faint)}
+.step.on{color:var(--parchment)}
+.step.on .n{background:linear-gradient(145deg,var(--gold),var(--amber));border-color:transparent;color:#17140f}
+.step.done .n{background:rgba(127,160,90,.16);border-color:rgba(127,160,90,.34);color:#9ec178}
+.step-line{flex:1;min-width:16px;height:1px;background:var(--border)}
+
+.scan{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.qrbox{width:196px;padding:12px;background:#fff;border-radius:12px;line-height:0;flex:none}
+.qrbox svg{width:172px;height:172px;display:block}
+.scan-side{flex:1;min-width:250px;max-width:420px}
+.keyval{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
+  font-weight:700;color:var(--gold);letter-spacing:.05em;line-height:1.8;word-break:break-all;
+  padding:12px 14px;border:1px dashed var(--border);border-radius:10px;background:var(--charcoal);
+  cursor:pointer;margin-top:8px}
+.keyval:hover{border-color:var(--stone)}
+.codeinput input{text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:23px;font-weight:700;letter-spacing:.4em;text-indent:.4em;padding:13px}
+
+/* recovery code sheet */
+.codes{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:18px;max-width:880px}
+.codes span{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
+  font-weight:700;letter-spacing:.04em;text-align:center;padding:11px 6px;border-radius:9px;
+  border:1px solid var(--border);background:var(--charcoal);font-variant-numeric:tabular-nums}
+.ack{display:flex;align-items:flex-start;gap:11px;margin-top:20px;font-size:13px;
+  color:var(--text-faint);cursor:pointer;line-height:1.5}
+.ack .box{width:19px;height:19px;flex:none;border-radius:6px;border:1px solid var(--border);
+  background:var(--charcoal);display:grid;place-items:center;margin-top:1px;transition:.14s}
+.ack .box svg{width:12px;height:12px;stroke-width:3;color:transparent}
+.ack.on .box{background:var(--amber);border-color:var(--amber)}
+.ack.on .box svg{color:#17140f}
+
+/* ---- guidance disclosures — flush inside the card, no second border ---- */
+.faq{margin-top:16px;display:grid;gap:8px}
+.faq details{border:1px solid var(--rule);border-radius:11px;background:var(--charcoal);
+  overflow:hidden;transition:border-color .15s}
+.faq details[open]{border-color:rgba(226,182,92,.32)}
+.faq summary{list-style:none;cursor:pointer;padding:14px 16px;font-size:13.5px;font-weight:600;
+  display:flex;align-items:center;gap:12px;transition:background .14s,color .14s;color:var(--parchment)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:hover{background:var(--charcoal-3)}
+.faq summary:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.faq summary .cv{width:15px;height:15px;flex:none;color:var(--stone);stroke-width:2.4;
+  transition:transform .2s;margin-left:auto}
+.faq details[open] summary .cv{transform:rotate(90deg);color:var(--gold)}
+.faq details[open] summary{color:var(--gold)}
+/* The answer runs the full width of the card rather than sitting in a narrow
+   column with dead space beside it. */
+.faq .a{padding:2px 16px 18px;font-size:13.5px;color:var(--text-faint);line-height:1.8;
+  border-top:1px solid var(--rule);padding-top:14px;margin:0 0 0 0}
+.faq .a p + p{margin-top:12px}
+.faq .a b{color:var(--parchment);font-weight:600}
+
+/* ---- sessions + activity ---- */
+.sess{display:flex;align-items:center;gap:14px;padding:15px 0}
+.sess + .sess{border-top:1px solid var(--rule)}
+.sess-ico{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;
+  background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint)}
+.sess-ico svg{width:18px;height:18px;stroke-width:1.8}
+.sess-body{flex:1;min-width:0}
+.sess-body .n{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sess-body .s{font-size:12.5px;color:var(--text-faint);margin-top:3px}
+.tagnow{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 8px;border-radius:100px;background:rgba(127,160,90,.16);color:#9ec178}
+
+.log{position:relative;margin-top:18px;padding-left:26px}
+.log::before{content:"";position:absolute;left:8px;top:8px;bottom:12px;width:1px;background:var(--border)}
+.log-row{position:relative;padding:0 0 20px}
+.log-row:last-child{padding-bottom:2px}
+.log-dot{position:absolute;left:-22px;top:4px;width:9px;height:9px;border-radius:50%;
+  background:var(--stone);border:2px solid var(--charcoal-2);box-shadow:0 0 0 1px var(--border)}
+.log-row.good .log-dot{background:var(--ok);box-shadow:0 0 0 1px rgba(127,160,90,.5)}
+.log-row.warn .log-dot{background:var(--warn);box-shadow:0 0 0 1px rgba(226,182,92,.5)}
+.log-t{font-size:13.5px;font-weight:500;line-height:1.5}
+.log-t b{font-weight:700}
+.log-s{font-size:12px;color:var(--text-faint);margin-top:3px;font-variant-numeric:tabular-nums}
+
+/* ============================================================
+   CHARACTERS
+   ============================================================ */
+.chars{display:grid;gap:10px;margin-top:16px}
+.char{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:11px;
+  border:1px solid var(--rule);background:var(--charcoal)}
+.char-ico{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;
+  background:var(--charcoal-3);border:1px solid var(--border);color:var(--stone)}
+.char-ico svg{width:20px;height:20px;stroke-width:1.8}
+.char.filled .char-ico{color:var(--gold);background:rgba(212,146,58,.1);border-color:rgba(212,146,58,.26)}
+.char-body{flex:1;min-width:0}
+.char-body .n{font-size:14px;font-weight:700;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.char-body .s{font-size:12.5px;color:var(--text-faint);margin-top:4px}
+.char.empty{border-style:dashed;background:transparent}
+.char.empty .char-body .n{color:var(--stone);font-weight:600}
+.char-state{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 8px;border-radius:100px;background:rgba(127,160,90,.16);color:#9ec178}
+.char-state.away{background:var(--charcoal-4);color:var(--text-faint)}
+
+/* ============================================================
+   ADMINISTRATIVE RECORD
+
+   One summary panel, a collapsed list of past appeals, the staff
+   Scratchpad, and one card per kind of entry. The staff view and the
+   player's own view are the same markup driven by the same data from
+   api/_punish.php — the only differences are drawn from flags on the
+   payload, so the two pages cannot describe an account differently.
+   ============================================================ */
+
+/* ---- the summary panel ----
+   Standalone. It used to sit inside a "Record summary" card, which put a
+   bordered panel inside a bordered card to say one thing twice. */
+.cert{position:relative;border-radius:14px;border:1px solid var(--border);
+  background:linear-gradient(168deg,var(--charcoal-3),var(--charcoal) 62%);overflow:hidden;
+  box-shadow:0 20px 44px -30px rgba(0,0,0,.9)}
+.cert::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 90% at 88% -20%,rgba(226,182,92,.07),transparent 62%)}
+.cert.held::before{background:radial-gradient(120% 90% at 88% -20%,rgba(193,85,63,.1),transparent 62%)}
+.cert + .card,.cert + *{margin-top:20px}
+/* The kind cards live in their own wrapper, so `.card + .card` never fires
+   between the last card above them — Previous appeals on the player's view,
+   the Scratchpad on the staff view — and the first of them. */
+#recCards{margin-top:20px}
+#recCards > .card + .card{margin-top:20px}
+
+/* The banner. This page's one job in a screenshot is to be unambiguous at
+   thumbnail size, where the words are gone but the colour is not. */
+.cert-top{position:relative;display:flex;align-items:baseline;gap:11px;
+  padding:13px 20px 14px;border-bottom:1px solid var(--rule)}
+.cert-dot{width:7px;height:7px;border-radius:50%;flex:none;position:relative;top:-1px;
+  background:var(--ok)}
+.cert-line{font-size:12.5px;line-height:1.6;min-width:0}
+.cert-line b{font-size:11.5px;font-weight:800;letter-spacing:.085em;text-transform:uppercase;
+  margin-right:11px;white-space:nowrap}
+.cert-line span{color:var(--text-faint)}
+.cert.good  .cert-top{background:rgba(127,160,90,.08);border-bottom-color:rgba(127,160,90,.2)}
+.cert.watch .cert-top{background:rgba(226,182,92,.07);border-bottom-color:rgba(226,182,92,.2)}
+.cert.held  .cert-top{background:rgba(193,85,63,.09);border-bottom-color:rgba(193,85,63,.24)}
+.cert.good  .cert-dot{background:var(--ok)}
+.cert.watch .cert-dot{background:var(--warn)}
+.cert.held  .cert-dot{background:#d0705c}
+.cert.good  .cert-line b{color:#9ec178}
+.cert.watch .cert-line b{color:#e3bd72}
+.cert.held  .cert-line b{color:#dfa294}
+
+.cert-stats{position:relative;display:grid;grid-template-columns:repeat(5,1fr)}
+.cert-stats > div{padding:13px 16px 14px}
+.cert-stats > div + div{border-left:1px solid var(--rule)}
+.cert-stats .k{font-size:10.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--stone)}
+.cert-stats .v{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:7px;line-height:1.1;
+  font-variant-numeric:tabular-nums;color:var(--parchment)}
+.cert-stats .v.zero{color:var(--stone)}
+.cert-stats .v.hit{color:#e3bd72}
+.cert-stats .v.bad{color:#e0917f}
+.cert-stats .v.sm{font-size:14px;line-height:1.35;letter-spacing:0}
+.cert-stats .p{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.45}
+
+/* The strap line is what makes a screenshot of this self-dating and, on the
+   staff view, attributable. A picture of a record with no capture time
+   proves nothing about when it was true. */
+.cert-foot{position:relative;display:flex;align-items:center;gap:4px 12px;flex-wrap:wrap;
+  padding:10px 20px 11px;border-top:1px solid var(--rule);background:rgba(0,0,0,.22);
+  font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+.cert-foot b{color:var(--text-faint);font-weight:600}
+.cert-foot .dot{color:var(--text-dim);opacity:.6}
+
+/* ---- the kind marker in a card header ----
+   Four labelled, coloured cards is a clearer table of contents than a strip
+   of filter buttons above one merged list, and it costs no clicks to read. */
+.dotk{width:9px;height:9px;border-radius:50%;flex:none;
+  box-shadow:0 0 0 3px rgba(255,255,255,.03)}
+.dotk.ban{background:#d98a78} .dotk.warn{background:#e3bd72}
+.dotk.kick{background:#8fb0c4} .dotk.lock{background:#9d9384}
+.tally-pill{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
+  border-radius:100px;padding:3px 10px;background:var(--charcoal-3);color:var(--text-faint);
+  border:1px solid var(--border)}
+.tally-pill.hot{color:#e0917f;border-color:rgba(193,85,63,.32);background:rgba(193,85,63,.09)}
+
+/* ---- a collapsible card ---- */
+.foldh{width:100%;background:none;border:none;cursor:pointer;text-align:left;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:17px 22px 15px;transition:background .14s;font-family:inherit}
+.foldh:hover{background:var(--charcoal-3)}
+.foldh h3{font-size:15.5px;font-weight:700;letter-spacing:-.015em;color:var(--parchment);
+  display:flex;align-items:center;gap:11px}
+.foldh .r{display:flex;align-items:center;gap:11px;font-size:12.5px;color:var(--text-faint);
+  font-variant-numeric:tabular-nums}
+.foldh .cv{width:17px;height:17px;stroke-width:2.2;color:var(--stone);transition:transform .2s}
+.fold.open .foldh{border-bottom:1px solid var(--rule)}
+.fold.open .foldh .cv{transform:rotate(90deg)}
+.fold .card-b{display:none}
+.fold.open .card-b{display:block}
+.foldh:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+
+/* ---- previous appeals ----
+   Four aligned columns. The pills line up, the chevrons line up, and the
+   highlight lands on exactly the same box as the rule above it. */
+.aplist{margin-top:2px}
+/* Boxed, like the Scratchpad's notes. Four aligned columns inside each box:
+   the pills line up, the chevrons line up, and the row a hover highlights is
+   unmistakably one row. */
+.aprow{display:grid;grid-template-columns:46px minmax(0,1fr) 90px 14px;align-items:center;
+  gap:0 16px;padding:12px 15px;border-radius:11px;
+  background:var(--charcoal-3);border:1px solid var(--border-soft);
+  cursor:pointer;transition:background .13s,border-color .13s}
+.aprow + .aprow{margin-top:9px}
+.aprow:hover{background:var(--charcoal-4);border-color:rgba(226,182,92,.26)}
+.aprow:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.aprow .num{font-size:11.5px;font-weight:700;color:var(--text-dim);letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;transition:color .12s}
+.aprow:hover .num{color:var(--gold)}
+.aprow .t{display:block;font-size:13px;font-weight:700;color:var(--parchment);line-height:1.45;
+  overflow-wrap:anywhere}
+.aprow .t .vs{font-weight:500;color:var(--text-faint)}
+.aprow .s{display:block;font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.5;
+  font-variant-numeric:tabular-nums}
+.aprow .s b{color:var(--text-faint);font-weight:600}
+.aprow .s .dot{padding:0 5px;opacity:.55}
+.aprow .ap{justify-self:stretch;text-align:center;padding:3px 0;font-size:11px;letter-spacing:.02em}
+.aprow .go{width:14px;height:14px;stroke-width:2.4;color:var(--text-dim);
+  transition:color .12s,transform .12s;justify-self:end}
+.aprow:hover .go{color:var(--gold);transform:translateX(2px)}
+#appealPager .pager{padding-top:16px}
+
+/* ---- one entry ---- */
+.list{margin-top:4px}
+/* Boxed, the same as the appeal rows and the Scratchpad's notes. A run of
+   entries separated only by a hairline reads as one block of text with dates
+   in it; a box per entry gives the eye something to stop at. */
+.ent{padding:13px 15px 14px;position:relative;border-radius:11px;
+  background:var(--charcoal-3);border:1px solid var(--border-soft);
+  transition:border-color .13s}
+.ent + .ent{margin-top:9px}
+.ent-1{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.stampd{font-size:12.5px;font-weight:700;color:var(--parchment);font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+.stampd .t{color:var(--text-faint);font-weight:500;margin-left:7px}
+.kind{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
+  padding:4px 10px;border-radius:100px;white-space:nowrap;
+  border:1px solid var(--rule);background:var(--charcoal);color:var(--text-faint)}
+.kind::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.kind.warn{color:#e3bd72;border-color:rgba(226,182,92,.3);background:rgba(226,182,92,.08)}
+.kind.kick{color:#93b6cb;border-color:rgba(110,150,175,.34);background:rgba(110,150,175,.11)}
+.kind.ban {color:#d98a78;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+/* A lock is not a punishment, so it does not get a punishment's colour. */
+.kind.lock{color:#b3a894;border-color:rgba(157,147,132,.34);background:rgba(157,147,132,.1)}
+.ref{font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+.state{margin-left:auto;display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;
+  justify-content:flex-end}
+.st{font-size:12px;font-weight:700;white-space:nowrap}
+.st.live{color:#e79187} .st.done{color:var(--stone)}
+.ap{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:100px;white-space:nowrap;
+  border:1px solid var(--rule);background:var(--charcoal);display:inline-block}
+.ap.accepted{color:#9fae8d;border-color:rgba(127,160,90,.3);background:rgba(127,160,90,.08)}
+.ap.rejected{color:#d29b8d;border-color:rgba(193,85,63,.3);background:rgba(193,85,63,.08)}
+.ap.pending {color:#e3bd72;border-color:rgba(226,182,92,.3);background:rgba(226,182,92,.08)}
+.ap.none{color:var(--text-dim)}
+.ent-why{font-size:13.5px;color:var(--parchment);line-height:1.6;margin-top:9px;
+  overflow-wrap:anywhere;text-wrap:pretty}
+.ent-why.empty{color:var(--text-dim);font-style:italic}
+.ent-meta{display:flex;flex-wrap:wrap;gap:4px 9px;margin-top:8px;font-size:12px;
+  color:var(--text-faint);align-items:center}
+.ent-meta b{color:var(--parchment);font-weight:600}
+.ent-meta .dot{color:var(--text-dim)}
+.ent-meta .edit{font-style:italic;color:var(--text-dim)}
+/* An administrator's name carries their group's colour here, the same as it
+   does everywhere else in the UCP. */
+.ent-meta .who,.note-h .who{color:var(--tone-text);font-weight:600}
+.acts{display:flex;flex-wrap:wrap;gap:14px;margin-top:9px}
+.acts button{background:none;border:none;padding:0;font-family:inherit;font-size:11.5px;
+  font-weight:700;color:var(--text-dim);cursor:pointer;transition:color .14s}
+.acts button:hover{color:var(--gold)}
+.acts button.dg:hover{color:#e08d7c}
+.acts button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:3px}
+
+/* ---- a row being changed ----
+   A tint and a coloured left rule rather than a bordered box: it is the same
+   row in a different mode, not a new thing beside it. */
+.ent.editing{background:rgba(226,182,92,.05);border-color:rgba(226,182,92,.34);
+  box-shadow:inset 3px 0 0 rgba(226,182,92,.5)}
+.ent.deleting,.pnote.deleting{background:rgba(193,85,63,.07);
+  border-color:rgba(193,85,63,.4);box-shadow:inset 3px 0 0 rgba(193,85,63,.6)}
+.modehead{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:11px;font-weight:800;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--gold)}
+.deleting .modehead{color:#e0917f}
+.modehead svg{width:13px;height:13px;stroke-width:2.2}
+.fld{display:block;width:100%;margin-top:10px;padding:11px 13px;border-radius:10px;
+  border:1px solid var(--border);background:var(--charcoal);color:var(--parchment);
+  font-family:inherit;font-size:13.5px;line-height:1.6;resize:vertical}
+.fld:focus{outline:none;border-color:rgba(226,182,92,.45)}
+.deleting .fld:focus{border-color:rgba(193,85,63,.5)}
+.fldnote{font-size:11.5px;color:var(--text-dim);margin-top:8px;line-height:1.6;text-wrap:pretty}
+.warnbox{font-size:12.5px;color:#dfa294;line-height:1.6;margin-top:10px;text-wrap:pretty}
+.warnbox b{color:#eab3a6;font-weight:700}
+.rowbtns{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px;align-items:center}
+.mini{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:9px;
+  border:1px solid var(--border);background:var(--charcoal);color:var(--text-faint);
+  font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:.14s}
+.mini:hover{color:var(--parchment);border-color:var(--charcoal-4)}
+.mini.gold{background:linear-gradient(145deg,var(--gold),var(--amber));color:#1a1206;border:none}
+.mini.gold:hover{filter:brightness(1.06)}
+.mini.red{background:rgba(193,85,63,.14);border-color:rgba(193,85,63,.45);color:#eab3a6}
+.mini.red:hover:not([disabled]){background:rgba(193,85,63,.24);color:#f2c8bd}
+.mini[disabled]{opacity:.4;cursor:not-allowed}
+.confirmline{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-faint);
+  margin-top:13px;cursor:pointer}
+.confirmline input[type=checkbox]{width:16px;height:16px;accent-color:var(--danger);flex:none}
+
+/* ---- nothing in a card ----
+   The header already says "None on file"; this is the one line that
+   completes it. An icon tile and a bold heading were two more elements
+   saying the same thing. */
+.secblank{padding:26px 0 12px;text-align:center;font-size:13px;color:var(--text-dim);
+  line-height:1.6}
+
+/* ---- the Scratchpad ---- */
+.hidden-badge{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;
+  color:#e3bd72;background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.28);
+  padding:4px 10px;border-radius:100px;white-space:nowrap}
+.hidden-badge svg{width:12px;height:12px;stroke-width:2.2}
+.padbox{margin-top:15px}
+.padbox textarea{width:100%;min-height:80px;padding:12px 14px;border-radius:11px;
+  border:1px solid var(--border);background:var(--charcoal);color:var(--parchment);
+  font-family:inherit;font-size:13px;line-height:1.6;resize:vertical}
+.padbox textarea:focus{outline:none;border-color:rgba(226,182,92,.42)}
+.padfoot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  flex-wrap:wrap;margin-top:10px}
+.padfoot .hint{font-size:11.5px;color:var(--text-dim);flex:1 1 320px;line-height:1.55}
+.notes{margin-top:8px}
+/* `.note` is already a callout component on the lookup page, so the
+   Scratchpad's own rows are `.pnote`. */
+/* Each note is boxed. Hairline-separated rows are right for the record,
+   where every entry has the same shape and the eye is scanning a column —
+   but a note is a paragraph of somebody's prose, and a run of them with only
+   a rule between was one wall of text with names in it. */
+.pnote{padding:12px 15px 13px;border-radius:11px;
+  background:var(--charcoal-3);border:1px solid var(--border-soft)}
+.pnote + .pnote{margin-top:9px}
+
+.note-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12px;
+  color:var(--text-faint);font-variant-numeric:tabular-nums}
+.note-h b{color:var(--parchment);font-weight:700;font-size:12.5px}
+.note-h .rk{font-size:10.5px;font-weight:700;color:var(--tone-text)}
+.note-h .dot{color:var(--text-dim)}
+.note-h .del{margin-left:auto;background:none;border:none;font-family:inherit;font-size:11.5px;
+  font-weight:700;color:var(--text-dim);cursor:pointer}
+.note-h .del:hover{color:#e08d7c}
+.note-b{font-size:13.5px;line-height:1.65;margin-top:7px;color:var(--parchment);
+  overflow-wrap:anywhere;text-wrap:pretty}
+
+/* ---- pagination ----
+   Three numbers and two arrows, at every length. A pager that grows a button
+   per page is a control whose size depends on the data — it looks different
+   on every account and turns into a wall on a long record. */
+.pager{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  margin-top:17px;padding-top:15px;border-top:1px solid var(--rule)}
+.pcount{font-size:12px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.pcount b{color:var(--parchment);font-weight:600}
+.pnav{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.pnav button{min-width:33px;height:33px;padding:0 9px;border-radius:9px;border:1px solid var(--rule);
+  background:var(--charcoal);color:var(--text-faint);font-family:inherit;font-size:12.5px;
+  font-weight:600;cursor:pointer;display:grid;place-items:center;
+  font-variant-numeric:tabular-nums;transition:.14s}
+.pnav button:hover:not([disabled]){color:var(--parchment);border-color:var(--charcoal-4)}
+.pnav button[aria-current="true"]{background:var(--charcoal-4);color:var(--parchment);
+  border-color:rgba(226,182,92,.38)}
+.pnav button[disabled]{opacity:.3;cursor:default}
+.pnav .arrow{min-width:33px;padding:0}
+.pnav .arrow svg{width:15px;height:15px;stroke-width:2.3}
+
+/* Everything on this tab draws its own SVGs; one rule saves repeating the
+   two attributes on each of them. */
+#p-record svg{fill:none;stroke:currentColor}
+
+/* Every lede on this tab is a caption above a list, not a paragraph somebody
+   settles in to read. The 80-character measure that suits prose elsewhere
+   left a third of each row empty and cost a line on all four cards. */
+#p-record .card-lede{max-width:none}
+
+@media (max-width:980px){
+  .cert-stats{grid-template-columns:repeat(2,1fr)}
+  .cert-stats > div{border-left:none !important;border-top:1px solid var(--rule)}
+  .cert-stats > div:nth-child(2n){border-left:1px solid var(--rule) !important}
+}
+@media (max-width:680px){
+  .cert-stats{grid-template-columns:1fr}
+  .cert-stats > div:nth-child(2n){border-left:none !important}
+  .state{margin-left:0;width:100%;justify-content:flex-start}
+  .pager{flex-direction:column;align-items:stretch;gap:12px}
+  .pnav{justify-content:center}
+  .rowbtns .mini{flex:1 1 auto;justify-content:center}
+  .aprow{grid-template-columns:40px minmax(0,1fr) auto;gap:0 12px;padding:12px 13px}
+  .aprow .go{display:none}
+}
+/* The old pager and the screenshot stamp lived here. The pager is now
+   declared once, above, in the record block; the stamp was replaced by
+   the strap line inside the summary panel. */
+.blank{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;
+  padding:44px 24px 40px}
+.blank .ei{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;
+  background:rgba(127,160,90,.1);border:1px solid rgba(127,160,90,.28);color:var(--ok)}
+.blank .ei svg{width:24px;height:24px;stroke-width:1.7}
+.blank h4{font-size:15.5px;font-weight:700}
+.blank p{font-size:13px;color:var(--text-faint);max-width:46ch;line-height:1.65}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+/* Three columns need about 1050px of content width. Below that the actions
+   fold back above the reading column and the account summary returns to a
+   comfortable width, rather than three strips none of which can be read. */
+@media (max-width:1340px){
+  .pgrid,
+  .pgrid:has(> .col-a > .card[hidden]){grid-template-columns:minmax(0,1fr) 300px}
+  .pgrid > .col-a{position:static;grid-column:1;grid-row:1}
+  .pgrid > .col-l{grid-column:1;grid-row:2}
+  .pgrid > .col-r{grid-column:2;grid-row:1 / span 2}
+  .pgrid > .col-a > .card{margin-bottom:20px}
+}
+
+@media (max-width:1140px){
+  .rec-row{grid-template-columns:104px 104px minmax(0,1fr) 128px}
+  .rec-row .st{grid-column:1 / -1;padding-top:2px}
+  .pgrid{grid-template-columns:1fr}
+  .pgrid > .col-a,
+  .pgrid > .col-l,
+  .pgrid > .col-r{grid-column:1;grid-row:auto}
+  .pgrid > .col-r{position:static}
+  .pgrid > .col-r > .card{margin-top:20px}
+  .codes{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:900px){
+  .row{flex-direction:column;align-items:stretch;gap:12px}
+  .row-r{padding-top:0}
+  .row-r .btn{flex:1}
+  .tfa-detail .k{width:auto;flex-basis:100%}
+}
+@media (max-width:760px){
+  .sidebar{position:fixed;left:0;top:0;height:100dvh;transform:translateX(-100%);
+    transition:transform .26s ease}
+  .side-inner{position:static;height:100dvh}
+  body.nav-open .sidebar{transform:translateX(0);box-shadow:0 0 60px rgba(0,0,0,.6)}
+  .hamburger{display:grid}
+  .topbar{padding:0 14px;gap:10px}
+  .divider{display:none}
+  .page-title h1{font-size:15px}
+  .account-btn{min-width:0;padding:9px 11px;gap:6px}
+  .account-meta{display:none}
+  .account-btn .acct-ico{display:block;width:18px;height:18px;color:var(--text-faint)}
+  .account-menu{width:220px;right:-4px}
+  .content{padding:18px 14px 60px}
+  .idcard{padding:18px}
+  .nameline h2{font-size:23px}
+  .card-h,.card-b,.tfa-head,.tfa-body,.tfa-foot{padding-left:16px;padding-right:16px}
+  .faq{margin-left:-16px;margin-right:-16px}
+  .faq summary,.faq .a{padding-left:16px;padding-right:16px}
+  /* four tabs won't share 390px — let the bar scroll instead of squeezing
+     "Administrative record" into two cramped lines */
+  .tabbar{width:100%;justify-content:flex-start}
+  .tab{padding:10px 13px;font-size:13px}
+  .tally{grid-template-columns:1fr}
+  .tally > div + div{border-left:none;padding-left:0;border-top:1px solid var(--rule);padding-top:16px}
+  /* Left over from the four-across segmented bar. The row hugs its content
+     and wraps on its own now; on a phone it should fill the width rather
+     than sit in a short box beside empty space. */
+  .filters{display:flex;width:100%}
+  .filters button{flex:1 1 auto;justify-content:center;padding:9px 10px}
+  .rec-head{display:none}
+  .rec-row{grid-template-columns:1fr;gap:6px;padding:16px 0}
+  .rec-row .date{order:-1}
+  .rec-row .date .tm{display:inline;margin:0 0 0 6px}
+  /* stacked, the name and rank run together — give them a separator */
+  .rec-row .by b{display:inline}
+  .rec-row .by b::after{content:" · ";font-weight:400;color:var(--stone)}
+  .pager{flex-direction:column;align-items:stretch}
+  .pnav{justify-content:center}
+  .blank{padding:32px 12px}
+  .tfa-foot .btn{flex:1}
+  .qrbox{margin:0 auto}
+  .scan{gap:20px}
+  .codes{grid-template-columns:repeat(2,1fr)}
+  .link-row{flex-wrap:wrap}
+  .link-row .row-r{width:100%}
+  .link-row .row-r .btn,.link-row .row-r .locked{flex:1;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+</style>
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
+<style>
+  /* ---------- ACCOUNT LOOKUP ----------
+     Almost everything here is the profile page's own stylesheet, on purpose:
+     an admin reading an account should be reading the same page the player
+     sees, minus what they aren't allowed to touch. Only two things are new. */
+
+  /* The profile page caps notes at 88ch, which is right for a column of body
+     text and wrong here — this one sits above a full-width bar and looked
+     like it had been left half-drawn. */
+  #flash .note{max-width:none;margin-top:0;margin-bottom:18px}
+
+  /* A standing reminder of what this page is. It sits above the account, not
+     below it, because "whose account am I looking at, and is this recorded"
+     has to be answered before anything on the screen is acted on. */
+  .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
+    color:var(--text-faint);text-decoration:none;transition:.14s}
+  .page-back:hover{color:var(--parchment)}
+  .page-back svg{width:16px;height:16px;flex:none;stroke-width:2}
+
+  .lookbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:12px 16px;margin-bottom:20px;border-radius:12px;
+    background:var(--charcoal-2);border:1px solid var(--border-soft)}
+  .lookbar .page-back{margin:0}
+  .lookbar .grow{flex:1}
+  .lookro{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;
+    letter-spacing:.02em;color:#e3bd72;background:rgba(226,182,92,.08);
+    border:1px solid rgba(226,182,92,.3);border-radius:100px;padding:5px 12px;white-space:nowrap}
+  .lookro svg{width:13px;height:13px;stroke-width:2.2;flex:none}
+
+  /* ---- Administrative actions ----
+     Its own card, deliberately not mixed in with the read-only panels
+     beside it. Everything here CHANGES something; everything around it only
+     reports. Actions with nothing behind them yet are listed and disabled
+     rather than hidden, so the shape of the finished tool is visible — the
+     same rule the search fields follow.
+
+     No accent border. The card is a normal panel like every other one on
+     the page; the individual destructive action carries the warning, not
+     the container holding six mostly-inert buttons. */
+  .actcard .card-h{padding-left:17px;padding-right:17px}
+  .actcard .card-b{padding-left:15px;padding-right:15px}
+
+  /* One row per line in the side column; two across when the card folds
+     back over the reading column and a single stack would strand each SOON
+     badge half a screen from its label.
+
+     min() is load-bearing: a bare minmax(272px,1fr) sets a floor the track
+     keeps even when the card is narrower than 272, and the rows spill out
+     past the card's right edge. min(272px,100%) lets the track shrink to
+     the card instead. */
+  .actlist{display:grid;gap:7px;
+    grid-template-columns:repeat(auto-fill,minmax(min(272px,100%),1fr))}
+
+  /* Two rows rather than one: icon and name on the first, the explanation
+     beneath it across the full width. In a narrow column a single flex line
+     squeezed the name into two words and the reason into four. */
+  .act{display:grid;grid-template-columns:28px minmax(0,1fr);gap:2px 10px;
+    padding:11px 12px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;
+    font-family:inherit;font-size:13px;font-weight:600;color:var(--parchment);text-align:left;width:100%}
+  .act:hover:not(:disabled){background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .act .ai{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:8px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint);transition:.14s;
+    grid-row:1;align-self:center}
+  .act .ai svg{width:15px;height:15px;stroke-width:1.9}
+  .act .at{grid-column:2;grid-row:1;min-width:0;display:flex;align-items:center;gap:8px}
+  .act .at .n{line-height:1.25;min-width:0;text-wrap:pretty}
+  .act .s{grid-column:2;grid-row:2;font-size:11px;font-weight:500;color:var(--text-dim);
+    line-height:1.4;text-wrap:pretty}
+  .act:disabled{cursor:not-allowed;opacity:.5}
+  .act.danger:not(:disabled) .ai{color:#d29b8d;border-color:rgba(193,85,63,.3);background:rgba(193,85,63,.08)}
+  .act.danger:not(:disabled):hover{border-color:rgba(193,85,63,.45);background:rgba(193,85,63,.07)}
+  .act.on .ai{color:#9fae8d;border-color:rgba(127,160,90,.3);background:rgba(127,160,90,.08)}
+  .act .soon{font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-dim);border:1px solid var(--border-soft);border-radius:100px;padding:2px 6px;
+    flex:none;margin-left:auto}
+
+  /* The locked banner. Loud on purpose — it is the single most important
+     thing about an account that has one. */
+  .lockbar{display:flex;align-items:flex-start;gap:13px;padding:15px 17px;margin-bottom:18px;
+    border-radius:12px;background:rgba(193,85,63,.08);border:1px solid rgba(193,85,63,.35)}
+  .lockbar .li{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
+    background:rgba(193,85,63,.16);color:#e0a99b}
+  .lockbar .li svg{width:15px;height:15px;stroke-width:2}
+  .lockbar .lb{flex:1;min-width:0}
+  .lockbar .lb h4{font-size:13.5px;font-weight:700;color:#e6b8ab;margin-bottom:4px}
+  .lockbar .lb p{font-size:12.5px;color:var(--text-faint);line-height:1.55}
+  .lockbar .lb p b{color:var(--parchment);font-weight:600}
+
+  /* Reason box for the lock dialog. */
+  /* Red, because this account cannot be used — amber would read as a
+     warning about it rather than a state of it. */
+  .chip.stop{color:#e0a99b;border-color:rgba(193,85,63,.42);background:rgba(193,85,63,.1)}
+
+  .lockform{margin-top:12px;display:none}
+  .lockform.on{display:block}
+  .lockform label{display:block;font-size:11.5px;font-weight:600;color:var(--text-faint);margin-bottom:7px}
+  .lockform textarea{width:100%;min-height:74px;padding:11px 12px;border-radius:10px;resize:vertical;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--parchment);
+    font-family:inherit;font-size:13px;line-height:1.5}
+  .lockform textarea:focus{outline:none;border-color:rgba(226,182,92,.5);box-shadow:0 0 0 3px rgba(212,146,58,.13)}
+  .lockform .row{display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap}
+  .lockform .hint{font-size:11.5px;color:var(--text-dim);flex:1;min-width:180px}
+
+  /* The rank badge is in assets/css/tones.css. Nothing to override here. */
+
+
+  /* The record's own styles all live in the ADMINISTRATIVE RECORD block
+     above. Nothing about it is declared down here any more. */
+</style>
+
+HTML;
+require __DIR__ . '/../partials/shell-top.php';
+?>
+
+
+    <div id="flash"></div>
+
+    <div class="lookbar">
+      <a class="page-back" href="/dashboard/search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>
+        Back to Administrative Search
+      </a>
+      <span class="grow"></span>
+      <span class="lookro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        Read-only · this lookup is logged
+      </span>
+    </div>
+
+    <div id="lockBanner"></div>
+
+    <!-- ============ IDENTITY ============ -->
+    <div class="card">
+      <div class="idcard">
+        <div class="who">
+          <div class="nameline">
+            <h2 id="idName">&nbsp;</h2>
+            <span class="rank tone-0" id="idRank" hidden></span>
+          </div>
+          <div class="idmeta" id="idMeta"></div>
+        </div>
+        <div class="idchips" id="idChips"></div>
+      </div>
+    </div>
+
+    <!-- ============ TABS ============
+         Two, not four. Settings and Security aren't hidden here — they are
+         not in this document, and api/admin-account.php doesn't return the
+         values they would need. -->
+    <div class="tabbar" role="tablist" aria-label="Account sections">
+      <button class="tab" role="tab" id="t-profile" aria-controls="p-profile" aria-selected="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/></svg>
+        Profile
+      </button>
+      <button class="tab" role="tab" id="t-record" aria-controls="p-record" aria-selected="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>
+        Administrative Record
+      </button>
+    </div>
+
+    <!-- ================================================================
+         PROFILE
+         ================================================================ -->
+    <section class="tabpanel" role="tabpanel" id="p-profile" aria-labelledby="t-profile">
+      <div class="pgrid">
+
+        <!-- Administrative actions get their own column on the outside edge.
+             They are the reason an admin opened this page, and stacking them
+             above Characters pushed the read-only panels off the first
+             screen for the sake of a card that never changes length. -->
+        <div class="col-a">
+          <div class="card actcard" id="actCard" hidden>
+            <div class="card-h">
+              <h3>Administrative actions</h3>
+              <span class="aside" id="actAside"></span>
+            </div>
+            <div class="card-b">
+              <div class="actlist" id="actGrid"></div>
+              <div class="lockform" id="lockForm">
+                <label for="lockReason">Why is this account being locked? The player is shown this
+                  wording when they sign in, so write it to them.</label>
+                <textarea id="lockReason" maxlength="190" placeholder="e.g. Held while a report about your account is looked into."></textarea>
+                <div class="row">
+                  <span class="hint" id="lockHint">Locking signs them out everywhere immediately.</span>
+                  <button class="btn" id="lockCancel">Cancel</button>
+                  <button class="btn danger" id="lockConfirm">Lock account</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-l">
+
+          <!-- FEATURE-GATED: no character tables yet. -->
+          <div class="card">
+            <div class="card-h">
+              <h3>Characters</h3>
+              <span class="aside" id="charsAside"></span>
+            </div>
+            <div class="card-b" id="charsHost"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h3>Linked accounts</h3></div>
+            <div class="card-b">
+              <p class="card-lede">What this UCP is attached to. Nothing here can be changed from
+                an administrative view — the account holder manages their own links.</p>
+
+              <div class="rows">
+
+                <div class="link-row">
+                  <span class="link-mark forum">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>
+                  </span>
+                  <div class="link-body">
+                    <div class="n">BlaineSide Forums</div>
+                    <div class="s" id="forumStatus"></div>
+                  </div>
+                  <div class="row-r"><span class="locked" id="forumRO"></span></div>
+                </div>
+
+                <div class="link-row">
+                  <span class="link-mark discord">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 11a1 1 0 1 0 0-.01M16 11a1 1 0 1 0 0-.01"/><path d="M8.5 17c-2 0-3.5-1.2-4-3.5C4 10 5 6.8 6.5 5.5 7.4 5 8.6 4.7 9.5 4.6l.6 1.2a12 12 0 0 1 3.8 0l.6-1.2c.9.1 2.1.4 3 .9C19 6.8 20 10 19.5 13.5c-.5 2.3-2 3.5-4 3.5l-.9-1.5"/><path d="M8.5 17l-1 2.5M15.5 17l1 2.5"/></svg>
+                  </span>
+                  <div class="link-body">
+                    <div class="n">Discord</div>
+                    <div class="s" id="discordStatus"></div>
+                  </div>
+                  <div class="row-r"><span class="locked" id="discordRO"></span></div>
+                </div>
+
+                <div class="link-row">
+                  <span class="link-mark game">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16" cy="12" r="1"/><circle cx="18.5" cy="14" r="1"/></svg>
+                  </span>
+                  <div class="link-body">
+                    <div class="n">Game accounts</div>
+                    <div class="s none">Rockstar Social Club and FiveM identifiers are captured the
+                      first time a player connects. Nothing shows here until the game server is
+                      linked to the UCP.</div>
+                  </div>
+                  <div class="row-r">
+                    <span class="locked">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                      Set automatically
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="col-r">
+          <div class="card">
+            <div class="card-h"><h3>Account</h3></div>
+            <div class="card-b">
+              <div class="rows" id="acctRows"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================
+         ADMINISTRATIVE RECORD
+
+         Standalone summary panel, the collapsed appeal history, the staff
+         Scratchpad, then one card per kind. All of it is drawn by
+         renderRecord() from api/_punish.php's record_for(), so the staff
+         view and the player's own view cannot disagree about an account.
+         ================================================================ -->
+    <section class="tabpanel" role="tabpanel" id="p-record" aria-labelledby="t-record" hidden>
+
+      <!-- FEATURE-GATED: shown instead of everything else when the
+           punishment tables have not been migrated. -->
+      <div class="card" id="recGate" hidden>
+        <div class="card-b"><div id="recGateBody"></div></div>
+      </div>
+
+      <div id="recLive" hidden>
+
+        <!-- the panel that gets screenshotted -->
+        <div class="cert" id="cert">
+          <div class="cert-top">
+            <span class="cert-dot"></span>
+            <p class="cert-line"><b id="certH"></b><span id="certS"></span></p>
+          </div>
+          <div class="cert-stats" id="certStats"></div>
+          <div class="cert-foot" id="certFoot"></div>
+        </div>
+
+        <!-- past appeals, closed by default: context, not the record -->
+        <div class="card fold" id="appealCard">
+          <button class="foldh" type="button" id="appealToggle" aria-expanded="false"
+                  aria-controls="appealBody">
+            <h3>Previous appeals</h3>
+            <span class="r">
+              <span id="appealCount"></span>
+              <svg class="cv" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+            </span>
+          </button>
+          <div class="card-b" id="appealBody">
+            <p class="card-lede" id="appealLede"></p>
+            <div id="appealList"></div>
+            <div id="appealPager"></div>
+          </div>
+        </div>
+
+        <!-- Applications, closed by default and drawn only for staff. Same
+             fold component as Previous appeals above, so the two read as one
+             pair rather than two designs. -->
+        <div class="card fold" id="appCard" hidden>
+          <button class="foldh" type="button" id="appToggle" aria-expanded="false"
+                  aria-controls="appBody">
+            <h3>Applications</h3>
+            <span class="r">
+              <span id="appCount"></span>
+              <svg class="cv" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+            </span>
+          </button>
+          <div class="card-b" id="appBody">
+            <p class="card-lede" id="appLede"></p>
+            <div id="appList"></div>
+            <div id="appPager"></div>
+          </div>
+        </div>
+
+        <!-- STAFF ONLY. api/profile.php never sends this block, so there is
+             no route by which the player's own page could draw it. -->
+        <div class="card" id="padCard" hidden>
+          <div class="card-h">
+            <h3>Scratchpad</h3>
+            <span class="aside">
+              <span class="hidden-badge">
+                <svg viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.9 9.9 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-2.6 3.4M6.6 6.6A17 17 0 0 0 2 12s4 7 10 7a9.6 9.6 0 0 0 4.4-1.1"/></svg>
+                Never shown to the player
+              </span>
+              <span id="padCount"></span>
+            </span>
+          </div>
+          <div class="card-b">
+            <p class="card-lede">Working notes on this account, for staff only. Nothing here counts
+              towards the record and nothing here can be appealed — it is for the things that are
+              true but are not punishments: a word had in voice, a pattern somebody noticed,
+              another name this person plays under. Newest first.</p>
+
+            <div class="padbox" id="padWrite">
+              <textarea id="padInput" placeholder="Add a note about this account…" maxlength="1000"></textarea>
+              <div class="padfoot">
+                <span class="hint">Your name, rank and the UTC time are stamped on it. Notes
+                  cannot be edited after posting — add a follow-up instead.</span>
+                <button class="mini gold" type="button" id="padAdd">Add note</button>
+              </div>
+            </div>
+
+            <div class="notes" id="padNotes"></div>
+            <div id="padPager"></div>
+          </div>
+        </div>
+
+        <!-- one card per kind, built from punish_cards() -->
+        <div id="recCards"></div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="/assets/js/ucp.js"></script>
+<script>
+/* =====================================================================
+   BlaineSide UCP — account lookup (administrative, read-only)
+
+   Reached from Administrative Search. Shows one player's Profile and
+   Administrative Record and nothing else: there is no Settings tab, no
+   Security tab, and no control on this page that writes anything.
+
+   That isn't enforced here. api/admin-account.php never returns the values
+   those tabs would need — no email, no sessions, no two-factor secret, no
+   password state — so a mistake in this file cannot leak them. The page is
+   the second lock, not the only one.
+
+   Every load is written to the looking admin's own security log by the
+   endpoint, which is why the bar at the top says so.
+   ===================================================================== */
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+  var TARGET = parseInt(new URLSearchParams(location.search).get('id') || '0', 10) || 0;
+  var LOGIN  = '/login?return=' + encodeURIComponent('/dashboard/lookup?id=' + TARGET);
+  var DATA   = null;
+
+  /* ---- formatting, identical to the profile page ---- */
+  var MON   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MONTH = ['January','February','March','April','May','June','July',
+               'August','September','October','November','December'];
+  function parseUTC(sqlDate){
+    if(!sqlDate) return null;
+    var m = String(sqlDate).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    if(!m) return null;
+    return new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]));
+  }
+  function longDate(d){ return d ? d.getUTCDate()+' '+MONTH[d.getUTCMonth()]+' '+d.getUTCFullYear() : '—'; }
+  function shortDate(d){ return d ? d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear() : '—'; }
+  function hhmm(d){
+    if(!d) return '';
+    var p = function(x){ return String(x).padStart(2,'0'); };
+    return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC';
+  }
+  function ago(d){
+    if(!d) return 'never';
+    var s = Math.floor((Date.now() - d.getTime())/1000);
+    if(s < 60) return 'just now';
+    if(s < 3600){ var mi = Math.floor(s/60); return mi+(mi===1?' minute ago':' minutes ago'); }
+    if(s < 86400){ var h = Math.floor(s/3600); return h+(h===1?' hour ago':' hours ago'); }
+    var dd = Math.floor(s/86400);
+    if(dd === 1) return 'yesterday';
+    if(dd < 30) return dd+' days ago';
+    var mo = Math.floor(dd/30);
+    if(mo < 12) return mo+(mo===1?' month ago':' months ago');
+    var y = Math.floor(dd/365);
+    return y+(y===1?' year ago':' years ago');
+  }
+  function n(x){ return Number(x||0).toLocaleString('en-GB'); }
+  function toneOf(r){ return 'tone-' + (r >= 0 && r <= 9 ? r : 0); }
+
+  var ICONS_NOTE = {
+    info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>',
+    warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>'
+  };
+  function flash(kind, html){
+    var cls = kind === 'err' ? 'red' : kind === 'warn' ? 'amber' : '';
+    var ico = (kind === 'err' || kind === 'warn') ? ICONS_NOTE.warn : ICONS_NOTE.info;
+    $('flash').innerHTML = '<div class="note '+cls+'" style="margin:0 0 18px">'+ico+'<div>'+html+'</div></div>';
+  }
+  function blank(icon, title, body){
+    var paths = {
+      user:'<circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/>',
+      doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/>'
+    };
+    return '<div class="blank soon"><span class="ei">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+(paths[icon]||paths.doc)+'</svg>'+
+      '</span><h4>'+esc(title)+'</h4><p>'+esc(body)+'</p></div>';
+  }
+
+  /* =====================================================================
+     SIDEBAR — the same config as every other page. IS_* are the VIEWER's
+     ranks, not the account being viewed; getting those two confused is how
+     a Trainee Admin would end up seeing a Founder menu.
+     ===================================================================== */
+  /* The sidebar lives in assets/js/ucp.js — one copy for every page. It
+     used to be pasted into all eleven, which is eleven things to forget
+     when one of them changes; adding a menu item is now an edit to NAV in
+     that file and nothing else. Any page with <nav id="nav"> gets it, drawn
+     from the cached rank on load and again when api/session.php answers.
+
+     The IS_* flags below stay: this page uses them for its own UI. */
+  var IS_MANAGER = false, IS_FOUNDER = false, IS_ADMINISTRATOR = false;
+  var MY_RANK = 0, MY_TEAMS = [];   // the ladder rung, and sub-group keys
+  /* Seed the menu gates from the last known session so the FIRST paint is
+     right. Without this every navigation drew the sidebar twice — once with
+     no Administration section, once with it — which is the flicker. The
+     server confirms it a moment later, and every page and endpoint checks
+     the rank with the server on every request regardless. */
+  (function(){
+    var me = window.UCP && UCP.me;
+    if(!me) return;
+    IS_ADMINISTRATOR = me.rank >= 3;
+    IS_MANAGER       = me.rank >= 8;
+    IS_FOUNDER       = me.rank >= 9;
+    MY_RANK          = me.rank | 0;
+    MY_TEAMS         = me.teams || [];
+  })();
+
+  /* ---- topbar chrome: the account menu, the mobile drawer, the clock ----
+     Same behaviour as every other page. The menu starts closed; without this
+     it renders open, because `display` is what hides it. */
+  var accBtn = $('acctBtn'), accMenu = $('acctMenu');
+  if(accBtn && accMenu){
+    accMenu.style.display = 'none';
+    accBtn.addEventListener('click', function(e){ e.stopPropagation();
+      accMenu.style.display = accMenu.style.display === 'none' ? 'block' : 'none'; });
+    accMenu.addEventListener('click', function(e){ e.stopPropagation(); });
+    document.addEventListener('click', function(){ accMenu.style.display = 'none'; });
+  }
+
+  /* Log out through fetch, so the browser never lands on the endpoint's raw
+     JSON. The href stays a working no-JS fallback. */
+  if($('logoutBtn')) $('logoutBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    this.style.pointerEvents = 'none';
+    if(window.UCP && UCP.forgetMe) UCP.forgetMe();
+    UCP.post('logout.php', {}).then(function(res){
+      var d = res && res.data ? res.data : {};
+      window.location.replace(d.redirect || '/login');
+    }).catch(function(){ window.location.href = '/api/logout.php?next=/login'; });
+  });
+
+  var scrim = $('scrim');
+  $('menuToggle').addEventListener('click', function(e){ e.stopPropagation();
+    document.body.classList.toggle('nav-open');
+    scrim.classList.toggle('show', document.body.classList.contains('nav-open')); });
+  scrim.addEventListener('click', function(){
+    document.body.classList.remove('nav-open'); scrim.classList.remove('show'); });
+
+  var DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  /* The clock, the build number and the status line are drawn by
+     assets/js/ucp.js — one copy for every page. */
+
+  /* ---- tabs ---- */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  function selectTab(name, push){
+    tabs.forEach(function(t){
+      var on = t.id === 't-'+name;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.setAttribute('tabindex', on ? '0' : '-1');
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    if(push && history.replaceState) history.replaceState(null, '', location.pathname + location.search + '#' + name);
+  }
+  tabs.forEach(function(t, i){
+    t.addEventListener('click', function(){ selectTab(t.id.slice(2), true); });
+    t.addEventListener('keydown', function(e){
+      var d = e.key==='ArrowRight' ? 1 : e.key==='ArrowLeft' ? -1 : 0;
+      if(!d) return;
+      e.preventDefault();
+      var next = tabs[(i + d + tabs.length) % tabs.length];
+      next.focus(); selectTab(next.id.slice(2), true);
+    });
+  });
+  var initialTab = (location.hash||'').replace('#','');
+  selectTab(['profile','record'].indexOf(initialTab) > -1 ? initialTab : 'profile', false);
+
+  /* =====================================================================
+     RENDER
+     ===================================================================== */
+  function render(d){
+    DATA = d;
+
+    document.title = 'BlaineSide — ' + d.name;
+    $('pageTitle').textContent = d.name;
+
+    /* The tier colour of the account being VIEWED, on the identity badge
+       only. The topbar chip keeps the viewer's own colour, set from
+       session.php below — two different people on one screen, and it must
+       always be obvious which is which. */
+    var idr = $('idRank');
+    idr.hidden = false;
+    idr.textContent = d.role || 'Member';
+    idr.className = 'rank ' + toneOf(d.rank|0);
+
+    $('idName').textContent = d.name;
+
+    var created = parseUTC(d.created_at), last = parseUTC(d.last_login);
+    $('idMeta').innerHTML =
+      '<span>Account <b>#'+d.id+'</b></span>' +
+      (created ? '<span class="sep">·</span><span>Joined <b>'+longDate(created)+'</b></span>' : '') +
+      (last ? '<span class="sep">·</span><span>Last log in <b>'+ago(last)+'</b></span>' : '');
+
+    var chips = [];
+    /* A stopped account is red, not amber. Amber is "look at this"; these are
+       "this account cannot be used", and the difference has to be visible
+       from across the room. Suspended reads as Banned — same state in the
+       database, the word the community actually uses. */
+    if(d.status !== 'active'){
+      var word = d.status === 'suspended' ? 'Banned'
+               : d.status === 'locked'    ? 'Locked'
+               : d.status === 'pending'   ? 'Pending email' : d.status;
+      var mild = d.status === 'pending';
+      chips.push('<span class="chip ' + (mild ? 'warn' : 'stop') + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+        (d.status === 'locked'
+          ? '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
+          : '<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>') +
+        '</svg>' + esc(word) + '</span>');
+    }
+    chips.push(d.twofa.enabled
+      ? '<span class="chip good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Two-step on</span>'
+      : '<span class="chip off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/></svg>Two-step off</span>');
+    if(d.forum.linked){
+      chips.push('<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v11H8l-4 3z"/></svg>Forum linked</span>');
+    }
+    if(d.discord && d.discord.linked){
+      chips.push('<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+        '<path d="M8 11a1 1 0 1 0 0-.01M16 11a1 1 0 1 0 0-.01"/>' +
+        '<path d="M8.5 17c-2 0-3.5-1.2-4-3.5C4 10 5 6.8 6.5 5.5 7.4 5 8.6 4.7 9.5 4.6l.6 1.2a12 12 0 0 1 3.8 0l.6-1.2c.9.1 2.1.4 3 .9C19 6.8 20 10 19.5 13.5c-.5 2.3-2 3.5-4 3.5l-.9-1.5"/>' +
+        '<path d="M8.5 17l-1 2.5M15.5 17l1 2.5"/></svg>Discord linked</span>');
+    }
+    $('idChips').innerHTML = chips.join('');
+
+    if(d.viewer && d.viewer.self){
+      flash('info', 'This is your own account, seen the way an administrator sees it. ' +
+        'Your <a href="/profile">profile page</a> is where you change anything.');
+    }
+
+    renderProfileTab(d);
+    renderRecord(d, true);
+    renderActions(d);
+  }
+
+  /* =====================================================================
+     ADMINISTRATIVE ACTIONS
+
+     What the person looking may DO to this account. The list is fixed —
+     these are the things an administrator does to a player — but only the
+     ones that exist are live. The rest are drawn and disabled, so the shape
+     of the finished tool is visible; a hidden button is indistinguishable
+     from a feature nobody thought of.
+
+     Whether the lock is offered is the SERVER's answer (viewer.may_lock),
+     not this page comparing ranks. The button and the endpoint that runs
+     when it's pressed read the same decision.
+     ===================================================================== */
+  var ACT_ICONS = {
+    ban:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>',
+    lock:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    unlock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-1.5"/></svg>',
+    warn:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>',
+    note:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
+    send:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 3L3 10l7 3 3 7z"/></svg>',
+    edit:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h4l10-10-4-4L4 16z"/></svg>'
+  };
+
+  function renderActions(d){
+    var card = $('actCard');
+    var v = d.viewer || {};
+    card.hidden = false;
+
+    var locked = !!d.lock;
+
+    /* The banner comes first, because on a locked account it is the single
+       most important thing on the page. */
+    $('lockBanner').innerHTML = locked
+      ? '<div class="lockbar"><span class="li">' + ACT_ICONS.lock + '</span><div class="lb">' +
+          '<h4>This account is locked</h4>' +
+          '<p>' + (d.lock.by ? 'Locked by <b>' + esc(d.lock.by) + '</b>' : 'Locked') +
+          (d.lock.at ? ' · ' + esc(ago(new Date(d.lock.at * 1000))) : '') + '. ' +
+          (d.lock.reason ? 'Reason given: <b>' + esc(d.lock.reason) + '</b>'
+                         : 'No reason was recorded.') +
+          '</p></div></div>'
+      : '';
+
+    /* No status chip on this card. The banner above the page says the
+       account is locked, the identity card carries a Locked chip, and the
+       Account panel has a Status row — a fourth copy inside the actions
+       header was repetition, not reassurance. */
+    $('actAside').innerHTML = '';
+
+    var acts = [];
+
+    // ---- the one that works ----
+    if(locked){
+      acts.push({ icon:'unlock', name:'Remove the user lock',
+        sub:'Lets them sign in again straight away.',
+        live:v.may_lock, why:v.lock_why, cls:'on', go:'unlock' });
+    } else {
+      acts.push({ icon:'lock', name:'Issue a user lock',
+        sub:'Holds the account and tells them why. They keep access to appeals.',
+        live:v.may_lock, why:v.lock_why, cls:'danger', go:'lock' });
+    }
+
+    // ---- designed, not built ----
+    acts.push({ icon:'ban',  name:'Issue a ban',  sub:'Needs the punishment system.', live:false });
+    acts.push({ icon:'warn', name:'Issue a warning', sub:'Needs the punishment system.', live:false });
+    acts.push({ icon:'note', name:'Admin scratchpad', sub:'Private staff notes on this account.', live:false });
+    acts.push({ icon:'send', name:'Send in-game notification', sub:'Needs the game server link.', live:false });
+    acts.push({ icon:'edit', name:'Administrate profile', sub:'Edit the account on their behalf.', live:false });
+
+    $('actGrid').innerHTML = acts.map(function(a){
+      return '<button class="act ' + (a.live ? (a.cls || '') : '') + '"' +
+        (a.live ? ' data-act="' + a.go + '"' : ' disabled') +
+        (a.why ? ' title="' + esc(a.why) + '"' : '') + '>' +
+        '<span class="ai">' + ACT_ICONS[a.icon] + '</span>' +
+        '<span class="at"><span class="n">' + esc(a.name) + '</span>' +
+          /* "Soon" means the feature isn't built. An action that IS built but
+             this admin may not use — locking your own account — is disabled
+             for a different reason, and its own subtitle says which, so the
+             badge would be a plain lie. */
+          (a.live || a.go ? '' : '<span class="soon">Soon</span>') + '</span>' +
+        '<span class="s">' + esc(a.live ? a.sub : (a.why || a.sub)) + '</span>' +
+      '</button>';
+    }).join('');
+
+    $('lockForm').classList.remove('on');
+  }
+
+  /* ---- the lock dialog ----
+     Locking asks for a reason; unlocking asks for a nod. Both use the same
+     strip so there is one place on the page where something is confirmed. */
+  var LOCK_MODE = null;
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('[data-act]');
+    if(!b) return;
+    LOCK_MODE = b.getAttribute('data-act');
+    var form = $('lockForm');
+    form.classList.add('on');
+    $('lockReason').style.display = LOCK_MODE === 'lock' ? '' : 'none';
+    form.querySelector('label').style.display = LOCK_MODE === 'lock' ? '' : 'none';
+    $('lockHint').textContent = LOCK_MODE === 'lock'
+      ? 'Locking signs them out everywhere immediately.'
+      : 'They will be able to sign in again straight away.';
+    $('lockConfirm').textContent = LOCK_MODE === 'lock' ? 'Lock account' : 'Unlock account';
+    $('lockConfirm').className = 'btn ' + (LOCK_MODE === 'lock' ? 'danger' : 'primary');
+    if(LOCK_MODE === 'lock') $('lockReason').focus();
+  });
+
+  $('lockCancel').addEventListener('click', function(){
+    $('lockForm').classList.remove('on');
+    LOCK_MODE = null;
+  });
+
+  $('lockConfirm').addEventListener('click', function(){
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = LOCK_MODE === 'lock' ? 'Locking…' : 'Unlocking…';
+    UCP.post('member-lock.php', {
+      id: TARGET,
+      locked: LOCK_MODE === 'lock',
+      reason: $('lockReason').value
+    }).then(function(res){
+      btn.disabled = false;
+      var r = res.data || {};
+      if(!r.ok){
+        flash('err', esc(r.error || 'That did not work.'));
+        $('lockForm').classList.remove('on');
+        renderActions(DATA);
+        return;
+      }
+      flash('ok', esc(r.message));
+      $('lockReason').value = '';
+      reload();
+    }).catch(function(){
+      btn.disabled = false;
+      flash('err', 'Could not reach the server.');
+    });
+  });
+
+  function renderProfileTab(d){
+    /* FEATURE-GATED: characters */
+    if(!d.features.characters){
+      $('charsHost').innerHTML = blank('user',
+        'Characters aren\u2019t here yet',
+        'Once the game server is linked to the UCP this player\u2019s characters will appear ' +
+        'here, with their playtime, faction and last session.');
+      $('charsAside').textContent = '';
+    }
+
+    /* ---- Linked accounts. Seen, never touched. ---- */
+    $('forumStatus').innerHTML = d.forum.linked
+      ? 'Posts as <b>'+esc(d.forum.name || d.name)+'</b> · member <b>#'+d.forum.member_id+'</b>'
+      : '<span class="none">Not linked — it links itself the first time they sign in to the forums</span>';
+    $('forumRO').innerHTML = ro(d.forum.linked ? 'Linked' : 'Not linked');
+
+    var dis = d.discord || {};
+    if(dis.linked){
+      var since = dis.linked_at ? new Date(dis.linked_at*1000) : null;
+      $('discordStatus').innerHTML = 'Linked as <b>'+esc(dis.username)+'</b>' +
+        (since ? ' · since '+esc(shortDate(since)) : '');
+      $('discordRO').innerHTML = ro('Verified');
+    } else if(dis.given){
+      /* Worth keeping visible and worth labelling: an unverified handle from
+         a sign-up form is a lead, not a fact, and an admin acting on it
+         should know which it is. */
+      $('discordStatus').innerHTML = 'Given at sign-up as <b>'+esc(dis.given)+'</b> — ' +
+        '<span class="none">never verified</span>';
+      $('discordRO').innerHTML = ro('Unverified');
+    } else {
+      $('discordStatus').innerHTML = '<span class="none">Not linked</span>';
+      $('discordRO').innerHTML = ro('Not linked');
+    }
+
+    /* ---- Account ---- */
+    var created = parseUTC(d.created_at);
+
+    /* Last activity, not last sign-in. A remembered browser signs in once and
+       stays signed in for months, so last_login on a player who is here every
+       day can be a date from last spring — which reads as though they have
+       gone. The server sends the newest last_seen across their live sessions;
+       last_login is the fallback for a UCP without the sessions table, and
+       the row says which of the two it is showing. */
+    var seen  = d.last_seen ? new Date(d.last_seen * 1000) : null;
+    var login = parseUTC(d.last_login);
+    var act   = seen || login;
+
+    var rows = [
+      ['Account ID',   '#'+d.id, null],
+      ['Group',        d.role || 'Member', null],
+      ['Status',       d.status === 'suspended' ? 'Banned'
+                       : d.status.charAt(0).toUpperCase()+d.status.slice(1), null],
+      ['Member since', created ? shortDate(created) : '—',
+        d.member_days != null ? n(d.member_days)+(d.member_days === 1 ? ' day' : ' days') : null],
+      ['Last activity', act ? hhmm(act) : '—',
+        act ? ago(act) + (seen ? '' : ' · sign-in') : 'never used the UCP'],
+      ['Two-step',     d.twofa.enabled ? 'On' : 'Off', null]
+    ];
+
+    /* Sub-groups are deliberately not here. They are a property of the staff
+       team rather than of the account, they are already shown against the
+       name at the top of the page, and a row of comma-separated labels was
+       the one value in this column that could not sit on its own line. */
+    $('acctRows').innerHTML = rows.map(function(r){
+      return '<div class="acct-kv">'+
+               '<span class="k">'+esc(r[0])+'</span>'+
+               '<span class="v">'+esc(r[1])+
+                 (r[2] ? '<span class="acct-sub">'+esc(r[2])+'</span>' : '')+
+               '</span>'+
+             '</div>';
+    }).join('');
+  }
+
+  /** The read-only marker that stands where a button would be. */
+  function ro(label){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+           '<circle cx="12" cy="12" r="3"/><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/></svg>' +
+           esc(label);
+  }
+
+  /* =====================================================================
+     THE ADMINISTRATIVE RECORD
+
+     Everything below is driven by api/_punish.php's record_for(), plus the
+     appeal list and — on the staff view only — the Scratchpad. The same
+     code runs on profile.html and on dashboard/lookup.html; the differences
+     between what a player sees and what an administrator sees come down as
+     flags on the payload rather than being decided here.
+
+     What the payload does NOT contain is the honest part: a player is never
+     sent the issuing administrator's name, and api/profile.php never sends
+     the Scratchpad at all. Hiding either in the page would only be hiding
+     it from somebody who does not open dev tools.
+     ===================================================================== */
+
+  var RECS  = { entries: [], cards: [], counts: {}, summary: null };
+  var RECPG = {};                       // page number per card
+  var RECOPEN = null;                   // {id, mode:'edit'|'delete'}
+  var REC_PER = 5;
+
+  var APPEALS = [], APPAGE = 1, AP_PER = 4;
+  var PADNOTES = [], PADPAGE = 1, PAD_PER = 3, PADDEL = null;
+
+  var REC_STAFF = false;                // is this the read-only staff view
+  var REC_WHO   = { name: '', id: 0 };  // whose record
+  var REC_VIEWER = '';                  // who is looking, staff view only
+
+  function recD(ts){ var d = new Date(ts*1000);
+    return MON[d.getUTCMonth()]+' '+String(d.getUTCDate()).padStart(2,'0')+', '+d.getUTCFullYear(); }
+  function recT(ts){ var d = new Date(ts*1000);
+    return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')+' UTC'; }
+  function recAgo(ts){ return ago(new Date(ts*1000)); }
+  function recN(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); }
+  function recEnt(n){ return n + (n === 1 ? ' entry' : ' entries'); }
+
+  /* Two helpers this block owns rather than borrows: profile.html has
+     recBusy() but no toneOf(), dashboard/lookup.html has toneOf() but no
+     recBusy(), and the record renderer is the same code on both pages. */
+  function recTone(r){ return 'tone-' + (r >= 0 && r <= 9 ? r : 0); }
+  function recBusy(btn, on, label){
+    if(!btn) return;
+    if(on){ btn.dataset.was = btn.textContent; btn.textContent = label || 'Working…';
+            btn.disabled = true; }
+    else  { if(btn.dataset.was) btn.textContent = btn.dataset.was; btn.disabled = false; }
+  }
+
+  var CHEV_L = '<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>';
+  var CHEV_R = '<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
+
+  /* Three numbers and two arrows, at every length. A pager that grows a
+     button per page is a control whose size depends on the data — it looks
+     different on every account and becomes a wall on a long record. The
+     window slides; the control does not change shape. */
+  function recPager(scope, page, pages, total, per){
+    if(pages < 2) return '';
+    var first = (page-1)*per + 1, last = Math.min(page*per, total);
+    var start = Math.min(Math.max(1, page - 1), Math.max(1, pages - 2));
+    var b = ['<button type="button" class="arrow" data-pg="'+scope+':'+(page-1)+'"'+
+             (page<=1?' disabled':'')+' aria-label="Previous page">'+CHEV_L+'</button>'];
+    for(var n = start; n < start + 3 && n <= pages; n++){
+      b.push('<button type="button" data-pg="'+scope+':'+n+'"'+
+             (n===page?' aria-current="true"':'')+'>'+n+'</button>');
+    }
+    b.push('<button type="button" class="arrow" data-pg="'+scope+':'+(page+1)+'"'+
+           (page>=pages?' disabled':'')+' aria-label="Next page">'+CHEV_R+'</button>');
+    return '<div class="pager">'+
+      '<span class="pcount">Showing <b>'+first+'–'+last+'</b> of <b>'+total+'</b>'+
+      ' &nbsp;·&nbsp; page '+page+' of '+pages+'</span>'+
+      '<div class="pnav">'+b.join('')+'</div></div>';
+  }
+
+  /* An administrator's name in their group's colour, the same as it is drawn
+     everywhere else in the UCP. Ranks come down with the entry. */
+  function recWho(name, rank){
+    if(!name) return '<b>Unknown</b>';
+    return '<b class="who '+recTone(rank|0)+'">'+esc(name)+'</b>';
+  }
+
+  /* -------------------------------------------------------- the panel */
+  function renderCert(){
+    var s = RECS.summary || {};
+    var box = $('cert');
+    box.className = 'cert ' + (s.level || 'good');
+    $('certH').textContent = s.head || '';
+    $('certS').textContent = s.note || '';
+
+    var stats = [
+      {k:'Entries total', v:s.total|0, cls:(s.total ? '' : 'zero'),
+       p:(s.bans|0)+' bans · '+(s.warnings|0)+' warnings · '+(s.kicks|0)+' kicks'},
+      {k:'Active now', v:s.active|0, cls:(s.active ? 'bad' : 'zero'),
+       p:s.active ? (s.active === 1 ? 'Ban running' : 'Bans running') : 'No active bans'},
+      {k:'Last 30 days', v:s.recent|0, cls:(s.recent ? 'hit' : 'zero'),
+       p:s.recent ? 'Entries added recently' : 'Nothing added recently'},
+      {k:'Last entry', v:s.last_at ? recD(s.last_at) : '—', sm:true,
+       cls:(s.last_at ? '' : 'zero'),
+       p:s.last_at ? recT(s.last_at)+' · '+recAgo(s.last_at) : 'No entries'},
+      {k:'First entry', v:s.first_at ? recD(s.first_at) : '—', sm:true,
+       cls:(s.first_at ? '' : 'zero'),
+       p:s.first_at ? recT(s.first_at)+' · '+recAgo(s.first_at) : 'No entries'}
+    ];
+    $('certStats').innerHTML = stats.map(function(x){
+      return '<div><div class="k">'+x.k+'</div>'+
+             '<div class="v '+(x.cls||'')+(x.sm?' sm':'')+'">'+esc(x.v)+'</div>'+
+             '<div class="p">'+x.p+'</div></div>';
+    }).join('');
+
+    /* The strap line. Without it a screenshot of this proves nothing about
+       when it was true, and on the staff view nothing about who took it. */
+    var now = new Date();
+    $('certFoot').innerHTML =
+      '<span>Record for <b>'+esc(REC_WHO.name)+'</b> · UCP <b>#'+(REC_WHO.id|0)+'</b></span>'+
+      '<span class="dot">|</span>'+
+      '<span>Captured <b>'+shortDate(now)+', '+hhmm(now)+'</b></span>'+
+      (REC_STAFF && REC_VIEWER
+        ? '<span class="dot">|</span><span>Viewed by <b>'+esc(REC_VIEWER)+'</b></span>' : '')+
+      '<span class="dot">|</span><span>ucp.blaineside.com</span>';
+  }
+
+  /* ---------------------------------------------------- past appeals */
+  var AP_LABEL = {pending:'Pending', accepted:'Accepted', rejected:'Rejected'};
+
+  function renderAppeals(){
+    var open = APPEALS.filter(function(a){ return a.status === 'pending'; }).length;
+    $('appealCount').textContent = APPEALS.length
+      ? recN(APPEALS.length, 'appeal') + (open ? ' · ' + open + ' outstanding' : '')
+      : 'None';
+    $('appealLede').textContent = REC_STAFF
+      ? 'Every appeal this player has made, newest first. Open one to read it in full — the '
+        + 'verdict, who gave it, and the staff-only notes on it.'
+      : 'Every appeal you have made, and what happened to it. Open one to read the verdict and '
+        + 'anything staff wrote on it.';
+
+    if(!APPEALS.length){
+      $('appealList').innerHTML = '<div class="secblank">'+
+        (REC_STAFF ? 'This player has never appealed anything.'
+                   : 'You have never appealed anything.')+'</div>';
+      $('appealPager').innerHTML = '';
+      return;
+    }
+
+    var pages = Math.max(1, Math.ceil(APPEALS.length / AP_PER));
+    if(APPAGE > pages) APPAGE = pages;
+    var slice = APPEALS.slice((APPAGE-1)*AP_PER, APPAGE*AP_PER);
+
+    $('appealList').innerHTML = '<div class="aplist">' + slice.map(function(a){
+      var sub = ['Submitted ' + recD(a.at) + ', ' + recT(a.at)];
+      if(a.handler) sub.push('Handled by <b>'+esc(a.handler)+'</b>');
+      if(a.note)    sub.push(esc(a.note));
+      return '<div class="aprow" data-appeal="'+a.id+'" role="link" tabindex="0">'+
+        '<span class="num">#'+a.id+'</span>'+
+        '<span>'+
+          '<span class="t">'+esc(a.against)+
+            (a.what ? '<span class="vs">&nbsp; '+esc(a.what)+'</span>' : '')+'</span>'+
+          '<span class="s">'+sub.join('<span class="dot">·</span>')+'</span>'+
+        '</span>'+
+        '<span class="ap '+esc(a.status)+'">'+(AP_LABEL[a.status] || esc(a.status))+'</span>'+
+        '<svg class="go" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'+
+      '</div>';
+    }).join('') + '</div>';
+
+    $('appealPager').innerHTML = recPager('appeal', APPAGE, pages, APPEALS.length, AP_PER);
+  }
+
+
+  /* =====================================================================
+     APPLICATIONS ON THE RECORD
+
+     Every attempt this account has had decided, newest first, four to a
+     page, with the record's own < > pager. Clicking one opens it in the
+     Application Panel.
+
+     Staff only, and it asks for itself: api/application-history.php
+     answers 403 for anybody else and { available:false } when the feature
+     has not been switched on, and in both cases the card stays hidden
+     rather than drawing an empty box that reads as "they never applied".
+     ===================================================================== */
+  var APPS = [], APPSPAGE = 1, APPS_PER = 4, APPS_STATE = 'none';
+  var APP_LABEL = {passed:'Accepted', denied:'Denied', pending:'Waiting', draft:'Draft'};
+
+  function loadApplications(accountId, staff){
+    var card = $('appCard');
+    if(!card) return;
+    if(!staff){ card.hidden = true; return; }
+
+    UCP.get('application-history.php?id=' + accountId).then(function(d){
+      if(!d || !d.ok || !d.available){ card.hidden = true; return; }
+      APPS = d.rows || []; APPS_STATE = d.state || 'none'; APPSPAGE = 1;
+
+      /* Nothing decided AND nothing in flight is genuinely nothing to show. */
+      if(!APPS.length && APPS_STATE !== 'pending' && APPS_STATE !== 'draft'){
+        card.hidden = true; return;
+      }
+      card.hidden = false;
+      renderApplications();
+    });
+  }
+
+  function renderApplications(){
+    var pages = Math.max(1, Math.ceil(APPS.length / APPS_PER));
+    if(APPSPAGE > pages) APPSPAGE = pages;
+    var slice = APPS.slice((APPSPAGE-1)*APPS_PER, APPSPAGE*APPS_PER);
+
+    var n = APPS.length;
+    $('appCount').textContent = n + (n === 1 ? ' attempt' : ' attempts');
+    $('appLede').textContent =
+      APPS_STATE === 'pending' ? 'One application is with Support Staff right now.'
+      : APPS_STATE === 'draft' ? 'They have an application open that has not been sent.'
+      : APPS_STATE === 'passed' ? 'They passed. Newest first.'
+      : 'Every application this account has sent, newest first.';
+
+    $('appList').innerHTML = '<div class="aplist">' + slice.map(function(a){
+      var sub = ['Attempt ' + a.attempt];
+      if(a.submitted_at) sub.push('Sent ' + recD(a.submitted_at) + ', ' + recT(a.submitted_at));
+      if(a.decided && a.decided.name) sub.push('Handled by <b>' + esc(a.decided.name) + '</b>');
+      var cls = a.status === 'passed' ? 'accepted' : (a.status === 'denied' ? 'rejected' : 'pending');
+      return '<div class="aprow" data-application="' + a.id + '" role="link" tabindex="0">' +
+        '<span class="num">#' + a.id + '</span>' +
+        '<span><span class="t">Application' +
+          (a.decided && a.decided.at ? '<span class="vs">&nbsp; ' + recD(a.decided.at) + '</span>' : '') +
+          '</span><span class="s">' + sub.join('<span class="dot">·</span>') + '</span></span>' +
+        '<span class="ap ' + cls + '">' + (APP_LABEL[a.status] || esc(a.status)) + '</span>' +
+        '<svg class="go" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>' +
+      '</div>';
+    }).join('') + '</div>';
+
+    $('appPager').innerHTML = recPager('app', APPSPAGE, pages, APPS.length, APPS_PER);
+  }
+
+  /* ------------------------------------------------------- one entry */
+  function recEntry(e){
+    var open = RECOPEN && RECOPEN.id === e.id ? RECOPEN.mode : null;
+
+    /* Active or ended, and only where that means something. A warning or a
+       kick does not run and then stop — it happened, and a status pill on
+       one would be inventing a fact about it. */
+    var state = '';
+    if(e.stateful){
+      state = (e.active ? '<span class="st live">Active</span>'
+                        : '<span class="st done">Ended</span>')
+            + (e.appeal
+                ? '<a class="ap '+esc(e.appeal.status)+'" href="/dashboard/appeals?id='+
+                  e.appeal.id+'">Appeal '+esc(e.appeal.status)+'</a>'
+                : '<span class="ap none">Not appealed</span>');
+    }
+
+    var length = null;
+    if(e.kind === 'ban'){
+      length = e.permanent ? 'Permanent'
+             : (e.expires_at ? Math.max(1, Math.round((e.expires_at - e.issued_at)/86400)) + ' days'
+                             : 'Permanent');
+      if(length === '1 days') length = '1 day';
+    } else if(e.kind === 'user_lock'){
+      length = 'Permanent';
+    }
+
+    var head =
+      '<div class="ent-1">'+
+        '<span class="kind '+esc(e.card)+'">'+esc(e.label)+'</span>'+
+        '<span class="stampd">'+recD(e.issued_at)+'<span class="t">'+recT(e.issued_at)+'</span></span>'+
+        '<span class="ref">#'+e.id+'</span>'+
+        (state ? '<span class="state">'+state+'</span>' : '')+
+      '</div>';
+
+    var why = '<div class="ent-why'+(e.reason ? '' : ' empty')+'">'+
+      (e.reason ? esc(e.reason) : 'No reason was recorded when this was issued.')+'</div>';
+
+    if(open === 'edit'){
+      return '<div class="ent editing" data-rid="'+e.id+'">'+ head +
+        '<div class="modehead">'+
+          '<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'+
+          'Editing the reason on entry #'+e.id+
+        '</div>'+
+        '<textarea class="fld" rows="3" id="recEdit'+e.id+'" maxlength="400"></textarea>'+
+        '<div class="fldnote">Only the wording changes. The kind, the date, the length and who '+
+          'issued it are what the entry <i>is</i>, and cannot be edited here — if the '+
+          'punishment itself was wrong it gets lifted or deleted, not rewritten into a different '+
+          'one. The previous wording is kept in the punishment log, and the entry will say that '+
+          'you changed it.</div>'+
+        '<div class="rowbtns">'+
+          '<button type="button" class="mini gold" data-resave="'+e.id+'">Save reason</button>'+
+          '<button type="button" class="mini" data-recancel="1">Cancel</button>'+
+        '</div></div>';
+    }
+
+    if(open === 'delete'){
+      var extra = (e.kind === 'user_lock' && e.active)
+        ? ' The lock comes off with it and the account will be able to sign in again.'
+        : (e.active ? ' It is active right now — deleting it ends it.' : '');
+      return '<div class="ent deleting" data-rid="'+e.id+'">'+ head + why +
+        '<div class="modehead">'+
+          '<svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.6 17a1.9 1.9 0 0 0 1.7 2.9h15.4a1.9 1.9 0 0 0 1.7-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0z"/></svg>'+
+          'Delete entry #'+e.id+
+        '</div>'+
+        '<div class="warnbox"><b>This cannot be undone.</b> The entry is removed from the record '+
+          'completely — it disappears from the summary, from the player’s own view and '+
+          'from every count on this page, as though it had never been issued.'+extra+
+          ' A record of the deletion, with the entry inside it, is kept in the punishment log.</div>'+
+        '<input class="fld" id="recWhy'+e.id+'" maxlength="200" '+
+          'placeholder="Why is it being removed? (required)">'+
+        '<label class="confirmline">'+
+          '<input type="checkbox" data-reconfirm="'+e.id+'">'+
+          'I understand this removes entry #'+e.id+' from the record permanently.'+
+        '</label>'+
+        '<div class="rowbtns">'+
+          '<button type="button" class="mini red" data-redelgo="'+e.id+'" disabled>'+
+            'Delete entry #'+e.id+'</button>'+
+          '<button type="button" class="mini" data-recancel="1">Cancel</button>'+
+        '</div></div>';
+    }
+
+    var meta = [];
+    if(e.issued_by) meta.push('Issued by ' + recWho(e.issued_by, e.issued_rank));
+    if(length) meta.push(esc(length));
+    if(e.edited_at && REC_STAFF){
+      meta.push('<span class="edit">reason edited by '+esc(e.edited_by || 'an administrator')+
+                ' · '+recD(e.edited_at)+', '+recT(e.edited_at)+'</span>');
+    }
+
+    var acts = (e.can_edit || e.can_delete)
+      ? '<div class="acts">'+
+          (e.can_edit   ? '<button type="button" data-reedit="'+e.id+'">Edit reason</button>' : '')+
+          (e.can_delete ? '<button type="button" class="dg" data-redel="'+e.id+'">Delete entry</button>' : '')+
+        '</div>'
+      : '';
+
+    return '<div class="ent" data-rid="'+e.id+'">'+ head + why +
+      (meta.length ? '<div class="ent-meta">'+meta.join('<span class="dot">·</span>')+'</div>' : '')+
+      acts + '</div>';
+  }
+
+  /* ----------------------------------------------------- the four cards */
+  function renderRecCards(){
+    $('recCards').innerHTML = (RECS.cards || []).map(function(c){
+      var list = RECS.entries.filter(function(e){ return e.card === c.key; });
+      var pages = Math.max(1, Math.ceil(list.length / REC_PER));
+      if(!RECPG[c.key] || RECPG[c.key] > pages) RECPG[c.key] = Math.min(RECPG[c.key] || 1, pages);
+      var page = RECPG[c.key];
+      var slice = list.slice((page-1)*REC_PER, page*REC_PER);
+      /* Only bans and locks can be active, so only their headers say so. */
+      var active = (c.key === 'ban' || c.key === 'lock')
+        ? list.filter(function(e){ return e.active; }).length : 0;
+
+      var body = list.length
+        ? '<div class="list">'+slice.map(recEntry).join('')+'</div>'+
+          recPager(c.key, page, pages, list.length, REC_PER)
+        : '<div class="secblank">'+esc(c.blank)+'</div>';
+
+      return '<div class="card">'+
+        '<div class="card-h">'+
+          '<h3><span class="dotk '+c.key+'"></span>'+esc(c.title)+'</h3>'+
+          '<span class="aside"><span class="tally-pill'+(active?' hot':'')+'">'+
+            (list.length ? recEnt(list.length) : 'None on file')+
+            (active ? ' · '+active+' active' : '')+
+          '</span></span>'+
+        '</div>'+
+        '<div class="card-b"><p class="card-lede">'+esc(c.lede)+'</p>'+ body +'</div>'+
+      '</div>';
+    }).join('');
+  }
+
+  /* -------------------------------------------------------- Scratchpad */
+  function renderPad(){
+    var pages = Math.max(1, Math.ceil(PADNOTES.length / PAD_PER));
+    if(PADPAGE > pages) PADPAGE = pages;
+    var slice = PADNOTES.slice((PADPAGE-1)*PAD_PER, PADPAGE*PAD_PER);
+
+    $('padCount').textContent = PADNOTES.length ? recN(PADNOTES.length, 'note') : 'No notes';
+
+    if(!PADNOTES.length){
+      $('padNotes').innerHTML = '<div class="secblank">Nothing has been noted on this account '+
+        'yet. Anything staff want on file that is not a punishment goes here.</div>';
+      $('padPager').innerHTML = '';
+      return;
+    }
+
+    $('padNotes').innerHTML = slice.map(function(n){
+      if(PADDEL === n.id){
+        return '<div class="pnote deleting">'+
+          '<div class="note-h"><b>'+esc(n.by)+'</b>'+
+            '<span class="rk '+recTone(n.rank|0)+'">'+esc(n.rank_name)+'</span>'+
+            '<span class="dot">·</span><span>'+recD(n.at)+', '+recT(n.at)+'</span></div>'+
+          '<div class="note-b">'+esc(n.body)+'</div>'+
+          '<div class="modehead">'+
+            '<svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.6 17a1.9 1.9 0 0 0 1.7 2.9h15.4a1.9 1.9 0 0 0 1.7-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0z"/></svg>'+
+            'Delete this note'+
+          '</div>'+
+          '<div class="warnbox">Deleting a note removes it for everyone. Notes are how the next '+
+            'administrator finds out what the last one already knew, so remove one when it is '+
+            'wrong — not when it is old.</div>'+
+          '<div class="rowbtns">'+
+            '<button type="button" class="mini red" data-npdelgo="'+n.id+'">Yes, delete this note</button>'+
+            '<button type="button" class="mini" data-npcancel="1">Cancel</button>'+
+          '</div></div>';
+      }
+      return '<div class="pnote">'+
+        '<div class="note-h">'+
+          '<b>'+esc(n.by)+'</b>'+
+          '<span class="rk '+recTone(n.rank|0)+'">'+esc(n.rank_name)+'</span>'+
+          '<span class="dot">·</span><span>'+recD(n.at)+', '+recT(n.at)+'</span>'+
+          '<span class="dot">·</span><span>'+recAgo(n.at)+'</span>'+
+          (n.can_delete ? '<button type="button" class="del" data-npdel="'+n.id+'">Delete</button>' : '')+
+        '</div>'+
+        '<div class="note-b">'+esc(n.body)+'</div>'+
+      '</div>';
+    }).join('');
+
+    $('padPager').innerHTML = recPager('pad', PADPAGE, pages, PADNOTES.length, PAD_PER);
+  }
+
+  /**
+   * @param d      the whole payload from profile.php or admin-account.php
+   * @param staff  true on the read-only administrative view
+   */
+  function renderRecord(d, staff){
+    REC_STAFF = !!staff;
+    REC_WHO   = { name: d.name || '', id: d.id || 0 };
+    REC_VIEWER = staff && d.viewer
+      ? (d.viewer.name || '') + (d.viewer.role ? ' (' + d.viewer.role + ')' : '')
+      : '';
+
+    var rec = d.record || {};
+    if(!rec.available){
+      $('recGate').hidden = false;
+      $('recLive').hidden = true;
+      $('recGateBody').innerHTML = blank('doc', 'Not available yet',
+        'The punishment tables haven’t been added to this UCP yet. Ask a Founder to run ' +
+        'docs/migration-appeals.sql and this fills in — bans, warnings, kicks and user ' +
+        'locks all appear here as soon as they do.');
+      return;
+    }
+
+    $('recGate').hidden = true;
+    $('recLive').hidden = false;
+
+    RECS = { entries: rec.entries || [], cards: rec.cards || [],
+             counts: rec.counts || {}, summary: rec.summary || {} };
+    APPEALS = d.appeals || [];
+
+    /* Applications ask for themselves — see loadApplications(). It hides
+       the card on a 403, on a missing migration, and on an account that has
+       never applied, so nothing here needs to know any of those things. */
+    loadApplications(REC_WHO.id, staff);
+
+    var pad = d.scratchpad;
+    $('padCard').hidden = !(staff && pad);
+    if(staff && pad){
+      PADNOTES = pad.notes || [];
+      $('padWrite').hidden = !pad.available;
+      if(!pad.available){
+        $('padNotes').innerHTML = '<div class="secblank">The Scratchpad isn’t set up on ' +
+          'this server yet — docs/migration-scratchpad.sql hasn’t been run.</div>';
+        $('padPager').innerHTML = '';
+        $('padCount').textContent = '';
+      }
+    }
+
+    renderCert();
+    renderAppeals();
+    renderRecCards();
+    if(staff && pad && pad.available) renderPad();
+  }
+
+  /* ============================ interactions ============================ */
+
+  document.addEventListener('click', function(ev){
+    var t = ev.target; if(!t.closest) return;
+    var hit;
+
+    if(t.closest('#appealToggle')){
+      var card = $('appealCard');
+      var now = !card.classList.contains('open');
+      card.classList.toggle('open', now);
+      $('appealToggle').setAttribute('aria-expanded', now ? 'true' : 'false');
+      return;
+    }
+    if((hit = t.closest('[data-appeal]'))){
+      window.location.href = '/dashboard/appeals?id=' + hit.getAttribute('data-appeal');
+      return;
+    }
+    if(t.closest('#appToggle')){
+      var acard = $('appCard');
+      var aopen = !acard.classList.contains('open');
+      acard.classList.toggle('open', aopen);
+      $('appToggle').setAttribute('aria-expanded', aopen ? 'true' : 'false');
+      return;
+    }
+    if((hit = t.closest('[data-application]'))){
+      window.location.href = '/dashboard/applications#id=' + hit.getAttribute('data-application');
+      return;
+    }
+    if((hit = t.closest('[data-pg]'))){
+      var bits = hit.getAttribute('data-pg').split(':');
+      if(bits[0] === 'appeal'){ APPAGE = +bits[1]; renderAppeals(); }
+      else if(bits[0] === 'app'){ APPSPAGE = +bits[1]; renderApplications(); }
+      else if(bits[0] === 'pad'){ PADPAGE = +bits[1]; PADDEL = null; renderPad(); }
+      else { RECPG[bits[0]] = +bits[1]; RECOPEN = null; renderRecCards(); }
+      return;
+    }
+
+    /* ---- record entry: edit ---- */
+    if((hit = t.closest('[data-reedit]'))){
+      var id = +hit.getAttribute('data-reedit');
+      RECOPEN = {id: id, mode: 'edit'};
+      renderRecCards();
+      var f = $('recEdit'+id), e = recById(id);
+      if(f){ f.value = (e && e.reason) || ''; f.focus();
+             f.setSelectionRange(f.value.length, f.value.length); }
+      return;
+    }
+    if((hit = t.closest('[data-redel]'))){
+      RECOPEN = {id: +hit.getAttribute('data-redel'), mode: 'delete'};
+      renderRecCards();
+      var w = $('recWhy'+RECOPEN.id); if(w) w.focus();
+      return;
+    }
+    if(t.closest('[data-recancel]')){ RECOPEN = null; renderRecCards(); return; }
+
+    if((hit = t.closest('[data-resave]'))){
+      var sid = +hit.getAttribute('data-resave');
+      var box = $('recEdit'+sid);
+      var val = box ? box.value.trim() : '';
+      if(!val){
+        flash('err', 'Write the reason. An entry with no reason on it is worse than a badly '+
+                     'worded one.');
+        return;
+      }
+      recBusy(hit, true, 'Saving…');
+      UCP.post('punishment-edit.php', {id: sid, reason: val}).then(function(res){
+        var r = res.data || {};
+        recBusy(hit, false);
+        if(!r.ok){ flash('err', esc(r.error || 'That could not be saved.')); return; }
+        var e = recById(sid);
+        if(e){ e.reason = r.reason; e.edited_at = r.edited_at || null;
+               e.edited_by = r.edited_by || null; }
+        RECOPEN = null; renderRecCards();
+        flash('ok', esc(r.message || 'Reason updated.'));
+      }).catch(function(){
+        recBusy(hit, false);
+        flash('err', 'Could not reach the server. Try again.');
+      });
+      return;
+    }
+
+    if((hit = t.closest('[data-redelgo]'))){
+      var did = +hit.getAttribute('data-redelgo');
+      var wf = $('recWhy'+did);
+      var why = wf ? wf.value.trim() : '';
+      if(!why){ flash('err', 'Say why it is being removed.'); if(wf) wf.focus(); return; }
+      recBusy(hit, true, 'Deleting…');
+      UCP.post('punishment-delete.php', {id: did, why: why}).then(function(res){
+        var r = res.data || {};
+        recBusy(hit, false);
+        if(!r.ok){ flash('err', esc(r.error || 'That could not be deleted.')); return; }
+        flash('ok', esc(r.message || 'Entry deleted.'));
+        /* The summary, the counts and the account's own status all move when
+           an entry goes, so the page is rebuilt from the server rather than
+           patched here. */
+        RECOPEN = null; reload();
+      }).catch(function(){
+        recBusy(hit, false);
+        flash('err', 'Could not reach the server. Try again.');
+      });
+      return;
+    }
+
+    /* ---- scratchpad ---- */
+    if(t.closest('#padAdd')){
+      var ta = $('padInput');
+      var body = ta.value.trim();
+      if(!body){ ta.focus(); return; }
+      var btn = t.closest('#padAdd');
+      recBusy(btn, true, 'Adding…');
+      UCP.post('scratchpad-add.php', {account_id: REC_WHO.id, body: body}).then(function(res){
+        var r = res.data || {};
+        recBusy(btn, false);
+        if(!r.ok){ flash('err', esc(r.error || 'That note could not be added.')); return; }
+        PADNOTES.unshift(r.note);
+        ta.value = ''; PADPAGE = 1; renderPad();
+      }).catch(function(){
+        recBusy(btn, false);
+        flash('err', 'Could not reach the server. Try again.');
+      });
+      return;
+    }
+    if((hit = t.closest('[data-npdel]'))){ PADDEL = +hit.getAttribute('data-npdel'); renderPad(); return; }
+    if(t.closest('[data-npcancel]')){ PADDEL = null; renderPad(); return; }
+    if((hit = t.closest('[data-npdelgo]'))){
+      var nid = +hit.getAttribute('data-npdelgo');
+      recBusy(hit, true, 'Deleting…');
+      UCP.post('scratchpad-delete.php', {id: nid}).then(function(res){
+        var r = res.data || {};
+        recBusy(hit, false);
+        if(!r.ok){ flash('err', esc(r.error || 'That note could not be removed.')); return; }
+        PADNOTES = PADNOTES.filter(function(x){ return x.id !== nid; });
+        PADDEL = null; renderPad();
+      }).catch(function(){
+        recBusy(hit, false);
+        flash('err', 'Could not reach the server. Try again.');
+      });
+      return;
+    }
+  });
+
+  /* The delete button stays dead until the box is ticked. Deleting an entry
+     is not undoable and the button sits inside a list, which is exactly
+     where a mis-click happens. */
+  document.addEventListener('change', function(ev){
+    var c = ev.target.closest && ev.target.closest('[data-reconfirm]');
+    if(!c) return;
+    var b = document.querySelector('[data-redelgo="'+c.getAttribute('data-reconfirm')+'"]');
+    if(b) b.disabled = !c.checked;
+  });
+
+  /* A row that behaves like a link should behave like one on a keyboard. */
+  document.addEventListener('keydown', function(ev){
+    if(ev.key !== 'Enter' && ev.key !== ' ') return;
+    var r = ev.target.closest && ev.target.closest('[data-appeal]');
+    if(!r) return;
+    ev.preventDefault();
+    window.location.href = '/dashboard/appeals?id=' + r.getAttribute('data-appeal');
+  });
+
+  function recById(id){
+    for(var i = 0; i < RECS.entries.length; i++){
+      if(+RECS.entries[i].id === +id) return RECS.entries[i];
+    }
+    return null;
+  }
+
+  /* =====================================================================
+     LOAD
+     ===================================================================== */
+  function reveal(){ document.body.classList.add('ready'); }
+  setTimeout(reveal, 4000);
+
+  function lockOut(head, body, extra){
+    document.querySelector('.content').innerHTML =
+      '<div class="blank soon" style="margin:60px auto;max-width:560px">' +
+      '<span class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+      '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
+      '<h4>'+esc(head)+'</h4><p>'+esc(body)+'</p>' +
+      (extra || '') +
+      '</div>';
+    reveal();
+  }
+
+  /** Re-fetches the account and redraws. Used after an administrative action. */
+  function reload(){
+    return UCP.get('admin-account.php?id=' + TARGET).then(function(d){
+      if(d && d.ok === true) render(d);
+    });
+  }
+
+  UCP.get('session.php').then(function(s){
+    if(!s || s.authenticated !== true){ window.location.replace(LOGIN); return; }
+
+    /* Keep it for the next page load — this is what stops the flicker.
+       Note this is the VIEWER's identity; the account being looked at is
+       painted separately, by render(). */
+    if(window.UCP && UCP.rememberMe) UCP.rememberMe(s);
+
+    var rank = s.rank | 0;
+    var was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
+    IS_ADMINISTRATOR = rank >= 3;
+    IS_MANAGER       = rank >= 8;
+    IS_FOUNDER       = rank >= 9;
+    MY_RANK          = rank;
+    MY_TEAMS         = s.teams || [];
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was) renderSidebar();
+
+    if(rank < 3){
+      lockOut('Administrators only',
+        'Looking up another player\u2019s account is for Trainee Admin and above. If you think ' +
+        'you should have access, speak to a Manager.');
+      return;
+    }
+    if(!TARGET){
+      lockOut('No account chosen',
+        'Open an account from Administrative Search rather than typing this address directly.');
+      return;
+    }
+
+    return UCP.get('admin-account.php?id=' + TARGET).then(function(d){
+      if(!d || d.ok !== true){
+        if(d && d.authenticated === false){ window.location.replace(LOGIN); return; }
+        /* The staff rule has its own wording, and a way back — a refusal with
+           no route forward just produces a message to whoever is nearest. */
+        if(d && d.code === 'staff_only'){
+          lockOut('That\u2019s a staff account', d.error,
+            '<a class="btn" style="margin-top:16px" href="/dashboard/search">Back to Administrative Search</a>');
+          return;
+        }
+        lockOut('Couldn\u2019t open that account', (d && d.error) || 'Try again from Administrative Search.');
+        return;
+      }
+      render(d);
+    }).then(reveal, reveal);
+
+  }).catch(function(err){
+    console.error('[lookup] boot failed', err);
+    lockOut('Something went wrong',
+      err && err.message ? 'Page error: ' + err.message : 'Could not reach the server.');
+  });
+
+})();
+</script>
+</body>
+</html>

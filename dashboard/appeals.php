@@ -1,0 +1,3038 @@
+<?php
+/**
+ * Ban Appeals.
+ *
+ * The shell — backdrop, sidebar, top bar, credit box — comes from
+ * partials/shell-top.php. Nothing about it is repeated here.
+ */
+$PAGE_TITLE = 'BlaineSide — Ban Appeals';
+$PAGE_HEADING = 'Ban Appeals';
+$PAGE_HEAD = <<<'HTML'
+<style>
+  :root{
+    --amber:#d4923a; --gold:#e2b65c;
+    --charcoal:#121110; --charcoal-2:#1a1815; --charcoal-3:#221f1b; --charcoal-4:#2b2723;
+    --parchment:#f1efe9; --stone:#8a7f70; --text-dim:#655e51; --text-faint:#968e7e;
+    --border:#26221e; --border-soft:#1f1c18;
+    --danger:#c1553f; --ok:#7fa05a; --warn:#e2b65c;
+    --sidebar-w:256px; --header-h:66px; --content-bg:#100f0e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{height:100%}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--content-bg);color:var(--parchment);
+    -webkit-font-smoothing:antialiased;display:flex;min-height:100vh;font-size:14px;line-height:1.5}
+  a{color:var(--gold);text-decoration:none}
+  ::-webkit-scrollbar{width:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--charcoal-4);border-radius:6px}
+
+  /* ===== SIDEBAR (matches dashboard shell) ===== */
+  .sidebar{width:var(--sidebar-w);flex:none;position:relative;background:var(--charcoal-2);
+    border-right:1px solid var(--border-soft);z-index:50}
+  .side-inner{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding-bottom:66px}
+  .side-brand{display:flex;align-items:center;height:var(--header-h);padding:0 24px;border-bottom:1px solid var(--border-soft);flex:none}
+  .side-brand .name{font-family:'Oswald',sans-serif;font-weight:600;font-size:25px;letter-spacing:.07em;
+    text-transform:uppercase;line-height:1;color:var(--parchment)}
+  .side-brand .name b{color:var(--gold);font-weight:700}
+  .side-scroll{flex:1;overflow-y:auto;padding:12px 14px 18px}
+  .nav-group{margin-bottom:1px}
+  .nav-item{display:flex;align-items:center;gap:13px;padding:11px 12px;border-radius:9px;font-size:14px;
+    font-weight:500;color:var(--text-faint);cursor:pointer;transition:background .14s,color .14s;position:relative;user-select:none}
+  .nav-item svg.i{width:18px;height:18px;flex:none;stroke-width:1.8}
+  .nav-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .nav-item.active{background:var(--charcoal-3);color:var(--parchment)}
+  .nav-item.active::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;
+    border-radius:0 3px 3px 0;background:linear-gradient(180deg,var(--gold),var(--amber))}
+  .nav-item.active svg.i{color:var(--gold)}
+  .nav-item .lbl{flex:1}
+  a.nav-item{text-decoration:none}
+  .nav-item .chev{width:15px;height:15px;opacity:.5;transition:transform .2s;flex:none;stroke-width:2}
+  .nav-group.open > .nav-item .chev{transform:rotate(90deg)}
+  .sub{max-height:0;overflow:hidden;transition:max-height .26s ease;margin-left:9px;border-left:1px solid var(--border);padding-left:8px}
+  .nav-group.open .sub{max-height:340px}
+  .sub a{display:block;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-dim);transition:.13s;margin:1px 0}
+  .sub a:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .sub a.slot-empty{color:var(--text-dim);font-style:italic;cursor:default}
+  .sub a.slot-empty:hover{background:transparent;color:var(--text-dim)}
+  .nav-heading{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);padding:18px 12px 8px}
+  .side-foot{position:absolute;left:0;right:0;bottom:0;background:var(--charcoal-2);padding:13px 20px 15px;
+    border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:5px}
+  .foot-line{font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.5}
+  .foot-line .fv{color:var(--text-faint);font-weight:600}
+  .foot-line .st{display:inline-flex;align-items:center;gap:6px}
+  .foot-line .st .d{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+
+  /* ===== MAIN + HEADER ===== */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;background:transparent}
+
+  /* ============================================================
+     BACKDROP — the sign-in page's scene, carried through the UCP.
+
+     Four fixed layers: the Sandy Shores photo, the time-of-day tint,
+     a scrim that buys back the contrast the photo costs, and the
+     diagonal hairlines from the sign-in page.
+
+     The tint is driven by assets/js/ucp.js, which looks for `.stage`
+     and swaps a tod-* class onto it — the same code the sign-in page
+     runs, so the two can't drift apart.
+     ============================================================ */
+  .bg-stage{position:fixed;inset:0;top:var(--header-h);left:var(--sidebar-w);z-index:0;pointer-events:none;
+    overflow:hidden;background:#0b0a08}
+  .bg-stage .scene{position:absolute;inset:0;
+    background:url('/assets/img/bg-sandy.jpg') center/cover no-repeat;
+    opacity:.38;transform:scale(1.04)}
+  .bg-stage .tod{position:absolute;inset:0;transition:background 1s ease}
+  .bg-stage.tod-night .tod{background:rgba(20,28,56,.54)}
+  .bg-stage.tod-dawn  .tod{background:rgba(78,44,66,.42)}
+  .bg-stage.tod-day   .tod{background:rgba(64,46,26,.20)}
+  .bg-stage.tod-dusk  .tod{background:rgba(58,40,34,.34)}
+  /* An even vignette: equally dark on all four sides, lightest in the
+     middle. The old version graded left-to-right, which read as a black
+     band down one edge rather than as a backdrop. */
+  .bg-stage .bg-scrim{position:absolute;inset:0;background:
+    radial-gradient(115% 95% at 50% 50%,
+      rgba(10,9,8,.50) 0%, rgba(10,9,8,.74) 62%, rgba(10,9,8,.92) 100%)}
+  @media (max-width:760px){ .bg-stage{left:0} }
+  .topbar,.content{position:relative;z-index:1}
+
+  .topbar{height:var(--header-h);flex:none;display:flex;align-items:center;gap:16px;padding:0 26px;
+    background:var(--charcoal-2);border-bottom:1px solid var(--border);
+    box-shadow:0 1px 0 rgba(0,0,0,.4),0 6px 18px -12px rgba(0,0,0,.7);position:sticky;top:0;z-index:45}
+  .page-title h1{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .topbar .spacer{flex:1}
+  .searchbox{display:flex;align-items:center;gap:9px;height:38px;padding:0 14px;width:280px;
+    background:var(--charcoal);border:1px solid var(--border);border-radius:10px;color:var(--text-dim)}
+  .searchbox svg{width:15px;height:15px;flex:none;stroke-width:2}
+  .searchbox input{background:none;border:none;outline:none;color:var(--parchment);font-family:inherit;font-size:13.5px;width:100%}
+  .searchbox input::placeholder{color:var(--text-dim)}
+  .icon-btn{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint);cursor:pointer;transition:.14s;position:relative}
+  .icon-btn:hover{color:var(--parchment);background:var(--charcoal-3)}
+  .icon-btn svg{width:18px;height:18px;stroke-width:1.9}
+  .icon-btn .dot{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--danger);border:2px solid var(--charcoal-2)}
+  .hamburger{display:none}
+  .search-mini{display:none}
+  .divider{width:1px;height:30px;background:var(--border);flex:none}
+  .account-btn{display:flex;align-items:center;gap:12px;padding:6px 12px;border-radius:10px;
+    background:var(--charcoal);border:1px solid var(--border);cursor:pointer;transition:.14s;min-width:170px}
+  .account-btn:hover{background:var(--charcoal-3)}
+  .account-meta{display:flex;flex-direction:column;line-height:1.3;flex:1;min-width:0;text-align:left}
+  .account-meta .u{font-size:13.5px;font-weight:600;color:var(--parchment);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .account-meta .r{font-size:11px;color:var(--amber);font-weight:600}
+  .account-btn .caret{width:15px;height:15px;color:var(--text-dim);stroke-width:2;flex:none}
+  .account-btn .acct-ico{display:none}
+
+  /* ===== CONTENT ===== */
+  .content{padding:28px 30px 44px;max-width:1180px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+
+  .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-faint);transition:.14s}
+  .page-back:hover{color:var(--parchment)}
+  .page-back svg{width:16px;height:16px}
+
+  .phead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .phead h2{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+  .phead p{font-size:13.5px;color:var(--text-faint)}
+  .phead p b{color:var(--gold);font-weight:700}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:10px;
+    font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;border:1px solid var(--border);
+    background:var(--charcoal-2);color:var(--parchment);transition:.14s;white-space:nowrap}
+  .btn:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .btn svg{width:16px;height:16px;stroke-width:2}
+  .btn.primary{background:linear-gradient(145deg,var(--gold),var(--amber));color:#1a1206;border:none;box-shadow:0 6px 16px rgba(212,146,58,.26)}
+  .btn.primary:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(212,146,58,.34)}
+  .btn.danger{color:#e0a99b;border-color:rgba(193,85,63,.4)}
+  .btn.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:8px 13px;font-size:12.5px}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+  /* dashboard-slot meter */
+  .slotbar{display:flex;align-items:center;gap:14px;background:var(--charcoal-2);border:1px solid var(--border);
+    border-radius:12px;padding:13px 18px;flex-wrap:wrap}
+  .slotbar .si{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--text-faint);flex:none}
+  .slotbar .si svg{width:16px;height:16px;color:var(--gold);stroke-width:1.9}
+  .slotbar .cnt{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+  .slotbar .cnt b{color:var(--gold)}
+  .slotbar .track{flex:1;height:7px;border-radius:5px;background:var(--charcoal);overflow:hidden;border:1px solid var(--border-soft);min-width:80px}
+  .slotbar .track > i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--amber),var(--gold));transition:width .3s}
+  .slotbar .note{font-size:11.5px;color:var(--text-dim);flex:none;min-width:0}
+
+  /* ===== LISTING GRID ===== */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+  .bcard{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    display:flex;flex-direction:column;transition:border-color .16s, transform .16s}
+  .bcard:hover{border-color:var(--charcoal-4)}
+  .bcard.shown{border-color:rgba(212,146,58,.45)}
+  .bcard .thumb{position:relative;height:150px;background:var(--charcoal-3);overflow:hidden}
+  .bcard .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .bcard .thumb .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,11,10,.05),rgba(12,11,10,.55))}
+  .bcard .thumb.noimg{display:grid;place-items:center;color:var(--text-dim)}
+  .bcard .thumb.noimg svg{width:34px;height:34px;stroke-width:1.4}
+  .bcard .thumb.g1{background:linear-gradient(120deg,#3a2a16,#191510)}
+  .bcard .thumb.g2{background:linear-gradient(120deg,#2c2617,#181712)}
+  .bcard .thumb.g3{background:linear-gradient(120deg,#33211a,#191310)}
+  .shown-badge{position:absolute;top:11px;right:11px;z-index:2;display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:700;color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));
+    padding:5px 10px;border-radius:100px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  .shown-badge svg{width:12px;height:12px;stroke-width:2.6}
+  .tag{position:absolute;top:11px;left:11px;z-index:2;display:inline-block;font-size:10px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:100px;color:#1a1206;background:var(--gold)}
+  .tag.evt{background:var(--danger);color:#fff}
+  .tag.upd{background:var(--stone);color:#141210}
+  .bcard .body{padding:15px 17px 8px;flex:1;display:flex;flex-direction:column;gap:6px}
+  .bcard .body h3{font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+  .bcard .body p{font-size:12.5px;color:var(--text-faint);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .bcard .meta{font-size:11px;color:var(--text-dim);font-weight:600;margin-top:auto}
+  .link-chip{display:inline-flex;align-items:center;gap:4px;color:var(--gold)}
+  .link-chip svg{width:11px;height:11px}
+  .bcard .foot{display:flex;align-items:center;gap:8px;padding:12px 15px;border-top:1px solid var(--border-soft);margin-top:10px}
+  .toggle{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none;flex:1;font-size:12.5px;font-weight:600;color:var(--text-faint)}
+  .toggle .sw{width:38px;height:22px;border-radius:100px;background:var(--charcoal-4);position:relative;transition:.18s;flex:none}
+  .toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#6b6357;transition:.18s}
+  .toggle.on .sw{background:linear-gradient(145deg,var(--gold),var(--amber))}
+  .toggle.on .sw::after{transform:translateX(16px);background:#1a1206}
+  .toggle.on{color:var(--parchment)}
+  .toggle.disabled{opacity:.4;cursor:not-allowed}
+  .icon-act{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:8px;background:var(--charcoal-3);
+    border:1px solid var(--border);color:var(--text-faint);cursor:pointer;transition:.13s}
+  .icon-act:hover{color:var(--parchment);background:var(--charcoal-4)}
+  .icon-act.del:hover{color:#eab3a6;background:rgba(193,85,63,.14);border-color:rgba(193,85,63,.4)}
+  .icon-act svg{width:15px;height:15px;stroke-width:2}
+
+  /* inline delete confirm */
+  .confirm{display:flex;align-items:center;gap:10px;padding:12px 15px;border-top:1px solid var(--border-soft);
+    background:rgba(193,85,63,.07)}
+  .confirm .q{flex:1;font-size:12.5px;font-weight:600;color:#e0a99b}
+
+  /* empty listing */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:60px 24px;gap:14px;background:var(--charcoal-2);border:1px dashed var(--border);border-radius:14px}
+  .empty .ei{width:56px;height:56px;border-radius:15px;display:grid;place-items:center;background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-dim)}
+  .empty .ei svg{width:26px;height:26px;stroke-width:1.6}
+  .empty h4{font-size:16px;font-weight:700;color:var(--text-faint)}
+  .empty p{font-size:13px;color:var(--text-dim);max-width:320px;line-height:1.5}
+
+  /* ===== CREATE / EDIT ===== */
+  .editor{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:start}
+  .form-card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;padding:22px 24px}
+  .field{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+  .field:last-child{margin-bottom:0}
+  .field label{font-size:12.5px;font-weight:600;color:var(--stone);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .field label .lt{display:inline-flex;align-items:baseline;gap:3px}
+  .field label .req{color:var(--amber);font-weight:700}
+  .field label .opt{color:var(--text-dim);font-weight:500}
+  .field label .count{font-size:11px;color:var(--text-dim);font-weight:600;font-variant-numeric:tabular-nums;flex:none}
+  .field-hint{font-size:11.5px;color:var(--text-dim);min-height:0}
+  .field-hint.err{color:var(--danger)}
+  .field-hint.ok{color:var(--ok)}
+  .locked-field{display:flex;align-items:center;gap:10px;padding:12px 13px;background:var(--charcoal-3);
+    border:1px solid var(--border);border-radius:10px;color:var(--parchment);font-size:14px;font-weight:600;cursor:not-allowed}
+  .locked-field svg{width:15px;height:15px;flex:none;color:var(--text-dim);stroke-width:2}
+  .locked-field .lock-note{margin-left:auto;font-size:11px;font-weight:600;color:var(--text-dim);
+    background:var(--charcoal);border:1px solid var(--border);padding:3px 9px;border-radius:100px}
+  input[type=text], textarea, select{width:100%;padding:12px 13px;font-family:inherit;font-size:14px;
+    background:var(--charcoal);border:1px solid var(--border);border-radius:10px;color:var(--parchment);transition:border-color .16s, box-shadow .16s}
+  textarea{resize:vertical;min-height:110px;line-height:1.55}
+  input::placeholder, textarea::placeholder{color:var(--text-dim)}
+  input:focus, textarea:focus, select:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(212,146,58,.15)}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23968e7e' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;background-size:16px;padding-right:38px}
+
+  /* type segmented control */
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;padding:10px;border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    background:var(--charcoal);border:1px solid var(--border);color:var(--text-faint);transition:.14s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .seg button .swatch{width:9px;height:9px;border-radius:50%}
+  .seg button:hover{color:var(--parchment)}
+  .seg button.on{color:var(--parchment);border-color:var(--charcoal-4);background:var(--charcoal-3)}
+
+  /* image uploader + reposition */
+  .uploader{border:1px dashed var(--border);border-radius:12px;overflow:hidden;background:var(--charcoal)}
+  .drop{padding:34px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;cursor:pointer;transition:.14s}
+  .drop:hover, .drop.drag{background:var(--charcoal-3)}
+  .drop .di{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--charcoal-3);border:1px solid var(--border);color:var(--gold)}
+  .drop .di svg{width:22px;height:22px;stroke-width:1.7}
+  .drop h5{font-size:13.5px;font-weight:700;color:var(--parchment)}
+  .drop p{font-size:12px;color:var(--text-dim)}
+  .drop .browse{color:var(--gold);font-weight:700}
+  .imgframe{position:relative;height:190px;overflow:hidden;background:var(--charcoal-3);cursor:grab}
+  .imgframe.dragging{cursor:grabbing}
+    /* height:100% is what makes this draggable. Without it the box is the
+     image's own height, object-fit:cover has nothing to crop, and
+     object-position moves nothing — which is exactly how it behaved. */
+.imgframe img{position:absolute;inset:0;width:100%;height:100%;user-select:none;-webkit-user-drag:none;object-fit:cover}
+  .imgframe .hint{position:absolute;left:0;right:0;bottom:0;padding:9px 12px;font-size:11px;font-weight:600;color:#e6d3b2;
+    background:linear-gradient(180deg,transparent,rgba(12,11,10,.85));display:flex;align-items:center;gap:7px;pointer-events:none}
+  .imgframe .hint svg{width:13px;height:13px}
+  .img-actions{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border-soft);background:var(--charcoal-2)}
+  .img-actions .btn{flex:1}
+
+  .form-actions{display:flex;gap:10px;margin-top:22px;padding-top:20px;border-top:1px solid var(--border-soft)}
+  .form-actions .btn{flex:1}
+
+  /* live preview */
+  .preview-wrap{position:sticky;top:calc(var(--header-h) + 24px)}
+  .preview-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .preview-label .dotlbl{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  /* preview reuses the dashboard bulletin slide look */
+  .pv-slide{position:relative;height:250px;border-radius:14px;overflow:hidden;border:1px solid var(--border);display:flex;align-items:flex-end;background:var(--charcoal-3)}
+  .pv-slide .pvbg{position:absolute;inset:0}
+  .pv-slide.g1 .pvbg{background:linear-gradient(120deg,#3a2a16,#191510)}
+  .pv-slide.g2 .pvbg{background:linear-gradient(120deg,#2c2617,#181712)}
+  .pv-slide.g3 .pvbg{background:linear-gradient(120deg,#33211a,#191310)}
+  .pv-slide .pvbg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .pv-slide .pvbg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,11,10,.1),rgba(12,11,10,.55) 55%,rgba(12,11,10,.95))}
+  /* Matches the dashboard: the image fades out behind the caption, and
+     the fade is on .cap so it begins where the text begins. */
+  .pv-slide.has-img .pvbg::after{background:
+    linear-gradient(180deg,rgba(10,9,8,.30) 0%,rgba(10,9,8,.08) 38%,rgba(10,9,8,.30) 100%)}
+  .pv-slide.has-img .cap{padding-top:54px;
+    background:linear-gradient(to top,
+      rgba(10,9,8,.97) 0%, rgba(10,9,8,.95) 48%, rgba(10,9,8,.78) 72%, rgba(10,9,8,0) 100%)}
+  .pv-slide .cap{position:relative;padding:22px;width:100%}
+  .pv-slide .cap .tg{position:static;display:inline-block;margin-bottom:11px}
+  .pv-slide .cap h4{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* Two lines, never more. A long description over a photo turns the slide
+     into wallpaper with words on it. */
+  .pv-slide .cap p{font-size:13px;line-height:1.55;color:#cdc2ad;max-width:56ch;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pv-slide.has-img .cap h4{text-shadow:0 1px 12px rgba(0,0,0,.55)}
+  .pv-slide.has-img .cap p{color:#ddd3c2;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+  .pv-slide .cap .m{font-size:11.5px;color:var(--text-faint);margin-top:10px;font-weight:600}
+  .pv-slide.has-img .cap .m{color:#b6ab99}
+  .pv-link{display:inline-flex;align-items:center;gap:6px;margin-top:11px;font-size:11.5px;font-weight:700;
+    color:#1a1206;background:linear-gradient(145deg,var(--gold),var(--amber));padding:5px 11px;border-radius:100px}
+  .pv-link svg{width:13px;height:13px}
+  .pv-note{font-size:12px;color:var(--text-dim);margin-top:12px;line-height:1.5}
+
+
+  /* ---------- ANNOUNCEMENTS ---------- */
+  /* =====================================================================
+     ANNOUNCEMENT STRIP
+
+     Reads left to right like a filed notice: a colour stamp, then the
+     type and when it was posted, then the headline, then the detail.
+     Nothing is centred — centred text has no left edge to scan down, which
+     is why the old one turned into a paragraph floating in a box.
+
+     One --ann colour per type drives the rail, the stamp and the border,
+     so adding a type later is one variable, not six rules.
+     ===================================================================== */
+  .ann{--ann:var(--gold);--ann-ink:#1a1206;
+    display:flex;align-items:center;gap:15px;padding:13px 15px;position:relative;
+    border:1px solid color-mix(in srgb, var(--ann) 34%, transparent);
+    border-radius:13px;overflow:hidden;
+    background:linear-gradient(90deg,
+      color-mix(in srgb, var(--ann) 13%, transparent),
+      color-mix(in srgb, var(--ann) 4%, transparent) 42%,
+      transparent 78%), var(--charcoal-2)}
+  .ann::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ann)}
+  .ann-stamp{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:var(--ann);color:var(--ann-ink);box-shadow:0 6px 16px -8px var(--ann)}
+  .ann-stamp svg{width:18px;height:18px;stroke-width:2}
+  .ann-main{flex:1;min-width:0}
+  .ann-eyebrow{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--ann);margin-bottom:3px}
+  .ann-eyebrow .sep{opacity:.45}
+  .ann-eyebrow .ago{color:var(--text-faint);font-weight:700;letter-spacing:.08em}
+  .ann-head{font-size:14px;font-weight:700;color:var(--parchment);line-height:1.35;
+    letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* The detail wraps onto a second line and stops there — long enough to
+     say the thing, short enough that the strip keeps a fixed height. */
+  .ann-detail{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-top:3px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ann-acts{flex:none;display:flex;align-items:center;gap:8px}
+  .ann-link{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    padding:7px 12px;border-radius:100px;white-space:nowrap;
+    color:var(--ann);border:1px solid color-mix(in srgb, var(--ann) 40%, transparent);
+    background:color-mix(in srgb, var(--ann) 10%, transparent);transition:.16s}
+  .ann-link:hover{background:var(--ann);color:var(--ann-ink)}
+  .ann-link svg{width:12px;height:12px;stroke-width:2.4}
+  .ann-x{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;
+    background:transparent;border:none;color:var(--text-faint);cursor:pointer;transition:.14s}
+  .ann-x:hover{background:rgba(255,255,255,.06);color:var(--parchment)}
+  .ann-x svg{width:14px;height:14px;stroke-width:2.2}
+
+  .ann.t-notice     {--ann:var(--gold);--ann-ink:#1a1206}
+  .ann.t-maintenance{--ann:#7ea7d4;--ann-ink:#0b131d}
+  .ann.t-warning    {--ann:var(--amber);--ann-ink:#1a1206}
+  .ann.t-critical   {--ann:#d0644d;--ann-ink:#fff}
+  .ann.t-success    {--ann:#8fb463;--ann-ink:#0f1408}
+
+  @media (max-width:760px){
+    .ann{align-items:flex-start;gap:12px;padding:12px 13px}
+    .ann-head{white-space:normal;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .ann-detail{-webkit-line-clamp:3}
+    .ann-acts{flex-direction:column;align-items:flex-end;gap:6px}
+    .ann-link{padding:6px 10px}
+  }
+
+  .arow{display:flex;align-items:center;gap:14px;padding:15px 16px;border:1px solid var(--border-soft);
+    border-radius:13px;background:var(--charcoal-2);margin-bottom:11px}
+  .arow.live{border-color:rgba(226,182,92,.4);background:linear-gradient(180deg,rgba(226,182,92,.05),transparent)}
+  .arow .abody{flex:1;min-width:0}
+  .arow .aline{font-size:13.5px;font-weight:600;color:var(--parchment);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .arow .asub{font-size:12.5px;color:var(--text-dim);margin-top:5px;line-height:1.55;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .arow .ameta{font-size:11.5px;color:var(--text-faint);margin-top:7px;font-weight:600}
+  .arow .aacts{display:flex;align-items:center;gap:8px;flex:none}
+  .live-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;
+    letter-spacing:.1em;text-transform:uppercase;color:#1a1206;background:var(--gold);
+    padding:3px 9px;border-radius:100px}
+  .live-badge .dot{width:6px;height:6px;border-radius:50%;background:#1a1206}
+  .tchip{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 9px;border-radius:100px;border:1px solid var(--border);color:var(--text-dim)}
+  .apreview{margin-top:8px}
+  .switchrow{display:flex;align-items:center;gap:11px;margin-top:16px;font-size:13px;color:var(--text-dim)}
+  .switchrow .sw{width:38px;height:21px;border-radius:100px;background:var(--charcoal-4);position:relative;
+    border:1px solid var(--border);flex:none;transition:.2s}
+  .switchrow .sw::after{content:"";position:absolute;left:2px;top:1.5px;width:15px;height:15px;border-radius:50%;
+    background:var(--stone);transition:.2s}
+  .switchrow.on .sw{background:rgba(226,182,92,.3);border-color:rgba(226,182,92,.5)}
+  .switchrow.on .sw::after{left:19px;background:var(--gold)}
+
+  /* ===== ACCOUNT MENU =====
+     The same component as the profile page. It used to exist only there, so
+     the button in the corner of every other page looked interactive and did
+     nothing. */
+  .account{position:relative}
+  .account-menu{position:absolute;right:0;top:calc(100% + 10px);width:230px;
+    background:var(--charcoal-2);border:1px solid var(--border);border-radius:13px;
+    box-shadow:0 24px 50px -18px rgba(0,0,0,.8);padding:8px;z-index:60}
+  .account-menu .mhead{padding:8px 10px 12px;border-bottom:1px solid var(--border-soft);margin-bottom:6px}
+  .account-menu .mhead .n{font-size:14px;font-weight:700;color:var(--parchment)}
+  .account-menu .mhead .rr{font-size:12px;color:var(--amber);font-weight:600;margin-top:1px}
+  .menu-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;
+    font-size:13.5px;font-weight:500;color:var(--text-faint);cursor:pointer;transition:.13s;text-decoration:none}
+  .menu-item svg{width:16px;height:16px;stroke-width:1.9;flex:none}
+  .menu-item:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .menu-item.on{background:var(--charcoal-3);color:var(--parchment)}
+  .menu-item.on svg{color:var(--gold)}
+  .menu-item.danger{color:#d98a78}
+  .menu-item.danger:hover{background:rgba(193,85,63,.12);color:#eab3a6}
+  .menu-sep{height:1px;background:var(--border-soft);margin:6px 4px}
+  @media (max-width:760px){ .account-menu{width:220px;right:-4px} }
+
+  /* toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);z-index:200;
+    display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:11px;background:var(--charcoal-3);
+    border:1px solid var(--border);box-shadow:0 18px 44px -14px rgba(0,0,0,.75);font-size:13.5px;font-weight:600;
+    color:var(--parchment);opacity:0;pointer-events:none;transition:.28s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast svg{width:17px;height:17px;color:var(--ok);stroke-width:2.4}
+
+  /* pager — centered */
+  .pager{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px}
+  .pager .pg{min-width:36px;height:36px;padding:0 11px;display:grid;place-items:center;border-radius:9px;
+    background:var(--charcoal-2);border:1px solid var(--border);color:var(--text-faint);
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
+  .pager .pg:hover:not(:disabled){color:var(--parchment);background:var(--charcoal-3)}
+  .pager .pg.on{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
+  .pager .pg:disabled{opacity:.4;cursor:not-allowed}
+  .pager .pg svg{width:15px;height:15px;stroke-width:2.2}
+  .pager .pg-gap{color:var(--text-dim);padding:0 2px}
+
+  .view{display:none}
+  .view.active{display:flex;flex-direction:column;gap:22px}
+
+  @media (max-width:1000px){ .editor{grid-template-columns:1fr} .preview-wrap{position:static} }
+  @media (max-width:760px){
+    .sidebar{position:fixed;left:0;top:0;height:100dvh;transform:translateX(-100%);transition:transform .26s ease}
+    .side-inner{position:static;height:100dvh}
+    body.nav-open .sidebar{transform:translateX(0);box-shadow:0 0 60px rgba(0,0,0,.6)}
+    .hamburger{display:grid}
+    .topbar{padding:0 14px;gap:10px}
+    .searchbox{display:none}
+    .search-mini{display:grid}
+    .divider{display:none}
+    .account-btn{min-width:0;padding:9px 11px;gap:6px}
+    .account-meta{display:none}
+    .account-btn .acct-ico{display:block;width:18px;height:18px;color:var(--text-faint)}
+    .content{padding:18px 14px 32px}
+    .phead h2{font-size:20px}
+    .grid{grid-template-columns:1fr}
+    .slotbar .track{order:4;flex-basis:100%}
+    .slotbar .note{flex-basis:100%;order:5}
+  }
+  .scrim{display:none;position:fixed;inset:0;background:rgba(8,7,6,.6);backdrop-filter:blur(2px);z-index:48;opacity:0;transition:opacity .22s}
+  .scrim.show{display:block;opacity:1}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+
+  /* =====================================================================
+     BAN APPEALS — shared styles for the queue, the form and one appeal.
+
+     Card shell first: the announcements page this shell is cut from draws
+     its own list rows and never needed .card.
+     ===================================================================== */
+  .card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;
+    box-shadow:0 20px 44px -30px rgba(0,0,0,.9);overflow:hidden}
+  .card + .card{margin-top:20px}
+  .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:17px 22px 15px;border-bottom:1px solid var(--rule)}
+  .card-h h3{font-size:15.5px;font-weight:700;letter-spacing:-.015em}
+  .card-h .aside{font-size:12.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+  .card-b{padding:16px 22px 20px}
+  .card-lede{font-size:13px;color:var(--text-faint);line-height:1.65;text-wrap:pretty}
+
+  /* ---- the heading ----
+     Oswald in caps, the same face and treatment as BLAINESIDE in the sidebar,
+     so the page title reads as part of the brand rather than as bolder body
+     text. All white — the change of face already separates it from the
+     sentence underneath, so a second colour would be saying it twice.
+
+     The icon is centred on the block. Aligned to the first line it read as
+     though it belonged to the title and the sentence below was something
+     else. */
+  .ahead{display:flex;align-items:center;gap:17px;margin-bottom:22px}
+  .ahead .qi{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:13px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--gold)}
+  .ahead .qi svg{width:23px;height:23px;stroke-width:1.8}
+  .ahead .tx{flex:1;min-width:0}
+  .ahead h1{font-family:'Oswald',sans-serif;font-size:33px;font-weight:600;letter-spacing:.055em;
+    text-transform:uppercase;line-height:1.05;color:var(--parchment)}
+  .ahead p{font-size:13.5px;color:var(--text-faint);line-height:1.65;margin-top:8px;
+    text-wrap:pretty}
+
+  /* ---- the two views ----
+     Half the page each. The panel is not drawn at all for somebody who
+     cannot open it: a greyed control tells them a door exists and then
+     refuses to say anything else about it, which is worse than the door not
+     being there. Everything about who may open it is decided by
+     api/queues.php; this only draws the answer. */
+  .qtabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  .qtabs.solo{grid-template-columns:1fr}
+  .qtab{display:flex;align-items:center;gap:13px;text-align:left;padding:15px 18px;
+    border-radius:13px;border:1px solid var(--border);background:var(--charcoal-2);
+    font-family:inherit;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
+  .qtab:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .qtab .ai{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:10px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint);
+    transition:.15s}
+  .qtab .ai svg{width:18px;height:18px;stroke-width:1.9}
+  .qtab .at{min-width:0;flex:1}
+  .qtab .an{font-size:14px;font-weight:700;color:var(--parchment);display:flex;align-items:center;
+    gap:9px;flex-wrap:wrap;line-height:1.3}
+  .qtab .ad{font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.45}
+  .qtab[aria-selected="true"]{background:var(--charcoal-3);border-color:rgba(226,182,92,.42)}
+  .qtab[aria-selected="true"]::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,var(--gold),var(--amber))}
+  .qtab[aria-selected="true"] .ai{background:rgba(226,182,92,.12);
+    border-color:rgba(226,182,92,.34);color:var(--gold)}
+  /* The staff view used to be tinted gold to mark it out. It marked it out
+     as the important one instead, which it is not — it is one of three, and
+     the person who needs it knows who they are. The STAFF pill says what it
+     is; the box looks like every other box. */
+  .qtab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .smark{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:#e3bd72;background:rgba(226,182,92,.11);border:1px solid rgba(226,182,92,.3);
+    padding:2px 8px;border-radius:100px}
+  @media (max-width:680px){ .qtabs{grid-template-columns:1fr} }
+
+  /* =====================================================================
+     BAN DETAILS — one design
+
+     This card used to be three different shapes doing the same job: a stack
+     of label-over-value rows for the punishment, a second stack for the
+     accounts, and a grid for the account panel — with Forums and Discord
+     turning up in two of them. It is now one card, sections inside it, and
+     one fact-grid component used by every section.
+     ===================================================================== */
+  .sec + .sec{margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    margin-bottom:12px}
+  .sec-h .t{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--stone)}
+  .sec-h .n{font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+  .sec-h .go{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
+    color:var(--text-faint);transition:color .13s}
+  .sec-h .go:hover{color:var(--gold)}
+  .sec-h .go svg{width:12px;height:12px;stroke-width:2.2;fill:none;stroke:currentColor}
+
+  /* The fact grid. Used for a punishment AND for the account.
+     Four fixed columns, not auto-fit: both grids have a multiple of four
+     cells, so the rows come out full — auto-fit left dead cells hanging off
+     the end of the account grid. */
+  .fg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+  .fg > div{background:var(--charcoal-2);padding:11px 14px 12px;min-width:0}
+  .fg .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--stone)}
+  .fg .v{font-size:13px;font-weight:600;color:var(--parchment);margin-top:5px;line-height:1.4;
+    overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+  .fg .v.soft{color:var(--text-dim);font-weight:500;font-style:italic}
+  .fg .s{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4}
+  .fg .v a{color:var(--parchment);border-bottom:1px solid var(--charcoal-4)}
+  .fg .v a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+  .fg .grp{color:var(--tone-text)}
+  /* The appellant is not told who issued it, so their grid is three across.
+     Left at four it ended on a dead cell. */
+  .fg.three{grid-template-columns:repeat(3,1fr)}
+
+  /* A value carrying a state is coloured text with a dot, not a pill. Two
+     pills floating in a grid of plain values read as buttons and made those
+     cells louder than the facts around them. */
+  .dotv{display:inline-flex;align-items:center;gap:8px}
+  .dotv::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;
+    flex:none}
+  .dotv.ok{color:#9ec178} .dotv.bad{color:#e0917f} .dotv.warn{color:#e3bd72}
+  .dotv.off{color:var(--stone)}
+
+  /* ---- one punishment ---- */
+  .pun + .pun{margin-top:14px}
+  .pun-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  /* The pill says which of the two a ban is. "Ban · 14 DAYS" made the reader
+     work the kind out from the length, and a permanent one had no length to
+     work it out from. */
+  .kindp{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;
+    padding:5px 12px;border-radius:100px;white-space:nowrap;
+    border:1px solid var(--rule);background:var(--charcoal);color:var(--text-faint)}
+  .kindp::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;
+    flex:none}
+  .kindp.ban {color:#d98a78;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+  .kindp.lock{color:#b3a894;border-color:rgba(157,147,132,.34);background:rgba(157,147,132,.1)}
+  .kindp.discord{color:#93a7cb;border-color:rgba(110,130,175,.34);background:rgba(110,130,175,.11)}
+  .kindp.forums{color:#9fb0a0;border-color:rgba(120,150,120,.32);background:rgba(120,150,120,.1)}
+  .lenp{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--text-dim)}
+  .statep{margin-left:auto;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:100px;
+    white-space:nowrap;border:1px solid var(--rule);background:var(--charcoal);color:var(--stone)}
+  .statep.live{color:#e79187;border-color:rgba(193,85,63,.34);background:rgba(193,85,63,.1)}
+
+  /* ---- the reason, as the thing it is: what somebody wrote ---- */
+  .why{margin-top:11px;padding:12px 15px;border-radius:11px;background:var(--charcoal-3);
+    border:1px solid var(--border-soft)}
+  .why .k{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--stone)}
+  .why .b{font-size:13.5px;color:var(--parchment);line-height:1.6;margin-top:5px;
+    overflow-wrap:anywhere;text-wrap:pretty;white-space:pre-wrap}
+  .why .b.soft{color:var(--text-dim);font-style:italic;white-space:normal}
+
+  /* ---- nothing on file ---- */
+  .offsite{padding:13px 15px;border-radius:12px;border:1px solid rgba(226,182,92,.24);
+    background:rgba(226,182,92,.05)}
+  .offsite .h{font-size:13px;font-weight:700;color:#e3bd72}
+  .offsite .p{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:5px;
+    text-wrap:pretty}
+
+  /* ---- characters ----
+     Designed now, empty now. When the game server is linked this fills in
+     and nothing about the card moves. */
+  .chars{border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+  .chr{display:flex;align-items:center;gap:14px;padding:11px 15px;background:var(--charcoal-2)}
+  .chr + .chr{border-top:1px solid var(--rule)}
+  .chr .cd{width:7px;height:7px;border-radius:50%;flex:none;background:var(--stone)}
+  .chr.on .cd{background:var(--ok);box-shadow:0 0 0 3px rgba(127,160,90,.15)}
+  .chr .cl{min-width:0;flex:1}
+  .chr .cn{font-size:13.5px;font-weight:700;color:var(--parchment);min-width:0}
+  .chr .cs{font-size:11px;color:var(--text-dim);margin-top:2px}
+  .chr .cf{font-size:12px;color:var(--text-faint);margin-left:auto;text-align:right;
+    white-space:nowrap}
+  .chr-none{padding:15px 16px;background:var(--charcoal-2);font-size:12.5px;
+    color:var(--text-dim);line-height:1.6;text-wrap:pretty}
+
+  @media (max-width:900px){ .fg,.fg.three{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:520px){
+    .fg,.fg.three{grid-template-columns:1fr}
+    .statep{margin-left:0}
+  }
+
+  /* ---- the queue's filter strip ---- */
+  .qfilters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .qfilters .qtab{display:inline-flex;align-items:center;gap:9px;padding:10px 16px;
+    border-radius:11px;border:1px solid var(--border);background:var(--charcoal-2);
+    color:var(--text-dim);font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
+  .qfilters .qtab:hover{background:var(--charcoal-3);color:var(--parchment)}
+  .qfilters .qtab[aria-selected="true"]{background:var(--charcoal-4);color:var(--parchment);
+    border-color:rgba(226,182,92,.34)}
+  .qfilters .qtab::before{display:none}
+
+  /* =====================================================================
+     THE RULES GATE — redesigned.
+
+     It was a wall: four headings, some paragraphs, two bulleted lists and a
+     red box, all the same weight, all the same colour. Nothing told you
+     where to look and nothing told you when you were done, so people
+     scrolled past it to the button — which is exactly the failure the page
+     exists to prevent.
+
+     Now it has shape. Four sections, each visually a different KIND of
+     thing: a checklist you can scan, two panels you pick between, three
+     rule cards, and one red panel that means stop. You can tell them apart
+     without reading them, which is what makes the reading happen.
+     ===================================================================== */
+  .gate{display:flex;flex-direction:column;gap:26px}
+
+  .gsec > h4{display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--text-dim);margin-bottom:13px}
+  .gsec > h4::after{content:'';flex:1;height:1px;background:var(--rule)}
+  .gsec > .lede{font-size:13.5px;color:var(--text-faint);line-height:1.65;margin-bottom:14px;
+    text-wrap:pretty}
+
+  /* 1. the checklist — scannable, one glance tells you if you qualify */
+  .gchecks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  @media (max-width:820px){ .gchecks{grid-template-columns:1fr} }
+  .gcheck{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border);font-size:12.5px;
+    color:var(--parchment);line-height:1.5;text-wrap:pretty}
+  .gcheck .m{flex:none;width:19px;height:19px;display:grid;place-items:center;border-radius:6px;
+    margin-top:0;background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.34);
+    color:#9fae8d}
+  .gcheck .m svg{width:11px;height:11px;stroke-width:3}
+
+  /* 2. two panels — you are in one situation or the other, so pick */
+  .gsplit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  @media (max-width:820px){ .gsplit{grid-template-columns:1fr} }
+  .gcase{padding:16px 18px;border-radius:12px;background:var(--charcoal);
+    border:1px solid var(--border)}
+  .gcase h5{font-size:13.5px;font-weight:700;color:var(--parchment);
+    display:flex;align-items:center;gap:9px}
+  .gcase h5 .ic{width:24px;height:24px;flex:none;display:grid;place-items:center;
+    border-radius:7px;background:var(--charcoal-3);border:1px solid var(--border);
+    color:var(--gold)}
+  .gcase h5 .ic svg{width:13px;height:13px;stroke-width:2}
+  .gcase p{font-size:12.5px;color:var(--text-faint);line-height:1.65;margin-top:10px;
+    text-wrap:pretty}
+  .gcase .tip{margin-top:11px;padding-top:11px;border-top:1px solid var(--rule);
+    font-size:12px;color:var(--text-dim);line-height:1.55}
+  .gcase .tip b{color:#cbb07a;font-weight:700}
+
+  /* 3. the rules — three cards, each one thing that ends an appeal */
+  .grules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  @media (max-width:980px){ .grules{grid-template-columns:1fr} }
+  .grule{padding:15px 17px;border-radius:12px;background:var(--charcoal);
+    border:1px solid var(--border)}
+  .grule .t{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;
+    color:var(--parchment)}
+  .grule .t .ic{width:22px;height:22px;flex:none;display:grid;place-items:center;
+    border-radius:7px;background:var(--charcoal-3);border:1px solid var(--border);
+    color:var(--text-faint)}
+  .grule .t .ic svg{width:12px;height:12px;stroke-width:2.2}
+  .grule p{font-size:12px;color:var(--text-faint);line-height:1.6;margin-top:9px;
+    text-wrap:pretty}
+
+  /* 4. stop */
+  .gstop{padding:17px 19px;border-radius:12px;background:rgba(193,85,63,.07);
+    border:1px solid rgba(193,85,63,.32)}
+  .gstop .h{display:flex;align-items:center;gap:10px}
+  .gstop .h .ic{width:26px;height:26px;flex:none;display:grid;place-items:center;
+    border-radius:8px;background:rgba(193,85,63,.11);border:1px solid rgba(193,85,63,.32);
+    color:#d29b8d}
+  .gstop .h .ic svg{width:14px;height:14px;stroke-width:2.2}
+  .gstop .h h5{font-size:13.5px;font-weight:700;color:#dfa294}
+  .gstop > p{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin-top:9px}
+  .gstop .items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;
+    margin-top:14px;padding-top:14px;border-top:1px solid rgba(193,85,63,.22)}
+  @media (max-width:820px){ .gstop .items{grid-template-columns:1fr} }
+  .gstop .items > div{display:flex;gap:10px;align-items:flex-start}
+  .gstop .items .x{flex:none;width:17px;height:17px;display:grid;place-items:center;
+    border-radius:5px;background:rgba(193,85,63,.13);border:1px solid rgba(193,85,63,.3);
+    color:#d29b8d;margin-top:1px}
+  .gstop .items .x svg{width:9px;height:9px;stroke-width:3.4}
+  .gstop .items b{display:block;font-size:12.5px;font-weight:700;color:var(--parchment)}
+  .gstop .items span{display:block;font-size:12px;color:var(--text-faint);line-height:1.55;
+    margin-top:2px;text-wrap:pretty}
+
+  .gatefoot{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap;
+    margin-top:4px;padding-top:18px;border-top:1px solid var(--rule)}
+  .gatefoot .agree{margin-right:auto;font-size:12.5px;color:var(--text-faint);
+    line-height:1.6;text-wrap:pretty}
+
+  /* ---- the form ---- */
+  .q{padding:16px 0}
+  .q + .q{border-top:1px solid var(--rule)}
+  .q > .qlab{font-size:13.5px;color:var(--parchment);line-height:1.55;text-wrap:pretty}
+  .q > .qlab b{font-weight:700;margin-right:5px}
+  /* No measure cap. 74ch is a reading measure for prose; these are one-line
+     instructions in a wide card, and capping them folded lines that had
+     room to sit flat. */
+  .q > .qhint{font-size:12.5px;color:var(--text-dim);line-height:1.6;margin-top:6px;
+    text-wrap:pretty}
+  .q .qbody{margin-top:13px}
+
+  .checks{display:flex;gap:10px;flex-wrap:wrap}
+  .chk{display:inline-flex;align-items:center;gap:10px;padding:11px 16px;border-radius:11px;
+    border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim);
+    font-size:13px;font-weight:600;cursor:pointer;transition:.14s;font-family:inherit}
+  .chk:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
+  .chk .bx{width:16px;height:16px;flex:none;border-radius:5px;border:1.5px solid var(--charcoal-4);
+    display:grid;place-items:center;transition:.14s}
+  .chk .bx svg{width:11px;height:11px;stroke-width:3;color:var(--charcoal-2);opacity:0}
+  .chk.on{color:var(--parchment);border-color:rgba(226,182,92,.4);background:rgba(226,182,92,.07)}
+  .chk.on .bx{background:var(--gold);border-color:var(--gold)}
+  .chk.on .bx svg{opacity:1}
+  .chk:disabled{opacity:.42;cursor:not-allowed}
+  .chk .no{font-size:11px;font-weight:500;color:var(--text-dim)}
+
+  .sel,.ta,.ti{width:100%;font-family:inherit;font-size:13.5px;color:var(--parchment);
+    background:var(--charcoal);border:1px solid var(--border);border-radius:11px;
+    padding:12px 14px;transition:.14s}
+  .ta{min-height:190px;line-height:1.7;resize:vertical}
+  .sel:focus,.ta:focus,.ti:focus{outline:none;border-color:rgba(226,182,92,.5);
+    box-shadow:0 0 0 3px rgba(226,182,92,.09)}
+  .sel:disabled,.ta:disabled,.ti:disabled{opacity:.5;cursor:not-allowed}
+  .ta::placeholder,.ti::placeholder{color:var(--text-dim)}
+  .fieldnote{font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.55}
+  .fieldnote.bad{color:#dfa294}
+  .counter{float:right;font-variant-numeric:tabular-nums}
+
+  .evrow{display:flex;gap:10px;align-items:flex-start;margin-top:10px}
+  .evrow .ti{flex:1}
+  .evrow .url{flex:1.4}
+  .evx{flex:none;width:38px;height:41px;display:grid;place-items:center;border-radius:10px;
+    border:1px solid var(--border);background:var(--charcoal);color:var(--text-dim);
+    cursor:pointer;transition:.14s}
+  .evx:hover{color:#dfa294;border-color:rgba(193,85,63,.4)}
+  .evx svg{width:15px;height:15px;stroke-width:2}
+
+  /* ---- notices ---- */
+  .note-a{display:flex;align-items:flex-start;gap:13px;padding:16px 18px;border-radius:12px;
+    background:rgba(226,182,92,.06);border:1px solid rgba(226,182,92,.26)}
+  .note-a.bad{background:rgba(193,85,63,.07);border-color:rgba(193,85,63,.32)}
+  .note-a.good{background:rgba(127,160,90,.07);border-color:rgba(127,160,90,.3)}
+  .note-a .si{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;
+    background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.3);color:#e3bd72}
+  .note-a.bad .si{background:rgba(193,85,63,.1);border-color:rgba(193,85,63,.3);color:#d29b8d}
+  .note-a.good .si{background:rgba(127,160,90,.1);border-color:rgba(127,160,90,.3);color:#9fae8d}
+  .note-a .si svg{width:16px;height:16px;stroke-width:2}
+  .note-a h4{font-size:14px;font-weight:700;color:#e3bd72}
+  .note-a.bad h4{color:#dfa294}
+  .note-a.good h4{color:#a8bb92}
+  /* 64ch was a reading measure borrowed from body copy. These are one or
+     two sentences inside a full-width card, and capping them folds a line
+     that had room to sit flat. */
+  .note-a p{font-size:13px;color:var(--text-faint);line-height:1.65;margin-top:5px;
+    text-wrap:pretty}
+  .note-a .acts{margin-top:13px;display:flex;gap:10px;flex-wrap:wrap}
+
+  /* ---- status pills ---- */
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:100px;
+    white-space:nowrap;line-height:1.35}
+  .pill.pending {color:#e3bd72;background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.32)}
+  .pill.accepted{color:#9fae8d;background:rgba(127,160,90,.11);border:1px solid rgba(127,160,90,.32)}
+  .pill.rejected{color:#d29b8d;background:rgba(193,85,63,.1);border:1px solid rgba(193,85,63,.34)}
+  .pill.perm    {color:#d29b8d;background:rgba(193,85,63,.1);border:1px solid rgba(193,85,63,.34)}
+  .pill.temp    {color:#e3bd72;background:rgba(226,182,92,.1);border:1px solid rgba(226,182,92,.32)}
+
+  /* ---- the queue table ---- */
+  .qbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 0 16px}
+  .qbar .grow{flex:1}
+  .qsearch{position:relative;min-width:260px;flex:1;max-width:420px}
+  .qsearch svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;
+    height:15px;stroke-width:2;color:var(--text-dim);pointer-events:none}
+  .qsearch input{width:100%;padding-left:38px}
+  .perpage{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;color:var(--text-faint)}
+  .perpage select{width:auto;padding:9px 12px}
+
+  .qtable{width:100%;border-collapse:collapse}
+  .qtable th{text-align:left;font-size:11px;font-weight:800;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--text-dim);padding:0 14px 11px;white-space:nowrap}
+  .qtable td{padding:13px 14px;font-size:13px;color:var(--text-faint);
+    border-top:1px solid var(--rule);vertical-align:middle}
+  .qtable tr:hover td{background:rgba(255,255,255,.014)}
+  .qtable td.who{color:var(--parchment);font-weight:600}
+  .qtable td.gone{font-style:italic;color:var(--text-dim);font-weight:400}
+  .qtable td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .qtable .view{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;
+    border:1px solid var(--border);background:var(--charcoal);color:var(--parchment);
+    font-size:12px;font-weight:600;transition:.14s;white-space:nowrap}
+  .qtable .view:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .qwrap{overflow-x:auto}
+
+  .pager{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;
+    padding-top:16px;margin-top:4px;border-top:1px solid var(--rule)}
+  .pager .pinfo{margin-right:auto;font-size:12.5px;color:var(--text-dim)}
+  .pager button{min-width:34px;height:34px;padding:0 10px;border-radius:9px;
+    border:1px solid var(--border);background:var(--charcoal);color:var(--text-faint);
+    font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.14s}
+  .pager button:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
+  .pager button[aria-current="true"]{background:var(--charcoal-4);color:var(--parchment);
+    border-color:rgba(226,182,92,.34)}
+  .pager button:disabled{opacity:.36;cursor:not-allowed}
+  .pager .gap{color:var(--text-dim);padding:0 2px}
+
+  /* ---- buttons ---- */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:10px 17px;border-radius:10px;border:1px solid var(--border);background:var(--charcoal);
+    color:var(--text-faint);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    transition:.14s;white-space:nowrap}
+  .btn:hover:not(:disabled){background:var(--charcoal-3);color:var(--parchment)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn svg{width:15px;height:15px;stroke-width:2}
+  /* Flat. The gold used to be a gradient with a lift and a glow on hover and
+     a brightness filter on top of that — four things happening on one press,
+     which read as the button flickering rather than responding. One solid
+     colour, one slightly lighter colour on hover, nothing else. */
+  .btn.primary{background:var(--gold);border-color:var(--gold);color:#1a1408}
+  .btn.primary:hover:not(:disabled){background:#e8c06a;border-color:#e8c06a;color:#1a1408}
+  .btn.primary:active:not(:disabled){background:var(--gold)}
+  .btn.danger{color:#dfa294;border-color:rgba(193,85,63,.4);background:rgba(193,85,63,.08)}
+  .btn.danger:hover:not(:disabled){background:rgba(193,85,63,.14);color:#e8b5a8}
+  .btn.ok{color:#a8bb92;border-color:rgba(127,160,90,.4);background:rgba(127,160,90,.08)}
+  .btn.ok:hover:not(:disabled){background:rgba(127,160,90,.14);color:#bccfa6}
+  .btn.sm{padding:7px 12px;font-size:12px}
+
+  .blank{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+    padding:52px 20px}
+  .blank .ei{width:52px;height:52px;display:grid;place-items:center;border-radius:15px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-dim)}
+  .blank .ei svg{width:23px;height:23px;stroke-width:1.7}
+  .blank h4{font-size:15.5px;font-weight:700;color:var(--parchment)}
+  .blank p{font-size:13px;color:var(--text-faint);max-width:48ch;line-height:1.65;
+    text-wrap:pretty}
+
+  /* ---- how an appeal works ----
+     The refusal state is the one most players see: the great majority have
+     nothing to appeal and arrive here to find out how it works, or because
+     something happened and they don't yet know what. A single red box
+     saying "you can't" answers a question they didn't ask and leaves them
+     going to Discord for the one they did.
+
+     So the page keeps the status line and then explains the process: the
+     four stages, what is and isn't appealable, and what an appeal has to
+     contain. All of it is true whether or not they can use it today. */
+  .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+  @media (max-width:1000px){ .flow{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:620px){ .flow{grid-template-columns:1fr} }
+
+  .stp{position:relative;padding:0 20px 4px 0}
+  .stp + .stp{padding-left:20px}
+  /* The rail runs behind the numbers and stops at the last one, so the
+     sequence reads as a track rather than four unrelated boxes. */
+  /* --rule is a divider inside a card and all but vanishes on this
+     background; the rail has to be readable as a track. */
+  .stp::before{content:'';position:absolute;left:0;right:0;top:15px;height:1px;
+    background:var(--charcoal-4);z-index:0}
+  .stp:first-child::before{left:15px}
+  .stp:last-child::before{right:auto;width:15px}
+  @media (max-width:1000px){
+    .stp:nth-child(2)::before{right:auto;width:15px}
+    .stp:nth-child(3)::before{left:15px}
+  }
+  @media (max-width:620px){ .stp::before{display:none} }
+
+  .stp .n{position:relative;z-index:1;width:30px;height:30px;display:grid;place-items:center;
+    border-radius:50%;background:var(--charcoal-2);border:1px solid var(--charcoal-4);
+    color:var(--text-faint);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stp.gold .n{background:rgba(226,182,92,.1);border-color:rgba(226,182,92,.4);color:#e3bd72}
+  .stp h5{font-size:13.5px;font-weight:700;color:var(--parchment);margin-top:13px}
+  .stp p{font-size:12.5px;color:var(--text-faint);line-height:1.65;margin-top:7px;
+    text-wrap:pretty}
+
+  /* ---- what can and can't be appealed ---- */
+  .canlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px}
+  @media (max-width:760px){ .canlist{grid-template-columns:1fr} }
+  .canlist .col h5{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-dim);padding-bottom:11px}
+  .canrow{display:flex;align-items:flex-start;gap:11px;padding:11px 0;font-size:13px;
+    color:var(--parchment);line-height:1.5}
+  .canrow + .canrow{border-top:1px solid var(--rule)}
+  .canrow .m{flex:none;width:19px;height:19px;display:grid;place-items:center;border-radius:6px;
+    margin-top:1px}
+  .canrow .m svg{width:11px;height:11px;stroke-width:3}
+  .canrow.yes .m{background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.34);
+    color:#9fae8d}
+  .canrow.no .m{background:rgba(193,85,63,.11);border:1px solid rgba(193,85,63,.32);
+    color:#d29b8d}
+  .canrow.no{color:var(--text-faint)}
+  .canrow .s{display:block;font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.55;
+    font-weight:400}
+
+  .asks{display:flex;flex-direction:column}
+  .askrow{display:flex;gap:13px;padding:12px 0;font-size:13px;color:var(--text-faint);
+    line-height:1.6;text-wrap:pretty}
+  .askrow + .askrow{border-top:1px solid var(--rule)}
+  .askrow .qn{flex:none;width:22px;color:var(--text-dim);font-weight:800;font-size:12px;
+    font-variant-numeric:tabular-nums}
+  .askrow b{color:var(--parchment);font-weight:600}
+
+  /* When the appeal has no staff column the grid narrows; the bar above it
+     narrows to match, or a wide header sits over a narrow body. */
+  body.appeal-solo .lookbar{max-width:900px}
+
+  /* ---- the appeal is the widest view on this page ----
+     Two columns of dense fact beside a panel of controls. The site's usual
+     1180px left the staff column at 340, which is where "Concluded 21
+     minutes ago by testtest" broke onto three lines and the whole panel
+     read as squeezed. Only while an appeal is open — the queue and the
+     rules are prose and stay at the normal width. */
+  body.appeal-wide .content{max-width:1560px}
+  body.appeal-wide .apgrid{grid-template-columns:minmax(0,1fr) 400px}
+  @media (max-width:1320px){
+    body.appeal-wide .apgrid{grid-template-columns:1fr}
+  }
+  /* No staff column.
+     `body.appeal-wide .apgrid` is one specificity point heavier than
+     `.apgrid.solo`, so the wide rule was winning on the appellant's own
+     appeal too: a 400px staff column that has nothing in it, and their
+     appeal squeezed into whatever was left. Stated at the same weight as
+     the wide rule, and after it, so it wins.
+
+     Centred rather than left-aligned — one column of text hard against the
+     left edge of a wide page reads as a layout that failed to load. */
+  body.appeal-solo .content{max-width:1180px}
+  body.appeal-solo .apgrid{grid-template-columns:minmax(0,1fr);max-width:940px;margin:0 auto}
+  body.appeal-solo .lookbar{max-width:940px;margin-left:auto;margin-right:auto}
+
+  /* ---- one appeal ---- */
+  .page-back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
+    color:var(--text-faint);text-decoration:none;transition:.14s}
+  .page-back:hover{color:var(--parchment)}
+  .page-back svg{width:16px;height:16px;flex:none;stroke-width:2}
+  .lookbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;
+    margin-bottom:20px;border-radius:12px;background:var(--charcoal-2);
+    border:1px solid var(--border-soft)}
+  .lookbar .grow{flex:1}
+  /* A class rule with display beats the browser's [hidden] rule, so an
+     element hidden with the attribute stays visible unless this is said.
+     That is how the staff-only "every visit is logged" badge ended up on
+     the appellant's own appeal. */
+  .lookro[hidden]{display:none}
+  .lookro{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;
+    letter-spacing:.02em;color:#e3bd72;background:rgba(226,182,92,.08);
+    border:1px solid rgba(226,182,92,.3);border-radius:100px;padding:5px 12px;white-space:nowrap}
+  .lookro svg{width:13px;height:13px;stroke-width:2.2;flex:none}
+
+  /* Two columns for staff, one for the appellant — the right-hand column is
+     entirely staff apparatus, so for a player there is nothing to put in it
+     and a 340px hole beside their own appeal reads as something missing. */
+  .apgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+  .apgrid.solo{grid-template-columns:minmax(0,1fr);max-width:900px}
+  @media (max-width:1180px){ .apgrid{grid-template-columns:1fr} }
+
+  .kv{display:flex;flex-direction:column;gap:0}
+  .kv .r{padding:12px 0;font-size:13px}
+  .kv .r + .r{border-top:1px solid var(--rule)}
+  .kv .k{font-size:12px;color:var(--text-dim);letter-spacing:.01em}
+  .kv .v{color:var(--parchment);font-weight:600;margin-top:4px;text-wrap:pretty}
+  .kv .v.soft{color:var(--text-faint);font-weight:500}
+
+  .ansq{padding:16px 0}
+  .ansq + .ansq{border-top:1px solid var(--rule)}
+  .ansq .n{font-size:13px;color:var(--text-faint);line-height:1.55;text-wrap:pretty}
+  .ansq .n b{color:var(--parchment);font-weight:700;margin-right:5px}
+  .ansq .a{margin-top:11px}
+  .ansq .a.text{font-size:13.5px;color:var(--parchment);line-height:1.75;white-space:pre-wrap;
+    padding:15px 17px;border-radius:11px;background:var(--charcoal);
+    border:1px solid var(--border);text-wrap:pretty}
+  .ansq .a.none{font-size:13px;color:var(--text-dim);font-style:italic}
+  .rochk{display:inline-flex;align-items:center;gap:9px;margin-right:16px;font-size:13px;
+    color:var(--text-dim)}
+  .rochk.on{color:var(--parchment);font-weight:600}
+  .rochk .bx{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--charcoal-4);
+    display:grid;place-items:center}
+  .rochk.on .bx{background:var(--gold);border-color:var(--gold)}
+  .rochk .bx svg{width:10px;height:10px;stroke-width:3.2;color:var(--charcoal-2);opacity:0}
+  .rochk.on .bx svg{opacity:1}
+
+  .evlist{display:flex;flex-direction:column;gap:8px}
+  .evitem{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border)}
+  .evitem .ic{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:8px;
+    background:var(--charcoal-3);border:1px solid var(--border);color:var(--text-faint)}
+  .evitem .ic svg{width:14px;height:14px;stroke-width:2}
+  .evitem .b{min-width:0;flex:1}
+  .evitem a{color:#cbb07a;font-size:13px;font-weight:600;word-break:break-all}
+  .evitem a:hover{text-decoration:underline}
+  .evitem .nt{font-size:12.5px;color:var(--text-faint);margin-top:4px;line-height:1.55}
+
+  /* ---- comments ---- */
+  .cm{border-radius:12px;border:1px solid var(--border);background:var(--charcoal);
+    overflow:hidden}
+  .cm + .cm{margin-top:11px}
+  .cm .h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 15px;
+    background:var(--charcoal-3);border-bottom:1px solid var(--border);font-size:12.5px;
+    color:var(--text-faint)}
+  .cm .h b{color:var(--parchment);font-weight:700}
+  .cm .h .when{margin-left:auto;color:var(--text-dim);font-size:12px}
+  .cm .body{padding:14px 16px;font-size:13.5px;color:var(--parchment);line-height:1.7;
+    white-space:pre-wrap;text-wrap:pretty}
+  .cm.staffonly{border-color:rgba(193,85,63,.3)}
+  .cm.staffonly .h{background:rgba(193,85,63,.09);border-bottom-color:rgba(193,85,63,.24)}
+  /* Named .ctag, not .tag.
+     The shell this page is built from already owns `.tag` — it is the badge
+     on a bulletin's image, and it is position:absolute. Reusing the name
+     lifted every comment's Staff / Staff only pill out of its comment and
+     stacked them all in the top-left corner of the page. */
+  .ctag{display:inline-flex;align-items:center;font-size:9.5px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:100px;
+    line-height:1.5;position:static}
+  .ctag.staff{color:#9fae8d;background:rgba(127,160,90,.12);border:1px solid rgba(127,160,90,.3)}
+  .ctag.only {color:#d29b8d;background:rgba(193,85,63,.12);border:1px solid rgba(193,85,63,.34)}
+
+  .composer{margin-top:16px}
+  .composer .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:11px}
+  .composer .row .grow{flex:1}
+
+  /* A switch, not a tick-box: which of the two audiences a comment is going
+     to is the single most consequential choice on this page, and it should
+     not look like a checkbox you skim past. */
+  .aud{display:inline-flex;border-radius:10px;border:1px solid var(--border);
+    background:var(--charcoal);overflow:hidden}
+  .aud button{padding:8px 14px;border:0;background:transparent;color:var(--text-dim);
+    font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.14s}
+  .aud button:hover{color:var(--parchment)}
+  .aud button.on{background:var(--charcoal-4);color:var(--parchment)}
+  .aud button.on[data-aud="staff"]{background:rgba(193,85,63,.16);color:#dfa294}
+
+  /* ---- the staff panel ---- */
+  .panelfield + .panelfield{margin-top:18px;padding-top:18px;border-top:1px solid var(--rule)}
+  .panelfield label{display:block;font-size:12px;font-weight:700;color:var(--text-dim);
+    letter-spacing:.02em;margin-bottom:9px}
+  .panelfield .go{display:flex;justify-content:flex-end;margin-top:10px}
+  .panelfield .hint{font-size:12px;color:var(--text-dim);line-height:1.6;margin-top:9px;
+    text-wrap:pretty}
+  .panelfield .hint.warn{color:#c9a06a}
+
+  .log{display:flex;flex-direction:column;max-height:520px;overflow:auto}
+  .logrow{display:flex;gap:11px;padding:11px 0;font-size:12.5px;color:var(--text-faint);
+    line-height:1.55}
+  .logrow + .logrow{border-top:1px solid var(--rule)}
+  .logrow .dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--charcoal-4);
+    margin-top:6px}
+  .logrow.act .dot{background:#c9a06a}
+  .logrow b{color:var(--parchment);font-weight:600}
+  .logrow .t{color:var(--text-dim);font-variant-numeric:tabular-nums}
+
+  /* ---- condensed ----
+     The appeal page ran to a screen and a half of air before the reply box.
+     Everything below tightens the rhythm without changing the type sizes:
+     a handler reads three of these in a row and should not have to scroll
+     each one twice. */
+  .card-b{padding:14px 22px 18px}
+  .kv .r{padding:10px 0}
+  .kv .v{margin-top:3px}
+  .ansq{padding:13px 0}
+  .ansq .a{margin-top:9px}
+  .ansq .a.text{padding:13px 15px;line-height:1.65}
+  .panelfield + .panelfield{margin-top:15px;padding-top:15px}
+  .panelfield .hint{margin-top:7px}
+  .logrow{padding:9px 0}
+  .cm .body{padding:12px 15px}
+  .apgrid{gap:18px}
+
+  /* The appellant's name in the card header, as a link to their record. */
+  .wholink{display:inline-flex;align-items:center;gap:6px;color:#cbb07a;font-weight:600}
+  .wholink:hover{color:var(--gold);text-decoration:underline}
+  .wholink svg{width:12px;height:12px;stroke-width:2.2;flex:none;opacity:.7}
+
+  /* A field somebody may read but not change. Reads as a value, not as a
+     disabled control they should keep trying to click. */
+  .panelfield .ro{font-size:13.5px;font-weight:600;color:var(--parchment);
+    padding:11px 14px;border-radius:11px;background:var(--charcoal);
+    border:1px solid var(--border)}
+
+  /* The two comments that settled the appeal: the verdict, and the overrule
+     that reversed it. Bordered rather than merely badged — on a long thread
+     the badge is the thing you're scanning for, and a tinted edge finds it
+     from the scrollbar. */
+  .ctag.verdict {color:#e3bd72;background:rgba(226,182,92,.11);border:1px solid rgba(226,182,92,.34)}
+  .ctag.overrule{color:#9fae8d;background:rgba(127,160,90,.13);border:1px solid rgba(127,160,90,.36)}
+  .cm.is-verdict {border-color:rgba(226,182,92,.3)}
+  .cm.is-verdict .h{background:rgba(226,182,92,.07);border-bottom-color:rgba(226,182,92,.22)}
+  .cm.is-overrule{border-color:rgba(127,160,90,.32)}
+  .cm.is-overrule .h{background:rgba(127,160,90,.08);border-bottom-color:rgba(127,160,90,.24)}
+
+  /* Long unbroken strings — a pasted log line, a URL, or somebody leaning on
+     one key — have nothing to wrap at, so they ran straight out of the box.
+     pre-wrap keeps the author's line breaks; these let the browser break
+     mid-word when there is no other option. */
+  .ansq .a.text,
+  .cm .body{overflow-wrap:anywhere;word-break:break-word}
+
+  /* ---- past appeals ---- */
+  .hlist{display:flex;flex-direction:column;gap:8px}
+  .hrow{display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:11px;
+    background:var(--charcoal);border:1px solid var(--border);transition:.14s}
+  .hrow:hover{background:var(--charcoal-3);border-color:var(--charcoal-4)}
+  .hrow .hst{flex:none}
+  .hrow .hmain{flex:1;min-width:0}
+  .hrow .ht{display:block;font-size:13px;font-weight:600;color:var(--parchment)}
+  .hrow .hs{display:block;font-size:12px;color:var(--text-faint);margin-top:3px;
+    line-height:1.5;text-wrap:pretty}
+  .hrow .hgo{flex:none;color:var(--text-dim);display:grid;place-items:center}
+  .hrow .hgo svg{width:15px;height:15px;stroke-width:2.2}
+  .hrow:hover .hgo{color:var(--parchment)}
+  /* The conflict note sits above the two-column grid, and `.card + .card`
+     doesn't reach across to it — the grid is not a card. */
+  .apgrid{margin-top:20px}
+  .lookbar + .apgrid{margin-top:0}
+
+  /* =====================================================================
+     PREVIOUS APPEALS — lifted verbatim from the administrative record
+
+     Same card, same colours, same pager. Copied rather than imported
+     because dashboard/lookup.html keeps its styles inline; if these two
+     ever need to change together, that is the moment to move them into
+     assets/css/ and delete both copies.
+     ===================================================================== */
+  .foldh{width:100%;background:none;border:none;cursor:pointer;text-align:left;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:17px 22px 15px;transition:background .14s;font-family:inherit}
+  .foldh:hover{background:var(--charcoal-3)}
+  .foldh h3{font-size:15.5px;font-weight:700;letter-spacing:-.015em;color:var(--parchment);
+    display:flex;align-items:center;gap:11px}
+  .foldh .r{display:flex;align-items:center;gap:11px;font-size:12.5px;color:var(--text-faint);
+    font-variant-numeric:tabular-nums}
+  .foldh .cv{width:17px;height:17px;stroke-width:2.2;color:var(--stone);transition:transform .2s}
+  .fold.open .foldh{border-bottom:1px solid var(--rule)}
+  .fold.open .foldh .cv{transform:rotate(90deg)}
+  .fold .card-b{display:none}
+  .fold.open .card-b{display:block}
+  .foldh:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+
+  .aplist{margin-top:2px}
+  /* Boxed. Four aligned columns inside each box: the pills line up, the
+     chevrons line up, and the row a hover highlights is unmistakably one
+     row. */
+  .aprow{display:grid;grid-template-columns:46px minmax(0,1fr) 90px 14px;align-items:center;
+    gap:0 16px;padding:12px 15px;border-radius:11px;
+    background:var(--charcoal-3);border:1px solid var(--border-soft);
+    cursor:pointer;transition:background .13s,border-color .13s}
+  .aprow + .aprow{margin-top:9px}
+  .aprow:hover{background:var(--charcoal-4);border-color:rgba(226,182,92,.26)}
+  .aprow:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .aprow .num{font-size:11.5px;font-weight:700;color:var(--text-dim);letter-spacing:.02em;
+    font-variant-numeric:tabular-nums;transition:color .12s}
+  .aprow:hover .num{color:var(--gold)}
+  .aprow .t{display:block;font-size:13px;font-weight:700;color:var(--parchment);line-height:1.45;
+    overflow-wrap:anywhere}
+  .aprow .t .vs{font-weight:500;color:var(--text-faint)}
+  .aprow .s{display:block;font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.5;
+    font-variant-numeric:tabular-nums}
+  .aprow .s b{color:var(--text-faint);font-weight:600}
+  .aprow .s .dot{padding:0 5px;opacity:.55}
+  .aprow .ap{justify-self:stretch;text-align:center;padding:3px 0;font-size:11px;
+    letter-spacing:.02em;border-radius:100px;font-weight:800;text-transform:uppercase;
+    border:1px solid var(--rule);background:var(--charcoal);color:var(--text-faint)}
+  .aprow .ap.pending {color:#e3bd72;background:rgba(226,182,92,.1);
+    border-color:rgba(226,182,92,.32)}
+  .aprow .ap.accepted{color:#9fae8d;background:rgba(127,160,90,.11);
+    border-color:rgba(127,160,90,.32)}
+  .aprow .ap.rejected{color:#d29b8d;background:rgba(193,85,63,.1);
+    border-color:rgba(193,85,63,.34)}
+  .aprow .go{width:14px;height:14px;stroke-width:2.4;color:var(--text-dim);
+    transition:color .12s,transform .12s;justify-self:end}
+  .aprow:hover .go{color:var(--gold);transform:translateX(2px)}
+  .secblank{padding:26px 0 12px;text-align:center;font-size:13px;color:var(--text-dim)}
+
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding-top:16px}
+  .pcount{font-size:12px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+  .pcount b{color:var(--parchment);font-weight:600}
+  .pnav{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .pnav button{min-width:33px;height:33px;padding:0 9px;border-radius:9px;
+    border:1px solid var(--rule);background:var(--charcoal-2);color:var(--text-faint);
+    font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.13s}
+  .pnav button:hover:not([disabled]){color:var(--parchment);border-color:var(--charcoal-4)}
+  .pnav button[aria-current="true"]{background:var(--charcoal-4);color:var(--parchment);
+    border-color:var(--charcoal-4)}
+  .pnav button[disabled]{opacity:.3;cursor:default}
+  .pnav .arrow{min-width:33px;padding:0}
+  .pnav .arrow svg{width:15px;height:15px;stroke-width:2.3}
+  @media (max-width:760px){
+    .aprow{grid-template-columns:40px minmax(0,1fr) auto;gap:0 12px;padding:12px 13px}
+    .aprow .go{display:none}
+  }
+</style>
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.0">
+</head>
+
+HTML;
+require __DIR__ . '/../partials/shell-top.php';
+?>
+
+      <div class="ahead">
+        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/></svg></span>
+        <div class="tx">
+          <h1>Ban Appeals</h1>
+          <!-- The old line said "looked at a second time by somebody who did
+               not issue it", which describes a second opinion from a stranger.
+               An appeal goes TO the administrator who issued it — close to the
+               opposite of what it claimed. -->
+          <p>An appeal goes to the administrator who issued your punishment, so you can explain
+            what happened in your own words and have it looked at again.</p>
+        </div>
+      </div>
+
+      <div class="qtabs" id="qtabs" role="tablist" aria-label="Ban Appeals views"></div>
+      <div id="qbody"></div>
+
+    </main>
+  </div>
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<script src="/assets/js/ucp.js"></script>
+<script>
+  /* ===================== SIDEBAR (shared config) ===================== */
+  /* The sidebar lives in assets/js/ucp.js — one copy for every page.
+     It used to be pasted into all eleven, which is eleven things to forget
+     when one of them changes; adding a menu item is now an edit to NAV in
+     that file and nothing else. Any page with <nav id="nav"> gets it, drawn
+     from the cached rank on load and again when api/session.php answers. */
+  function svgI(n,c){return `<svg class="${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor">${ICONS[n]||''}</svg>`;}
+  /* Administration items appear only for Management and Founders. The pages
+     behind them check the rank themselves; hiding the link is so nobody is
+     shown a door that won't open. */
+  let IS_MANAGER=false, IS_FOUNDER=false, IS_ADMINISTRATOR=false;
+  let MY_RANK = 0, MY_TEAMS = [];   // the ladder rung, and sub-group keys
+  /* Menu gates.
+
+     `min` is a rank on the ladder in api/_ranks.php. `team` is a sub-group
+     key that opens the item on its own at ANY rank — which is how a Staff
+     Management holder reaches the Staff Report Panel without being
+     Management. A menu drawn from rank alone would be wrong for exactly the
+     people the sub-group exists for.
+
+     This decides what is DRAWN. Every page behind a link asks the server,
+     and every endpoint checks again; nothing here is a permission. */
+
+  /* Seed the menu gates from the last known session so the FIRST paint is
+     right. Without this every navigation drew the sidebar twice — once with
+     no Administration section, once with it — which is the flicker.
+     api/session.php confirms it below, and both the pages and the endpoints
+     check the rank with the server on every request regardless. */
+  (function(){
+    var me = window.UCP && UCP.me;
+    if(!me) return;
+    IS_ADMINISTRATOR = me.rank >= 3;
+    IS_MANAGER       = me.rank >= 8;
+    IS_FOUNDER       = me.rank >= 9;
+    MY_RANK          = me.rank | 0;
+    MY_TEAMS         = me.teams || [];
+  })();
+  renderSidebar(SIDEBAR);
+
+  /* =====================================================================
+     BAN APPEALS
+
+     Two views behind one page, chosen by the hash so the sidebar can link
+     to either:
+
+       #submit   the rules, then the form   — everyone
+       #panel    the queue                  — Support Staff and above
+
+     Which of them exists for the person looking is decided by
+     api/queues.php, not by this file reading a rank. The endpoints check
+     again on every request regardless; nothing here is a permission.
+     ===================================================================== */
+  var VIEWS = [
+    { key:'submit', label:'Appeal your Punishment', icon:'pen',
+      note:'Explain what happened and ask for it to be looked at again.' },
+    { key:'panel',  label:'Ban Appeal Panel', icon:'shield', staff:true,
+      note:'Read and answer appeals from players.' }
+  ];
+  var VIEW = 'submit', GATE = null, ELIG = null;
+
+  /* One appeal is a THIRD view of this page rather than a page of its own.
+     ?id=123 opens it. Everything about ban appeals — the rules, the form,
+     the queue and one appeal — is in this file, so the next thing that gets
+     added has one obvious place to go. */
+  var ID = parseInt(new URLSearchParams(location.search).get('id') || '0', 10) || 0;
+
+  var AI = {
+    lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    warn:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    tick:'<path d="M20 6L9 17l-5-5"/>',
+    x:'<path d="M6 6l12 12M18 6L6 18"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+    open:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    none:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
+    chev:'<path d="M9 6l6 6-6 6"/>',
+    shield:'<path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="M9.5 12l2 2 3.5-4"/>',
+    hand:'<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 11V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6v-2.5a1.5 1.5 0 0 1 3 0"/>',
+    msg:'<path d="M4 5h16v11H8l-4 3z"/>',
+    one:'<path d="M8 8l3-2v12"/><path d="M5 20h12"/>',
+    ban:'<circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/>',
+    pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
+  };
+  function ai(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+AI[n]+'</svg>'; }
+
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function stamp(ts){
+    if(!ts) return '—';
+    var d = new Date(ts*1000), p = function(x){ return String(x).padStart(2,'0'); };
+    return MON[d.getUTCMonth()]+' '+p(d.getUTCDate())+', '+d.getUTCFullYear()+
+           ' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes());
+  }
+  function ago(ts){
+    if(!ts) return '—';
+    if(window.UCP && UCP.relTime) return UCP.relTime(ts);
+    return stamp(ts);
+  }
+
+  /* ---- tabs ---------------------------------------------------------- */
+  function renderTabs(){
+    var host = document.getElementById('qtabs');
+
+    /* Only what this person can actually open. If they have arrived at
+       #panel without the rank for it the body still explains the refusal —
+       but the button for it is not drawn, so nothing on the page is
+       offering them a thing that will turn them away. */
+    var shown = VIEWS.filter(function(v){
+      var st = GATE && GATE.views ? GATE.views[v.key] : null;
+      return !st || st.may;
+    });
+    if(!shown.length) shown = [VIEWS[0]];
+
+    host.className = 'qtabs' + (shown.length === 1 ? ' solo' : '');
+    host.innerHTML = shown.map(function(v){
+      var on = v.key === VIEW;
+      return '<button class="qtab'+(v.staff && !on ? ' staff' : '')+'" role="tab" '+
+             'data-view="'+v.key+'" aria-selected="'+(on?'true':'false')+'">'+
+               '<span class="ai">'+ai(v.icon)+'</span>'+
+               '<span class="at">'+
+                 '<span class="an">'+escapeHtml(v.label)+
+                   (v.staff ? '<span class="smark">Staff</span>' : '')+'</span>'+
+                 '<span class="ad">'+escapeHtml(v.note)+'</span>'+
+               '</span>'+
+             '</button>';
+    }).join('');
+    Array.prototype.forEach.call(host.querySelectorAll('[data-view]'), function(b){
+      b.addEventListener('click', function(){ go(b.getAttribute('data-view'), true); });
+    });
+  }
+
+  function refused(label, why){
+    return '<div class="card"><div class="card-b">'+
+      '<div class="note-a bad"><span class="si">'+ai('lock')+'</span><div>'+
+        '<h4>'+escapeHtml(label)+' isn’t open to you</h4>'+
+        '<p>'+escapeHtml(why||'')+'</p></div></div></div></div>';
+  }
+
+  /* =====================================================================
+     SUBMIT — the rules, then the form
+
+     The rules come first and the form does not exist until the button is
+     pressed. That ordering is the point: most appeals that waste a
+     handler's time could never have succeeded, and the only cheap moment
+     to say so is before anything is typed.
+     ===================================================================== */
+  var AGREED = false;
+
+  function renderSubmit(){
+    var host = document.getElementById('qbody');
+
+    if(!ELIG){ host.innerHTML = ''; return; }
+
+    /* Already appealing. Sent straight to it — that is what they came for. */
+    if(ELIG.open){
+      host.innerHTML = '<div class="card"><div class="card-b">'+
+        '<div class="note-a"><span class="si">'+ai('info')+'</span><div>'+
+          '<h4>You have an appeal open</h4>'+
+          '<p>You can only have one appeal at a time. Follow it, add to it, and read what '+
+          'staff have said from the appeal itself.</p>'+
+          '<div class="acts"><a class="btn primary" href="/dashboard/appeals?id='+ELIG.open+'">'+
+          ai('open')+'Open your appeal</a></div>'+
+        '</div></div></div></div>' + historyCard(ELIG.history, false, {hideEmpty:true}) +
+        processHTML({ can:false, asks:false });
+      return;
+    }
+
+    if(!ELIG.may){
+      /* The most common state on this page by a distance: most players have
+         nothing to appeal, and they are here to find out how it works or
+         because something has happened and they don't yet know what. A red
+         box saying "you can't" answers a question they didn't ask.
+
+         So the refusal stays — it is the direct answer — and everything that
+         is true regardless follows it. */
+      var extra = '';
+      if(ELIG.cooldown){
+        extra = '<p>You can appeal again from <b>'+escapeHtml(stamp(ELIG.cooldown))+
+                ' UTC</b> — that is '+escapeHtml(untilWords(ELIG.cooldown))+' from now.</p>';
+      }
+      var soft = ELIG.punishments && ELIG.punishments.length;
+      host.innerHTML = '<div class="card"><div class="card-b">'+
+        '<div class="note-a'+(soft?' bad':'')+'"><span class="si">'+ai(soft?'warn':'info')+
+          '</span><div>'+
+          '<h4>'+(soft ? 'You can’t appeal right now'
+                       : 'There is nothing on your account to appeal')+'</h4>'+
+          '<p>'+escapeHtml(ELIG.why||'')+'</p>'+extra+
+        '</div></div>'+ punishList() +'</div></div>' +
+        historyCard(ELIG.history, false, {hideEmpty:true}) + processHTML();
+      return;
+    }
+
+    host.innerHTML = AGREED ? formHTML() : gateHTML();
+    if(AGREED) wireForm(); else wireGate();
+    wireHistory(renderSubmit);
+  }
+
+  /* =====================================================================
+     HOW AN APPEAL WORKS
+
+     Three blocks, each answering a question people ask staff every week:
+     what happens after I send it, what can I actually appeal, and what do
+     I have to write. All of it is true whether or not the person reading
+     it can appeal today, which is why it sits under the refusal rather
+     than instead of it.
+     ===================================================================== */
+  function untilWords(ts){
+    var days = Math.ceil((ts - Date.now()/1000) / 86400);
+    if(days <= 1) return 'about a day';
+    if(days < 31) return days + ' days';
+    var months = Math.round(days / 30);
+    return months + (months === 1 ? ' month' : ' months');
+  }
+
+  var STAGES = [
+    { t:'You write it',
+      p:'Where you were punished, what happened in your own words, and any evidence. You can '+
+        'only have one appeal open at a time, and it can’t be edited once it is sent.' },
+    { t:'It joins the queue',
+      p:'Appeals are worked oldest first by Support Staff and above. One of them takes it on as '+
+        'the handler, and their name appears on your appeal.' },
+    { t:'It gets read',
+      p:'The handler reads it beside the punishment it is about. They may reply on the appeal '+
+        'to ask you something — you can answer there for as long as it is open.' },
+    { t:'It is decided',
+      p:'Accepted or rejected, always with a reason written to you. Whoever issued the '+
+        'punishment can’t be the one who decides the appeal against it.' }
+  ];
+
+  function processHTML(opt){
+    opt = opt || {};
+    var want = function(k){ return opt[k] !== false; };
+
+    var stages = STAGES.map(function(s, i){
+      return '<div class="stp'+(i===0?' gold':'')+'"><div class="n">'+(i+1)+'</div>'+
+        '<h5>'+escapeHtml(s.t)+'</h5><p>'+escapeHtml(s.p)+'</p></div>';
+    }).join('');
+
+    var yes = [
+      ['In-game ban', 'Temporary or permanent.'],
+      ['User lock', 'You can appeal one while locked — the appeal is the one thing a locked '+
+                    'account can still reach.'],
+      ['Forum ban', 'Appealed here, not on the forum.'],
+      ['Discord ban', 'Appealed here, not in a ticket.']
+    ];
+    var no = [
+      ['A kick', 'A kick leaves nothing on your record, so there is nothing to lift.'],
+      ['A warning', 'A warning is a note, not a restriction. Take it up with the administrator '+
+                    'who left it.'],
+      ['An egregious violation', 'Doxxing, real-life threats, sexualising minors, or attacking '+
+                    'the service itself. These are never appealed.'],
+      ['One you already appealed', 'Not for three months after the verdict — unless you have '+
+                    'evidence nobody has seen.']
+    ];
+    function rows(list, cls, icon){
+      return list.map(function(r){
+        return '<div class="canrow '+cls+'"><span class="m">'+ai(icon)+'</span>'+
+          '<div><b style="font-weight:600">'+escapeHtml(r[0])+'</b>'+
+          '<span class="s">'+escapeHtml(r[1])+'</span></div></div>';
+      }).join('');
+    }
+
+    var asks = [
+      ['1', 'Which platform you were punished on. Tick every one that applies — the appeal is '+
+            'attached to what is on file for it.'],
+      ['2', 'The character it involved, once characters are linked to the UCP. Until then, name '+
+            'them in your answer.'],
+      ['3', 'What happened, in order, and why the punishment should be lifted. This is the '+
+            'appeal — everything else supports it.'],
+      ['4', 'Evidence, if you have any. Links to screenshots or clips, each with a line saying '+
+            'what it shows.']
+    ];
+
+    return (want('stages') ?
+      '<div class="card"><div class="card-h"><h3>How an appeal works</h3>'+
+        '<span class="aside">Four stages</span></div>'+
+      '<div class="card-b"><div class="flow">'+stages+'</div>'+
+        '<div class="fieldnote" style="margin-top:20px">There is no fixed handling time — it '+
+        'depends on how many appeals are waiting and how much yours needs checking. Chasing it '+
+        'elsewhere does not move it up the queue.</div>'+
+      '</div></div>' : '') +
+
+    (want('can') ?
+      '<div class="card"><div class="card-h"><h3>What can be appealed</h3></div>'+
+      '<div class="card-b"><div class="canlist">'+
+        '<div class="col"><h5>Open to appeal</h5>'+rows(yes,'yes','tick')+'</div>'+
+        '<div class="col"><h5>Not open to appeal</h5>'+rows(no,'no','x')+'</div>'+
+      '</div></div></div>' : '') +
+
+    (want('asks') ?
+      '<div class="card"><div class="card-h"><h3>What the form asks for</h3>'+
+        '<span class="aside">Four questions</span></div>'+
+      '<div class="card-b"><p class="card-lede" style="margin-bottom:8px">So you know what to '+
+        'have ready if you ever need it.</p><div class="asks">'+
+        asks.map(function(a){
+          return '<div class="askrow"><span class="qn">'+a[0]+'</span><span>'+
+                 escapeHtml(a[1])+'</span></div>';
+        }).join('')+
+      '</div></div></div>' : '');
+  }
+
+  /* What is actually on the account. Shown on every state of this view: a
+     player who has been told "you can't appeal" should be able to see what
+     the UCP thinks is against them without asking anyone. */
+  function punishList(){
+    var ps = (ELIG && ELIG.punishments) || [];
+    if(!ps.length) return '';
+    return '<div style="margin-top:18px"><div class="card-lede" style="margin-bottom:10px">'+
+      'On your account right now:</div>'+
+      '<div class="qwrap"><table class="qtable"><tbody>'+
+      ps.map(function(p){
+        return '<tr><td class="who">'+escapeHtml(p.noun.charAt(0).toUpperCase()+p.noun.slice(1))+'</td>'+
+          '<td>'+escapeHtml(p.reason || 'No reason recorded')+'</td>'+
+          '<td class="num"><span class="pill '+(p.permanent?'perm':'temp')+'">'+
+            (p.permanent ? 'Permanent' : 'Until '+stamp(p.expires_at))+'</span></td>'+
+          '<td class="num">'+escapeHtml(ago(p.issued_at))+'</td>'+
+          '<td class="num">'+(p.appealable ? '' :
+            '<span class="pill rejected">Not appealable</span>')+'</td></tr>';
+      }).join('')+'</tbody></table></div></div>';
+  }
+
+  function gateHTML(){
+    var can = [
+      'You have never appealed this punishment before.',
+      'Your appeal was denied and you now have evidence nobody has seen.',
+      /* No longer a fixed three months — the rejecting administrator picks
+         the wait, so this can only say that one was set. The date itself is
+         on the rejected appeal and on this page while you are inside it. */
+      'Your appeal was denied and the wait set with that decision has passed.',
+      'The punishment is a ban or a user lock — not a kick or a warning.',
+      'An in-game ban or user lock is on your account and still in force.',
+      'A forum or Discord ban can be appealed here whether or not the UCP has a record of it.'
+    ];
+    var rules = [
+      ['msg', 'Language',
+       'Offensive language, slurs and abuse of any kind end the appeal where it stands.'],
+      ['one', 'One at a time',
+       'You cannot open a second appeal while one is being looked at.'],
+      ['ban', 'Non-appealable bans',
+       'A ban for an egregious violation is not open to appeal, and one submitted anyway is '+
+       'denied on sight.']
+    ];
+    var stop = [
+      ['Doxxing', 'Publishing private information about another person without their consent.'],
+      ['Real-life threats', 'Threatening, or implying a threat, to harm another person or '+
+       'anyone connected to them in real life.'],
+      ['Sexualising minors', 'In any form, in any context.'],
+      ['Attacks on the service', 'Anything meant to disrupt BlaineSide itself, including '+
+       'denial-of-service attacks.']
+    ];
+
+    return '<div class="card"><div class="card-h"><h3>Before you appeal</h3>'+
+      '<span class="aside">Takes a minute to read</span></div>'+
+      '<div class="card-b"><div class="gate">'+
+
+      '<div class="gsec">'+
+        '<h4>When you can appeal</h4>'+
+        '<div class="gchecks">'+ can.map(function(t){
+          return '<div class="gcheck"><span class="m">'+ai('tick')+'</span><span>'+
+                 escapeHtml(t)+'</span></div>';
+        }).join('') +'</div>'+
+      '</div>'+
+
+      '<div class="gsec">'+
+        '<h4>Writing one that works</h4>'+
+        '<p class="lede">The person reading this has the punishment, the report behind it, and '+
+        'your appeal. Nothing else. Whichever of these you are, write it for them.</p>'+
+        '<div class="gsplit">'+
+          '<div class="gcase"><h5><span class="ic">'+ai('shield')+'</span>'+
+            'I didn’t break the rule</h5>'+
+            '<p>Bans are issued after somebody looked at it, not on a whim — so say what '+
+            'actually happened, in order, and where you think it went wrong.</p>'+
+            '<div class="tip"><b>Evidence wins these.</b> A screenshot, a clip or a log, each '+
+            'with a line saying what it shows. A bare link gets skimmed past.</div>'+
+          '</div>'+
+          '<div class="gcase"><h5><span class="ic">'+ai('hand')+'</span>'+
+            'I did break the rule</h5>'+
+            '<p>Describe what led to it and what you will do differently. Owning it plainly is '+
+            'worth more here than any argument.</p>'+
+            '<div class="tip"><b>Arguing the rule is not an appeal.</b> Whether the rule should '+
+            'exist is a different conversation, and this is not it.</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+
+      '<div class="gsec">'+
+        '<h4>What ends an appeal</h4>'+
+        '<div class="grules">'+ rules.map(function(r){
+          return '<div class="grule"><div class="t"><span class="ic">'+ai(r[0])+'</span>'+
+                 escapeHtml(r[1])+'</div><p>'+escapeHtml(r[2])+'</p></div>';
+        }).join('') +'</div>'+
+      '</div>'+
+
+      '<div class="gstop">'+
+        '<div class="h"><span class="ic">'+ai('warn')+'</span>'+
+          '<h5>Egregious violations are never appealed</h5></div>'+
+        '<p>Non-exhaustive. An appeal against one of these is not read.</p>'+
+        '<div class="items">'+ stop.map(function(x){
+          return '<div><span class="x">'+ai('x')+'</span><div><b>'+escapeHtml(x[0])+'</b>'+
+                 '<span>'+escapeHtml(x[1])+'</span></div></div>';
+        }).join('') +'</div>'+
+      '</div>'+
+
+      '<div class="gatefoot">'+
+        '<span class="agree">Pressing this confirms you have read the above. Your appeal '+
+        'can’t be edited once it is sent.</span>'+
+        '<button class="btn primary" id="goAppeal">Appeal your ban</button>'+
+      '</div>'+
+
+      '</div>'+ punishList() +'</div></div>' +
+      historyCard(ELIG.history, false, {hideEmpty:true});
+  }
+
+  function wireGate(){
+    document.getElementById('goAppeal').addEventListener('click', function(){
+      AGREED = true; renderSubmit(); window.scrollTo(0,0);
+    });
+  }
+
+  /* ---- the form ------------------------------------------------------ */
+  var PICK = {}, EV = [{url:'',note:''}];
+
+  function formHTML(){
+    var plats = (ELIG.platforms||[]).map(function(p){
+      var on = !!PICK[p.key];
+      return '<button type="button" class="chk'+(on?' on':'')+'" data-plat="'+p.key+'">'+
+        '<span class="bx">'+ai('tick')+'</span>'+escapeHtml(p.label)+'</button>';
+    }).join('');
+
+    return '<div class="card"><div class="card-h"><h3>Ban Appeal</h3>'+
+        '<span class="aside">Can’t be edited once sent</span></div>'+
+      '<div class="card-b">'+
+
+      '<div class="q"><div class="qlab"><b>1.</b>What platform were you banned on?</div>'+
+        '<div class="qhint">Tick every one that applies. An in-game ban or user lock has to be '+
+        'on your account and still in force; a forum or Discord ban is appealed here either '+
+        'way, because the UCP does not record those.</div>'+
+        '<div class="qbody"><div class="checks" id="plats">'+plats+'</div></div></div>'+
+
+      '<div class="q"><div class="qlab"><b>2.</b>If you were banned while playing a character, '+
+        'or the ban was about one, which?</div>'+
+        '<div class="qbody"><select class="sel" disabled><option>Characters aren’t linked '+
+        'to the UCP yet</option></select>'+
+        '<div class="fieldnote">This starts working the moment the game server is linked. '+
+        'Until then, name the character in your answer below.</div></div></div>'+
+
+      '<div class="q"><div class="qlab"><b>3.</b>Explain what happened and why you should be '+
+        'unbanned.</div>'+
+        '<div class="qhint">Everything the person reading this will have. Be specific: what you '+
+        'were doing, when, and what you believe went wrong — or, if you did break the rule, '+
+        'what you will do differently.</div>'+
+        '<div class="qbody"><textarea class="ta" id="body" maxlength="8000" placeholder="'+
+        'Describe the situation that led to your ban, in order."></textarea>'+
+        '<div class="fieldnote"><span class="counter" id="count">0</span>'+
+        'At least '+ELIG.min_words+' characters.</div></div></div>'+
+
+      '<div class="q"><div class="qlab"><b>4.</b>Supporting evidence <span '+
+        'style="color:var(--text-dim);font-weight:400">(optional)</span></div>'+
+        '<div class="qhint">Links only — paste a screenshot or clip URL and say what it '+
+        'shows. Evidence with a description carries far more weight than a bare link.</div>'+
+        '<div class="qbody" id="evs"></div>'+
+        '<button type="button" class="btn sm" id="addEv" style="margin-top:11px">'+ai('plus')+
+        'Add evidence</button></div>'+
+
+      '<div class="q"><div class="qlab">Before you send it</div>'+
+        '<div class="qhint">Your appeal goes to the staff queue and you will not be able to '+
+        'edit it. You can still add comments to it while it is open. Handling times vary with '+
+        'how many appeals are waiting and how complicated yours is.</div>'+
+        '<div class="gatefoot" style="margin-top:16px">'+
+          '<button class="btn" id="backGate">Back to the rules</button>'+
+          '<button class="btn primary" id="send">Submit appeal</button>'+
+        '</div></div>'+
+
+      '</div></div>';
+  }
+
+  function evHTML(){
+    return EV.map(function(e,i){
+      return '<div class="evrow" data-i="'+i+'">'+
+        '<input class="ti url" placeholder="https://…" value="'+escapeHtml(e.url)+'" data-f="url">'+
+        '<input class="ti" placeholder="What does it show?" value="'+escapeHtml(e.note)+'" data-f="note">'+
+        (EV.length>1 ? '<button type="button" class="evx" data-rm="'+i+'">'+ai('x')+'</button>' : '')+
+      '</div>';
+    }).join('');
+  }
+
+  function wireForm(){
+    var evs = document.getElementById('evs');
+    function paintEv(){
+      evs.innerHTML = evHTML();
+      Array.prototype.forEach.call(evs.querySelectorAll('[data-f]'), function(inp){
+        inp.addEventListener('input', function(){
+          var i = +inp.closest('.evrow').getAttribute('data-i');
+          EV[i][inp.getAttribute('data-f')] = inp.value;
+        });
+      });
+      Array.prototype.forEach.call(evs.querySelectorAll('[data-rm]'), function(b){
+        b.addEventListener('click', function(){
+          EV.splice(+b.getAttribute('data-rm'),1); paintEv();
+        });
+      });
+    }
+    paintEv();
+
+    document.getElementById('addEv').addEventListener('click', function(){
+      if(EV.length >= 8){ toast('Eight pieces of evidence is the limit.'); return; }
+      EV.push({url:'',note:''}); paintEv();
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-plat]'), function(b){
+      b.addEventListener('click', function(){
+        var k = b.getAttribute('data-plat');
+        PICK[k] = !PICK[k];
+        b.classList.toggle('on', !!PICK[k]);
+      });
+    });
+
+    var body = document.getElementById('body'), count = document.getElementById('count');
+    body.addEventListener('input', function(){ count.textContent = body.value.trim().length; });
+
+    document.getElementById('backGate').addEventListener('click', function(){
+      AGREED = false; renderSubmit(); window.scrollTo(0,0);
+    });
+
+    document.getElementById('send').addEventListener('click', function(){
+      var btn = this;
+      var plats = Object.keys(PICK).filter(function(k){ return PICK[k]; });
+      if(!plats.length){ toast('Tick where you were banned.'); return; }
+      if(body.value.trim().length < ELIG.min_words){
+        toast('Explain what happened — at least '+ELIG.min_words+' characters.'); return;
+      }
+      btn.disabled = true; btn.textContent = 'Sending…';
+      UCP.post('appeal-submit.php', {
+        platforms: plats,
+        body: body.value.trim(),
+        evidence: EV.filter(function(e){ return e.url.trim(); })
+      }).then(function(res){
+        var d = (res && res.data) || {};
+        if(!d.ok){
+          btn.disabled = false; btn.textContent = 'Submit appeal';
+          toast(d.error || 'That did not work');
+          return;
+        }
+        window.location.href = '/dashboard/appeals?id=' + d.id;
+      }).catch(function(){
+        btn.disabled = false; btn.textContent = 'Submit appeal';
+        toast('Could not reach the server');
+      });
+    });
+  }
+
+  /* =====================================================================
+     PANEL — the queue
+     ===================================================================== */
+  var Q = { tab:'pending', q:'', page:1, per:10 }, QDATA = null, QBUSY = false;
+  var qTimer = null;
+
+  function loadQueue(){
+    if(QBUSY) return;
+    QBUSY = true;
+    var url = 'appeals.php?tab='+encodeURIComponent(Q.tab)+'&q='+encodeURIComponent(Q.q)+
+              '&page='+Q.page+'&per='+Q.per;
+    UCP.get(url).then(function(d){
+      QBUSY = false;
+      if(!d || d.ok !== true){
+        document.getElementById('qbody').innerHTML =
+          refused('Ban Appeal Panel', (d && d.error) || 'Could not load the queue.');
+        return;
+      }
+      QDATA = d; renderQueue();
+    }).catch(function(){ QBUSY = false; toast('Could not reach the server'); });
+  }
+
+  function renderQueue(){
+    var d = QDATA;
+    var tabs = d.tabs.map(function(t){
+      return '<button class="qtab" data-qtab="'+t.key+'" aria-selected="'+
+        (t.key===d.tab?'true':'false')+'">'+escapeHtml(t.label)+
+        ' <span class="pill '+(t.key==='handled'?'accepted':'pending')+'">'+t.count+'</span></button>';
+    }).join('');
+
+    var rows = d.appeals.length ? d.appeals.map(function(a){
+      return '<tr>'+
+        '<td class="num"><a class="view" href="/dashboard/appeals?id='+a.id+'">View (#'+a.id+')</a></td>'+
+        '<td class="'+(a.user?'who':'gone')+'">'+escapeHtml(a.user || 'The user no longer exists')+'</td>'+
+        '<td class="'+(a.admin?'':'gone')+'">'+escapeHtml(a.admin || 'Not assigned')+'</td>'+
+        '<td><span class="pill '+a.status+'">'+a.status+'</span></td>'+
+        '<td class="num">'+escapeHtml(stamp(a.created))+'</td>'+
+        '<td class="num">'+escapeHtml(stamp(a.updated))+'</td>'+
+      '</tr>';
+    }).join('') : '';
+
+    var body = rows ? '<div class="qwrap"><table class="qtable"><thead><tr>'+
+        '<th>#</th><th>User</th><th>Admin</th><th>Status</th><th>Created</th><th>Updated</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody></table></div>' + pagerHTML(d)
+      : '<div class="blank"><span class="ei">'+ai('none')+'</span>'+
+        '<h4>Nothing here</h4><p>'+(d.q
+          ? 'No appeal matches “'+escapeHtml(d.q)+'” in this tab.'
+          : 'This tab is empty. Nothing is waiting on you.')+'</p></div>';
+
+    document.getElementById('qbody').innerHTML =
+      /* `.qtabs` is now the two half-page view buttons above the page, so the
+         queue's own filter strip has its own class. Sharing the name turned
+         "All 3 · Not assigned 1" into a grid of cards. */
+      '<div class="qfilters">'+tabs+'</div>'+
+      '<div class="card"><div class="card-b">'+
+        '<div class="qbar">'+
+          '<div class="qsearch">'+ai('search')+
+            '<input class="ti" id="qq" placeholder="Filter by player or handler…" value="'+
+            escapeHtml(d.q)+'"></div>'+
+          '<span class="grow"></span>'+
+          '<label class="perpage">Show'+
+            '<select class="sel" id="qper">'+
+              [10,25,50,100].map(function(n){
+                return '<option value="'+n+'"'+(n===d.per?' selected':'')+'>'+n+'</option>';
+              }).join('')+
+            '</select>per page</label>'+
+        '</div>'+ body +
+      '</div></div>';
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-qtab]'), function(b){
+      b.addEventListener('click', function(){
+        Q.tab = b.getAttribute('data-qtab'); Q.page = 1; loadQueue();
+      });
+    });
+    var qq = document.getElementById('qq');
+    qq.addEventListener('input', function(){
+      clearTimeout(qTimer);
+      qTimer = setTimeout(function(){ Q.q = qq.value.trim(); Q.page = 1; loadQueue(); }, 260);
+    });
+    document.getElementById('qper').addEventListener('change', function(){
+      Q.per = +this.value; Q.page = 1; loadQueue();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-page]'), function(b){
+      b.addEventListener('click', function(){
+        Q.page = +b.getAttribute('data-page'); loadQueue(); window.scrollTo(0,0);
+      });
+    });
+  }
+
+  /* First, last, and a window either side of where you are. A page control
+     that lists 730 buttons is not a page control. */
+  function pagerHTML(d){
+    if(d.pages <= 1){
+      return '<div class="pager"><span class="pinfo">'+d.total+
+             (d.total===1?' appeal':' appeals')+'</span></div>';
+    }
+    var out = [], seen = {};
+    function push(n){
+      if(n < 1 || n > d.pages || seen[n]) return; seen[n] = 1;
+      out.push('<button data-page="'+n+'"'+(n===d.page?' aria-current="true"':'')+'>'+n+'</button>');
+    }
+    push(1);
+    if(d.page - 2 > 2) out.push('<span class="gap">…</span>');
+    for(var i = d.page - 1; i <= d.page + 1; i++) push(i);
+    if(d.page + 2 < d.pages - 1) out.push('<span class="gap">…</span>');
+    push(d.pages);
+    return '<div class="pager"><span class="pinfo">'+d.total+
+      (d.total===1?' appeal':' appeals')+' · page '+d.page+' of '+d.pages+'</span>'+
+      '<button data-page="'+(d.page-1)+'"'+(d.page<=1?' disabled':'')+'>Previous</button>'+
+      out.join('')+
+      '<button data-page="'+(d.page+1)+'"'+(d.page>=d.pages?' disabled':'')+'>Next</button></div>';
+  }
+
+
+  /* =====================================================================
+     ONE BAN APPEAL
+
+     The same page for the appellant and for staff, and the difference
+     between them is NOT made here. api/appeal.php returns two genuinely
+     different documents: a staff-only comment and the running log are
+     absent from the appellant's response, not hidden from it. If this file
+     had a bug that rendered everything it was given, a player still could
+     not see a staff-only comment, because it never arrived.
+
+     What this file does decide is layout — one column or two — and which
+     controls are drawn. Every one of them is checked again by the endpoint
+     it calls.
+     ===================================================================== */
+  var DATA = null;
+  var AUD  = 'player';        // which audience a new comment goes to
+  var HANDLERS = [];          // Support Staff and above, for the handler picker
+
+  var DAI = {
+    lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    warn:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    tick:'<path d="M20 6L9 17l-5-5"/>',
+    link:'<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
+    none:'<path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14"/>',
+    out:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'
+  };
+  function dai(n){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+DAI[n]+'</svg>'; }
+
+  function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+
+  var PLAT = { game:'Game', discord:'Discord', forums:'Forums' };
+
+  /* The bar above the appeal. Part of the view rather than static markup,
+     because this page is also the rules, the form and the queue — none of
+     which want it. */
+  function lookbarHTML(staff){
+    return '<div class="lookbar">'+
+      '<a class="page-back" href="/dashboard/appeals'+(staff?'#panel':'#submit')+'">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+        '<path d="M15 18l-6-6 6-6"/></svg>Back</a>'+
+      '<span class="grow"></span>'+
+      (staff ? '<span class="lookro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+        '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'+
+        '</svg>Staff view · every visit is logged</span>' : '')+
+    '</div>';
+  }
+
+  function renderAppeal(){
+    var d = DATA, staff = d.viewer.staff;
+    document.querySelector('.page-title h1').textContent =
+      staff ? ('Appeal #'+d.id+' — '+(d.user||'unknown')) : 'Your appeal';
+    document.title = 'BlaineSide — Appeal #'+d.id;
+
+    /* Solo (no staff column) narrows the grid, and the bar above it has to
+       narrow with it or the page reads as a wide header over a narrow body. */
+    document.body.classList.toggle('appeal-solo', !staff);
+    /* An appeal is the widest thing this page shows: two columns of dense
+       fact beside a panel of controls. The site's usual 1180 squeezed the
+       staff column to 340px, which is where "Concluded 21 minutes ago by
+       testtest" wrapped onto three lines. */
+    document.body.classList.add('appeal-wide');
+    var head = document.querySelector('.ahead');
+    if(head) head.style.display = 'none';
+
+    document.getElementById('qbody').innerHTML =
+      lookbarHTML(staff) + ownNote() +
+      '<div class="apgrid'+(staff?'':' solo')+'">'+
+        /* Previous appeals leads the column, above the ban details. It is
+           the context the appeal is read in — a first appeal and a fourth
+           are not the same document — and it stays folded, so leading
+           costs one line. */
+        '<div>'+ historyCard(d.history, staff, {hideEmpty:false}) +
+          banCard() + appealCard() + commentsCard() +'</div>'+
+        (staff ? '<div>'+ adminCard() + logCard() +'</div>' : '')+
+      '</div>';
+
+    wire();
+    wireHistory(renderAppeal);
+  }
+
+  /* Their own appeal, seen from the staff side.
+     Only Management and Founders reach this — below that rank an appeal of
+     your own is the player's view, and somebody else decides it. There is
+     no queue above Management to send it to, so the door is not bolted; it
+     is signposted. */
+  function ownNote(){
+    var v = DATA.viewer;
+    if(!v || !v.staff || !v.own) return '';
+    return '<div class="card"><div class="card-b">'+
+      '<div class="note-a bad"><span class="si">'+ai('warn')+'</span><div>'+
+        '<h4>This is your own appeal</h4>'+
+        '<p>You are seeing the staff view of it because you are Management — there is no queue '+
+        'above this one to send it to. Everything you do here is in the running log with your '+
+        'name on it, and the verdict is recorded as yours.</p>'+
+        '<p>If somebody else can decide it, hand it to them with the Handler control.</p>'+
+      '</div></div></div></div>';
+  }
+
+  /* ---- what is being appealed ----------------------------------------
+     Plural. An appeal can cover a game ban AND a forum ban, so this draws
+     one block per punishment inside one card rather than one card each —
+     they are one thing being decided, and stacking cards would suggest
+     otherwise. */
+  /* One cell of the fact grid — used by a punishment and by the account. */
+  function fcell(k, v, sub){
+    return '<div><div class="k">'+k+'</div><div class="v">'+v+'</div>'+
+           (sub ? '<div class="s">'+sub+'</div>' : '')+'</div>';
+  }
+
+  /* ---- one punishment ---- */
+  function punBlock(p, staff){
+    var lock  = p.card === 'lock';
+    var label = lock ? 'User lock'
+              : (p.card === 'ban' ? (p.permanent ? 'Permanent Ban' : 'Temporary Ban')
+                                  : cap(p.noun));
+    var live  = !!p.active;
+
+    /* Length is one word, and it is the same word for a lock as for a
+       permanent ban — a lock holds until somebody lifts it, which is what
+       permanent means here. */
+    var length = 'Permanent';
+    if(!p.permanent && p.expires_at && p.issued_at){
+      var d = Math.round((p.expires_at - p.issued_at) / 86400);
+      length = d > 0 ? (d === 1 ? '1 day' : d + ' days')
+                     : Math.max(1, Math.round((p.expires_at - p.issued_at)/3600)) + ' hours';
+    }
+
+    /* The fourth column is whichever end-of-life fact is true. A live
+       temporary ban has a date it stops on; a live permanent one has nothing
+       to say; a lifted one says when, and for staff by whom. */
+    var endK, endV, endS = null;
+    if(p.lifted_at){
+      endK = 'Lifted';
+      endV = stampEsc(p.lifted_at) + ' UTC';
+      endS = escapeHtml(ago(p.lifted_at)) + (staff && p.lifted_by
+              ? ' · by ' + escapeHtml(p.lifted_by) : '');
+    } else if(p.permanent || !p.expires_at){
+      endK = 'Ends'; endV = '<span class="v soft">Only when lifted</span>';
+    } else {
+      endK = live ? 'Ends' : 'Ended';
+      endV = stampEsc(p.expires_at) + ' UTC';
+      endS = escapeHtml(ago(p.expires_at));
+    }
+
+    var showIssuer = staff && p.issued_by;
+    var cells = [
+      fcell('Issued', stampEsc(p.issued_at) + ' UTC', escapeHtml(ago(p.issued_at))),
+      fcell('Length', length, lock ? 'Holds until lifted' : null),
+      fcell(endK, endV, endS)
+    ];
+    if(showIssuer){
+      cells.push(fcell('Issued by',
+        '<span class="grp tone-'+(p.issued_rank|0)+'">'+escapeHtml(p.issued_by)+'</span>'));
+    }
+
+    return '<div class="pun">'+
+      '<div class="pun-h">'+
+        '<span class="kindp '+(lock?'lock':'ban')+'">'+escapeHtml(label)+'</span>'+
+        (p.permanent ? '' : '<span class="lenp">'+escapeHtml(length)+'</span>')+
+        '<span class="statep '+(live?'live':'')+'">'+(live?'Active':'Ended')+'</span>'+
+      '</div>'+
+      '<div class="fg'+(showIssuer?'':' three')+'">'+cells.join('')+'</div>'+
+      '<div class="why"><div class="k">Reason given</div>'+
+        '<div class="b'+(p.reason?'':' soft')+'">'+
+        (p.reason ? escapeHtml(p.reason)
+                  : 'No reason was recorded when this was issued.')+'</div></div>'+
+    '</div>';
+  }
+
+  /* ---- a punishment the UCP does not hold ----
+     The normal case for a forum or Discord appeal, not an error. */
+  function offsiteBlock(plats, staff){
+    var names = plats.map(function(k){ return PLAT[k] || k; });
+    var pills = plats.map(function(k){
+      return '<span class="kindp '+(k === 'discord' ? 'discord' : 'forums')+'">'+
+             escapeHtml(PLAT[k] || k)+'</span>';
+    }).join('');
+    return '<div class="pun"><div class="pun-h">'+pills+
+      '<span class="statep">Not in the UCP</span></div>'+
+      '<div class="offsite"><div class="h">This punishment lives where it was issued</div>'+
+      '<div class="p">The UCP does not record '+escapeHtml(names.join(' or '))+
+        ' punishments — they are issued and lifted on those platforms. '+
+        (staff
+          ? 'Confirm it there before deciding. Accepting the appeal records the decision here; '+
+            'the punishment itself has to be lifted where it was issued.'
+          : 'Staff will check it where it was issued.')+
+      '</div></div></div>';
+  }
+
+  /* ---- the account ----
+     Staff only. A handler reading an appeal has one question after "what
+     does it say": who am I dealing with. Answering it used to mean opening
+     Administrative Search in another tab, and on a Discord or forum ban —
+     where the UCP has no punishment on file — this card said nothing at all.
+
+     Forums and Discord live HERE and only here. They used to appear both in
+     this panel and in a separate "Accounts" block above it. */
+  function accountSection(){
+    var w = DATA.whois;
+    if(!w) return '';                      // never sent to the appellant
+
+    var acc = DATA.accounts || {};
+    var fo  = acc.forum || {}, di = acc.discord || {};
+    var cells = [];
+
+    cells.push(fcell('UCP account',
+      '<a href="/dashboard/lookup?id='+w.id+'">'+escapeHtml(w.name)+'</a>',
+      'Account #'+w.id));
+
+    cells.push(fcell('Group',
+      '<span class="grp tone-'+(w.rank|0)+'">'+escapeHtml(w.role)+'</span>',
+      w.twofa ? 'Two-step on' : 'Two-step off'));
+
+    cells.push(fcell('Status',
+      w.status === 'locked'   ? '<span class="dotv bad">Locked</span>'
+      : w.status === 'active' ? '<span class="dotv ok">Active</span>'
+      : '<span class="dotv off">'+escapeHtml(cap(w.status))+'</span>',
+      w.created_at ? 'Joined '+escapeHtml(ago(w.created_at)) : null));
+
+    /* Last USED the UCP. On an appeal it answers "are they even reading
+       this" before a handler writes three paragraphs at somebody who left. */
+    var seen = w.last_seen || w.last_login;
+    cells.push(fcell('Last activity',
+      seen ? escapeHtml(ago(seen)) : '<span class="v soft">Never</span>',
+      seen ? escapeHtml(stamp(seen)) + ' UTC' + (w.last_seen ? '' : ' · sign-in') : null));
+
+    /* Always, not only when the appeal names that platform. A handler judging
+       an in-game ban still wants to know whether the Discord matches the one
+       shouting in #general. */
+    cells.push(fcell('Forums', fo.linked
+      ? '<a href="'+escapeHtml(fo.url||'#')+'" target="_blank" rel="noopener noreferrer">'+
+        escapeHtml(fo.name || ('Member #'+fo.member_id))+'</a>'
+      : '<span class="v soft">Not linked</span>',
+      fo.linked && fo.member_id ? 'Member #'+fo.member_id : null));
+
+    cells.push(fcell('Discord', di.linked
+      ? escapeHtml(di.username)
+      : (di.given ? escapeHtml(di.given) : '<span class="v soft">Not linked</span>'),
+      di.linked ? 'Verified' : (di.given ? 'Given at sign-up, never verified' : null)));
+
+    /* Whether this is a first offence or a fifth is the fact most likely to
+       change the verdict. */
+    var r = w.record;
+    if(r){
+      var lvl = r.level === 'held' ? 'bad' : (r.level === 'watch' ? 'warn' : 'off');
+      cells.push(fcell('Record',
+        r.total
+          ? '<span class="dotv '+lvl+'">'+r.total+(r.total===1?' entry':' entries')+'</span>'
+          : '<span class="dotv ok">Clean</span>',
+        r.total
+          ? r.bans+' bans · '+r.warnings+' warnings · '+r.kicks+' kicks'+
+            (r.active ? ' · '+r.active+' active' : '')
+          : 'No bans, warnings or kicks'));
+    } else {
+      cells.push(fcell('Record', '<span class="v soft">Not set up</span>',
+        'The punishment tables have not been migrated.'));
+    }
+
+    var n = (DATA.history || []).length;
+    cells.push(fcell('Past appeals',
+      n ? String(n) : '<span class="v soft">None</span>',
+      n ? 'Before this one' : 'This is their first'));
+
+    return '<div class="sec"><div class="sec-h"><span class="t">The account</span>'+
+      '<a class="go" href="/dashboard/lookup?id='+w.id+'">Open the full account'+
+      '<svg viewBox="0 0 24 24">'+DAI.out+'</svg></a></div>'+
+      '<div class="fg">'+cells.join('')+'</div></div>';
+  }
+
+  /* ---- characters ----
+     There is no character table yet, so this says so rather than being left
+     out — a staff member who expects it and doesn't find it will assume the
+     player has none. When the game server is linked, the list fills in and
+     nothing about the card moves. */
+  function charactersSection(list){
+    var body = list && list.length
+      ? list.map(function(c){
+          return '<div class="chr'+(c.online?' on':'')+'"><span class="cd"></span>'+
+            '<span class="cl"><span class="cn">'+escapeHtml(c.name)+'</span>'+
+            '<div class="cs">'+escapeHtml(c.played||'')+
+              (c.seen ? ' · '+escapeHtml(c.seen) : '')+'</div></span>'+
+            '<span class="cf">'+escapeHtml(c.faction||'')+
+              (c.rank ? '<div class="cs">'+escapeHtml(c.rank)+'</div>' : '')+'</span>'+
+          '</div>';
+        }).join('')
+      : '<div class="chr-none">Characters aren’t linked to the UCP yet. When the game server '+
+        'is connected, this account’s characters appear here with their faction and playtime — '+
+        'so a handler can see who they play before deciding.</div>';
+
+    return '<div class="sec"><div class="sec-h"><span class="t">Characters</span>'+
+      '<span class="n">'+(list && list.length
+        ? list.length + (list.length === 1 ? ' character' : ' characters')
+        : 'Not linked yet')+'</span></div>'+
+      '<div class="chars">'+body+'</div></div>';
+  }
+
+  function banCard(){
+    var staff = !!DATA.viewer.staff;
+    var ps = DATA.punishments || (DATA.punishment ? [DATA.punishment] : []);
+    var body;
+
+    if(!ps.length){
+      /* Nothing attached is the NORMAL case for a forum or Discord appeal —
+         the UCP does not record those. "The record is gone" would be alarming
+         and wrong. */
+      var plats = (DATA.platforms || []).filter(function(k){ return k !== 'game'; });
+      if(!plats.length) plats = ['forums'];
+      body = '<div class="sec"><div class="sec-h"><span class="t">Under appeal</span></div>'+
+             offsiteBlock(plats, staff)+'</div>';
+    } else {
+      body = '<div class="sec"><div class="sec-h"><span class="t">Under appeal</span>'+
+        (ps.length > 1 ? '<span class="n">'+ps.length+' punishments</span>' : '')+
+        '</div>'+ ps.map(function(p){ return punBlock(p, staff); }).join('') +'</div>';
+    }
+
+    /* The appellant's name is the thing a handler wants next after reading
+       the appeal — their record, their other punishments, their history. It
+       links to the lookup. For the appellant it is just their own name. */
+    var who = escapeHtml(DATA.user || '');
+    if(staff && DATA.user_id){
+      who = '<a class="wholink" href="/dashboard/lookup?id='+DATA.user_id+'">'+who+
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+DAI.out+'</svg></a>';
+    }
+
+    return '<div class="card"><div class="card-h"><h3>'+
+      (ps.length > 1 ? 'Punishments under appeal' : 'Ban details')+'</h3>'+
+      '<span class="aside">'+ who +'</span></div>'+
+      '<div class="card-b">'+ body +
+        charactersSection(DATA.characters) +
+        (staff ? accountSection() : '')+
+      '</div></div>';
+  }
+
+  /* The reference design has an Actions row here — show the banning admin,
+     unban, record summary. It is gone. Two of the three needed systems that
+     don't exist, and the third duplicated the verdict: accepting the appeal
+     IS unbanning them. Three buttons that can't be pressed are worse than no
+     row, and they were the first thing a handler's eye landed on. */
+
+  function stampEsc(ts){ return escapeHtml(stamp(ts)); }
+
+  /* ---- the appeal as submitted --------------------------------------- */
+  function appealCard(){
+    var d = DATA;
+    var plats = Object.keys(PLAT).map(function(k){
+      var on = d.platforms.indexOf(k) > -1;
+      return '<span class="rochk'+(on?' on':'')+'"><span class="bx">'+dai('tick')+'</span>'+
+             PLAT[k]+'</span>';
+    }).join('');
+
+    var ev = d.evidence.length
+      ? '<div class="evlist">'+d.evidence.map(function(e){
+          return '<div class="evitem"><span class="ic">'+dai('link')+'</span><div class="b">'+
+            '<a href="'+escapeHtml(e.url)+'" target="_blank" rel="noopener noreferrer">'+
+            escapeHtml(e.url)+'</a>'+
+            (e.note ? '<div class="nt">'+escapeHtml(e.note)+'</div>' : '')+
+          '</div></div>';
+        }).join('')+'</div>'
+      : '<div class="a none">No evidence was attached.</div>';
+
+    return '<div class="card"><div class="card-h"><h3>Ban Appeal</h3>'+
+      '<span class="aside"><span class="pill '+d.status+'">'+d.status+'</span></span></div>'+
+      '<div class="card-b">'+
+
+      '<div class="kv" style="margin-bottom:4px"><div class="r" style="padding-top:0">'+
+        '<div class="k">Submitted</div><div class="v">'+stampEsc(d.created_at)+' UTC · '+
+        escapeHtml(ago(d.created_at))+'</div></div></div>'+
+
+      '<div class="ansq"><div class="n"><b>1.</b>What platform were you banned on?</div>'+
+        '<div class="a">'+plats+'</div></div>'+
+
+      '<div class="ansq"><div class="n"><b>2.</b>If you were banned while playing a character, '+
+        'or the ban was about one, which?</div>'+
+        '<div class="a none">Characters aren’t linked to the UCP yet, so this wasn’t asked.</div>'+
+      '</div>'+
+
+      '<div class="ansq"><div class="n"><b>3.</b>Explain what happened and why you should be '+
+        'unbanned.</div><div class="a text">'+escapeHtml(d.body)+'</div></div>'+
+
+      '<div class="ansq"><div class="n"><b>4.</b>Supporting evidence</div>'+
+        '<div class="a">'+ev+'</div></div>'+
+
+      (d.status !== 'pending' ? verdictNote() : '')+
+      '</div></div>';
+  }
+
+  function verdictNote(){
+    var d = DATA, good = d.status === 'accepted';
+    var extra = '';
+
+    /* Rejected: say exactly when they may come back. "Three months" was the
+       old fixed answer and is no longer true — the rejecting administrator
+       picks the wait, so this has to read the real date off the appeal. */
+    if(!good && d.reappeal_at){
+      extra = (d.mine ? ' You can appeal again from <b>' : ' They can appeal again from <b>')+
+              escapeHtml(stamp(d.reappeal_at))+' UTC</b>.';
+    }
+    /* Overturned: both facts, in order. The rejection happened and was then
+       reversed; hiding the first would make the record a lie. */
+    if(d.overruled){
+      extra += ' This was rejected first, then <b>overturned</b> '+
+               escapeHtml(ago(d.overruled.at))+
+               (d.overruled.by ? ' by <b>'+escapeHtml(d.overruled.by)+'</b>' : '')+'.';
+    }
+
+    return '<div style="margin-top:6px"><div class="note-a '+(good?'good':'bad')+'">'+
+      '<span class="si">'+ai(good?'tick':'warn')+'</span><div>'+
+      '<h4>Appeal '+d.status+(d.overruled ? ' — decision overturned' : '')+'</h4>'+
+      '<p>Decided '+escapeHtml(ago(d.concluded_at))+
+      (d.concluded_by ? ' by <b>'+escapeHtml(d.concluded_by)+'</b>' : '')+
+      '. The reason is in the comments below.'+ extra +
+      '</p></div></div></div>';
+  }
+
+  /* =====================================================================
+     PAST APPEALS
+
+     The same list on both sides. For the appellant it is "what was I told
+     last time" — a rejection whose reason they have forgotten is the single
+     commonest cause of the identical appeal arriving again. For a handler it
+     is "has this person appealed before, and what happened", which is the
+     first question they ask and used to need a database query to answer.
+
+     An index, not a thread: status, when, and a link. Opening one goes
+     through api/appeal.php and gets the same rules it always does.
+     ===================================================================== */
+  /* =====================================================================
+     PREVIOUS APPEALS
+
+     The same card as the one on a player's administrative record: the same
+     data (api/_appeals.php's appeal_record_list, used by both), the same
+     markup, the same collapsed-by-default fold, and the same pager. It was
+     a different card here with a different shape and a different pager,
+     which is two things to keep in step and one of them always slips.
+
+     Closed by default. It is context for the appeal being read, not the
+     thing being read — but on a repeat appellant it is the first thing a
+     handler should open, so the header carries the count and how many are
+     still outstanding without unfolding anything.
+     ===================================================================== */
+  var AP_LABEL = {pending:'Pending', accepted:'Accepted', rejected:'Rejected'};
+  var APPAGE = 1, AP_PER = 4, APOPEN = false;
+
+  var CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+               '<path d="M15 6l-6 6 6 6"/></svg>';
+  var CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+               '<path d="M9 6l6 6-6 6"/></svg>';
+
+  function apDate(ts){
+    var d = new Date(ts*1000);
+    return MON[d.getUTCMonth()]+' '+String(d.getUTCDate()).padStart(2,'0')+', '+
+           d.getUTCFullYear();
+  }
+  function apTime(ts){
+    var d = new Date(ts*1000), p = function(x){ return String(x).padStart(2,'0'); };
+    return p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC';
+  }
+
+  /* Identical to recPager() on the record: a window of three numbers with an
+     arrow either side, and the range in words on the left. */
+  function apPager(page, pages, total, per){
+    if(pages < 2) return '';
+    var first = (page-1)*per + 1, last = Math.min(page*per, total);
+    var start = Math.min(Math.max(1, page - 1), Math.max(1, pages - 2));
+    var b = ['<button type="button" class="arrow" data-appg="'+(page-1)+'"'+
+             (page<=1?' disabled':'')+' aria-label="Previous page">'+CHEV_L+'</button>'];
+    for(var n = start; n < start + 3 && n <= pages; n++){
+      b.push('<button type="button" data-appg="'+n+'"'+
+             (n===page?' aria-current="true"':'')+'>'+n+'</button>');
+    }
+    b.push('<button type="button" class="arrow" data-appg="'+(page+1)+'"'+
+           (page>=pages?' disabled':'')+' aria-label="Next page">'+CHEV_R+'</button>');
+    return '<div class="pager"><span class="pcount">Showing <b>'+first+'–'+last+
+      '</b> of <b>'+total+'</b> &nbsp;·&nbsp; page '+page+' of '+pages+'</span>'+
+      '<div class="pnav">'+b.join('')+'</div></div>';
+  }
+
+  function historyCard(list, staff, opts){
+    opts = opts || {};
+    list = list || [];
+    if(!list.length && opts.hideEmpty) return '';
+
+    var open = list.filter(function(a){ return a.status === 'pending'; }).length;
+    var count = list.length
+      ? list.length + (list.length === 1 ? ' appeal' : ' appeals') +
+        (open ? ' · ' + open + ' outstanding' : '')
+      : 'None';
+
+    var lede = staff
+      ? 'Every appeal this player has made, newest first. Open one to read it in full — the '+
+        'verdict, who gave it, and the staff-only notes on it.'
+      : 'Every appeal you have made, and what happened to it. Open one to read the verdict and '+
+        'anything staff wrote on it.';
+
+    var body;
+    if(!list.length){
+      body = '<div class="secblank">'+
+        (staff ? 'This player has never appealed anything before.'
+               : 'You have never appealed anything before.')+'</div>';
+    } else {
+      var pages = Math.max(1, Math.ceil(list.length / AP_PER));
+      if(APPAGE > pages) APPAGE = pages;
+      var slice = list.slice((APPAGE-1)*AP_PER, APPAGE*AP_PER);
+
+      body = '<div class="aplist">'+ slice.map(function(a){
+        var sub = ['Submitted ' + apDate(a.at) + ', ' + apTime(a.at)];
+        if(a.handler) sub.push('Handled by <b>'+escapeHtml(a.handler)+'</b>');
+        if(a.note)    sub.push(escapeHtml(a.note));
+        return '<div class="aprow" data-apid="'+a.id+'" role="link" tabindex="0">'+
+          '<span class="num">#'+a.id+'</span>'+
+          '<span>'+
+            '<span class="t">'+escapeHtml(a.against || 'Appeal')+
+              (a.what ? '<span class="vs">&nbsp; '+escapeHtml(a.what)+'</span>' : '')+'</span>'+
+            '<span class="s">'+sub.join('<span class="dot">·</span>')+'</span>'+
+          '</span>'+
+          '<span class="ap '+escapeHtml(a.status)+'">'+
+            (AP_LABEL[a.status] || escapeHtml(a.status))+'</span>'+
+          CHEV_R.replace('<svg ', '<svg class="go" ')+
+        '</div>';
+      }).join('') +'</div>'+ apPager(APPAGE, pages, list.length, AP_PER);
+    }
+
+    return '<div class="card fold'+(APOPEN ? ' open' : '')+'" id="apCard">'+
+      '<button class="foldh" type="button" id="apToggle" aria-expanded="'+
+        (APOPEN ? 'true' : 'false')+'">'+
+        '<h3>Previous appeals</h3>'+
+        '<span class="r"><span>'+escapeHtml(count)+'</span>'+
+        '<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+        '<path d="M9 6l6 6-6 6"/></svg></span>'+
+      '</button>'+
+      '<div class="card-b">'+
+        '<p class="card-lede">'+escapeHtml(lede)+'</p>'+ body +
+      '</div></div>';
+  }
+
+  /* Wired after every render, because the card is rebuilt whenever the page
+     is. Kept out of the renderers so both the appeal view and the submit
+     view get it from one place. */
+  function wireHistory(rerender){
+    var t = document.getElementById('apToggle');
+    if(t) t.addEventListener('click', function(){
+      APOPEN = !APOPEN;
+      var c = document.getElementById('apCard');
+      c.classList.toggle('open', APOPEN);
+      t.setAttribute('aria-expanded', APOPEN ? 'true' : 'false');
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-appg]'), function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        APPAGE = +b.getAttribute('data-appg');
+        rerender();
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-apid]'), function(r){
+      function go(){ window.location.href = '/dashboard/appeals?id='+r.getAttribute('data-apid'); }
+      r.addEventListener('click', go);
+      r.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); }
+      });
+    });
+  }
+
+  /* ---- comments ------------------------------------------------------ */
+  function commentsCard(){
+    var d = DATA, staff = d.viewer.staff;
+
+    /* The verdict and the overrule are marked. "The ban stands" halfway down
+       a thread is an opinion; the same words badged as the decision are the
+       decision, and somebody scrolling a long appeal should be able to find
+       the two that actually settled it without reading all of them. */
+    var MARK = {
+      verdict:  { cls:'verdict',  txt: d.overruled ? 'Original verdict' : 'Verdict' },
+      overrule: { cls:'overrule', txt:'Decision overturned' }
+    };
+    var list = d.comments.length ? d.comments.map(function(c){
+      var mk = c.mark ? MARK[c.mark] : null;
+      return '<div class="cm'+(c.staff_only?' staffonly':'')+(mk?' is-'+mk.cls:'')+'">'+
+        '<div class="h"><b>'+escapeHtml(c.author)+'</b>'+
+          (c.staff ? '<span class="ctag staff">Staff</span>' : '')+
+          (c.staff_only ? '<span class="ctag only">Staff only</span>' : '')+
+          (mk ? '<span class="ctag '+mk.cls+'">'+mk.txt+'</span>' : '')+
+          '<span class="when">'+stampEsc(c.at)+' UTC</span></div>'+
+        '<div class="body">'+escapeHtml(c.body)+'</div></div>';
+    }).join('') : '<div class="a none" style="font-size:13px;color:var(--text-dim);'+
+      'font-style:italic">Nothing has been said yet.</div>';
+
+    /* Who may write, and why not. Both closed states are explained rather
+       than leaving a missing box: "where did the reply field go" is a
+       support question, and it has a one-line answer. */
+    /* Who may write, and why not. Staff who can OPEN an appeal are not all
+       staff who may speak on it — the handler, or Management, Founders and
+       Staff Management, who oversee how appeals are handled. Every closed
+       state is explained rather than leaving a missing box: "where did the
+       reply field go" is a support question with a one-line answer. */
+    var canWrite = staff
+      ? d.viewer.may_comment
+      : (d.status === 'pending' && d.comments_enabled);
+    var closed = !canWrite
+      ? (staff
+          ? (d.handler
+              ? escapeHtml(d.handler)+' is handling this appeal. Management, Founders and '+
+                'Staff Management can reply on any; '+
+                escapeHtml(d.viewer.manage_rank || 'Senior Admin')+' and above can reassign it.'
+              : 'This appeal isn’t assigned to anybody yet. '+
+                escapeHtml(d.viewer.manage_rank || 'Senior Admin')+' and above can take it.')
+          : d.status !== 'pending'
+            ? 'This appeal has been decided, so it’s closed to replies.'
+            : 'Comments have been closed on this appeal by staff.')
+      : null;
+
+    var box = canWrite
+      ? '<div class="composer">'+
+          '<textarea class="ta" id="cbody" style="min-height:120px" maxlength="4000" '+
+          'placeholder="'+(staff ? 'Reply, or leave a note for other staff…'
+                                 : 'Add to your appeal…')+'"></textarea>'+
+          '<div class="row">'+
+            (staff
+              ? '<div class="aud" id="aud">'+
+                  '<button data-aud="player" class="on">Reply to the player</button>'+
+                  '<button data-aud="staff">Staff only</button>'+
+                '</div><span class="grow"></span>'
+              : '<span class="grow"></span>')+
+            '<button class="btn primary" id="csend">Post comment</button>'+
+          '</div>'+
+          (staff ? '<div class="fieldnote" id="audnote">The player is shown this.</div>' : '')+
+        '</div>'
+      : '<div class="fieldnote" style="margin-top:14px">'+escapeHtml(closed)+'</div>';
+
+    return '<div class="card"><div class="card-h"><h3>Comments</h3>'+
+      (staff && !d.comments_enabled
+        ? '<span class="aside">Closed to the player</span>' : '')+
+      '</div><div class="card-b">'+ list + box +'</div></div>';
+  }
+
+  /* ---- the staff panel ----------------------------------------------- */
+  /* =====================================================================
+     THE HANDLING PANEL
+
+     One rule decides all of it: a control that cannot be used is not drawn
+     as a control. Once an appeal is decided, Verdict has nothing left to
+     offer and disappears entirely — it was repeating "already rejected"
+     directly under a banner that says the same thing three inches to the
+     left. Comments and Handler become plain values, because reassigning or
+     reopening a finished appeal changes nothing about it.
+
+     What is left live on a rejected appeal is one thing: Overturn. And once
+     that is used, it becomes a value too.
+     ===================================================================== */
+  function adminCard(){
+    var d = DATA, v = d.viewer;
+    var done = d.status !== 'pending';
+
+    function ro(label, value, hint){
+      return '<div class="panelfield"><label>'+label+'</label>'+
+        '<div class="ro">'+value+'</div>'+
+        (hint ? '<div class="hint">'+hint+'</div>' : '')+'</div>';
+    }
+
+    /* One card per thing that can be saved.
+       They were one panel of stacked fields, and the seams between them
+       disappeared: the Save under the comments looked like it might also
+       save the verdict, and Conclude looked like it might also save the
+       handler. Separate boxes with a gap between them say what each button
+       reaches. */
+    function card(title, body, aside){
+      return '<div class="card"><div class="card-h"><h3>'+title+'</h3>'+
+        (aside ? '<span class="aside">'+aside+'</span>' : '')+
+        '</div><div class="card-b">'+body+'</div></div>';
+    }
+
+    var out = '';
+
+    /* ---- comments ---- */
+    out += card('Comments', done
+      ? ro('State', d.comments_enabled ? 'Open to the player' : 'Closed to the player',
+           'Closed automatically when the appeal was decided.')
+      : (v.may_manage ?
+        '<div class="panelfield">'+
+          '<select class="sel" id="cmEn">'+
+            '<option value="1"'+(d.comments_enabled?' selected':'')+'>Open to the player</option>'+
+            '<option value="0"'+(!d.comments_enabled?' selected':'')+'>Closed to the player</option>'+
+          '</select>'+
+          '<div class="hint">Closing stops the appellant replying. Staff can still write here.</div>'+
+          '<div class="go"><button class="btn sm" id="cmSave">Save</button></div>'+
+        '</div>'
+        : ro('State', d.comments_enabled ? 'Open to the player' : 'Closed to the player',
+             'Only '+escapeHtml(v.manage_rank || 'Senior Admin')+' and above can change this.')));
+
+    /* ---- verdict — pending only ---- */
+    if(!done){
+      out += card('Verdict',
+        '<div class="panelfield">'+
+          '<label for="vd">Verdict</label>'+
+          '<select class="sel" id="vd"'+(v.may_conclude?'':' disabled')+'>'+
+            '<option value="">Choose…</option>'+
+            '<option value="accepted">Accepted</option>'+
+            '<option value="rejected">Rejected</option>'+
+          '</select>'+
+
+          /* The wait only exists for a rejection, so it only appears for one. */
+          '<div id="waitWrap" hidden style="margin-top:10px">'+
+            '<label for="vwait" style="margin-bottom:7px">They can appeal again in</label>'+
+            '<select class="sel" id="vwait">'+
+              (v.waits||[]).map(function(w){
+                return '<option value="'+w.days+'"'+
+                  (w.days === v.wait_suggest ? ' selected' : '')+'>'+escapeHtml(w.label)+
+                  (w.days === v.wait_suggest ? ' · suggested' : '')+'</option>';
+              }).join('')+
+            '</select>'+
+            '<div class="hint">Suggested from how many appeals they have already had '+
+            'rejected. Pick a different rung if this one deserves it.</div>'+
+          '</div>'+
+
+          '<textarea class="ta" id="vcomment" maxlength="4000" style="min-height:110px;'+
+          'margin-top:10px" placeholder="Why. The appellant is shown this, so write it to them."'+
+          (v.may_conclude?'':' disabled')+'></textarea>'+
+          '<div class="hint">A reason is required either way. Accepting lifts a user lock '+
+          'straight away; other bans have to be lifted where they were issued.</div>'+
+          (v.why ? '<div class="hint warn">'+escapeHtml(v.why)+'</div>' : '')+
+          '<div class="go"><button class="btn primary" id="conclude"'+
+          (v.may_conclude?'':' disabled')+'>Conclude</button></div>'+
+        '</div>');
+    }
+
+    /* ---- overturn ----
+       Live only on a rejected appeal, for the people who may. Already used?
+       Then it is history, and history is a value. */
+    if(d.overruled){
+      out += card('Overturned', ro('Overturned by',
+        escapeHtml(d.overruled.by || 'A manager')+' · '+escapeHtml(ago(d.overruled.at)),
+        'The rejection stays on the record above. The reason is in the comments.'));
+    } else if(v.may_overrule){
+      out += card('Overturn this decision',
+        '<div class="panelfield">'+
+          '<div class="hint" style="margin-top:0;margin-bottom:9px">The rejection stays on the '+
+          'record and the appeal becomes accepted. Whether the punishment comes off is a '+
+          'separate call.</div>'+
+          '<select class="sel" id="ovlift">'+
+            '<option value="1">Overturn and unban the player</option>'+
+            '<option value="0">Overturn, but leave the punishment in force</option>'+
+          '</select>'+
+          '<div class="hint">Leave it in force when the rejection was handled badly but the ban '+
+          'itself was right.</div>'+
+          '<textarea class="ta" id="ovcomment" maxlength="4000" style="min-height:100px;'+
+          'margin-top:10px" placeholder="Why the decision is being overturned. The appellant and '+
+          'the administrator who made it both see this."></textarea>'+
+          '<div class="go"><button class="btn ok" id="overrule">Overturn</button></div>'+
+        '</div>');
+    }
+
+    /* ---- handler ---- */
+    out += card('Handler', done
+      ? ro('Assigned to', escapeHtml(d.handler || 'Not assigned'),
+           'Fixed once the appeal was decided.')
+      : (v.may_manage ?
+        '<div class="panelfield">'+
+          '<select class="sel" id="hd"><option value="">Not assigned</option>'+
+            HANDLERS.map(function(h){
+              return '<option value="'+escapeHtml(h.name)+'"'+
+                (d.handler === h.name ? ' selected' : '')+'>'+escapeHtml(h.name)+
+                ' · '+escapeHtml(h.role)+'</option>';
+            }).join('')+'</select>'+
+          '<div class="hint">Assigned to whoever issued the punishment when it arrived. '+
+          'Reassigning hands the reply and the verdict to somebody else.</div>'+
+          '<div class="go"><button class="btn sm" id="hdSave">Change handler</button></div>'+
+        '</div>'
+        : ro('Assigned to', escapeHtml(d.handler || 'Not assigned'),
+             'Only '+escapeHtml(v.manage_rank || 'Senior Admin')+' and above can reassign.')));
+
+    return out;
+  }
+
+  function logCard(){
+    var rows = DATA.log.length ? DATA.log.map(function(l){
+      var act = l.action !== 'viewed';
+      return '<div class="logrow'+(act?' act':'')+'"><span class="dot"></span><div>'+
+        '<span class="t">'+stampEsc(l.at)+'</span> <b>'+escapeHtml(l.actor)+'</b> '+
+        escapeHtml(l.action === 'viewed' ? 'opened the appeal.' : (l.detail || l.action))+
+      '</div></div>';
+    }).join('') : '<div class="fieldnote">Nothing yet.</div>';
+
+    return '<div class="card"><div class="card-h"><h3>Running log</h3>'+
+      '<span class="aside">Staff only</span></div>'+
+      '<div class="card-b"><div class="log">'+rows+'</div>'+
+      '<div class="fieldnote">Repeat visits by the same person within an hour are counted '+
+      'once.</div></div></div>';
+  }
+
+  /* ---- wiring -------------------------------------------------------- */
+  function wire(){
+    var send = document.getElementById('csend');
+    if(send){
+      var aud = document.getElementById('aud');
+      if(aud){
+        Array.prototype.forEach.call(aud.querySelectorAll('[data-aud]'), function(b){
+          b.addEventListener('click', function(){
+            AUD = b.getAttribute('data-aud');
+            Array.prototype.forEach.call(aud.querySelectorAll('button'), function(x){
+              x.classList.toggle('on', x === b);
+            });
+            document.getElementById('audnote').textContent = AUD === 'staff'
+              ? 'Only staff can see this. The player is not shown it, ever.'
+              : 'The player is shown this.';
+            document.getElementById('audnote').classList.toggle('bad', AUD === 'staff');
+          });
+        });
+      }
+      send.addEventListener('click', function(){
+        var t = document.getElementById('cbody');
+        if(!t.value.trim()){ toast('Write something first.'); return; }
+        send.disabled = true;
+        UCP.post('appeal-comment.php', {
+          id: ID, body: t.value.trim(), staff_only: AUD === 'staff'
+        }).then(function(res){
+          var d = (res && res.data) || {};
+          send.disabled = false;
+          if(!d.ok){ toast(d.error || 'That did not work'); return; }
+          t.value = ''; loadAppeal();
+        }).catch(function(){ send.disabled = false; toast('Could not reach the server'); });
+      });
+    }
+
+    var cmSave = document.getElementById('cmSave');
+    if(cmSave) cmSave.addEventListener('click', function(){
+      cmSave.disabled = true;
+      UCP.post('appeal-manage.php', {
+        id: ID, comments: document.getElementById('cmEn').value === '1'
+      }).then(function(res){
+        var d = (res && res.data) || {};
+        cmSave.disabled = false;
+        toast(d.ok ? d.message : (d.error || 'That did not work'));
+        if(d.ok) loadAppeal();
+      }).catch(function(){ cmSave.disabled = false; toast('Could not reach the server'); });
+    });
+
+    var hdSave = document.getElementById('hdSave');
+    if(hdSave) hdSave.addEventListener('click', function(){
+      hdSave.disabled = true;
+      UCP.post('appeal-manage.php', {
+        id: ID, handler: document.getElementById('hd').value
+      }).then(function(res){
+        var d = (res && res.data) || {};
+        hdSave.disabled = false;
+        toast(d.ok ? d.message : (d.error || 'That did not work'));
+        if(d.ok) loadAppeal();
+      }).catch(function(){ hdSave.disabled = false; toast('Could not reach the server'); });
+    });
+
+    /* The wait only exists for a rejection. */
+    var vd = document.getElementById('vd'), ww = document.getElementById('waitWrap');
+    if(vd && ww) vd.addEventListener('change', function(){
+      ww.hidden = vd.value !== 'rejected';
+    });
+
+    var ov = document.getElementById('overrule');
+    if(ov) ov.addEventListener('click', function(){
+      var c = document.getElementById('ovcomment').value.trim();
+      if(!c){ toast('Write why it is being overturned.'); return; }
+      ov.disabled = true; ov.textContent = 'Overturning…';
+      var lift = document.getElementById('ovlift').value === '1';
+      UCP.post('appeal-overrule.php', { id: ID, comment: c, lift: lift }).then(function(res){
+        var d = (res && res.data) || {};
+        ov.disabled = false; ov.textContent = 'Overturn';
+        if(!d.ok){ toast(d.error || 'That did not work'); return; }
+        toast(d.message); loadAppeal();
+      }).catch(function(){
+        ov.disabled = false; ov.textContent = 'Overturn';
+        toast('Could not reach the server');
+      });
+    });
+
+    var conclude = document.getElementById('conclude');
+    if(conclude) conclude.addEventListener('click', function(){
+      var v = document.getElementById('vd').value;
+      var c = document.getElementById('vcomment').value.trim();
+      if(!v){ toast('Choose accepted or rejected.'); return; }
+      if(!c){ toast('Write the reason. The appellant is shown it.'); return; }
+      var wait = v === 'rejected' ? parseInt(document.getElementById('vwait').value, 10) : 0;
+      conclude.disabled = true; conclude.textContent = 'Concluding…';
+      UCP.post('appeal-verdict.php', { id: ID, verdict: v, comment: c, wait: wait })
+        .then(function(res){
+          var d = (res && res.data) || {};
+          conclude.disabled = false; conclude.textContent = 'Conclude';
+          if(!d.ok){ toast(d.error || 'That did not work'); return; }
+          toast(d.message); loadAppeal();
+        }).catch(function(){
+          conclude.disabled = false; conclude.textContent = 'Conclude';
+          toast('Could not reach the server');
+        });
+    });
+  }
+
+  function notFound(msg){
+    document.getElementById('qbody').innerHTML =
+      '<div class="blank"><span class="ei">'+dai('none')+'</span>'+
+      '<h4>Nothing to show</h4><p>'+escapeHtml(msg)+'</p>'+
+      '<a class="btn" href="/dashboard/appeals">Back to Ban Appeals</a></div>';
+  }
+
+  function loadAppeal(){
+    return UCP.get('appeal.php' + (ID ? '?id='+ID : '')).then(function(d){
+      if(!d || d.ok !== true){
+        notFound((d && d.error) || 'That appeal could not be loaded.');
+        return;
+      }
+      if(!d.appeal){
+        notFound('You have not appealed anything. If you have a ban or a user lock you can '+
+                 'appeal it from Ban Appeals.');
+        return;
+      }
+      DATA = d.appeal;
+      ID   = DATA.id;                       // so ?id= is set after a bare load
+
+      /* The roster, only for somebody who can actually reassign. Fetched
+         once — it barely changes, and the panel should not wait on it a
+         second time every reload. */
+      if(DATA.viewer.may_manage && !HANDLERS.length){
+        return UCP.get('appeal-handlers.php').then(function(h){
+          if(h && h.ok === true) HANDLERS = h.handlers || [];
+          renderAppeal();
+        }).catch(function(){ renderAppeal(); });
+      }
+      renderAppeal();
+    });
+  }
+
+  /* ---- routing ------------------------------------------------------- */
+  function go(key, push){
+    /* ?id= is the appeal view and outranks the hash — arriving from the
+       queue, from the lock screen, or from a bookmark all land here. */
+    if(ID){
+      VIEW = 'appeal';
+      document.getElementById('qtabs').innerHTML = '';
+      return loadAppeal();
+    }
+    if(key !== 'submit' && key !== 'panel') key = 'submit';
+    VIEW = key;
+    document.body.classList.remove('appeal-wide', 'appeal-solo');
+    if(push && history.replaceState) history.replaceState(null,'',location.pathname+'#'+key);
+    renderTabs();
+    document.querySelector('.page-title h1').textContent =
+      key === 'panel' ? 'Ban Appeal Panel' : 'Appeal your Punishment';
+
+    var st = GATE && GATE.views ? GATE.views[key] : null;
+    if(st && !st.may){
+      document.getElementById('qbody').innerHTML =
+        refused(st.label || VIEWS[key==='panel'?1:0].label, st.why);
+      return;
+    }
+    if(key === 'panel') loadQueue(); else renderSubmit();
+  }
+  window.addEventListener('hashchange', function(){
+    go((location.hash||'').replace('#',''), false);
+  });
+
+
+  /* =====================================================================
+     A LOCKED SESSION
+
+     A locked account is not signed in — api/session.php reports
+     authenticated:false and every ordinary endpoint refuses it. But a user
+     lock is appealable, so this page has to work for exactly the person who
+     cannot use any other one.
+
+     What that means here is stripping the shell down to what a locked
+     account actually has: no navigation, no search, no profile link. Not
+     because leaving them would be dangerous — every one of them leads
+     somewhere that refuses a locked session anyway — but because a menu
+     full of links that all bounce you back is a worse experience than no
+     menu at all.
+     ===================================================================== */
+  var LOCKED = false;
+
+  function stripForLock(){
+    LOCKED = true;
+    document.body.classList.add('is-locked');
+
+    var nav = document.getElementById('nav');
+    if(nav) nav.innerHTML =
+      '<a class="nav-item" href="/dashboard" style="margin:0 12px">'+
+      '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor">'+
+      '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'+
+      '</svg><span class="lbl">Account locked</span></a>';
+
+    // The topbar keeps the account button (it says who you are) and loses
+    // everything that goes anywhere.
+    var bar = document.querySelector('.topbar');
+    if(bar){
+      Array.prototype.forEach.call(
+        bar.querySelectorAll('.searchbox, .search-mini, .divider, .icon-btn:not(.hamburger)'),
+        function(el){ el.remove(); });
+    }
+    var menu = document.getElementById('acctMenu');
+    if(menu){
+      Array.prototype.forEach.call(menu.querySelectorAll('.menu-item:not(.danger)'),
+        function(el){ el.remove(); });
+    }
+    var ham = document.getElementById('menuToggle');
+    if(ham) ham.style.display = 'none';
+  }
+
+  UCP.get('session.php').then(function(d){
+    /* Locked: the appeal is the only thing they can do, so there is no view
+       to choose and no gate to ask about. queues.php would refuse this
+       session anyway — it takes a real one. */
+    if(d && d.locked === true){
+      stripForLock();
+      /* Same words as the lock screen — "Locked", not "Account locked" — and
+         the dropdown header filled in, so the account control is identical
+         wherever a locked player sees it. */
+      ['acctName','menuName'].forEach(function(k){
+        var el = document.getElementById(k); if(el) el.textContent = d.name || '';
+      });
+      ['acctRole','menuRole'].forEach(function(k){
+        var el = document.getElementById(k); if(el) el.textContent = 'Locked';
+      });
+      GATE = { views: { submit: { may:true },
+                        panel:  { may:false, label:'Ban Appeal Panel',
+                                  why:'The appeal queue is for staff.' } } };
+      if(ID) return loadAppeal();
+      return UCP.get('appeal-eligibility.php').then(function(e){
+        ELIG = (e && e.ok === true) ? e : { may:false, why:(e && e.error) || null,
+                                            punishments:[] };
+        go('submit', false);
+      });
+    }
+
+    if(!d || d.authenticated !== true){
+      window.location.replace('/login?return='+encodeURIComponent('/dashboard/appeals'));
+      return;
+    }
+    var an = document.getElementById('acctName'), ar = document.getElementById('acctRole');
+    if(an) an.textContent = d.name || '';
+    if(ar) ar.textContent = d.role || 'Member';
+    if(window.UCP && UCP.rememberMe) UCP.rememberMe(d);
+
+    var was = [IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join();
+    IS_ADMINISTRATOR = (d.rank|0) >= 3;
+    IS_MANAGER       = (d.rank|0) >= 8;
+    IS_FOUNDER       = (d.rank|0) >= 9;
+    MY_RANK          = d.rank | 0;
+    MY_TEAMS         = d.teams || [];
+    if([IS_ADMINISTRATOR, IS_MANAGER, IS_FOUNDER, MY_RANK, MY_TEAMS.join('|')].join() !== was)
+      renderSidebar(SIDEBAR);
+
+    if(ID) return loadAppeal();
+
+    return Promise.all([UCP.get('queues.php'), UCP.get('appeal-eligibility.php')])
+      .then(function(r){
+        var q = r[0], e = r[1];
+        if(q && q.ok === true && q.queues){
+          for(var i=0;i<q.queues.length;i++) if(q.queues[i].key === 'appeals') GATE = q.queues[i];
+        }
+        ELIG = (e && e.ok === true) ? e : { may:false, why:(e && e.error) || null, punishments:[] };
+        go((location.hash||'').replace('#',''), false);
+      });
+  }).catch(function(){ toast('Could not reach the server'); });
+
+  /* ===== ACCOUNT MENU ===== */
+  (function(){
+    var btn = document.getElementById('acctBtn'), menu = document.getElementById('acctMenu');
+    if(!btn || !menu) return;
+    menu.style.display = 'none';
+    btn.addEventListener('click', function(e){ e.stopPropagation();
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none'; });
+    menu.addEventListener('click', function(e){ e.stopPropagation(); });
+    document.addEventListener('click', function(){ menu.style.display = 'none'; });
+
+    /* Log out through fetch, so the browser never lands on the endpoint's raw
+       JSON. The href stays a working no-JS fallback. Forget the cached
+       identity first — the next person at this computer starts blank. */
+    document.getElementById('logoutBtn').addEventListener('click', function(e){
+      e.preventDefault();
+      this.style.pointerEvents = 'none';
+      if(window.UCP && UCP.forgetMe) UCP.forgetMe();
+      UCP.post('logout.php', {}).then(function(res){
+        var d = res && res.data ? res.data : {};
+        window.location.replace(d.redirect || '/login');
+      }).catch(function(){ window.location.href = '/api/logout.php?next=/login'; });
+    });
+  })();
+
+  /* ===================== UTIL ===================== */
+  function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  let toastTimer=null;
+  function toast(msg){
+    const t=document.getElementById('toast');
+    document.getElementById('toastMsg').textContent=msg;
+    t.classList.add('show'); clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+  }
+
+  /* mobile drawer */
+  const scrim=document.getElementById('scrim'), menuToggle=document.getElementById('menuToggle');
+  menuToggle.addEventListener('click',()=>{document.body.classList.toggle('nav-open');scrim.classList.toggle('show');});
+  scrim.addEventListener('click',()=>{document.body.classList.remove('nav-open');scrim.classList.remove('show');});
+  window.addEventListener('resize',()=>{if(window.innerWidth>760){document.body.classList.remove('nav-open');scrim.classList.remove('show');}});
+
+  /* The clock, the build number and the status line are drawn by
+     assets/js/ucp.js — one copy for every page. */
+</script>
+</body>
+</html>
