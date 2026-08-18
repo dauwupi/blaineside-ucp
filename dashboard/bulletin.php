@@ -374,7 +374,7 @@ $PAGE_HEAD = <<<'HTML'
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
 </head>
 
 HTML;

@@ -353,3 +353,24 @@ button.primary svg{stroke:currentColor}
   .topbar .searchbox{display:none}
   .topbar .search-mini{display:grid}
 }
+
+/* =====================================================================
+   THE TOP BAR'S TYPEFACE
+
+   A <button> does not inherit font-family; it falls back to the browser's
+   own UI face unless something says otherwise. Sixteen pages never said
+   it, so the account name and group rendered in Arial while My Profile
+   and the account lookup — whose page CSS happened to set it — rendered
+   in Inter. Same markup, two different faces, which is what the top-right
+   corner looked like when comparing pages side by side.
+
+   Stated once here, for every control in the bar, so the shell owns it
+   the same way it owns the markup.
+   ===================================================================== */
+.topbar,
+.topbar button,
+.topbar input,
+.topbar select,
+.topbar textarea,
+.topbar .account-menu,
+.topbar .account-menu a{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}

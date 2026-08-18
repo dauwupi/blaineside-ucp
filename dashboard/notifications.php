@@ -1452,7 +1452,7 @@ $PAGE_HEAD = <<<'HTML'
   .ndel svg{width:14px;height:14px;stroke-width:2}
   .ndel:hover{color:#dfa294;border-color:rgba(193,85,63,.45);background:rgba(193,85,63,.1)}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
 </head>
 
 HTML;

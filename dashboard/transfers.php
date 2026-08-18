@@ -551,7 +551,7 @@ $PAGE_HEAD = <<<'HTML'
   .qmeta .v{color:var(--parchment);font-weight:600;text-align:right}
   .qmeta .v.off{color:var(--text-dim);font-weight:500}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.5.1">
+<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.0">
 </head>
 
 HTML;
