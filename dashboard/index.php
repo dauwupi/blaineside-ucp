@@ -1360,12 +1360,16 @@ require __DIR__ . '/../partials/shell-top.php';
     success:     {label:'Resolved',     cls:'t-success'}
   };
   /* One glyph per type — a megaphone for news reads wrong on an outage. */
+  /* Solid glyphs. The tile is already a solid colour, so a filled shape
+     is what reads at 18px — the old stroked megaphone collapsed into a
+     squiggle at that size. Paths are filled, not stroked; see
+     assets/css/tones.css for the fill rule that goes with them. */
   const ANN_ICONS={
-    notice:'<path d="M3 11l14-5v12L3 15v-4z"/><path d="M17 8a3 3 0 0 1 0 8M6 15v3a1 1 0 0 0 1 1h2"/>',
-    maintenance:'<path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.3-2.3z"/>',
-    warning:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/>',
-    critical:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5h.01"/>',
-    success:'<path d="M20 6L9 17l-5-5"/>'
+    notice:'<path d="M3 10.5v3A1.5 1.5 0 0 0 4.5 15H6l5.2 3.9A1 1 0 0 0 13 18.1V5.9a1 1 0 0 0-1.8-.8L6 9H4.5A1.5 1.5 0 0 0 3 10.5Z"/><path d="M15.8 8.4a1 1 0 0 1 1.4.1 5.4 5.4 0 0 1 0 7 1 1 0 1 1-1.5-1.3 3.4 3.4 0 0 0 0-4.4 1 1 0 0 1 .1-1.4Z"/><path d="M18.6 5.4a1 1 0 0 1 1.4 0 9.3 9.3 0 0 1 0 13.2 1 1 0 0 1-1.4-1.4 7.3 7.3 0 0 0 0-10.4 1 1 0 0 1 0-1.4Z"/>',
+    maintenance:'<path d="M20.5 5.3a1 1 0 0 0-1.6-.3l-2.3 2.3-1.9-1.9L17 3.1a1 1 0 0 0-.3-1.6 5.9 5.9 0 0 0-7.6 7.4l-6.2 6.2a3.1 3.1 0 0 0 4.4 4.4l6.2-6.2a5.9 5.9 0 0 0 7-8Z"/>',
+    warning:'<path d="M13.7 3.9a2 2 0 0 0-3.4 0L1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3ZM11 9h2v5h-2Zm0 7h2v2h-2Z"/>',
+    critical:'<path d="M15.4 2H8.6L2 8.6v6.8L8.6 22h6.8L22 15.4V8.6ZM11 7h2v6h-2Zm0 8h2v2h-2Z"/>',
+    success:'<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm-1.2 14.4-4-4 1.5-1.4 2.5 2.5 6-6L18.3 9Z"/>'
   };
 
   function annDismissedKey(a){ return 'bs-ann-'+a.id+'-'+a.rev; }

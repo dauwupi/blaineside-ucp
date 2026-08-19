@@ -422,3 +422,18 @@ button.primary svg{stroke:currentColor}
    one display rule away anywhere else.
    ===================================================================== */
 [hidden]{display:none!important}
+
+/* =====================================================================
+   THE ANNOUNCEMENT STAMP
+
+   The strip's tile is a solid brand colour, so the glyph inside it is a
+   filled shape rather than a stroked one — a 1.8px outline on a 18px
+   icon over a solid tile loses its detail, which is how the megaphone
+   ended up reading as a squiggle.
+
+   The markup still carries fill="none" stroke="currentColor" from when
+   the icons were outlines; presentation attributes lose to a stylesheet,
+   so stating it here flips every stamp at once without touching the
+   sixteen pages that carry a copy of .ann-stamp.
+   ===================================================================== */
+.ann-stamp svg{fill:currentColor!important;stroke:none!important}
