@@ -30,6 +30,8 @@
  * scripts, and several have their own toast markup. Only the shell above is
  * shared, because only the shell above is identical.
  */
+define('UCP_CSS_VERSION', '2.6.2');
+
 if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
 ?>
 <!DOCTYPE html>
@@ -48,6 +50,13 @@ if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 <?= $PAGE_HEAD ?? '' ?>
+
+<?php /* The global stylesheet, last on purpose: it overrides each page's own
+         copy of a shared rule, which is how one file can restyle the whole
+         UCP. The version lives here and nowhere else — bumping it here
+         busts the cache for every page at once, instead of editing the
+         same <link> in nineteen files. */ ?>
+<link rel="stylesheet" href="/assets/css/tones.css?v=<?= UCP_CSS_VERSION ?>">
 <body>
 
 <!-- Backdrop. `stage` is the hook assets/js/ucp.js uses for the time-of-day

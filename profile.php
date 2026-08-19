@@ -943,7 +943,6 @@ body.ready .page-title h1{opacity:1}
   /* The record's own styles all live in the ADMINISTRATIVE RECORD block
      above. Nothing about it is declared down here any more. */
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.1">
 </head>
 
 HTML;

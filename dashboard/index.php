@@ -746,7 +746,6 @@ $PAGE_HEAD = <<<'HTML'
     .appnote .act{margin-left:0;width:100%}
   }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.1">
 <script src="/assets/js/ucp.js?v=3.0.2"></script>
 </head>
 

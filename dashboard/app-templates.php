@@ -644,7 +644,6 @@ $PAGE_HEAD = <<<'HTML'
   .foot input[type=text]{width:58px;text-align:center;padding:8px 6px}
 
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.1">
 </head>
 
 HTML;

@@ -1238,7 +1238,6 @@ $PAGE_HEAD = <<<'HTML'
     .aprow .go{display:none}
   }
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.1">
 </head>
 
 HTML;

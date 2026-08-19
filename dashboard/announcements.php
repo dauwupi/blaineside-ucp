@@ -214,7 +214,7 @@ $PAGE_HEAD = <<<'HTML'
   .empty p{font-size:13px;color:var(--text-dim);max-width:320px;line-height:1.5}
 
   /* ===== CREATE / EDIT ===== */
-  .editor{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:start}
+  .editor{display:flex;flex-direction:column;gap:20px}
   .form-card{background:var(--charcoal-2);border:1px solid var(--border);border-radius:14px;padding:22px 24px}
   .field{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
   .field:last-child{margin-bottom:0}
@@ -272,7 +272,7 @@ $PAGE_HEAD = <<<'HTML'
   .form-actions .btn{flex:1}
 
   /* live preview */
-  .preview-wrap{position:sticky;top:calc(var(--header-h) + 24px)}
+  .preview-wrap{position:static}
   .preview-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;display:flex;align-items:center;gap:8px}
   .preview-label .dotlbl{width:6px;height:6px;border-radius:50%;background:var(--gold)}
   /* preview reuses the dashboard bulletin slide look */
@@ -386,7 +386,12 @@ $PAGE_HEAD = <<<'HTML'
   .tchip{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
     padding:3px 9px;border-radius:100px;border:1px solid var(--border);color:var(--text-dim)}
   .apreview{margin-top:8px}
-  .switchrow{display:flex;align-items:center;gap:11px;margin-top:16px;font-size:13px;color:var(--text-dim)}
+  .switchrow{display:flex;align-items:center;gap:11px;margin-top:24px;font-size:13px;color:var(--text-dim);cursor:pointer}
+  /* The save row used to sit straight under the toggle's hint, so the two
+     lines of text ran into the buttons. A rule separates the writing from
+     the acting on it. */
+  .form-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-top:22px;padding-top:20px;border-top:1px solid var(--border-soft)}
   .switchrow .sw{width:38px;height:21px;border-radius:100px;background:var(--charcoal-4);position:relative;
     border:1px solid var(--border);flex:none;transition:.2s}
   .switchrow .sw::after{content:"";position:absolute;left:2px;top:1.5px;width:15px;height:15px;border-radius:50%;
@@ -438,7 +443,7 @@ $PAGE_HEAD = <<<'HTML'
   .view{display:none}
   .view.active{display:flex;flex-direction:column;gap:22px}
 
-  @media (max-width:1000px){ .editor{grid-template-columns:1fr} .preview-wrap{position:static} }
+  @media (max-width:1000px){ .preview-wrap{position:static} }
   @media (max-width:760px){
     .sidebar{position:fixed;left:0;top:0;height:100dvh;transform:translateX(-100%);transition:transform .26s ease}
     .side-inner{position:static;height:100dvh}
@@ -461,7 +466,6 @@ $PAGE_HEAD = <<<'HTML'
   .scrim.show{display:block;opacity:1}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-<link rel="stylesheet" href="/assets/css/tones.css?v=2.6.1">
 </head>
 
 HTML;
@@ -499,6 +503,11 @@ require __DIR__ . '/../partials/shell-top.php';
         <div class="phead"><div><h2 id="editTitle">New announcement</h2><p>The preview below is exactly what players see on the dashboard.</p></div></div>
 
         <div class="editor">
+          <div class="preview-wrap">
+            <div class="preview-label"><span class="dotlbl"></span>Dashboard preview</div>
+            <div class="apreview" id="apv"></div>
+            <p class="pv-note">Saving does not put it up. Publish it from the list when you're ready — that takes any other announcement down.</p>
+          </div>
           <div class="form-card">
             <div class="field">
               <label><span class="lt">Type</span></label>
@@ -540,11 +549,6 @@ require __DIR__ . '/../partials/shell-top.php';
             </div>
           </div>
 
-          <div class="preview-wrap">
-            <div class="preview-label"><span class="dotlbl"></span>Dashboard preview</div>
-            <div class="apreview" id="apv"></div>
-            <p class="pv-note">Saving does not put it up. Publish it from the list when you're ready — that takes any other announcement down.</p>
-          </div>
         </div>
       </div>
 
