@@ -746,7 +746,6 @@ $PAGE_HEAD = <<<'HTML'
     .appnote .act{margin-left:0;width:100%}
   }
 </style>
-<?php require __DIR__ . '/../partials/shell-scripts.php'; ?>
 </head>
 
 HTML;

@@ -158,4 +158,16 @@ if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
       </script>
     </header>
 
+<?php /* assets/js/ucp.js, loaded here and nowhere else.
+
+     After the sidebar and top bar, so its first paint has elements to paint
+     into; before <main>, so every page's own inline script — which calls
+     UCP.* while the document is still parsing — finds it already defined.
+
+     It used to be a tag in each page. On some pages that tag sat inside the
+     $PAGE_HEAD nowdoc, where PHP is not parsed, so replacing it with an
+     include printed the include as text and the UCP lost its script
+     entirely: no sidebar, no nav, no dashboard. */
+       require __DIR__ . '/shell-scripts.php'; ?>
+
     <main class="content">

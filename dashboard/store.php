@@ -1313,7 +1313,6 @@ require __DIR__ . '/../partials/shell-top.php';
 
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-<?php require __DIR__ . '/../partials/shell-scripts.php'; ?>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.

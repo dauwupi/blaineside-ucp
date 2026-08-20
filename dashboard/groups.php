@@ -719,7 +719,6 @@ require __DIR__ . '/../partials/shell-top.php';
 
   <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Saved</span></div>
 
-<?php require __DIR__ . '/../partials/shell-scripts.php'; ?>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.

@@ -1366,7 +1366,6 @@ require __DIR__ . '/../partials/shell-top.php';
   </main>
 </div>
 
-<?php require __DIR__ . '/../partials/shell-scripts.php'; ?>
 <script>
 /* =====================================================================
    BlaineSide UCP — account lookup (administrative, read-only)
