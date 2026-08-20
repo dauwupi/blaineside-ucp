@@ -597,26 +597,32 @@ $PAGE_HEAD = <<<'HTML'
   /* Each question is its own panel — see the Question Manager for the same
      component. Nothing runs together, and a long answer cannot make the
      next question look like part of it. */
-  /* A submitted application is a document, not a form. The boxed rows are
-     right while somebody is typing into them — each one is a control. Once
-     they are answers, a box inside a card is one border too many and the
-     text is harder to read for it, so .sent strips the chrome back to a
-     numbered question, the prompt, and the answer. */
+  /* A submitted application is a record, not a form. The boxed rows are
+     right while somebody is typing into them — each one is a control —
+     but once they are answers the question, its prompt and the answer all
+     carry the same weight and three entries read as one block of text.
+
+     So: a numbered chip on the question's own line to start each entry, the
+     prompt beneath it, and a box around the ANSWER — the only part anybody
+     is here to read. A rule between entries does the rest. The pinned mark
+     is not rendered at all here; which questions are always asked is staff
+     bookkeeping, not something a player waiting on a decision needs.
+     ===================================================================== */
+  .sentmeta{font-size:11.5px;color:var(--text-dim)}
   .sent{display:flex;flex-direction:column}
-  .sent .item{background:none;border:none;border-radius:0;padding:20px 0;
-    border-bottom:1px solid var(--border-soft)}
-  .sent .item:first-child{padding-top:2px}
-  .sent .item:last-child{border-bottom:none;padding-bottom:2px}
-  .sent .ihead{padding:0}
-  .sent .ibody{padding:0;border-top:none}
-  .sent .ibody .prompt{padding-top:9px;padding-left:40px}
-  .sent .answer{background:none;border:none;border-left:2px solid var(--border);
-    border-radius:0;margin:12px 0 0 40px;padding:0 0 0 15px;font-size:13.5px;line-height:1.85;
-    color:var(--parchment)}
-  @media (max-width:700px){
-    .sent .ibody .prompt,.sent .answer{padding-left:0;margin-left:0}
-    .sent .answer{border-left:none}
-  }
+  .sent .sq{padding:17px 0;border-bottom:1px solid var(--border-soft)}
+  .sent .sq:first-child{padding-top:4px}
+  .sent .sq:last-child{border-bottom:none;padding-bottom:4px}
+  .sent .sh{display:flex;align-items:center;gap:11px}
+  .sent .sn{flex:none;min-width:26px;height:24px;padding:0 8px;border-radius:7px;display:grid;
+    place-items:center;background:rgba(226,182,92,.10);border:1px solid rgba(226,182,92,.32);
+    color:var(--gold);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+  .sent .st{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .sent .sp{font-size:12.5px;color:var(--text-faint);margin-top:5px;line-height:1.6;max-width:840px}
+  .sent .sa{margin-top:12px;padding:14px 16px;border-radius:10px;background:var(--charcoal);
+    border:1px solid var(--border-soft);font-size:13.3px;line-height:1.85;
+    white-space:pre-wrap;overflow-wrap:anywhere}
+  .sent .sa.empty{color:var(--text-dim);font-style:italic}
 
   .items{display:flex;flex-direction:column;gap:12px}
   .item{background:var(--charcoal-2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -1353,20 +1359,26 @@ require __DIR__ . '/../partials/shell-top.php';
 
   /* ---------- the form ---------- */
   function questionItem(a, i, readonly){
+    /* Two different things share this function only by name. A draft is a
+       form and gets controls; a submitted application is a record and gets
+       the layout described beside .sent in the stylesheet. */
+    if(readonly){
+      var body = (a.body || '').trim();
+      return '<div class="sq"><div class="sh">' +
+        '<span class="sn">' + (i < 9 ? '0' : '') + (i+1) + '</span>' +
+        '<span class="st">' + escapeHtml(a.title) + '</span></div>' +
+        '<div class="sp">' + escapeHtml(a.prompt) + '</div>' +
+        '<div class="sa' + (body ? '' : ' empty') + '">' +
+        (body ? escapeHtml(body) : 'Left blank.') + '</div></div>';
+    }
     return '<div class="item"><div class="ihead">' +
       '<span class="idx">' + (i+1) + '</span>' +
       '<span class="tx"><b>' + escapeHtml(a.title) + '</b></span>' +
       '<span class="r">' + (a.pinned ? '<span class="mark on">Always asked</span>' : '') + '</span></div>' +
       '<div class="ibody"><div class="prompt">' + escapeHtml(a.prompt) + '</div>' +
-      (readonly
-        /* .answer, not a coloured .prompt: it is the one class on this page
-           that sets overflow-wrap, and without it a long answer with no
-           spaces in it — which is exactly what people paste — ran off the
-           card as a single line. */
-        ? '<div class="answer">' + escapeHtml(a.body || '') + '</div>'
-        : '<textarea rows="6" data-answer="' + a.id + '" data-min="' + a.min_chars + '" ' +
-            'placeholder="Your answer…">' + escapeHtml(a.body || '') + '</textarea>' +
-          '<div class="count" data-count="' + a.id + '"></div>') +
+      '<textarea rows="6" data-answer="' + a.id + '" data-min="' + a.min_chars + '" ' +
+        'placeholder="Your answer…">' + escapeHtml(a.body || '') + '</textarea>' +
+      '<div class="count" data-count="' + a.id + '"></div>' +
       '</div></div>';
   }
 
@@ -1481,8 +1493,12 @@ require __DIR__ . '/../partials/shell-top.php';
       : '') +
       '<div class="card"><div class="card-h"><h3>' +
         (readonly ? 'What you sent' : 'Your application') + '</h3><div class="r">' +
-        (readonly ? '' : '<span class="saved" id="saveline"><s></s>Saved automatically</span>' +
-          '<span class="pill draft">Draft</span>') + '</div></div>' +
+        (readonly
+          ? '<span class="sentmeta">' + (d.answers || []).length + ' question' +
+            ((d.answers || []).length === 1 ? '' : 's') + ' · sent ' +
+            shortDate(d.current.submitted_at) + '</span>'
+          : '<span class="saved" id="saveline"><s></s>Saved automatically</span>' +
+            '<span class="pill draft">Draft</span>') + '</div></div>' +
       '<div class="card-b"><div class="' + (readonly ? 'sent' : 'items') + '">' + items + '</div>' +
       (readonly ? '' :
         '<div style="display:flex;align-items:center;gap:11px;margin-top:18px;flex-wrap:wrap">' +
