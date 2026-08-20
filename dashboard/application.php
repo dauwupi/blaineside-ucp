@@ -790,8 +790,11 @@ $PAGE_HEAD = <<<'HTML'
   .row2 .card,.row2 .card + .card{margin:0;height:100%;display:flex;flex-direction:column}
   .row2 .card .card-b,.row2 .card .stats4{flex:1}
   .stats4{display:grid;grid-template-columns:repeat(4,1fr);align-items:stretch}
-  .stats4 .s{padding:14px 18px 15px;border-right:1px solid var(--border-soft);
-    display:flex;flex-direction:column;justify-content:center}
+  /* Top-aligned, not centred: the labels are one or two lines depending on
+     the wording, and centring each tile's block inside a shared height put
+     the four figures on four different baselines. */
+  .stats4 .s{padding:15px 18px 16px;border-right:1px solid var(--border-soft);
+    display:flex;flex-direction:column;justify-content:flex-start}
   .stats4 .s:last-child{border-right:none}
   /* Two lines reserved, so a label that wraps does not drop its figure
      below the others. */
@@ -1163,21 +1166,20 @@ require __DIR__ . '/../partials/shell-top.php';
         '<div class="v">' + escapeHtml(String(v)) + '</div>' +
         '<div class="n">' + escapeHtml(n) + '</div></div>';
     }
-    /* A figure the server could not work out is left out entirely. Four
-       tiles is the usual case; a new server with nothing decided yet shows
-       the two it can stand behind. */
-    var tiles = '';
-    if(q.waiting !== null && q.waiting !== undefined)
-      tiles += s('Waiting', q.waiting, 'Applications in the queue ahead of a new one.');
-    if(q.processed_24h !== null && q.processed_24h !== undefined)
-      tiles += s('Processed in the last 24h', q.processed_24h, 'Decided by Support Staff, by hand.');
-    if(q.typical_wait) tiles += s('Typical wait', q.typical_wait, 'Median from submitted to decided this week.');
-    if(q.first_try_rate) tiles += s('Accepted first try', q.first_try_rate, 'Of applications sent in the last 30 days.');
-    if(!tiles) return '';
+    /* All four, always. A tile that disappears when its figure cannot be
+       worked out moves the three beside it and makes the panel look broken;
+       an em dash says "not known yet", which is the truth and holds its
+       place. */
+    function fig(v){
+      return (v === null || v === undefined || v === '') ? '—' : String(v);
+    }
     return '<div class="card"><div class="card-h"><h3>The queue right now</h3>' +
       '<div class="r"><span class="pill draft">LIVE</span></div></div>' +
-      '<div class="stats4" style="grid-template-columns:repeat(' +
-        (tiles.match(/class="s"/g) || []).length + ',1fr)">' + tiles +
+      '<div class="stats4">' +
+        s('Waiting', fig(q.waiting), 'Applications in the queue ahead of a new one.') +
+        s('Processed in the last 24h', fig(q.processed_24h), 'Decided by Support Staff, by hand.') +
+        s('Typical wait', fig(q.typical_wait), 'Median from submitted to decided this week.') +
+        s('Accepted first try', fig(q.first_try_rate), 'Of applications sent in the last 30 days.') +
       '</div><div class="qfoot">Read by hand, in the order received — no filter decides this and ' +
       'nobody is bumped up the queue.</div></div>';
   }
