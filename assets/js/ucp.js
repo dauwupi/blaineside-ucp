@@ -733,7 +733,7 @@
       'color:var(--text-dim,#655e51)}',
     '.noterow.new .i{color:#e3bd72;background:rgba(226,182,92,.1);',
       'border-color:rgba(226,182,92,.28)}',
-    '.noterow .i svg{width:15px;height:15px;stroke-width:2;fill:none;stroke:currentColor}',
+    '.noterow .i svg{width:16px;height:16px;fill:currentColor;stroke:none}',
     '.noterow .b{min-width:0;flex:1}',
     '.noterow .t{font-size:12.5px;font-weight:600;color:var(--text-faint,#968e7e);',
       'line-height:1.45}',
@@ -749,13 +749,35 @@
     '.notefoot:hover{color:var(--gold,#e2b65c)}'
   ].join('');
 
+  /* Filled glyphs, and the same set the notifications page uses — the bell
+     and the page are two views of one list, so a notification must not wear
+     one badge in the dropdown and another in the list. Outcome-specific
+     entries win over the area: a passed application and a denied one are
+     different news.
+
+     Kept filled on purpose: at 15px an outlined glyph loses its detail and
+     every badge reads as the same grey ring. */
   var NOTE_ICONS = {
-    appeal:'<path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/>' +
-           '<path d="M15 14l4.5 4.5"/>',
-    report:'<path d="M5 21V4h13l-2.5 4L18 12H5"/>',
-    application:'<path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/>',
-    system:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'
+    'application':        '<path d="M6 2h9l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5ZM8 11h8v1.6H8Zm0 4h6v1.6H8Z"/>',
+    'application.passed': '<path d="M6 2h9l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5Zm-3.3 15.1-3.2-3.2 1.2-1.2 2 2 4.6-4.6 1.2 1.2Z"/>',
+    'application.denied': '<path d="M6 2h9l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5Zm-3 14.9L9.3 19 8 17.7l1.7-1.7L8 14.3l1.3-1.3 1.7 1.7 1.7-1.7 1.3 1.3-1.7 1.7 1.7 1.7-1.3 1.3Z"/>',
+    'report':             '<path d="M5 2h1.8v20H5Zm3.4 1.2h11a.7.7 0 0 1 .55 1.14L17.2 8l2.75 3.66a.7.7 0 0 1-.55 1.14h-11Z"/>',
+    'appeal':             '<path d="M2.6 20.2h9v2h-9Zm3.1-3 6.2-6.2 1.7 1.7-6.2 6.2Zm5.9-9.6 3.4-3.4 5.2 5.2-3.4 3.4Z"/>',
+    'punishment':         '<path d="M12 1.8 3.6 5v6.1c0 5.2 3.6 9.4 8.4 11.1 4.8-1.7 8.4-5.9 8.4-11.1V5ZM11 6.6h2v6h-2Zm0 8h2v2h-2Z"/>',
+    'transfer':           '<path d="M7.4 3.6 3 8h11.5v2.4H3l4.4 4.4-1.7 1.7L1 11.8l4.7-4.7ZM16.6 20.4 21 16H9.5v-2.4H21l-4.4-4.4 1.7-1.7L23 12.2l-4.7 4.7Z"/>',
+    'refund':             '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm.9 15.4v1.2h-1.6v-1.2a4 4 0 0 1-2.7-1.3l1.2-1.4a2.9 2.9 0 0 0 2 .9c.8 0 1.3-.4 1.3-1s-.5-.9-1.6-1.3c-1.6-.5-2.6-1.2-2.6-2.7a2.7 2.7 0 0 1 2.4-2.6V6.4h1.6v1.5a3.6 3.6 0 0 1 2.2 1l-1.1 1.4a2.5 2.5 0 0 0-1.7-.7c-.8 0-1.2.4-1.2.9s.6.8 1.8 1.3c1.7.6 2.4 1.4 2.4 2.7a2.8 2.8 0 0 1-2.4 2.9Z"/>',
+    'store':              '<path d="M3.6 4h2.9l.6 2.6h13a.9.9 0 0 1 .88 1.1l-1.5 6.6a1.4 1.4 0 0 1-1.36 1.1H9.1l.35 1.6h9.4v1.9H8.2a1.4 1.4 0 0 1-1.37-1.1L4.3 5.9H3.6Zm5 14.4a1.7 1.7 0 1 1-1.7 1.7 1.7 1.7 0 0 1 1.7-1.7Zm9.2 0a1.7 1.7 0 1 1-1.7 1.7 1.7 1.7 0 0 1 1.7-1.7Z"/>',
+    'account':            '<path d="M12 3a4.4 4.4 0 1 1 0 8.8A4.4 4.4 0 0 1 12 3Zm8.2 18.2H3.8v-1.1a6.6 6.6 0 0 1 6.6-6.6h3.2a6.6 6.6 0 0 1 6.6 6.6Z"/>',
+    'group':              '<path d="M9 4.6a3.4 3.4 0 1 1 0 6.8 3.4 3.4 0 0 1 0-6.8ZM2.6 19.6a6.4 6.4 0 0 1 12.8 0v.9H2.6ZM17 6.4a2.9 2.9 0 1 1 0 5.8 2.9 2.9 0 0 1 0-5.8Zm.4 7.2a5 5 0 0 1 4.2 4.9v1.9h-4.3v-1.4a7.9 7.9 0 0 0-1.6-4.8 5 5 0 0 1 1.7-.6Z"/>',
+    'announcement':       '<path d="M3 10.5v3A1.5 1.5 0 0 0 4.5 15H6l5.2 3.9A1 1 0 0 0 13 18.1V5.9a1 1 0 0 0-1.8-.8L6 9H4.5A1.5 1.5 0 0 0 3 10.5Zm12.8-2.1a1 1 0 0 1 1.4.1 5.4 5.4 0 0 1 0 7 1 1 0 1 1-1.5-1.3 3.4 3.4 0 0 0 0-4.4 1 1 0 0 1 .1-1.4Z"/>',
+    'system':             '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm-1 5h2v2h-2Zm0 3.4h2V17h-2Z"/>'
   };
+
+  /** Most specific first: area.kind, then area, then system. */
+  function noteIcon(n) {
+    var k = (n.area || '') + '.' + (n.kind || '');
+    return NOTE_ICONS[k] || NOTE_ICONS[n.area] || NOTE_ICONS.system;
+  }
 
   var noteOpen = false, noteTimer = null, noteWired = false;
 
@@ -779,10 +801,10 @@
 
     panel.querySelector('.notelist').innerHTML = list.length
       ? list.map(function (n) {
-          var icon = NOTE_ICONS[n.area] || NOTE_ICONS.system;
+          var icon = noteIcon(n);
           return '<div class="noterow' + (n.read ? '' : ' new') + '" data-id="' + n.id + '"' +
             (n.url ? ' data-url="' + esc(n.url) + '"' : '') + '>' +
-            '<span class="i"><svg viewBox="0 0 24 24">' + icon + '</svg></span>' +
+            '<span class="i"><svg viewBox="0 0 24 24" fill-rule="evenodd">' + icon + '</svg></span>' +
             '<span class="b">' +
               '<div class="t">' + esc(n.title) + '</div>' +
               (n.body ? '<div class="s">' + esc(n.body) + '</div>' : '') +

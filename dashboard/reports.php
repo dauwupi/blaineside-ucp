@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'BlaineSide — Staff Reports';
 $PAGE_HEADING = 'Staff Reports';
+$PAGE_ICON = 'reports';
+$PAGE_LEDE = 'A report about the conduct of a member of staff, read by Staff Management and the Management Team — never by the person it is about.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -1435,17 +1437,6 @@ HTML;
 require __DIR__ . '/../partials/shell-top.php';
 ?>
 
-      <div class="ahead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 21V4h13l-2.5 4L18 12H5"/></svg></span>
-        <div class="tx">
-          <h1>Staff Reports</h1>
-          <!-- Says who handles it and, more usefully, who does NOT: the single
-               most common reason people don't report a staff member is not
-               knowing whether that person will read it. -->
-          <p>A report about the conduct of a member of staff, read by Staff Management and the
-            Management Team — never by the person it is about.</p>
-        </div>
-      </div>
 
       <div class="qtabs" id="qtabs" role="tablist" aria-label="Staff Reports views"></div>
       <div id="qbody"></div>

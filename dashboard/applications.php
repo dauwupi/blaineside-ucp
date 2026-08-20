@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'Application Panel · BlaineSide';
 $PAGE_HEADING = 'Application Panel';
+$PAGE_ICON = 'app-panel';
+$PAGE_LEDE = 'Claim one to review it. While you hold it nobody else can decide it or write the feedback — except Staff Management, Management and Founders, who can take it over.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -1059,12 +1061,9 @@ require __DIR__ . '/../partials/shell-top.php';
 
   function renderQueue(d){
     paint('body',
-      '<div class="qhead">' +
-      '<span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
-      '<path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span>' +
-      '<div><h1>Application Panel</h1><p>Claim one to review it. While you hold it nobody else can ' +
-      'decide it or write the feedback — except Staff Management, Management and Founders, who can ' +
-      'take it over.</p></div></div>' + queueHTML(d));
+      /* The page header is the shell's — see $PAGE_ICON and $PAGE_LEDE at
+         the top of this file. This paint is the queue and nothing else. */
+      queueHTML(d));
 
     var f = el('filter'); if(f){ f.value = Q.filter; f.addEventListener('change', function(){
       Q.filter = this.value; Q.page = 1; loadQueue(); }); }

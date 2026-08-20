@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'BlaineSide — Refund Requests';
 $PAGE_HEADING = 'Refund Requests';
+$PAGE_ICON = 'refunds';
+$PAGE_LEDE = 'Something the server took from you in error — cash, a vehicle, a property or an item lost to a crash, a bug or a rollback.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -558,13 +560,6 @@ require __DIR__ . '/../partials/shell-top.php';
 ?>
 
 
-      <div class="qhead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 9.8h4a1.7 1.7 0 0 1 0 3.4h-3a1.7 1.7 0 0 0 0 3.4h4"/></svg></span>
-        <div>
-          <h1>Refund Requests</h1>
-          <p>Something the server took from you in error — cash, a vehicle, a property or an item lost to a crash, a bug or a rollback.</p>
-        </div>
-      </div>
 
       <div class="qtabs" id="qtabs" role="tablist" aria-label="Refund Requests views"></div>
       <div id="qbody"></div>

@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'Application · BlaineSide';
 $PAGE_HEADING = 'Application';
+$PAGE_ICON = 'application';
+$PAGE_LEDE = 'Everybody answers a short set of questions before they can play in Blaine County. Support Staff read every one by hand, and you get written feedback either way.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -876,14 +878,6 @@ require __DIR__ . '/../partials/shell-top.php';
 ?>
 
 
-      <div class="qhead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span>
-        <div>
-          <h1>Application</h1>
-          <p>Everybody answers a short set of questions before they can play in Blaine County.
-             Support Staff read every one by hand, and you get written feedback either way.</p>
-        </div>
-      </div>
 
       <div id="body"><div class="empty">Loading…</div></div>
 </main>

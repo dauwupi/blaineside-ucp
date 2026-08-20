@@ -437,3 +437,48 @@ button.primary svg{stroke:currentColor}
    sixteen pages that carry a copy of .ann-stamp.
    ===================================================================== */
 .ann-stamp svg{fill:currentColor!important;stroke:none!important}
+
+/* =====================================================================
+   THE PAGE HEADER
+
+   One component for every page in the UCP: a tinted icon tile, the title,
+   and a single line saying what the page is for. partials/shell-top.php
+   draws it from $PAGE_ICON, $PAGE_HEADING and $PAGE_LEDE; the glyphs live
+   in partials/icons.php.
+
+   It is here rather than in each page for the reason every header used to
+   look different: three separate patterns (.qhead, .phead, and pages with
+   none) each drifted on their own. Changing the UCP's headers is now one
+   edit in this file.
+   ===================================================================== */
+/* The shell's column. Some pages never declared it, and got away with it
+   because their content happened to be wide: a flex item with no grow takes
+   its width from what is inside it. The page header is narrow text, so on
+   those pages it collapsed to one word per line. The shell owns this
+   markup, so the shell states the rule. */
+.main{flex:1;min-width:0}
+
+/* width and align-self are load-bearing: a few pages make .content a flex
+   column, and inside one of those a plain block header collapsed to the
+   width of its longest word. */
+.pagehead{display:flex;align-items:flex-start;gap:15px;width:100%;
+  padding:2px 0 18px;margin-bottom:18px;border-bottom:1px solid var(--border-soft)}
+.pagehead .ph-tx{flex:1;min-width:0}
+.pagehead .ph-ic{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  background:color-mix(in srgb, var(--gold) 11%, transparent);
+  border:1px solid color-mix(in srgb, var(--gold) 30%, transparent);color:var(--gold)}
+.pagehead .ph-ic svg{width:21px;height:21px;fill:currentColor;stroke:none;display:block}
+.pagehead h1{margin:0;font-size:24px;font-weight:700;line-height:1.15;letter-spacing:-.02em;
+  color:var(--parchment)}
+/* Capped measure: a lede that runs the full width of a wide screen is a
+   line nobody finishes reading. */
+.pagehead p{margin:5px 0 0;font-size:13px;line-height:1.6;color:var(--text-dim);max-width:860px}
+.pagehead p b{color:var(--parchment);font-weight:600}
+@media (max-width:700px){
+  .pagehead{gap:12px;padding-bottom:15px;margin-bottom:15px}
+  .pagehead .ph-ic{width:38px;height:38px;border-radius:10px}
+  .pagehead .ph-ic svg{width:18px;height:18px}
+  .pagehead h1{font-size:20px}
+}
+/* The listing pages keep one primary action where their old header was. */
+.listacts{display:flex;justify-content:flex-end;margin:-4px 0 14px}

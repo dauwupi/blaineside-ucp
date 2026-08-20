@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'BlaineSide — Ban Appeals';
 $PAGE_HEADING = 'Ban Appeals';
+$PAGE_ICON = 'appeals';
+$PAGE_LEDE = 'An appeal goes to the administrator who issued your punishment, so you can explain what happened in your own words and have it looked at again.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -1244,18 +1246,6 @@ HTML;
 require __DIR__ . '/../partials/shell-top.php';
 ?>
 
-      <div class="ahead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h8"/><path d="M6.5 17.5l7-7"/><path d="M11 4l6 6-2.5 2.5-6-6z"/><path d="M15 14l4.5 4.5"/></svg></span>
-        <div class="tx">
-          <h1>Ban Appeals</h1>
-          <!-- The old line said "looked at a second time by somebody who did
-               not issue it", which describes a second opinion from a stranger.
-               An appeal goes TO the administrator who issued it — close to the
-               opposite of what it claimed. -->
-          <p>An appeal goes to the administrator who issued your punishment, so you can explain
-            what happened in your own words and have it looked at again.</p>
-        </div>
-      </div>
 
       <div class="qtabs" id="qtabs" role="tablist" aria-label="Ban Appeals views"></div>
       <div id="qbody"></div>

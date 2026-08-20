@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'Response Templates · BlaineSide';
 $PAGE_HEADING = 'Response Templates';
+$PAGE_ICON = 'templates';
+$PAGE_LEDE = 'Saved responses a reviewer can drop into the feedback box with one click.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -651,14 +653,6 @@ require __DIR__ . '/../partials/shell-top.php';
 ?>
 
 
-      <div class="qhead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 4h9l3 3v13H8z"/><path d="M4 8v12h9"/><path d="M11 11h5M11 15h5"/></svg></span>
-        <div>
-          <h1>Response Templates</h1>
-          <p>Saved responses a reviewer can drop into the feedback box with one click. A template is
-             inserted, never sent — whoever uses it edits it before the decision goes anywhere.</p>
-        </div>
-      </div>
       <div id="body"><div class="empty">Loading…</div></div>
 </main>
   </div>

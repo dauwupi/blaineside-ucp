@@ -5,8 +5,10 @@
  * The shell — backdrop, sidebar, top bar, credit box — comes from
  * partials/shell-top.php. Nothing about it is repeated here.
  */
-$PAGE_TITLE = 'BlaineSide — County Bulletin';
+$PAGE_TITLE = 'BlaineSide — Announcements';
 $PAGE_HEADING = 'Announcements';
+$PAGE_ICON = 'announcements';
+$PAGE_LEDE = 'The strip across the top of the dashboard. <b>One is live at a time</b> — putting one up takes the other down.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -477,12 +479,9 @@ require __DIR__ . '/../partials/shell-top.php';
       <!-- ============ LISTING ============ -->
       <div class="view active" id="view-list">
         <a class="page-back" href="/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>Back to dashboard</a>
-
-        <div class="phead">
-          <div>
-            <h2>Announcements</h2>
-            <p>The strip across the top of the dashboard. <b>One is live at a time</b> — putting one up takes the other down.</p>
-          </div>
+        <!-- The page title moved to the shell; this row is what is left of
+             the old .phead — the one action the listing offers. -->
+        <div class="listacts">
           <button class="btn primary" onclick="openEditor()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
             New announcement

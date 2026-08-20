@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'Credit Store · BlaineSide';
 $PAGE_HEADING = 'Credit Store';
+$PAGE_ICON = 'store';
+$PAGE_LEDE = 'Buy credits, spend them, and keep the receipts.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -1297,12 +1299,6 @@ require __DIR__ . '/../partials/shell-top.php';
 
 
       <div class="stack">
-        <div class="qhead">
-          <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><path d="M12 7.2v9.6"/><path d="M15 9.4a3.6 3.6 0 1 0 0 5.2"/></svg></span>
-          <div>
-            <h1>Credit Store</h1>
-            <p>Buy credits, spend them, and keep the receipts.</p>
-          </div>
         </div>
 
         <div class="tabs" id="tabs"></div>

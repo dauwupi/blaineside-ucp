@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'BlaineSide — Administrative Search';
 $PAGE_HEADING = 'Administrative Search';
+$PAGE_ICON = 'search';
+$PAGE_LEDE = 'Find an account, a punishment or a case by name, ID or reference.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -638,13 +640,6 @@ require __DIR__ . '/../partials/shell-top.php';
       <div class="view active" id="view-list">
         <a class="page-back" href="/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>Back to dashboard</a>
 
-        <div class="phead">
-          <div>
-            <h2>Administrative Search</h2>
-            <p id="introLine">Fill in anything you know — the more boxes, the narrower the result.
-              Opening an account is recorded against your own staff log.</p>
-          </div>
-        </div>
 
         <div class="ltabs" id="ltabs" role="tablist"></div>
         <div id="lookupHost"></div>

@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'BlaineSide — Asset Transfers';
 $PAGE_HEADING = 'Asset Transfers';
+$PAGE_ICON = 'transfers';
+$PAGE_LEDE = 'Moving a vehicle, property or business from one player to another, on the record.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -558,13 +560,6 @@ require __DIR__ . '/../partials/shell-top.php';
 ?>
 
 
-      <div class="qhead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>
-        <div>
-          <h1>Asset Transfers</h1>
-          <p>Moving a vehicle, property or business from one player to another, on the record.</p>
-        </div>
-      </div>
 
       <div class="qtabs" id="qtabs" role="tablist" aria-label="Asset Transfers views"></div>
       <div id="qbody"></div>

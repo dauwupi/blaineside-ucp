@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'BlaineSide — County Bulletin';
 $PAGE_HEADING = 'County Bulletin';
+$PAGE_ICON = 'bulletin';
+$PAGE_LEDE = 'Post news, events and notices. Choose which ones appear on the <b>dashboard</b>.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -387,11 +389,9 @@ require __DIR__ . '/../partials/shell-top.php';
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
           Back to dashboard
         </a>
-        <div class="phead">
-          <div>
-            <h2>County Bulletin</h2>
-            <p>Post news, events and notices. Choose which ones appear on the <b>dashboard</b>.</p>
-          </div>
+        <!-- The page title moved to the shell; this row is what is left of
+             the old .phead — the one action the listing offers. -->
+        <div class="listacts">
           <button class="btn primary" onclick="openEditor()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
             New bulletin

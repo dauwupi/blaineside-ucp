@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'Question Manager · BlaineSide';
 $PAGE_HEADING = 'Question Manager';
+$PAGE_ICON = 'questions';
+$PAGE_LEDE = 'Pinned questions are asked on every application. The rest sit in a pool, and each new application draws from it.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -694,15 +696,6 @@ require __DIR__ . '/../partials/shell-top.php';
 ?>
 
 
-      <div class="qhead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 9a3 3 0 1 1 4 2.8c-.7.3-1 .9-1 1.7v.5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg></span>
-        <div>
-          <h1>Question Manager</h1>
-          <p>Pinned questions are asked on every application. The rest sit in a pool, and each new
-             application draws from it at random — so two people applying on the same day rarely get
-             the same set. A minimum is counted in characters, not words: "a a a a a" is five words.</p>
-        </div>
-      </div>
       <div id="body"><div class="empty">Loading…</div></div>
 </main>
   </div>

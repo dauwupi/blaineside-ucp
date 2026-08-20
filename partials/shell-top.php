@@ -30,7 +30,7 @@
  * scripts, and several have their own toast markup. Only the shell above is
  * shared, because only the shell above is identical.
  */
-define('UCP_CSS_VERSION', '2.7.0');
+define('UCP_CSS_VERSION', '2.8.0');
 
 if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
 ?>
@@ -171,3 +171,26 @@ if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
        require __DIR__ . '/shell-scripts.php'; ?>
 
     <main class="content">
+<?php /* THE PAGE HEADER — icon, heading, one line saying what the page is for.
+
+         Every page used to draw its own, and there were three different
+         patterns doing it: .qhead, .phead, and pages with none at all. That
+         is why no two headers matched. A page now declares
+
+             $PAGE_ICON    a key from partials/icons.php
+             $PAGE_HEADING the title (already set for the top bar)
+             $PAGE_LEDE    one sentence, plain text
+
+         and gets this. A page that sets no lede gets no header, which is
+         how My Profile and the account lookup keep their own identity
+         panel. */
+      if (!empty($PAGE_LEDE)):
+        require_once __DIR__ . '/icons.php'; ?>
+      <div class="pagehead">
+        <span class="ph-ic"><?= ucp_icon($PAGE_ICON ?? '') ?></span>
+        <div class="ph-tx">
+          <h1><?= htmlspecialchars($PAGE_HEADING ?? $PAGE_TITLE) ?></h1>
+          <p><?= $PAGE_LEDE ?></p>
+        </div>
+      </div>
+      <?php endif; ?>

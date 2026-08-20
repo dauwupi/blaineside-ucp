@@ -5,8 +5,10 @@
  * The shell — backdrop, sidebar, top bar, credit box — comes from
  * partials/shell-top.php. Nothing about it is repeated here.
  */
-$PAGE_TITLE = 'BlaineSide — County Bulletin';
+$PAGE_TITLE = 'BlaineSide — Group Management';
 $PAGE_HEADING = 'Group Management';
+$PAGE_ICON = 'groups';
+$PAGE_LEDE = 'Ranks, teams and who sits in each of them.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -693,12 +695,6 @@ require __DIR__ . '/../partials/shell-top.php';
       <div class="view active" id="view-list">
         <a class="page-back" href="/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 18l-6-6 6-6"/></svg>Back to dashboard</a>
 
-        <div class="phead">
-          <div>
-            <h2>Group Management</h2>
-            <p id="introLine">Promote and demote accounts. Every change is written to that account's security log.</p>
-          </div>
-        </div>
 
         <div class="mtools">
           <div class="gpick tone-0" id="gpick"></div>

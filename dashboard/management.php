@@ -7,6 +7,8 @@
  */
 $PAGE_TITLE = 'Management · BlaineSide';
 $PAGE_HEADING = 'Management';
+$PAGE_ICON = 'management';
+$PAGE_LEDE = 'Everything Management runs, in one place.';
 $PAGE_HEAD = <<<'HTML'
 <style>
   :root{
@@ -637,13 +639,6 @@ require __DIR__ . '/../partials/shell-top.php';
 ?>
 
 
-      <div class="qhead">
-        <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/></svg></span>
-        <div>
-          <h1>Management</h1>
-          <p>Everything Management runs, in one place.</p>
-        </div>
-      </div>
 
       <div id="body"><div class="empty">Loading…</div></div>
 </main>
