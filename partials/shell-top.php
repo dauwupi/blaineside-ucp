@@ -30,7 +30,7 @@
  * scripts, and several have their own toast markup. Only the shell above is
  * shared, because only the shell above is identical.
  */
-define('UCP_CSS_VERSION', '2.6.3');
+define('UCP_CSS_VERSION', '2.7.0');
 
 if (!isset($PAGE_TITLE)) $PAGE_TITLE = 'BlaineSide UCP';
 ?>

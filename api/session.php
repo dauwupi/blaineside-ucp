@@ -8,6 +8,28 @@ require __DIR__ . '/_bootstrap.php';
 require __DIR__ . '/_ranks.php';
 require __DIR__ . '/_2fa.php';
 
+/**
+ * Has this account already been accepted?
+ *
+ * Its own tiny query rather than app_state(): session.php runs on every
+ * page of the UCP and does not need the attempt, the answers or the
+ * feedback — just the one boolean the sidebar asks about.
+ */
+function session_app_passed(PDO $pdo, int $accountId): bool
+{
+    try {
+        $st = $pdo->prepare(
+            'SELECT 1 FROM ucp_applications WHERE account_id = ? AND status = ? LIMIT 1'
+        );
+        $st->execute([$accountId, 'passed']);
+        return (bool)$st->fetchColumn();
+    } catch (Throwable $e) {
+        /* No applications table yet — then nobody has passed, and the link
+           stays for everyone. */
+        return false;
+    }
+}
+
 /* A locked sign-in. Not a session — 'uid' is unset, so every authenticated
  * endpoint still refuses this browser. It is reported here, and only here, so
  * the dashboard can draw the lock notice instead of bouncing them to a sign-in
@@ -134,4 +156,8 @@ ok([
     // Set only when security.totp_required_rank is configured and this rank
     // is at or above it. The dashboard uses it to send staff to /security.
     'twofa_setup_required' => twofa_is_required($rank) && !$enabled,
+    /* Drives one thing: whether the sidebar still offers the application
+       page. False whenever applications are not installed, which leaves the
+       link exactly where it was. */
+    'app_passed' => session_app_passed($pdo, (int)$acc['id']),
 ] + ($credits === null ? [] : ['credits' => $credits]));

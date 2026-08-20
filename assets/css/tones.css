@@ -30,7 +30,7 @@
    ===================================================================== */
 
 .tone-0{--tone:#7d7365;--tone-ink:#16130f;--tone-text:#9a9082}   /* Member            */
-.tone-1{--tone:#660000;--tone-ink:#ffffff;--tone-text:#cc6a60}   /* Support Staff     */
+.tone-1{--tone:#c9524a;--tone-ink:#1a0604;--tone-text:#dd8078}   /* Support Staff     */
 .tone-2{--tone:#275976;--tone-ink:#ffffff;--tone-text:#6fa3c6}   /* Development Team  */
 .tone-3,.tone-4,.tone-5,.tone-6,.tone-7{                         /* Trainee → Lead    */
         --tone:#00aa00;--tone-ink:#032a03;--tone-text:#3fc23f}
@@ -46,7 +46,7 @@
    --me / --me-text without that page having to know the ladder at all.
    --------------------------------------------------------------------- */
 .me-0{--me:#7d7365;--me-text:#9a9082}
-.me-1{--me:#660000;--me-text:#cc6a60}
+.me-1{--me:#c9524a;--me-text:#dd8078}
 .me-2{--me:#275976;--me-text:#6fa3c6}
 .me-3,.me-4,.me-5,.me-6,.me-7{--me:#00aa00;--me-text:#3fc23f}
 .me-8{--me:#ff9600;--me-text:#ffa733}

@@ -269,6 +269,10 @@
     if (!d || typeof d.rank !== 'number') return;
     var m = { name: d.name || '', role: d.role || 'Member', rank: d.rank | 0,
               teams: Array.isArray(d.teams) ? d.teams.map(String) : [] };
+    /* Only session.php knows this. Anything else that describes the caller
+       leaves the last known value alone rather than clearing the menu. */
+    if (typeof d.app_passed === 'boolean') m.app_passed = d.app_passed;
+    else { var k = meRead(); if (k && typeof k.app_passed === 'boolean') m.app_passed = k.app_passed; }
     /* Carried through only when the server actually sends it. Writing 0
        into the cache for a UCP that has no ledger would then paint 0 on
        the next page before the session answers, which is a number nobody
@@ -542,13 +546,13 @@
       {label:'My Asset Transfers',href:'/dashboard/transfers#mine'},
       {label:'Asset Transfer Panel',href:'/dashboard/transfers#panel',min:3}]},
     {heading:'Account'},
-    /* My Profile is a parent now: the account page and the player's own
+    /* My Profile is a parent: the account page and the player's own
        application are two different places, and the application is the one
-       a new player is looking for. Everyone sees it — passing an
-       application is not a permission, it is a state. */
+       a new player is looking for. It disappears once they are in — see
+       notPassed in navMayItem. */
     {label:'My Profile',icon:'user',children:[
       {label:'My Account',href:'/profile'},
-      {label:'Application',href:'/dashboard/application'}]},
+      {label:'Application',href:'/dashboard/application',notPassed:true}]},
     {label:'Credit Store',icon:'coin',href:'/dashboard/store'},
     {label:'XM Radio',icon:'radio',href:'#'}
   ];
@@ -583,8 +587,12 @@
      Management holder reaches the Staff Report Panel without being
      Management. A menu drawn from rank alone would be wrong for exactly the
      people the sub-group exists for. */
-  function navMayItem(x, rank, teams){
+  function navMayItem(x, rank, teams, me){
     if (!x) return true;
+    /* Somebody who has passed has no use for the application page ever
+       again — the link is removed rather than left to lead to a page whose
+       only message is "you already did this". */
+    if (x.notPassed && me && me.app_passed) return false;
     if (x.admin && rank < 8) return false;
     if (x.founder && rank < 9) return false;
     if (x.admins && rank < 3) return false;
@@ -620,12 +628,12 @@
        Administration section appearing for staff — the new menu fades in
        rather than snapping. */
     var html = items.filter(function (it) {
-      return navMayItem(it, rank, teams);
+      return navMayItem(it, rank, teams, me);
     }).map(function (it) {
       if (it.heading) return '<div class="nav-heading">' + esc(it.heading) + '</div>';
       if (it.children) {
         var subs = it.children.filter(function (c) {
-          return navMayItem(c, rank, teams);
+          return navMayItem(c, rank, teams, me);
         }).map(function (c) {
           return c.empty
             ? '<a class="slot-empty">' + esc(c.label) + '</a>'
@@ -975,7 +983,7 @@
     name.parentNode.replaceChild(a, name);
   }
 
-  var UCP_VERSION = '3.0.2';
+  var UCP_VERSION = '3.1.0';
 
   var FOOT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var FOOT_MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

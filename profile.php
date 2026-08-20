@@ -1805,7 +1805,7 @@ require __DIR__ . '/partials/shell-top.php';
   </main>
 </div>
 
-<script src="/assets/js/ucp.js?v=3.0.2"></script>
+<?php require __DIR__ . '/partials/shell-scripts.php'; ?>
 <script src="/assets/js/qrcode.js" defer></script>
 <script>
 /* =====================================================================

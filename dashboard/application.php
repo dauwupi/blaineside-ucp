@@ -597,6 +597,27 @@ $PAGE_HEAD = <<<'HTML'
   /* Each question is its own panel — see the Question Manager for the same
      component. Nothing runs together, and a long answer cannot make the
      next question look like part of it. */
+  /* A submitted application is a document, not a form. The boxed rows are
+     right while somebody is typing into them — each one is a control. Once
+     they are answers, a box inside a card is one border too many and the
+     text is harder to read for it, so .sent strips the chrome back to a
+     numbered question, the prompt, and the answer. */
+  .sent{display:flex;flex-direction:column}
+  .sent .item{background:none;border:none;border-radius:0;padding:20px 0;
+    border-bottom:1px solid var(--border-soft)}
+  .sent .item:first-child{padding-top:2px}
+  .sent .item:last-child{border-bottom:none;padding-bottom:2px}
+  .sent .ihead{padding:0}
+  .sent .ibody{padding:0;border-top:none}
+  .sent .ibody .prompt{padding-top:9px;padding-left:40px}
+  .sent .answer{background:none;border:none;border-left:2px solid var(--border);
+    border-radius:0;margin:12px 0 0 40px;padding:0 0 0 15px;font-size:13.5px;line-height:1.85;
+    color:var(--parchment)}
+  @media (max-width:700px){
+    .sent .ibody .prompt,.sent .answer{padding-left:0;margin-left:0}
+    .sent .answer{border-left:none}
+  }
+
   .items{display:flex;flex-direction:column;gap:12px}
   .item{background:var(--charcoal-2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
   .ihead{display:flex;align-items:center;gap:14px;padding:14px 16px}
@@ -740,6 +761,20 @@ $PAGE_HEAD = <<<'HTML'
     align-items:center;gap:8px;text-align:center}
   .band-cta .mins{font-size:11.5px;color:var(--text-dim)}
 
+  /* What happens next, along the foot of the status strip. Three lines
+     somebody reads once — a card of its own was more furniture than that
+     deserves, and it cost the questions a third of the page. */
+  .nextrow{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border-soft)}
+  .nx{padding:13px 18px;border-right:1px solid var(--border-soft)}
+  .nx:last-child{border-right:none}
+  .nx b{display:block;font-size:12.5px;font-weight:600}
+  .nx span{display:block;font-size:11.8px;color:var(--text-faint);line-height:1.5;margin-top:3px}
+  @media (max-width:800px){
+    .nextrow{grid-template-columns:1fr}
+    .nx{border-right:none;border-bottom:1px solid var(--border-soft)}
+    .nx:last-child{border-bottom:none}
+  }
+
   /* Two cards on one row: the figures, and the one thing support can help
      with. Sized so neither has slack to distribute. */
   .row2{display:grid;grid-template-columns:2fr 1fr;gap:15px;align-items:stretch;margin-bottom:15px}
@@ -847,7 +882,7 @@ require __DIR__ . '/../partials/shell-top.php';
 
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
-<script src="/assets/js/ucp.js?v=3.0.2"></script>
+<?php require __DIR__ . '/../partials/shell-scripts.php'; ?>
 <script>
   /* ===================== SIDEBAR (shared config) ===================== */
   /* The sidebar lives in assets/js/ucp.js — one copy for every page.
@@ -1142,6 +1177,12 @@ require __DIR__ . '/../partials/shell-top.php';
       'nobody is bumped up the queue.</div></div>';
   }
 
+  /* One step of "what happens next", sat along the bottom of the status
+     strip rather than in a card of its own. */
+  function nextStep(title, body){
+    return '<div class="nx"><b>' + escapeHtml(title) + '</b><span>' + escapeHtml(body) + '</span></div>';
+  }
+
   function supportHTML(){
     return '<div class="card"><div class="card-h"><h3>Something not working?</h3></div>' +
       '<div class="card-b fix">' +
@@ -1318,8 +1359,11 @@ require __DIR__ . '/../partials/shell-top.php';
       '<span class="r">' + (a.pinned ? '<span class="mark on">Always asked</span>' : '') + '</span></div>' +
       '<div class="ibody"><div class="prompt">' + escapeHtml(a.prompt) + '</div>' +
       (readonly
-        ? '<div class="prompt" style="color:var(--parchment);white-space:pre-wrap">' +
-            escapeHtml(a.body || '') + '</div>'
+        /* .answer, not a coloured .prompt: it is the one class on this page
+           that sets overflow-wrap, and without it a long answer with no
+           spaces in it — which is exactly what people paste — ran off the
+           card as a single line. */
+        ? '<div class="answer">' + escapeHtml(a.body || '') + '</div>'
         : '<textarea rows="6" data-answer="' + a.id + '" data-min="' + a.min_chars + '" ' +
             'placeholder="Your answer…">' + escapeHtml(a.body || '') + '</textarea>' +
           '<div class="count" data-count="' + a.id + '"></div>') +
@@ -1383,57 +1427,13 @@ require __DIR__ . '/../partials/shell-top.php';
     /* =================================================================
        PASSED
 
-       The one page in the UCP somebody reaches exactly once, so it is
-       worth more than a green tick. No attempt list here: a player who is
-       in does not need a record of the times they were not, and the whole
-       history is one click away on any of those rows anyway — this view
-       is about what happens next.
+       There is no page for somebody who is already in. The application is
+       a door, and a door you have walked through is not a room — the
+       sidebar drops the link (see notPassed in assets/js/ucp.js) and
+       anyone arriving on the URL directly is sent to the dashboard.
        ================================================================= */
     if(d.state === 'passed'){
-      var when = d.current && d.current.decided ? d.current.decided.at : null;
-      var who  = d.current && d.current.decided ? d.current.decided.name : null;
-
-      h = '<div class="hero">' +
-        '<div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
-          '<path d="M5 13l4 4L19 7"/></svg></div>' +
-        '<h2>You\'re in.</h2>' +
-        '<p>Your application was accepted' + (who ? ' by ' + escapeHtml(who) : '') +
-          (when ? ' on ' + shortDate(when) : '') + '. Blaine County is open to you — ' +
-          'connect and start playing whenever you like.</p>' +
-        '<div class="herobtns">' +
-          '<a class="btn primary" href="/dashboard">Go to the dashboard</a>' +
-          '<a class="btn" href="#" id="copyIp">Copy the server address</a>' +
-        '</div></div>' +
-
-        '<div class="nextgrid">' +
-          nextTile('user', 'Make your character',
-            'Your first character is created in game, and none of it is fixed by what you ' +
-            'wrote here — the application only checks that you understand how roleplay works. ' +
-            'Pick whatever name and history you actually want to play.') +
-          nextTile('book', 'Read the rules once more',
-            'You have shown you know them. The full set is on the forums, and the parts ' +
-            'people trip over most are the crime-zone and chain-robbing rules.') +
-          nextTile('chat', 'Say hello on the forums',
-            'Factions recruit there, events are posted there, and it is the fastest way ' +
-            'to find people to play with on your first night.') +
-          nextTile('gavel', 'If something goes wrong',
-            'Ban appeals, staff reports and refund requests all live in this UCP, in the ' +
-            'menu on the left. Every one of them is read by a person.') +
-        '</div>';
-
-      paint('body', h);
-      var ci = el('copyIp');
-      if(ci) ci.addEventListener('click', function(e){
-        e.preventDefault();
-        /* No clipboard permission prompt on a failure path: if the browser
-           refuses, the address is still shown rather than silently lost. */
-        var addr = 'play.blaineside.com';
-        if(navigator.clipboard && navigator.clipboard.writeText){
-          navigator.clipboard.writeText(addr)
-            .then(function(){ toast('Copied ' + addr); })
-            .catch(function(){ toast(addr); });
-        } else { toast(addr); }
-      });
+      location.replace('/dashboard');
       return;
     }
 
@@ -1458,31 +1458,37 @@ require __DIR__ . '/../partials/shell-top.php';
       return;
     }
 
-    /* draft or pending */
+    /* =================================================================
+       DRAFT or PENDING
+
+       Full width. The attempt list is not here on purpose: while an
+       application is open the only thing that matters is this one, and the
+       list squeezed the questions into two thirds of the page for no gain.
+       What happens next is folded into the status strip, where it is read
+       once and then never needed again.
+       ================================================================= */
     var readonly = d.state === 'pending';
     var items = (d.answers || []).map(function(a, i){ return questionItem(a, i, readonly); }).join('');
 
     h = (readonly
-      ? '<div class="state"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
-        '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div>' +
-        '<h4>Your application is with Support Staff</h4><p>Sent ' +
-        ago(d.current.submitted_at) + '. You\'ll get a notification the moment it is decided ' +
-        '— there is nothing you need to do in the meantime.</p></div>' +
-        '<div class="act"><span class="pill pend">Waiting</span></div></div><div style="height:16px"></div>'
+      ? '<div class="band"><div class="band-top"><div>' +
+          '<span class="eyebrow">With Support Staff</span>' +
+          '<h2>Your application is being read</h2>' +
+          '<p>Sent ' + ago(d.current.submitted_at) + '. There is nothing you need to do in the ' +
+          'meantime — you will get a notification the moment it is decided, and your answers are ' +
+          'locked until then.</p></div>' +
+          '<div class="band-cta"><span class="pill pend">Waiting</span></div></div></div>'
       : '') +
-      '<div class="split"><div>' +
-        '<div class="card"><div class="card-h"><h3>' +
-          (readonly ? 'What you sent' : 'Your application') + '</h3><div class="r">' +
-          (readonly ? '' : '<span class="saved" id="saveline"><s></s>Saved automatically</span>') +
-          '<span class="pill ' + (readonly ? 'pend' : 'draft') + '">' +
-          (readonly ? 'Attempt ' + d.current.attempt : 'Draft') + '</span></div></div>' +
-        '<div class="card-b"><div class="items">' + items + '</div>' +
-        (readonly ? '' :
-          '<div style="display:flex;align-items:center;gap:11px;margin-top:18px">' +
-          '<span class="saved"><s></s>Drafts are kept for 30 days</span>' +
-          '<button class="btn primary" id="submitBtn" style="margin-left:auto">Submit application</button></div>') +
-        '</div></div>' +
-      '</div><div>' + historyCard(d.history) + nextCard() + '</div></div>';
+      '<div class="card"><div class="card-h"><h3>' +
+        (readonly ? 'What you sent' : 'Your application') + '</h3><div class="r">' +
+        (readonly ? '' : '<span class="saved" id="saveline"><s></s>Saved automatically</span>' +
+          '<span class="pill draft">Draft</span>') + '</div></div>' +
+      '<div class="card-b"><div class="' + (readonly ? 'sent' : 'items') + '">' + items + '</div>' +
+      (readonly ? '' :
+        '<div style="display:flex;align-items:center;gap:11px;margin-top:18px;flex-wrap:wrap">' +
+        '<span class="saved"><s></s>Drafts are kept for 30 days</span>' +
+        '<button class="btn primary" id="submitBtn" style="margin-left:auto">Submit application</button></div>') +
+      '</div></div>';
 
     paint('body', h);
     wireFeedback(); wireHistory();

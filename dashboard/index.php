@@ -746,7 +746,7 @@ $PAGE_HEAD = <<<'HTML'
     .appnote .act{margin-left:0;width:100%}
   }
 </style>
-<script src="/assets/js/ucp.js?v=3.0.2"></script>
+<?php require __DIR__ . '/../partials/shell-scripts.php'; ?>
 </head>
 
 HTML;
