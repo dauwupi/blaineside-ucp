@@ -1443,6 +1443,15 @@ require __DIR__ . '/../partials/shell-top.php';
        sidebar drops the link (see notPassed in assets/js/ucp.js) and
        anyone arriving on the URL directly is sent to the dashboard.
        ================================================================= */
+    /* =================================================================
+       PASSED
+
+       There is nothing here for them. The application was a gate, they are
+       through it, and a page congratulating them every time they land on it
+       is furniture. The sidebar drops the link (notPassed in ucp.js); this
+       is the same rule for anyone who arrives by URL, a bookmark, or an old
+       notification.
+       ================================================================= */
     if(d.state === 'passed'){
       location.replace('/dashboard');
       return;
