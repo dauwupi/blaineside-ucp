@@ -49,6 +49,9 @@ $out = [
        than one duplicate. */
     'history'   => app_history($pdo, $me,
         ($cur && in_array($cur['status'], ['draft', 'pending'], true)) ? (int)$cur['id'] : null),
+    /* The queue as it stands, for the figures on the page. Null when they
+       cannot be counted, and the page then shows no figures at all. */
+    'queue'     => app_queue_stats($pdo),
 ];
 
 if ($cur) {

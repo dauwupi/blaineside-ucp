@@ -1034,8 +1034,8 @@ require __DIR__ . '/../partials/shell-top.php';
 
   /* Set these to the real destinations. An empty string hides that row
      rather than linking somewhere that does not exist. */
-  var DISCORD_URL = '';
-  var FORUM_RULES_URL = '';
+  var DISCORD_URL = 'https://discord.gg/8GUuTBcEsD';
+  var FORUM_RULES_URL = 'https://forum.blaineside.com';
 
   var GATE_ICONS = {
     game:'<path d="M17.5 5.5h-11A5.5 5.5 0 0 0 1 11v3.7a3.3 3.3 0 0 0 6 1.9l.6-.9h8.8l.6.9a3.3 3.3 0 0 0 6-1.9V11a5.5 5.5 0 0 0-5.5-5.5ZM8.8 12.4H7.4v1.4H6v-1.4H4.6V11H6V9.6h1.4V11h1.4Zm5.6 1.1a1.1 1.1 0 1 1 1.1-1.1 1.1 1.1 0 0 1-1.1 1.1Zm2.6-2.6a1.1 1.1 0 1 1 1.1-1.1 1.1 1.1 0 0 1-1.1 1.1Z"/>',
@@ -1120,13 +1120,21 @@ require __DIR__ . '/../partials/shell-top.php';
         '<div class="v">' + escapeHtml(String(v)) + '</div>' +
         '<div class="n">' + escapeHtml(n) + '</div></div>';
     }
+    /* A figure the server could not work out is left out entirely. Four
+       tiles is the usual case; a new server with nothing decided yet shows
+       the two it can stand behind. */
+    var tiles = '';
+    if(q.waiting !== null && q.waiting !== undefined)
+      tiles += s('Waiting', q.waiting, 'Applications in the queue ahead of a new one.');
+    if(q.processed_24h !== null && q.processed_24h !== undefined)
+      tiles += s('Processed in the last 24h', q.processed_24h, 'Decided by Support Staff, by hand.');
+    if(q.typical_wait) tiles += s('Typical wait', q.typical_wait, 'Median from submitted to decided this week.');
+    if(q.first_try_rate) tiles += s('Accepted first try', q.first_try_rate, 'Of applications sent in the last 30 days.');
+    if(!tiles) return '';
     return '<div class="card"><div class="card-h"><h3>The queue right now</h3>' +
       '<div class="r"><span class="pill draft">LIVE</span></div></div>' +
-      '<div class="stats4">' +
-        s('Waiting', q.waiting, 'Applications in the queue ahead of a new one.') +
-        s('Processed in the last 24h', q.processed_24h, 'Decided by Support Staff, by hand.') +
-        s('Typical wait', q.typical_wait, 'Median from submitted to decided this week.') +
-        s('Accepted first try', q.first_try_rate, 'Of applications sent in the last 30 days.') +
+      '<div class="stats4" style="grid-template-columns:repeat(' +
+        (tiles.match(/class="s"/g) || []).length + ',1fr)">' + tiles +
       '</div><div class="qfoot">Read by hand, in the order received — no filter decides this and ' +
       'nobody is bumped up the queue.</div></div>';
   }

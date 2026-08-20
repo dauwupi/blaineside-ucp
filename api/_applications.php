@@ -492,6 +492,83 @@ function app_applicant(PDO $pdo, int $accountId): array
     ];
 }
 
+/**
+ * The four figures on the player's Application page.
+ *
+ * Everything here is counted from ucp_applications, so it cannot drift from
+ * what staff see in the queue. Anything that cannot be computed comes back
+ * null and the page leaves that tile out rather than inventing a number:
+ * a made-up "under 24 hours" is worse than saying nothing.
+ *
+ *   waiting        applications sitting in the queue right now
+ *   processed_24h  decided in the last 24 hours, by anyone
+ *   typical_wait   median submitted-to-decided over the last 7 days
+ *   first_try_rate share of first attempts that passed, last 30 days
+ */
+function app_queue_stats(PDO $pdo): ?array
+{
+    if (!applications_available($pdo)) return null;
+
+    $now = time();
+    try {
+        $st = $pdo->prepare('SELECT COUNT(*) FROM ucp_applications WHERE status = ?');
+        $st->execute(['pending']);
+        $waiting = (int)$st->fetchColumn();
+
+        $st = $pdo->prepare(
+            'SELECT COUNT(*) FROM ucp_applications
+              WHERE status IN (?, ?) AND decided_at IS NOT NULL AND decided_at >= ?'
+        );
+        $st->execute(['passed', 'denied', $now - 86400]);
+        $processed = (int)$st->fetchColumn();
+
+        /* Median, not mean: one application left over a holiday weekend
+           would drag an average past anything a player will experience. */
+        $st = $pdo->prepare(
+            'SELECT decided_at - submitted_at AS secs FROM ucp_applications
+              WHERE status IN (?, ?) AND decided_at IS NOT NULL AND submitted_at IS NOT NULL
+                AND decided_at >= ? AND decided_at >= submitted_at
+              ORDER BY secs'
+        );
+        $st->execute(['passed', 'denied', $now - 7 * 86400]);
+        $waits = array_map('intval', array_column($st->fetchAll(), 'secs'));
+        $wait = null;
+        if ($waits) {
+            $n = count($waits);
+            $mid = intdiv($n, 2);
+            $secs = ($n % 2) ? $waits[$mid] : intdiv($waits[$mid - 1] + $waits[$mid], 2);
+            $wait = $secs < 3600
+                ? max(1, intdiv($secs, 60)) . 'm'
+                : ($secs < 86400 ? intdiv($secs, 3600) . 'h'
+                                 : round($secs / 86400, 1) . 'd');
+        }
+
+        /* First attempts only. Counting every attempt would let one player
+           who reapplied four times move the figure four times. */
+        $st = $pdo->prepare(
+            'SELECT status, COUNT(*) AS n FROM ucp_applications
+              WHERE attempt = 1 AND status IN (?, ?) AND decided_at >= ?
+              GROUP BY status'
+        );
+        $st->execute(['passed', 'denied', $now - 30 * 86400]);
+        $passed = 0; $total = 0;
+        foreach ($st->fetchAll() as $r) {
+            $total += (int)$r['n'];
+            if ($r['status'] === 'passed') $passed = (int)$r['n'];
+        }
+        $rate = $total > 0 ? round($passed * 100 / $total) . '%' : null;
+    } catch (Throwable $e) {
+        return null;
+    }
+
+    return [
+        'waiting'        => $waiting,
+        'processed_24h'  => $processed,
+        'typical_wait'   => $wait,
+        'first_try_rate' => $rate,
+    ];
+}
+
 /** Every attempt by one account, newest first — the history card. */
 function app_history(PDO $pdo, int $accountId, ?int $exclude = null): array
 {
