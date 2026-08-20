@@ -424,16 +424,27 @@ $PAGE_HEAD = <<<'HTML'
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .toast svg{width:17px;height:17px;color:var(--ok);stroke-width:2.4}
 
-  /* pager — centered */
-  .pager{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px}
-  .pager .pg{min-width:36px;height:36px;padding:0 11px;display:grid;place-items:center;border-radius:9px;
-    background:var(--charcoal-2);border:1px solid var(--border);color:var(--text-faint);
-    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.14s}
-  .pager .pg:hover:not(:disabled){color:var(--parchment);background:var(--charcoal-3)}
-  .pager .pg.on{background:var(--charcoal-3);color:var(--parchment);border-color:var(--charcoal-4)}
-  .pager .pg:disabled{opacity:.4;cursor:not-allowed}
-  .pager .pg svg{width:15px;height:15px;stroke-width:2.2}
-  .pager .pg-gap{color:var(--text-dim);padding:0 2px}
+  /* The pager, identical to the Administrative Record's — count on the
+     left, arrows and numbers on the right. One pattern everywhere. */
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    margin-top:15px;padding-top:14px;border-top:1px solid var(--border-soft)}
+  .pcount{font-size:12px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+  .pcount b{color:var(--parchment);font-weight:600}
+  .pnav{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .pnav button{min-width:33px;height:33px;padding:0 9px;border-radius:9px;
+    border:1px solid var(--border-soft);background:var(--charcoal);color:var(--text-dim);
+    font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:grid;
+    place-items:center;font-variant-numeric:tabular-nums;transition:.14s}
+  .pnav button:hover:not([disabled]){color:var(--parchment);border-color:var(--charcoal-4)}
+  .pnav button[aria-current="true"]{background:var(--charcoal-4);color:var(--parchment);
+    border-color:rgba(226,182,92,.38)}
+  .pnav button[disabled]{opacity:.3;cursor:default}
+  .pnav .arrow{min-width:33px;padding:0}
+  .pnav .arrow svg{width:15px;height:15px;stroke-width:2.3;fill:none;stroke:currentColor}
+  @media (max-width:700px){
+    .pager{flex-direction:column;align-items:stretch;gap:12px}
+    .pnav{justify-content:center}
+  }
 
   .view{display:none}
   .view.active{display:flex;flex-direction:column;gap:22px}
@@ -639,6 +650,10 @@ $PAGE_HEAD = <<<'HTML'
   .arow{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--charcoal-3);
     border:1px solid var(--border-soft);border-radius:11px;font-size:12.5px}
   .arow + .fb{margin-top:10px}
+  /* Attempt rows carry a second line naming who reviewed it. */
+  .arow b{display:block;font-size:12.8px;font-weight:600}
+  .arow .d{display:block;font-size:11.5px;color:var(--text-faint);margin-top:2px;line-height:1.45}
+  .arow .r{white-space:nowrap}
   .arow .r{margin-left:auto;display:flex;gap:9px;align-items:center;color:var(--text-dim)}
   .alist{display:flex;flex-direction:column;gap:7px}
 
@@ -701,6 +716,106 @@ $PAGE_HEAD = <<<'HTML'
   .tile .ti svg{width:16px;height:16px;stroke:var(--gold);fill:none;stroke-width:1.9}
   .tile b{display:block;font-size:13.5px;font-weight:700}
   .tile span{display:block;font-size:12.5px;color:var(--text-faint);line-height:1.7;margin-top:5px}
+
+
+  /* =====================================================================
+     THE "NOT IN YET" VIEW  —  no application, or the last one denied
+
+     One column, full width. The status band says plainly that the game
+     server is closed and the rest of the community is not; the figures
+     turn "wait" into a number; the guidance answers the questions that
+     otherwise arrive as tickets.
+     ===================================================================== */
+  .band{border:1px solid var(--border);border-radius:16px;background:var(--charcoal-2);
+    overflow:hidden;margin-bottom:15px;--acc:var(--gold);--accsoft:rgba(226,182,92,.10)}
+  .band.denied{--acc:#c2604b;--accsoft:rgba(194,96,75,.10)}
+  .band-top{position:relative;display:flex;align-items:flex-start;gap:20px;padding:19px 22px 20px;
+    background:linear-gradient(92deg,var(--accsoft),transparent 60%)}
+  .band-top::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc)}
+  .eyebrow{display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:.15em;
+    text-transform:uppercase;color:var(--acc)}
+  .band-top h2{font-size:18px;font-weight:700;line-height:1.3;margin:8px 0 5px;letter-spacing:-.01em}
+  .band-top p{margin:0;color:var(--text-faint);font-size:12.8px;max-width:640px;line-height:1.6}
+  .band-cta{margin-left:auto;flex:none;align-self:center;display:flex;flex-direction:column;
+    align-items:center;gap:8px;text-align:center}
+  .band-cta .mins{font-size:11.5px;color:var(--text-dim)}
+
+  /* Two cards on one row: the figures, and the one thing support can help
+     with. Sized so neither has slack to distribute. */
+  .row2{display:grid;grid-template-columns:2fr 1fr;gap:15px;align-items:stretch;margin-bottom:15px}
+  .row2 .card{margin-bottom:0;height:100%;display:flex;flex-direction:column}
+  .row2 .card .card-b,.row2 .card .stats4{flex:1}
+  .stats4{display:grid;grid-template-columns:repeat(4,1fr);align-items:stretch}
+  .stats4 .s{padding:14px 18px 15px;border-right:1px solid var(--border-soft);
+    display:flex;flex-direction:column;justify-content:center}
+  .stats4 .s:last-child{border-right:none}
+  /* Two lines reserved, so a label that wraps does not drop its figure
+     below the others. */
+  .stats4 .k{font-size:10px;font-weight:600;line-height:1.35;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-dim);min-height:27px}
+  .stats4 .v{font-size:23px;font-weight:700;line-height:1.1;margin-top:6px;
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .stats4 .n{font-size:11.5px;color:var(--text-faint);margin-top:5px;line-height:1.45}
+  .qfoot{padding:12px 18px;border-top:1px solid var(--border-soft);font-size:11.8px;color:var(--text-dim)}
+  .fix{display:flex;flex-direction:column;height:100%}
+  .fix p{margin:0 0 12px;color:var(--text-faint);font-size:12.5px;line-height:1.6}
+  .fix p + p{margin-bottom:14px}
+  .fix .btn{margin-top:auto;width:100%}
+
+  /* What is open to them and what is not. Fixed height per row so the four
+     read as one set; a description that would wrap is clipped instead. */
+  .acc2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .accrow{display:flex;align-items:center;gap:13px;padding:0 15px;height:66px;
+    border:1px solid var(--border-soft);border-radius:11px;background:var(--charcoal-3)}
+  .accrow.open{cursor:pointer}
+  .accrow.open:hover{border-color:var(--charcoal-4)}
+  .accrow .i{width:32px;height:32px;border-radius:9px;flex:none;display:grid;place-items:center;
+    background:var(--charcoal-4);color:var(--text-dim)}
+  .accrow.open .i{color:var(--gold)}
+  .accrow .i svg{width:16px;height:16px;fill:currentColor;stroke:none}
+  .accrow .tx{min-width:0;flex:1}
+  .accrow b{display:block;font-size:12.8px;font-weight:600}
+  .accrow .d{display:block;font-size:11.8px;color:var(--text-faint);line-height:1.45;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .accrow .st{margin-left:auto;flex:none;display:flex;align-items:center;gap:14px}
+  .accrow .st .pill{width:74px}
+  .accrow .ch{width:15px;height:15px;color:var(--text-dim)}
+  .accrow .ch svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;display:block}
+  .accrow .ch.none{visibility:hidden}
+
+  /* The guidance. One open at a time — two open answers is a wall of text
+     and the second is never the one being read. */
+  .g{border:1px solid var(--border-soft);border-radius:11px;background:var(--charcoal-3);
+    margin-bottom:8px;overflow:hidden}
+  .g:last-child{margin-bottom:0}
+  .g .gh{display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer;user-select:none}
+  .g .gn{font-size:10.5px;font-weight:700;color:var(--text-dim);width:18px;flex:none;
+    font-variant-numeric:tabular-nums}
+  .g .gt{font-size:13px;font-weight:600}
+  .g .gv{margin-left:auto;width:14px;height:14px;flex:none;color:var(--text-dim)}
+  .g .gv svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;display:block}
+  .g.on{border-color:var(--charcoal-4)}
+  .g.on .gn,.g.on .gt{color:var(--parchment)}
+  .g.on .gv{color:var(--gold)}
+  .g .gb{padding:0 15px 15px 45px;font-size:12.6px;color:var(--text-faint);line-height:1.65}
+  .g .gb p{margin:0 0 9px}
+  .g .gb p:last-child{margin-bottom:0}
+  .g .gb ul{margin:9px 0 0;padding-left:17px}
+  .g .gb li{margin-bottom:5px}
+  .g .gb em{color:var(--parchment);font-style:normal;font-weight:600}
+
+  @media (max-width:1000px){
+    .row2{grid-template-columns:1fr}
+    .stats4{grid-template-columns:1fr 1fr}
+    .stats4 .s:nth-child(2){border-right:none}
+    .acc2{grid-template-columns:1fr}
+  }
+  @media (max-width:700px){
+    .band-top{flex-direction:column;gap:14px}
+    .band-cta{margin-left:0;align-items:flex-start;text-align:left}
+    .stats4{grid-template-columns:1fr}
+    .stats4 .s{border-right:none;border-bottom:1px solid var(--border-soft)}
+  }
 
   .lede{font-size:12.5px;color:var(--text-faint);line-height:1.75}
   .empty{border:1px dashed var(--border);border-radius:12px;padding:26px 18px;text-align:center;
@@ -904,25 +1019,265 @@ require __DIR__ . '/../partials/shell-top.php';
     });
   }
 
+
+  /* =====================================================================
+     THE "NOT IN YET" VIEW
+
+     Reached with no application at all, or with the last one denied. Both
+     want the same page: what is closed, what is not, how long the wait is,
+     and the answers to the questions people otherwise open a ticket to ask.
+
+     Everything here degrades: the figures card only appears if the server
+     sends `queue`, and the two outside links only appear if they are set
+     below, so nothing renders a dead end.
+     ===================================================================== */
+
+  /* Set these to the real destinations. An empty string hides that row
+     rather than linking somewhere that does not exist. */
+  var DISCORD_URL = '';
+  var FORUM_RULES_URL = '';
+
+  var GATE_ICONS = {
+    game:'<path d="M17.5 5.5h-11A5.5 5.5 0 0 0 1 11v3.7a3.3 3.3 0 0 0 6 1.9l.6-.9h8.8l.6.9a3.3 3.3 0 0 0 6-1.9V11a5.5 5.5 0 0 0-5.5-5.5ZM8.8 12.4H7.4v1.4H6v-1.4H4.6V11H6V9.6h1.4V11h1.4Zm5.6 1.1a1.1 1.1 0 1 1 1.1-1.1 1.1 1.1 0 0 1-1.1 1.1Zm2.6-2.6a1.1 1.1 0 1 1 1.1-1.1 1.1 1.1 0 0 1-1.1 1.1Z"/>',
+    discord:'<path d="M20.32 4.37a19.79 19.79 0 0 0-4.89-1.51.07.07 0 0 0-.8.04c-.2.37-.44.86-.6 1.25a18.27 18.27 0 0 0-5.49 0c-.16-.4-.4-.88-.61-1.25a.08.08 0 0 0-.08-.04A19.74 19.74 0 0 0 3.68 4.4a.07.07 0 0 0-.3.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .3.06 19.9 19.9 0 0 0 5.99 3.03.08.08 0 0 0 .09-.03c.46-.63.87-1.3 1.22-1.99a.08.08 0 0 0-.04-.11 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1 0-.13l.37-.29a.07.07 0 0 1 .08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 0 1 .8.01l.37.29a.08.08 0 0 1 0 .13c-.6.35-1.22.65-1.88.9a.08.08 0 0 0-.4.1c.36.7.78 1.36 1.23 2a.08.08 0 0 0 .8.02 19.84 19.84 0 0 0 6-3.03.08.08 0 0 0 .04-.05c.5-5.18-.84-9.68-3.55-13.66a.06.06 0 0 0-.03-.03ZM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.41 2.16-2.41 1.21 0 2.18 1.09 2.16 2.41 0 1.34-.96 2.42-2.16 2.42Zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.41 2.15-2.41 1.21 0 2.18 1.09 2.16 2.41 0 1.34-.95 2.42-2.16 2.42Z"/>',
+    forum:'<path d="M3 3.8h13a1.8 1.8 0 0 1 1.8 1.8v7.6A1.8 1.8 0 0 1 16 15h-1.6l-3.3 2.9a.6.6 0 0 1-1-.45V15H3a1.8 1.8 0 0 1-1.8-1.8V5.6A1.8 1.8 0 0 1 3 3.8Zm2.2 3.4v1.5h8.6V7.2Zm0 3.2v1.5h5.8v-1.5Z"/><path d="M19.6 7.6h1.4A1.8 1.8 0 0 1 22.8 9.4V17a1.8 1.8 0 0 1-1.8 1.8h-.9v2.4a.6.6 0 0 1-1 .45L15.8 18.8h-1.3a1.8 1.8 0 0 1-1.55-.9h3.05A3.2 3.2 0 0 0 19.2 14.7V7.6Z"/>',
+    ucp:'<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm4.6 3.4a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8ZM4.4 17.2h8.4v-.6a4.2 4.2 0 0 0-8.4 0ZM14.6 8.6h5.2v1.6h-5.2Zm0 3.6h5.2v1.6h-5.2Z"/>'
+  };
+  var CHEV = '<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
+
+  /* Written as answers to the question somebody actually has. The subject
+     is the rules and how roleplay works here — not who their character is,
+     which is decided in game and never from this. */
+  var GUIDE = [
+    ['What is this application for?',
+     '<p>It is a <em>knowledge check</em>, not an audition. We are confirming you understand the ' +
+     'server rules and how roleplay is expected to work here before you are let loose in a world ' +
+     'with other people in it.</p>' +
+     '<p>You are not scored on writing ability, imagination, or how dramatic a backstory you can ' +
+     'invent. There is no minimum word count and no bonus for length.</p>'],
+    ['Does anything I write here affect my character?',
+     '<p>No. Everything in this application is used once, to decide whether you have understood the ' +
+     'rules, and never again. It does not become canon, it is not held against your character, and ' +
+     'no member of staff will hold you to it in game.</p>' +
+     '<p>Your character is made in game after you are accepted — name, job, history, all of it, and ' +
+     'all yours.</p>'],
+    ['How is my application judged?',
+     '<p>One question at a time, against one test: does the answer show you understood what was ' +
+     'asked? A reviewer is looking for three things.</p><ul>' +
+     '<li>You answered <em>the question that was asked</em>, not a nearby one.</li>' +
+     '<li>You gave the reasoning, not just the outcome. "I would wait" says nothing; "I would wait ' +
+     'because the scene is still running and leaving would cut it short for everyone else" says ' +
+     'everything.</li>' +
+     '<li>Where a rule applies, you can say which one and what it means in practice.</li></ul>'],
+    ['Why do applications get denied?',
+     '<p>Almost every denial is one of four things, and all four are avoidable.</p><ul>' +
+     '<li><em>One-line answers.</em> "Yes", "I would not do that", or the question repeated back.</li>' +
+     '<li><em>Copied text.</em> A rule pasted in word for word, or an answer lifted from a guide, ' +
+     'shows nothing about your understanding.</li>' +
+     '<li><em>Answering a different question.</em> Read each one twice — several look alike and are not.</li>' +
+     '<li><em>Contradicting a rule.</em> Usually the new-life or crime-zone rules, and usually ' +
+     'because they were skimmed rather than read.</li></ul>'],
+    ['How long does a decision take?',
+     '<p>Most applications are decided within 24 hours. A busy weekend can push that to two days. ' +
+     'The live figures are above, and they are the same ones staff see.</p>' +
+     '<p>You are notified in this UCP the moment a decision is made. Accepted, and this page changes ' +
+     'to show you how to connect; returned, and the feedback naming what to change is on the ' +
+     'attempt itself.</p>'],
+    ['What should I do if I am denied?',
+     '<p>Open the attempt, read the feedback, and change what it names. There is no limit on ' +
+     'attempts, no waiting period, and no penalty for having been returned before.</p>' +
+     '<p>What does not work is sending the same answers again. If the feedback is not clear, the ' +
+     'rulebook is the place to settle it — staff cannot write or check an answer for you.</p>'],
+    ['How should I prepare before I start?',
+     '<p>Read the rulebook once. Most questions here are answerable directly from it, and the two ' +
+     'rules that cause the most denials — new life and crime zones — are worth reading twice.</p>' +
+     '<p>Then set aside ten quiet minutes. Nothing is sent until you press submit and your draft is ' +
+     'saved as you type, so you can stop and come back to it.</p>']
+  ];
+
+  /* ---------- the pieces ---------- */
+  function bandHTML(denied){
+    return '<div class="band' + (denied ? ' denied' : '') + '"><div class="band-top"><div>' +
+      '<span class="eyebrow">' + (denied ? 'Application denied' : 'Not applied yet') + '</span>' +
+      '<h2>' + (denied ? 'Your last application was returned' : 'You cannot join the server yet') + '</h2>' +
+      '<p>' + (denied
+        ? 'Open your last attempt, read the feedback, and change what it names. There is no limit on ' +
+          'attempts and no waiting period — Discord, the forums and this UCP stay open to you throughout.'
+        : 'The game server is whitelisted, so an accepted application is what opens it. Discord, the ' +
+          'forums and this UCP are open to you right now, and stay open whatever the decision is.') +
+      '</p></div><div class="band-cta">' +
+      '<button class="btn primary" id="startBtn">' +
+      (denied ? 'Start another application' : 'Start your application') + '</button>' +
+      '<span class="mins">About 10 minutes · saved as you type</span></div></div></div>';
+  }
+
+  /* The figures come from the server or not at all. A page that invents
+     "under 24 hours" is worse than a page that does not say. */
+  function queueHTML(q){
+    if(!q) return '';
+    function s(k, v, n){
+      return '<div class="s"><div class="k">' + escapeHtml(k) + '</div>' +
+        '<div class="v">' + escapeHtml(String(v)) + '</div>' +
+        '<div class="n">' + escapeHtml(n) + '</div></div>';
+    }
+    return '<div class="card"><div class="card-h"><h3>The queue right now</h3>' +
+      '<div class="r"><span class="pill draft">LIVE</span></div></div>' +
+      '<div class="stats4">' +
+        s('Waiting', q.waiting, 'Applications in the queue ahead of a new one.') +
+        s('Processed in the last 24h', q.processed_24h, 'Decided by Support Staff, by hand.') +
+        s('Typical wait', q.typical_wait, 'Median from submitted to decided this week.') +
+        s('Accepted first try', q.first_try_rate, 'Of applications sent in the last 30 days.') +
+      '</div><div class="qfoot">Read by hand, in the order received — no filter decides this and ' +
+      'nobody is bumped up the queue.</div></div>';
+  }
+
+  function supportHTML(){
+    return '<div class="card"><div class="card-h"><h3>Something not working?</h3></div>' +
+      '<div class="card-b fix">' +
+      '<p>Form will not save or submit, or an answer vanished? Open a ticket and say which question ' +
+      'you were on.</p>' +
+      '<p>Technical problems only — staff cannot help with the answers themselves.</p>' +
+      '<a class="btn" href="/dashboard/reports">Open a support ticket</a></div></div>';
+  }
+
+  function gateRow(icon, name, note, open, href){
+    return '<div class="accrow' + (open ? ' open' : '') + '"' +
+      (open && href ? ' data-href="' + escapeHtml(href) + '" role="link" tabindex="0"' : '') + '>' +
+      '<span class="i"><svg viewBox="0 0 24 24">' + GATE_ICONS[icon] + '</svg></span>' +
+      '<span class="tx"><b>' + escapeHtml(name) + '</b><span class="d">' + escapeHtml(note) + '</span></span>' +
+      '<span class="st"><span class="pill ' + (open ? 'pass' : 'fail') + '">' +
+      (open ? 'Open' : 'Locked') + '</span>' +
+      '<span class="ch' + (open && href ? '' : ' none') + '">' + CHEV + '</span></span></div>';
+  }
+
+  function gatesHTML(){
+    var rows = [gateRow('game', 'Blaine County game server',
+                        'Opens as soon as an application is accepted.', false, '')];
+    if(DISCORD_URL)     rows.push(gateRow('discord','Discord','Your decision is announced here first.', true, DISCORD_URL));
+    if(FORUM_RULES_URL) rows.push(gateRow('forum','Forums','The rulebook, factions and event posts.', true, FORUM_RULES_URL));
+    rows.push(gateRow('ucp','This UCP','Profile, notifications, tickets and appeals.', true, '/profile'));
+    var open = rows.length - 1;
+    return '<div class="card"><div class="card-h"><h3>What you can use right now</h3>' +
+      '<div class="r"><span class="pill draft">' + open + ' of ' + rows.length + ' open</span></div></div>' +
+      '<div class="card-b"><div class="acc2">' + rows.join('') + '</div></div></div>';
+  }
+
+  function guideHTML(){
+    var items = GUIDE.map(function(g, i){
+      return '<div class="g" data-g="' + i + '"><div class="gh"><span class="gn">' +
+        (i < 9 ? '0' : '') + (i+1) + '</span><span class="gt">' + escapeHtml(g[0]) + '</span>' +
+        '<span class="gv"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></div></div>';
+    }).join('');
+    return '<div class="card"><div class="card-h"><h3>Everything you need to know before applying</h3>' +
+      '<div class="r"><span class="pill draft">' + GUIDE.length + ' topics</span></div></div>' +
+      '<div class="card-b">' + items + '</div></div>';
+  }
+
+  /* One open at a time. Opening a second closes the first, so the page
+     never becomes two walls of text with the wanted one below the fold. */
+  function wireGuide(){
+    document.querySelectorAll('[data-g]').forEach(function(g){
+      g.querySelector('.gh').addEventListener('click', function(){
+        var was = g.classList.contains('on');
+        document.querySelectorAll('[data-g].on').forEach(function(o){
+          o.classList.remove('on');
+          var b = o.querySelector('.gb'); if(b) b.remove();
+          o.querySelector('.gv').innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+        });
+        if(was) return;
+        g.classList.add('on');
+        g.querySelector('.gv').innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>';
+        var d = document.createElement('div');
+        d.className = 'gb';
+        d.innerHTML = GUIDE[g.getAttribute('data-g') | 0][1];
+        g.appendChild(d);
+      });
+    });
+  }
+
+  function wireGates(){
+    document.querySelectorAll('[data-href]').forEach(function(r){
+      r.addEventListener('click', function(){
+        var h = this.getAttribute('data-href');
+        if(/^https?:/.test(h)) window.open(h, '_blank', 'noopener');
+        else location.href = h;
+      });
+      r.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); this.click(); }
+      });
+    });
+  }
+
   /* ---------- history ---------- */
   /* A row, not a row plus its feedback. The feedback lives inside the
      attempt — one wall of text per page rather than one per row, and the
      list stays a list. */
-  function historyCard(list){
-    var rows = (list || []).map(function(h){
+  var HIST_PAGE = 1, HIST_SIZE = 5;
+
+  function historyRows(list){
+    return list.map(function(h){
       var cls = h.status === 'passed' ? 'pass' : (h.status === 'denied' ? 'fail' : 'pend');
       var lab = h.status === 'passed' ? 'Passed' : (h.status === 'denied' ? 'Denied' : 'Waiting');
+      var who = h.decided && h.decided.name ? h.decided.name : '';
+      /* The feedback is named, not printed. Some of it runs to a paragraph
+         or more, and a list of those is not a list. */
+      var sub = h.status === 'denied'
+        ? (who ? 'Feedback from ' + escapeHtml(who) + ' — open it to read what to change'
+               : 'Open it to read the feedback')
+        : (who ? 'Decided by ' + escapeHtml(who) : '');
       return '<div class="arow open" data-open="' + h.id + '" role="link" tabindex="0">' +
         '<span class="pill ' + cls + '">' + lab + '</span>' +
-        '<span>Attempt ' + h.attempt + '</span>' +
+        '<span><b>Attempt ' + h.attempt + '</b>' +
+        (sub ? '<span class="d">' + sub + '</span>' : '') + '</span>' +
         '<span class="r">' + shortDate(h.decided && h.decided.at ? h.decided.at : h.submitted_at) +
         '<svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">' +
         '<path d="M9 6l6 6-6 6"/></svg></span></div>';
     }).join('');
-    return '<div class="card"><div class="card-h"><h3>Your previous attempts</h3>' +
-      '<div class="r"><span class="pill draft">' + (list||[]).length + '</span></div></div>' +
-      '<div class="card-b">' + (rows ? '<div class="alist">' + rows + '</div>'
+  }
+
+  function pagerHTML(total, page, size){
+    if(total <= size) return '';
+    var pages = Math.ceil(total / size),
+        first = (page - 1) * size + 1,
+        last  = Math.min(page * size, total),
+        b = [];
+    b.push('<button class="arrow" data-page="' + (page - 1) + '"' + (page === 1 ? ' disabled' : '') +
+      ' aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>');
+    for(var i = 1; i <= pages; i++){
+      b.push('<button data-page="' + i + '"' + (i === page ? ' aria-current="true"' : '') + '>' + i + '</button>');
+    }
+    b.push('<button class="arrow" data-page="' + (page + 1) + '"' + (page === pages ? ' disabled' : '') +
+      ' aria-label="Next"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>');
+    return '<div class="pager"><span class="pcount">Showing <b>' + first + '–' + last +
+      '</b> of <b>' + total + '</b></span><div class="pnav">' + b.join('') + '</div></div>';
+  }
+
+  function historyCard(list){
+    list = list || [];
+    var total = list.length,
+        pages = Math.max(1, Math.ceil(total / HIST_SIZE));
+    if(HIST_PAGE > pages) HIST_PAGE = pages;
+    var slice = list.slice((HIST_PAGE - 1) * HIST_SIZE, HIST_PAGE * HIST_SIZE);
+    return '<div class="card" id="histCard"><div class="card-h"><h3>Your previous attempts</h3>' +
+      '<div class="r"><span class="pill draft">' + total + '</span></div></div>' +
+      '<div class="card-b">' + (total ? '<div class="alist">' + historyRows(slice) + '</div>' +
+        pagerHTML(total, HIST_PAGE, HIST_SIZE)
         : '<div class="empty">Nothing yet. This is your first application.</div>') + '</div></div>';
+  }
+
+  /* Repaints the card in place — the page around it does not move, which
+     is the whole point of paging rather than scrolling. */
+  function wirePager(list){
+    var card = el('histCard');
+    if(!card) return;
+    card.querySelectorAll('[data-page]').forEach(function(b){
+      if(b.disabled) return;
+      b.addEventListener('click', function(){
+        HIST_PAGE = this.getAttribute('data-page') | 0;
+        card.outerHTML = historyCard(list);
+        wireHistory(); wirePager(list);
+      });
+    });
   }
 
   var NEXT_ICONS = {
@@ -1071,20 +1426,23 @@ require __DIR__ . '/../partials/shell-top.php';
       return;
     }
 
+    /* =================================================================
+       NOT IN YET  —  never applied, or the last attempt denied
+
+       The same page serves both: only the wording of the band and the
+       presence of the attempt list differ.
+       ================================================================= */
     if(d.state === 'none' || d.state === 'denied'){
       var denied = d.state === 'denied';
-      h = '<div class="state"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
-          '<path d="M4 5h16v14H4z"/><path d="M8 10h8M8 14h5"/></svg></div><div>' +
-          '<h4>' + (denied ? 'Your last application was denied' : 'You haven\'t applied yet') + '</h4>' +
-          '<p>' + (denied
-            ? 'Read the feedback below, then start a new attempt. There is no limit and no waiting period.'
-            : 'It takes a few minutes. Nothing you write is sent until you press submit.') + '</p></div>' +
-          '<div class="act"><button class="btn primary" id="startBtn">' +
-            (denied ? 'Start another application' : 'Start your application') + '</button></div></div>' +
-          '<div class="split" style="margin-top:16px"><div>' + historyCard(d.history) + '</div>' +
-          '<div>' + nextCard() + '</div></div>';
+      h = bandHTML(denied) +
+          /* No figures from the server means no card, and then the
+             support box is the whole row rather than a third of one. */
+          (d.queue ? '<div class="row2">' + queueHTML(d.queue) + supportHTML() + '</div>'
+                   : supportHTML()) +
+          (denied || (d.history || []).length ? historyCard(d.history) : '') +
+          gatesHTML() + guideHTML();
       paint('body', h);
-      wireFeedback(); wireHistory();
+      wireHistory(); wirePager(d.history || []); wireGates(); wireGuide();
       el('startBtn').addEventListener('click', startApplication);
       return;
     }
