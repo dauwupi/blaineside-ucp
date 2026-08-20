@@ -15,6 +15,6 @@
  *
  * and a new version of assets/js/ucp.js is a one-line edit here.
  */
-if (!defined('UCP_JS_VERSION')) define('UCP_JS_VERSION', '3.1.0');
+if (!defined('UCP_JS_VERSION')) define('UCP_JS_VERSION', '3.1.1');
 ?>
 <script src="/assets/js/ucp.js?v=<?= UCP_JS_VERSION ?>"></script>

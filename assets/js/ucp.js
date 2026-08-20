@@ -228,7 +228,13 @@
            A stale balance for one frame is fine; it is corrected by the
            same request that always corrected it. A wrong balance of 0 for
            one frame is not, because 0 is a number somebody might believe. */
-        credits: typeof m.credits === 'number' ? m.credits : undefined
+        credits: typeof m.credits === 'number' ? m.credits : undefined,
+        /* Whether their application is behind them. This is a whitelist, so
+           a key that is not named here never reaches storage — which is why
+           rememberMe() could set app_passed, renderNav() could read it, and
+           the Application link still showed on every load: the flag was
+           dropped on the way to localStorage and read back as undefined. */
+        app_passed: typeof m.app_passed === 'boolean' ? m.app_passed : undefined
       }));
     } catch (e) { /* private mode, quota — the page still works, it just blinks */ }
   }
