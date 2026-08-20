@@ -743,7 +743,10 @@ $PAGE_HEAD = <<<'HTML'
   /* Two cards on one row: the figures, and the one thing support can help
      with. Sized so neither has slack to distribute. */
   .row2{display:grid;grid-template-columns:2fr 1fr;gap:15px;align-items:stretch;margin-bottom:15px}
-  .row2 .card{margin-bottom:0;height:100%;display:flex;flex-direction:column}
+    /* The page stacks cards with `.card + .card{margin-top}`. Inside this
+     row that rule pushed the second card 16px below the first, so the two
+     tops did not line up however their heights were matched. */
+  .row2 .card,.row2 .card + .card{margin:0;height:100%;display:flex;flex-direction:column}
   .row2 .card .card-b,.row2 .card .stats4{flex:1}
   .stats4{display:grid;grid-template-columns:repeat(4,1fr);align-items:stretch}
   .stats4 .s{padding:14px 18px 15px;border-right:1px solid var(--border-soft);
