@@ -108,6 +108,26 @@ return [
     'redirect_uri'  => 'https://ucp.blaineside.com/api/discord-callback.php',
   ],
 
+  // ---- Game server link ----
+  //
+  // Shared secret the FiveM server sends to api/game-verify.php, which is how
+  // in-game logins are checked against this UCP. Nothing else uses it.
+  //
+  // It exists because the game server cannot reach the database directly:
+  // OVH's included databases only accept connections from inside their
+  // network. game-verify.php runs where the database IS reachable, so the
+  // game server never needs database credentials — only this secret.
+  //
+  // Generate one and paste it here AND in the server's server.cfg as
+  // `set ucp_internal_secret "..."`. They must match exactly.
+  //     php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
+  //
+  // Leave it '' and api/game-verify.php refuses every request, which is the
+  // correct default for a UCP with no game server attached yet.
+  'game' => [
+    'internal_secret' => '',
+  ],
+
   // ---- Forum ----
   'forum' => [
     // Used to build the "open your forum profile" link on the profile page.
